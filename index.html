@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>時価総額スクリーナー｜300億円以下</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root {
+    --bg:#0a0c10;--surface:#12151c;--surface2:#1a1f2a;--border:#252c3a;
+    --accent:#00d4ff;--accent2:#00ff9f;--text:#e8edf5;--text-dim:#8896b0;--danger:#ff4d6d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;min-height:100vh;padding:20px;}
+  h1{font-size:20px;font-weight:700;margin-bottom:4px;}
+  h1 span{color:var(--accent);}
+  header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:var(--accent);padding:4px 10px;border-radius:4px;letter-spacing:1px;}
+  .info-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:16px;}
+  .info-box strong{color:var(--text);}
+  .info-box a{color:var(--accent);}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;}
+  label{display:block;font-size:11px;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+  input,select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;}
+  input:focus,select:focus{border-color:var(--accent);}
+  button{padding:10px 20px;border-radius:6px;border:none;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:500;transition:all .2s;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:hover:not(:disabled){background:#33ddff;}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-export{background:rgba(0,255,159,.1);color:var(--accent2);border:1px solid rgba(0,255,159,.3);}
+  .btn-export:disabled{opacity:.3;cursor:not-allowed;}
+  .status-bar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;}
+  .dot.loading{background:var(--accent);animation:pulse 1s infinite;}
+  .dot.ok{background:var(--accent2);}
+  .dot.err{background:var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .pbar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .pfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;width:0%;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .stat .l{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  .stat .v{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:var(--accent);}
+  .stat .v.g{color:var(--accent2);}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead{background:var(--surface2);}
+  th{padding:10px 12px;text-align:left;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;}
+  th:hover{color:var(--accent);}
+  td{padding:9px 12px;border-bottom:1px solid rgba(37,44,58,.5);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .code{font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;}
+  .cap{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent2);}
+  .mkt{display:inline-block;font-size:10px;padding:2px 6px;border-radius:3px;}
+  .mp{background:rgba(0,212,255,.12);color:var(--accent);}
+  .ms{background:rgba(255,200,0,.12);color:#ffc800;}
+  .mg{background:rgba(0,255,159,.12);color:var(--accent2);}
+  .mo{background:rgba(255,77,109,.1);color:var(--danger);}
+  .empty{text-align:center;padding:50px 20px;color:var(--text-dim);}
+  .empty .ico{font-size:40px;margin-bottom:10px;}
+  .err-box{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.3);border-radius:8px;padding:12px 16px;color:var(--danger);font-size:13px;margin-bottom:14px;display:none;line-height:1.6;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>日本株 時価総額スクリーナー <span>/ 300億円以下</span></h1>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Japan Listed Stocks — Market Cap Filter</div>
+  </div>
+  <div class="badge">AUTO FETCH</div>
+</header>
+
+<div class="info-box">
+  <strong>J-Quants API（JPX公式・無料）</strong> を使ってリアルタイムデータを取得します。<br>
+  未登録の方は <a href="https://jpx-jquants.com/" target="_blank">jpx-jquants.com</a> で無料登録してください。<br>
+  ⚠️ <strong>「Load failed」が出た場合：</strong> ブラウザのCORS制限のためClaude.aiアプリ内では動作しません。<br>
+  このHTMLファイルをダウンロードして <strong>Chrome/Safariで直接開いて</strong> ご使用ください。
+</div>
+
+<div class="controls">
+  <div><label>メールアドレス</label><input type="email" id="email" placeholder="your@email.com" style="width:210px"></div>
+  <div><label>パスワード</label><input type="password" id="pw" placeholder="••••••••" style="width:150px"></div>
+  <div><label>上限（億円）</label><input type="number" id="cap" value="300" style="width:90px"></div>
+  <div><label>市場</label>
+    <select id="mkt">
+      <option value="">全市場</option>
+      <option value="プライム">プライム</option>
+      <option value="スタンダード">スタンダード</option>
+      <option value="グロース">グロース</option>
+    </select>
+  </div>
+  <div><label>銘柄検索</label><input type="text" id="search" placeholder="社名・コード" style="width:160px" oninput="filterTable()"></div>
+  <button class="btn-primary" id="goBtn" onclick="start()">データ取得</button>
+  <button class="btn-export" id="expBtn" onclick="exportCSV()" disabled>CSVエクスポート</button>
+</div>
+
+<div class="err-box" id="errBox"></div>
+
+<div class="status-bar">
+  <div class="dot" id="dot"></div>
+  <span id="statusTxt">準備完了 — メールとパスワードを入力して「データ取得」を押してください</span>
+  <div class="pbar"><div class="pfill" id="pfill"></div></div>
+</div>
+
+<div class="stats" id="stats" style="display:none">
+  <div class="stat"><div class="l">該当銘柄数</div><div class="v" id="sCount">—</div></div>
+  <div class="stat"><div class="l">平均時価総額</div><div class="v" id="sAvg">—</div></div>
+  <div class="stat"><div class="l">最小</div><div class="v g" id="sMin">—</div></div>
+  <div class="stat"><div class="l">最大</div><div class="v" id="sMax">—</div></div>
+  <div class="stat"><div class="l">取得日時</div><div class="v" id="sDate" style="font-size:12px">—</div></div>
+</div>
+
+<div class="tbl-wrap" id="tblWrap">
+  <div class="empty"><div class="ico">📊</div><p>データ取得を押すと全上場銘柄から<br>時価総額でフィルタリングします</p></div>
+</div>
+
+<script>
+let allData = [], displayData = [];
+let sortCol = null, sortDir = 1;
+
+function setStatus(state, txt, pct) {
+  document.getElementById('dot').className = 'dot' + (state ? ' ' + state : '');
+  document.getElementById('statusTxt').textContent = txt;
+  if (pct !== undefined) document.getElementById('pfill').style.width = pct + '%';
+}
+function showErr(msg) {
+  const b = document.getElementById('errBox');
+  b.innerHTML = msg;
+  b.style.display = 'block';
+}
+function hideErr() { document.getElementById('errBox').style.display = 'none'; }
+
+async function start() {
+  const email = document.getElementById('email').value.trim();
+  const pw = document.getElementById('pw').value;
+  if (!email || !pw) { showErr('メールアドレスとパスワードを入力してください'); return; }
+
+  hideErr();
+  document.getElementById('goBtn').disabled = true;
+
+  try {
+    setStatus('loading', '認証中 (1/4)...', 10);
+    const r1 = await fetch('https://api.jquants.com/v1/token/auth_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mailaddress: email, password: pw })
+    });
+    if (!r1.ok) {
+      const e = await r1.json().catch(()=>({}));
+      throw new Error('認証失敗: ' + (e.message || 'メールアドレスまたはパスワードをご確認ください'));
+    }
+    const d1 = await r1.json();
+    const refreshToken = d1.refreshToken;
+
+    setStatus('loading', 'トークン取得中 (2/4)...', 25);
+    const r2 = await fetch(`https://api.jquants.com/v1/token/auth_refresh?refreshtoken=${encodeURIComponent(refreshToken)}`, {
+      method: 'POST'
+    });
+    if (!r2.ok) throw new Error('トークン取得失敗');
+    const d2 = await r2.json();
+    const idToken = d2.idToken;
+
+    setStatus('loading', '銘柄マスター取得中 (3/4)...', 45);
+    const r3 = await fetch('https://api.jquants.com/v1/listed/info', {
+      headers: { 'Authorization': 'Bearer ' + idToken }
+    });
+    if (!r3.ok) throw new Error('銘柄情報取得失敗 (プランをご確認ください)');
+    const d3 = await r3.json();
+    const infoList = d3.info || [];
+    const infoMap = {};
+    for (const s of infoList) infoMap[s.Code] = s;
+
+    setStatus('loading', '株価データ取得中 (4/4) — 少々お待ちください...', 60);
+
+    // 直近営業日を最大7日さかのぼって試す
+    let quotes = [];
+    const today = new Date();
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const ds = d.toISOString().slice(0,10).replace(/-/g,'');
+      try {
+        const r4 = await fetch(`https://api.jquants.com/v1/prices/daily_quotes?date=${ds}`, {
+          headers: { 'Authorization': 'Bearer ' + idToken }
+        });
+        if (r4.ok) {
+          const d4 = await r4.json();
+          quotes = d4.daily_quotes || [];
+          if (quotes.length > 100) { // 十分なデータがある日付
+            setStatus('loading', `株価データ取得完了 (${ds}) — フィルタリング中...`, 80);
+            break;
+          }
+        }
+      } catch(e) { /* 継続 */ }
+    }
+
+    if (quotes.length === 0) throw new Error('株価データが取得できませんでした。しばらく待ってから再試行してください。');
+
+    const capLimit = parseFloat(document.getElementById('cap').value) * 1e8;
+    const mktFilter = document.getElementById('mkt').value;
+    const results = [];
+
+    for (const q of quotes) {
+      const info = infoMap[q.Code];
+      if (!info) continue;
+
+      // 時価総額を計算（単位注意: MarketCapitalizationは百万円単位）
+      let finalCap = null;
+      if (q.MarketCapitalization && q.MarketCapitalization > 0) {
+        finalCap = q.MarketCapitalization * 1e6; // 百万円→円
+      } else if (q.AdjustmentClose && info.IssuedShareNumber) {
+        finalCap = q.AdjustmentClose * parseFloat(info.IssuedShareNumber);
+      } else if (q.Close && info.IssuedShareNumber) {
+        finalCap = q.Close * parseFloat(info.IssuedShareNumber);
+      }
+
+      if (!finalCap || finalCap <= 0 || finalCap > capLimit) continue;
+
+      const market = info.MarketProductType || '';
+      if (mktFilter && !market.includes(mktFilter)) continue;
+
+      results.push({
+        code: q.Code,
+        name: info.CompanyName || '',
+        market: market,
+        sector: info.Sector17CodeName || info.Sector33CodeName || '',
+        close: q.AdjustmentClose || q.Close || 0,
+        capOku: finalCap / 1e8
+      });
+    }
+
+    results.sort((a,b) => b.capOku - a.capOku);
+    allData = results;
+    displayData = [...results];
+    renderTable(displayData);
+    renderStats(displayData);
+    setStatus('ok', `完了 ✓ — ${results.length.toLocaleString()}社が該当`, 100);
+    document.getElementById('expBtn').disabled = false;
+
+  } catch(err) {
+    setStatus('err', 'エラー: ' + err.message, 0);
+    let msg = err.message;
+    if (msg.includes('Load failed') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+      msg += '<br><br>💡 <strong>解決策：</strong> このHTMLファイルをダウンロードして、ChromeやSafariで直接開いてください（Claude.ai内では外部APIへのアクセスが制限されています）。';
+    }
+    showErr(msg);
+  } finally {
+    document.getElementById('goBtn').disabled = false;
+  }
+}
+
+function filterTable() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  displayData = q ? allData.filter(d => d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q)) : [...allData];
+  renderTable(displayData);
+}
+
+function mktClass(m) {
+  if (m.includes('プライム') || m.includes('Prime')) return 'mp';
+  if (m.includes('スタンダード') || m.includes('Standard')) return 'ms';
+  if (m.includes('グロース') || m.includes('Growth')) return 'mg';
+  return 'mo';
+}
+
+function renderTable(data) {
+  const w = document.getElementById('tblWrap');
+  if (!data.length) {
+    w.innerHTML = '<div class="empty"><div class="ico">🔍</div><p>該当する銘柄が見つかりませんでした</p></div>';
+    return;
+  }
+  const cols = [
+    {k:'code',l:'コード'},{k:'name',l:'銘柄名'},{k:'market',l:'市場'},
+    {k:'sector',l:'セクター'},{k:'close',l:'株価(円)'},{k:'capOku',l:'時価総額(億円)'}
+  ];
+  let h = `<table><thead><tr><th>#</th>${cols.map(c=>`<th onclick="sortBy('${c.k}')">${c.l}${sortCol===c.k?(sortDir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>`;
+  data.forEach((r,i) => {
+    h += `<tr>
+      <td style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="code">${r.code}</td>
+      <td>${r.name}</td>
+      <td><span class="mkt ${mktClass(r.market)}">${r.market||'—'}</span></td>
+      <td style="color:var(--text-dim);font-size:12px">${r.sector||'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace">${r.close>0?r.close.toLocaleString():'—'}</td>
+      <td class="cap">${r.capOku.toFixed(1)}</td>
+    </tr>`;
+  });
+  w.innerHTML = h + '</tbody></table>';
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+  displayData.sort((a,b) => typeof a[col]==='number' ? (a[col]-b[col])*sortDir : String(a[col]).localeCompare(String(b[col]),'ja')*sortDir);
+  renderTable(displayData);
+}
+
+function renderStats(data) {
+  document.getElementById('stats').style.display = 'grid';
+  document.getElementById('sCount').textContent = data.length.toLocaleString() + '社';
+  const caps = data.map(d=>d.capOku);
+  document.getElementById('sAvg').textContent = (caps.reduce((a,b)=>a+b,0)/caps.length).toFixed(1) + '億';
+  document.getElementById('sMin').textContent = Math.min(...caps).toFixed(1) + '億';
+  document.getElementById('sMax').textContent = Math.max(...caps).toFixed(1) + '億';
+  document.getElementById('sDate').textContent = new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function exportCSV() {
+  if (!displayData.length) return;
+  const rows = [['銘柄コード','銘柄名','市場','セクター','株価(円)','時価総額(億円)'],
+    ...displayData.map(d=>[d.code,d.name,d.market,d.sector,d.close,d.capOku.toFixed(1)])];
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `時価総額${document.getElementById('cap').value}億以下_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+
+</body>
+</html>
