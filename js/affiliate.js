@@ -2,7 +2,7 @@
    Affiliate & Monetization Engine
    Manages affiliate links, tracking, and revenue
    ============================================================ */
-class AffiliateEngine {
+var AffiliateEngine = class AffiliateEngine {
   constructor() {
     this.config = store.get('affiliateConfig') || {};
     this.trackingData = [];
@@ -197,7 +197,7 @@ class AffiliateEngine {
       body: JSON.stringify({ event: eventName, data })
     }).catch(() => { /* silent fail for analytics */ });
   }
-}
+};
 
-const affiliateEngine = new AffiliateEngine();
+var affiliateEngine = new AffiliateEngine();
 affiliateEngine.loadTracking();

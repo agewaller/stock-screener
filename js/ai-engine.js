@@ -2,7 +2,7 @@
    AI Analysis Engine
    Handles AI model integration and prompt execution
    ============================================================ */
-class AIEngine {
+var AIEngine = class AIEngine {
   constructor() {
     this.apiEndpoints = {
       'claude-sonnet-4-6': '/api/anthropic',
@@ -313,6 +313,6 @@ class AIEngine {
       pemHistory: store.getDataRange('symptoms', 30).filter(s => s.pem_status === true)
     };
   }
-}
+};
 
-const aiEngine = new AIEngine();
+var aiEngine = new AIEngine();

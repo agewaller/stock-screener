@@ -2,7 +2,7 @@
    State Management Store
    Simple reactive store for the application
    ============================================================ */
-class Store {
+var Store = class Store {
   constructor() {
     this.state = {
       // Auth
@@ -208,6 +208,6 @@ class Store {
     this.state.user = null;
     this.state.currentPage = 'login';
   }
-}
+};
 
-const store = new Store();
+var store = new Store();

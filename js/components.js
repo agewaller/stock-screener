@@ -3,7 +3,7 @@
    Reusable component renderers for the dashboard
    ============================================================ */
 
-const Components = {
+var Components = {
   // Health Score Gauge
   healthGauge(score, size = 180) {
     const r = (size - 20) / 2;

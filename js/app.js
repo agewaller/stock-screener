@@ -1,7 +1,7 @@
 /* ============================================================
    Main Application Controller
    ============================================================ */
-class App {
+var App = class App {
   constructor() {
     this.pages = {};
     this.currentPage = null;
@@ -478,7 +478,7 @@ class App {
     Components.showToast('デモデータを生成しました', 'success');
     this.navigate('dashboard');
   }
-}
+};
 
-const app = new App();
+var app = new App();
 document.addEventListener('DOMContentLoaded', () => app.init());
