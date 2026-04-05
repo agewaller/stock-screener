@@ -2847,16 +2847,19 @@ var App = class App {
 
   // ---- Auth ----
   loginWithGoogle() {
-    // In production, use Firebase Auth
-    // For demo, simulate login
+    // In production, use Firebase Auth with real Google OAuth
+    // For now, prompt for email to identify user
+    const email = prompt('Googleアカウントのメールアドレスを入力してください:', 'agewaller@gmail.com');
+    if (!email) return;
+
     const user = {
-      uid: 'demo_user_001',
-      displayName: 'デモユーザー',
-      email: 'demo@chroniccare.ai',
+      uid: 'google_' + email.replace(/[^a-z0-9]/gi, '_'),
+      displayName: email.split('@')[0],
+      email: email,
       photoURL: null
     };
     store.update({ user, isAuthenticated: true });
-    Components.showToast('ログインしました', 'success');
+    Components.showToast(`${email} でログインしました`, 'success');
     this.navigate('disease-select');
   }
 
