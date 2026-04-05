@@ -282,6 +282,12 @@ body {
   max-width: 1440px;
 }
 
+.page-content:has(.login-page),
+.page-content:has(.disease-select-page) {
+  padding: 0;
+  max-width: none;
+}
+
 /* ---- Cards ---- */
 .card {
   background: var(--bg-card);

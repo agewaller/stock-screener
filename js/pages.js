@@ -48,7 +48,7 @@ App.prototype.render_disease_select = function() {
   `).join('');
 
   return `
-  <div style="max-width:800px;margin:60px auto;padding:0 20px">
+  <div class="disease-select-page" style="max-width:800px;margin:60px auto;padding:0 20px">
     <div style="text-align:center;margin-bottom:32px">
       <h2 style="font-size:22px;font-weight:700;margin-bottom:8px">対象疾患を選択してください</h2>
       <p style="color:var(--text-secondary);font-size:14px">あなたの慢性疾患に合わせたダッシュボードを構築します</p>
