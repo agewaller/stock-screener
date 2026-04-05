@@ -481,4 +481,3 @@ var App = class App {
 };
 
 var app = new App();
-document.addEventListener('DOMContentLoaded', () => app.init());
