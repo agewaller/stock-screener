@@ -783,6 +783,54 @@ App.prototype.render_admin = function() {
     </div>
   </div>
 
+  <!-- Firebase Configuration -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <span class="card-title">Firebase設定（クラウドDB・本物のGoogleログイン）</span>
+      <span class="tag" id="firebase-status">確認中...</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Firebaseを設定すると、データがクラウドに保存され端末間で同期されます。Google OAuthも本物のGoogleログインになります。</p>
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
+        <h4 style="font-size:12px;font-weight:600;margin-bottom:6px">Firebase設定手順</h4>
+        <ol style="font-size:11px;color:var(--text-secondary);line-height:2;padding-left:18px">
+          <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="color:var(--accent)">Firebase Console</a> → プロジェクト作成</li>
+          <li>Authentication → Google プロバイダを有効化</li>
+          <li>Firestore Database → データベース作成（テストモードでOK）</li>
+          <li>プロジェクト設定 → ウェブアプリ追加 → 設定値を下にコピー</li>
+        </ol>
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="text" class="form-input" id="fb-apiKey" placeholder="AIzaSy..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Auth Domain</label>
+        <input type="text" class="form-input" id="fb-authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project ID</label>
+        <input type="text" class="form-input" id="fb-projectId" placeholder="your-project-id" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Storage Bucket</label>
+        <input type="text" class="form-input" id="fb-storageBucket" placeholder="your-project.appspot.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Messaging Sender ID</label>
+        <input type="text" class="form-input" id="fb-messagingSenderId" placeholder="123456789" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">App ID</label>
+        <input type="text" class="form-input" id="fb-appId" placeholder="1:123456789:web:abc123" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">Firebase設定を保存して接続</button>
+        <button class="btn btn-danger btn-sm" onclick="app.clearFirebaseConfig()">設定を削除</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Demo & Data -->
   <div class="card">
     <div class="card-header"><span class="card-title">データ管理</span></div>

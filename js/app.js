@@ -19,11 +19,19 @@ var App = class App {
     store.on('theme', (t) => document.documentElement.setAttribute('data-theme', t));
     store.on('currentPage', (p) => this.navigate(p));
 
-    // Check auth state
-    if (store.get('isAuthenticated') && store.get('user')) {
-      this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+    // Initialize Firebase if configured
+    if (FirebaseBackend.isConfigured()) {
+      const config = FirebaseBackend.getConfig();
+      FirebaseBackend.init(config);
+      FirebaseBackend.enableAutoSync();
+      // Firebase auth will handle navigation via onAuthStateChanged
     } else {
-      this.navigate('login');
+      // No Firebase - use localStorage mode
+      if (store.get('isAuthenticated') && store.get('user')) {
+        this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+      } else {
+        this.navigate('login');
+      }
     }
 
     // Set up periodic health score calc
@@ -93,10 +101,57 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') this.initDashboardCharts();
     if (page === 'analysis') this.loadLatestAnalysis();
-    if (page === 'admin') this.loadApiKeyFields();
+    if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
   }
 
   // ---- API Key Management ----
+  // ---- Firebase Config Management ----
+  saveFirebaseConfig() {
+    const fields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+    const config = {};
+    let filled = 0;
+    fields.forEach(f => {
+      const el = document.getElementById('fb-' + f);
+      if (el && el.value.trim()) {
+        config[f] = el.value.trim();
+        filled++;
+      }
+    });
+
+    if (filled < 3) {
+      Components.showToast('API Key, Auth Domain, Project IDは必須です', 'error');
+      return;
+    }
+
+    FirebaseBackend.saveConfig(config);
+    Components.showToast('Firebase設定を保存しました。ページをリロードして接続します...', 'success');
+    setTimeout(() => location.reload(), 1500);
+  }
+
+  clearFirebaseConfig() {
+    localStorage.removeItem('firebase_config');
+    Components.showToast('Firebase設定を削除しました。リロード後はローカルモードになります。', 'info');
+    setTimeout(() => location.reload(), 1500);
+  }
+
+  loadFirebaseConfigFields() {
+    const config = FirebaseBackend.getConfig();
+    if (!config) return;
+    ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(f => {
+      const el = document.getElementById('fb-' + f);
+      if (el && config[f] && config[f] !== 'YOUR_FIREBASE_API_KEY') {
+        el.value = config[f];
+      }
+    });
+    const statusEl = document.getElementById('firebase-status');
+    if (statusEl) {
+      const configured = FirebaseBackend.isConfigured();
+      const connected = FirebaseBackend.initialized;
+      statusEl.className = 'tag ' + (connected ? 'tag-success' : configured ? 'tag-warning' : 'tag-danger');
+      statusEl.textContent = connected ? '接続中' : configured ? '設定済(未接続)' : '未設定';
+    }
+  }
+
   loadApiKeyFields() {
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
@@ -115,66 +170,99 @@ var App = class App {
     }
   }
 
-  saveApiKeys() {
+  async saveApiKeys() {
     const keys = ['anthropic', 'openai', 'google'];
+    const keyData = {};
     let saved = 0;
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
       if (el && el.value.trim()) {
         localStorage.setItem('apikey_' + k, el.value.trim());
+        keyData[k] = el.value.trim();
         saved++;
       }
     });
     if (saved > 0) {
-      Components.showToast(saved + '個のAPIキーを保存しました', 'success');
+      // Also save to Firestore if available
+      if (FirebaseBackend.initialized) {
+        await FirebaseBackend.saveApiKeys(keyData);
+      } else {
+        Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
+      }
       this.loadApiKeyFields();
     } else {
       Components.showToast('保存するAPIキーがありません', 'error');
     }
   }
 
-  clearApiKeys() {
+  async clearApiKeys() {
     ['anthropic', 'openai', 'google'].forEach(k => {
       localStorage.removeItem('apikey_' + k);
       const el = document.getElementById('input-apikey-' + k);
       if (el) el.value = '';
     });
+    if (FirebaseBackend.initialized) {
+      await FirebaseBackend.saveApiKeys({});
+    }
     Components.showToast('すべてのAPIキーを削除しました', 'info');
     this.loadApiKeyFields();
   }
 
   // ---- Auth ----
-  loginWithGoogle() {
-    // In production, use Firebase Auth with real Google OAuth
-    // For now, prompt for email to identify user
+  async loginWithGoogle() {
+    if (FirebaseBackend.initialized) {
+      // Real Google OAuth via Firebase
+      try {
+        await FirebaseBackend.signInWithGoogle();
+        // Navigation handled by onAuthStateChanged
+      } catch (err) {
+        // Fallback to prompt mode
+        this.loginWithPrompt();
+      }
+    } else {
+      this.loginWithPrompt();
+    }
+  }
+
+  loginWithPrompt() {
     const email = prompt('Googleアカウントのメールアドレスを入力してください:', 'agewaller@gmail.com');
     if (!email) return;
-
     const user = {
-      uid: 'google_' + email.replace(/[^a-z0-9]/gi, '_'),
+      uid: 'local_' + email.replace(/[^a-z0-9]/gi, '_'),
       displayName: email.split('@')[0],
       email: email,
       photoURL: null
     };
     store.update({ user, isAuthenticated: true });
-    Components.showToast(`${email} でログインしました`, 'success');
+    Components.showToast(`${email} でログインしました（ローカルモード）`, 'success');
     this.navigate('disease-select');
   }
 
-  loginWithEmail(e) {
+  async loginWithEmail(e) {
     if (e) e.preventDefault();
     const form = e.target;
     const email = form.querySelector('[name=email]').value;
     const pass = form.querySelector('[name=password]').value;
     if (!email || !pass) { Components.showToast('メールとパスワードを入力してください', 'error'); return; }
-    const user = { uid: 'user_' + Date.now(), displayName: email.split('@')[0], email, photoURL: null };
-    store.update({ user, isAuthenticated: true });
-    Components.showToast('ログインしました', 'success');
-    this.navigate('disease-select');
+
+    if (FirebaseBackend.initialized) {
+      try {
+        await FirebaseBackend.signInWithEmail(email, pass);
+      } catch (err) { /* error shown in signInWithEmail */ }
+    } else {
+      const user = { uid: 'local_' + Date.now(), displayName: email.split('@')[0], email, photoURL: null };
+      store.update({ user, isAuthenticated: true });
+      Components.showToast('ログインしました（ローカルモード）', 'success');
+      this.navigate('disease-select');
+    }
   }
 
-  logout() {
-    store.update({ user: null, isAuthenticated: false, currentPage: 'login' });
+  async logout() {
+    if (FirebaseBackend.initialized) {
+      await FirebaseBackend.signOut();
+    } else {
+      store.update({ user: null, isAuthenticated: false, currentPage: 'login' });
+    }
     this.navigate('login');
   }
 

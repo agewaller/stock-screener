@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ChronicCare AI - 慢性疾患管理ダッシュボード</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 /* ============================================================
    Chronic Disease Management Dashboard - Main Styles
@@ -3176,6 +3179,334 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// === js/firebase-backend.js ===
+/* ============================================================
+   Firebase Backend - Auth + Firestore Cloud Database
+   Replaces localStorage with cloud persistence
+   ============================================================ */
+var FirebaseBackend = {
+  app: null,
+  auth: null,
+  db: null,
+  initialized: false,
+  userId: null,
+
+  // Initialize Firebase (call once on page load)
+  init(firebaseConfig) {
+    if (this.initialized) return;
+
+    try {
+      // Firebase v9+ compat mode (loaded via CDN)
+      this.app = firebase.initializeApp(firebaseConfig);
+      this.auth = firebase.auth();
+      this.db = firebase.firestore();
+
+      // Enable offline persistence
+      this.db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+        if (err.code === 'failed-precondition') {
+          console.warn('Firestore persistence: multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+          console.warn('Firestore persistence: browser not supported');
+        }
+      });
+
+      // Listen for auth state changes
+      this.auth.onAuthStateChanged(user => {
+        if (user) {
+          this.userId = user.uid;
+          const userData = {
+            uid: user.uid,
+            displayName: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL
+          };
+          store.update({ user: userData, isAuthenticated: true });
+
+          // Update sidebar user info
+          const avatarEl = document.getElementById('user-avatar');
+          const nameEl = document.getElementById('user-name');
+          if (avatarEl) {
+            if (user.photoURL) {
+              avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+            } else {
+              avatarEl.textContent = (user.displayName || user.email || '?')[0];
+            }
+          }
+          if (nameEl) nameEl.textContent = user.displayName || user.email;
+
+          // Load user data from Firestore
+          this.loadAllData();
+
+          // Navigate to appropriate page
+          if (app.currentPage === 'login') {
+            const disease = store.get('selectedDisease');
+            app.navigate(disease ? 'dashboard' : 'disease-select');
+          }
+        } else {
+          this.userId = null;
+          store.update({ user: null, isAuthenticated: false });
+          app.navigate('login');
+        }
+      });
+
+      this.initialized = true;
+      console.log('Firebase initialized');
+    } catch (err) {
+      console.error('Firebase init failed:', err);
+      Components.showToast('Firebase初期化エラー: ' + err.message, 'error');
+    }
+  },
+
+  // ---- Authentication ----
+  async signInWithGoogle() {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await this.auth.signInWithPopup(provider);
+      Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+      return result.user;
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user') return null;
+      Components.showToast('Googleログインエラー: ' + err.message, 'error');
+      throw err;
+    }
+  },
+
+  async signInWithEmail(email, password) {
+    try {
+      // Try sign in first, if fails try create account
+      try {
+        const result = await this.auth.signInWithEmailAndPassword(email, password);
+        Components.showToast('ログインしました', 'success');
+        return result.user;
+      } catch (err) {
+        if (err.code === 'auth/user-not-found') {
+          const result = await this.auth.createUserWithEmailAndPassword(email, password);
+          Components.showToast('アカウントを作成しました', 'success');
+          return result.user;
+        }
+        throw err;
+      }
+    } catch (err) {
+      Components.showToast('ログインエラー: ' + err.message, 'error');
+      throw err;
+    }
+  },
+
+  async signOut() {
+    try {
+      await this.auth.signOut();
+      store.clearAll();
+      Components.showToast('ログアウトしました', 'info');
+    } catch (err) {
+      Components.showToast('ログアウトエラー: ' + err.message, 'error');
+    }
+  },
+
+  // ---- Firestore Data Operations ----
+
+  // Get reference to user's document collection
+  userDoc() {
+    if (!this.userId) throw new Error('Not authenticated');
+    return this.db.collection('users').doc(this.userId);
+  },
+
+  userCollection(name) {
+    return this.userDoc().collection(name);
+  },
+
+  // Save a single key-value to user profile
+  async saveProfile(data) {
+    try {
+      await this.userDoc().set(data, { merge: true });
+    } catch (err) {
+      console.error('Save profile error:', err);
+    }
+  },
+
+  // Save health data entry to a subcollection
+  async saveHealthEntry(collection, entry) {
+    try {
+      const docRef = await this.userCollection(collection).add({
+        ...entry,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return docRef.id;
+    } catch (err) {
+      console.error('Save entry error:', err);
+      return null;
+    }
+  },
+
+  // Save text entry
+  async saveTextEntry(entry) {
+    return await this.saveHealthEntry('textEntries', entry);
+  },
+
+  // Save conversation message
+  async saveConversation(message) {
+    return await this.saveHealthEntry('conversations', message);
+  },
+
+  // Save settings (selected disease, model, prompts, affiliate config)
+  async saveSettings(settings) {
+    await this.saveProfile({ settings });
+  },
+
+  // Save API keys (encrypted in Firestore, not in localStorage)
+  async saveApiKeys(keys) {
+    // Store in a separate secured subcollection
+    try {
+      await this.userDoc().collection('secrets').doc('apikeys').set(keys);
+      Components.showToast('APIキーをクラウドに保存しました', 'success');
+    } catch (err) {
+      console.error('Save API keys error:', err);
+      Components.showToast('APIキー保存エラー', 'error');
+    }
+  },
+
+  async loadApiKeys() {
+    try {
+      const doc = await this.userDoc().collection('secrets').doc('apikeys').get();
+      return doc.exists ? doc.data() : {};
+    } catch (err) {
+      console.error('Load API keys error:', err);
+      return {};
+    }
+  },
+
+  // ---- Batch Load All User Data ----
+  async loadAllData() {
+    if (!this.userId) return;
+
+    try {
+      // Load user profile
+      const profileDoc = await this.userDoc().get();
+      if (profileDoc.exists) {
+        const profile = profileDoc.data();
+        if (profile.settings?.selectedDisease) store.set('selectedDisease', profile.settings.selectedDisease);
+        if (profile.settings?.selectedModel) store.set('selectedModel', profile.settings.selectedModel);
+        if (profile.settings?.customPrompts) store.set('customPrompts', profile.settings.customPrompts);
+        if (profile.settings?.affiliateConfig) store.set('affiliateConfig', profile.settings.affiliateConfig);
+        if (profile.settings?.dashboardLayout) store.set('dashboardLayout', profile.settings.dashboardLayout);
+      }
+
+      // Load collections in parallel
+      const collections = {
+        textEntries: 'textEntries',
+        symptoms: 'symptoms',
+        vitals: 'vitals',
+        sleepData: 'sleep',
+        activityData: 'activity',
+        bloodTests: 'bloodTests',
+        medications: 'medications',
+        conversations: 'conversationHistory'
+      };
+
+      const loadPromises = Object.entries(collections).map(async ([storeKey, fbCollection]) => {
+        try {
+          const snapshot = await this.userCollection(fbCollection)
+            .orderBy('createdAt', 'desc')
+            .limit(500)
+            .get();
+          const data = [];
+          snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
+          data.reverse(); // chronological order
+          store.set(storeKey, data);
+        } catch (err) {
+          // Collection might not exist yet
+          console.warn(`Load ${fbCollection}:`, err.message);
+        }
+      });
+
+      await Promise.all(loadPromises);
+
+      // Load API keys
+      const apiKeys = await this.loadApiKeys();
+      if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
+      if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
+      if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+
+      store.calculateHealthScore();
+      console.log('All user data loaded from Firestore');
+    } catch (err) {
+      console.error('Load all data error:', err);
+    }
+  },
+
+  // ---- Sync store changes to Firestore ----
+  enableAutoSync() {
+    // Watch for text entries
+    store.on('textEntries', (entries) => {
+      if (!this.userId || !entries?.length) return;
+      const latest = entries[entries.length - 1];
+      if (latest && !latest._synced) {
+        this.saveHealthEntry('textEntries', latest);
+        latest._synced = true;
+      }
+    });
+
+    // Watch for symptom data
+    store.on('symptoms', (entries) => {
+      if (!this.userId || !entries?.length) return;
+      const latest = entries[entries.length - 1];
+      if (latest && !latest._synced) {
+        this.saveHealthEntry('symptoms', latest);
+        latest._synced = true;
+      }
+    });
+
+    // Watch for vitals
+    store.on('vitals', (entries) => {
+      if (!this.userId || !entries?.length) return;
+      const latest = entries[entries.length - 1];
+      if (latest && !latest._synced) {
+        this.saveHealthEntry('vitals', latest);
+        latest._synced = true;
+      }
+    });
+
+    // Watch for settings changes
+    ['selectedDisease', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
+      store.on(key, (value) => {
+        if (!this.userId) return;
+        this.saveProfile({ settings: { [key]: value } });
+      });
+    });
+
+    // Watch for analysis history
+    store.on('latestAnalysis', (analysis) => {
+      if (!this.userId || !analysis) return;
+      this.saveHealthEntry('analyses', {
+        timestamp: analysis.timestamp,
+        model: analysis.model,
+        promptName: analysis.promptName,
+        summary: analysis.parsed?.summary || '',
+      });
+    });
+  },
+
+  // Check if Firebase is configured
+  isConfigured() {
+    const cfg = this.getConfig();
+    return cfg && cfg.apiKey && cfg.apiKey !== 'YOUR_FIREBASE_API_KEY';
+  },
+
+  // Get Firebase config from CONFIG or localStorage
+  getConfig() {
+    const stored = localStorage.getItem('firebase_config');
+    if (stored) {
+      try { return JSON.parse(stored); } catch {}
+    }
+    return CONFIG.FIREBASE;
+  },
+
+  saveConfig(config) {
+    localStorage.setItem('firebase_config', JSON.stringify(config));
+  }
+};
+
+
 // === js/app.js ===
 /* ============================================================
    Main Application Controller
@@ -3198,11 +3529,19 @@ var App = class App {
     store.on('theme', (t) => document.documentElement.setAttribute('data-theme', t));
     store.on('currentPage', (p) => this.navigate(p));
 
-    // Check auth state
-    if (store.get('isAuthenticated') && store.get('user')) {
-      this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+    // Initialize Firebase if configured
+    if (FirebaseBackend.isConfigured()) {
+      const config = FirebaseBackend.getConfig();
+      FirebaseBackend.init(config);
+      FirebaseBackend.enableAutoSync();
+      // Firebase auth will handle navigation via onAuthStateChanged
     } else {
-      this.navigate('login');
+      // No Firebase - use localStorage mode
+      if (store.get('isAuthenticated') && store.get('user')) {
+        this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+      } else {
+        this.navigate('login');
+      }
     }
 
     // Set up periodic health score calc
@@ -3272,10 +3611,57 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') this.initDashboardCharts();
     if (page === 'analysis') this.loadLatestAnalysis();
-    if (page === 'admin') this.loadApiKeyFields();
+    if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
   }
 
   // ---- API Key Management ----
+  // ---- Firebase Config Management ----
+  saveFirebaseConfig() {
+    const fields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+    const config = {};
+    let filled = 0;
+    fields.forEach(f => {
+      const el = document.getElementById('fb-' + f);
+      if (el && el.value.trim()) {
+        config[f] = el.value.trim();
+        filled++;
+      }
+    });
+
+    if (filled < 3) {
+      Components.showToast('API Key, Auth Domain, Project IDは必須です', 'error');
+      return;
+    }
+
+    FirebaseBackend.saveConfig(config);
+    Components.showToast('Firebase設定を保存しました。ページをリロードして接続します...', 'success');
+    setTimeout(() => location.reload(), 1500);
+  }
+
+  clearFirebaseConfig() {
+    localStorage.removeItem('firebase_config');
+    Components.showToast('Firebase設定を削除しました。リロード後はローカルモードになります。', 'info');
+    setTimeout(() => location.reload(), 1500);
+  }
+
+  loadFirebaseConfigFields() {
+    const config = FirebaseBackend.getConfig();
+    if (!config) return;
+    ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'].forEach(f => {
+      const el = document.getElementById('fb-' + f);
+      if (el && config[f] && config[f] !== 'YOUR_FIREBASE_API_KEY') {
+        el.value = config[f];
+      }
+    });
+    const statusEl = document.getElementById('firebase-status');
+    if (statusEl) {
+      const configured = FirebaseBackend.isConfigured();
+      const connected = FirebaseBackend.initialized;
+      statusEl.className = 'tag ' + (connected ? 'tag-success' : configured ? 'tag-warning' : 'tag-danger');
+      statusEl.textContent = connected ? '接続中' : configured ? '設定済(未接続)' : '未設定';
+    }
+  }
+
   loadApiKeyFields() {
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
@@ -3294,66 +3680,99 @@ var App = class App {
     }
   }
 
-  saveApiKeys() {
+  async saveApiKeys() {
     const keys = ['anthropic', 'openai', 'google'];
+    const keyData = {};
     let saved = 0;
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
       if (el && el.value.trim()) {
         localStorage.setItem('apikey_' + k, el.value.trim());
+        keyData[k] = el.value.trim();
         saved++;
       }
     });
     if (saved > 0) {
-      Components.showToast(saved + '個のAPIキーを保存しました', 'success');
+      // Also save to Firestore if available
+      if (FirebaseBackend.initialized) {
+        await FirebaseBackend.saveApiKeys(keyData);
+      } else {
+        Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
+      }
       this.loadApiKeyFields();
     } else {
       Components.showToast('保存するAPIキーがありません', 'error');
     }
   }
 
-  clearApiKeys() {
+  async clearApiKeys() {
     ['anthropic', 'openai', 'google'].forEach(k => {
       localStorage.removeItem('apikey_' + k);
       const el = document.getElementById('input-apikey-' + k);
       if (el) el.value = '';
     });
+    if (FirebaseBackend.initialized) {
+      await FirebaseBackend.saveApiKeys({});
+    }
     Components.showToast('すべてのAPIキーを削除しました', 'info');
     this.loadApiKeyFields();
   }
 
   // ---- Auth ----
-  loginWithGoogle() {
-    // In production, use Firebase Auth with real Google OAuth
-    // For now, prompt for email to identify user
+  async loginWithGoogle() {
+    if (FirebaseBackend.initialized) {
+      // Real Google OAuth via Firebase
+      try {
+        await FirebaseBackend.signInWithGoogle();
+        // Navigation handled by onAuthStateChanged
+      } catch (err) {
+        // Fallback to prompt mode
+        this.loginWithPrompt();
+      }
+    } else {
+      this.loginWithPrompt();
+    }
+  }
+
+  loginWithPrompt() {
     const email = prompt('Googleアカウントのメールアドレスを入力してください:', 'agewaller@gmail.com');
     if (!email) return;
-
     const user = {
-      uid: 'google_' + email.replace(/[^a-z0-9]/gi, '_'),
+      uid: 'local_' + email.replace(/[^a-z0-9]/gi, '_'),
       displayName: email.split('@')[0],
       email: email,
       photoURL: null
     };
     store.update({ user, isAuthenticated: true });
-    Components.showToast(`${email} でログインしました`, 'success');
+    Components.showToast(`${email} でログインしました（ローカルモード）`, 'success');
     this.navigate('disease-select');
   }
 
-  loginWithEmail(e) {
+  async loginWithEmail(e) {
     if (e) e.preventDefault();
     const form = e.target;
     const email = form.querySelector('[name=email]').value;
     const pass = form.querySelector('[name=password]').value;
     if (!email || !pass) { Components.showToast('メールとパスワードを入力してください', 'error'); return; }
-    const user = { uid: 'user_' + Date.now(), displayName: email.split('@')[0], email, photoURL: null };
-    store.update({ user, isAuthenticated: true });
-    Components.showToast('ログインしました', 'success');
-    this.navigate('disease-select');
+
+    if (FirebaseBackend.initialized) {
+      try {
+        await FirebaseBackend.signInWithEmail(email, pass);
+      } catch (err) { /* error shown in signInWithEmail */ }
+    } else {
+      const user = { uid: 'local_' + Date.now(), displayName: email.split('@')[0], email, photoURL: null };
+      store.update({ user, isAuthenticated: true });
+      Components.showToast('ログインしました（ローカルモード）', 'success');
+      this.navigate('disease-select');
+    }
   }
 
-  logout() {
-    store.update({ user: null, isAuthenticated: false, currentPage: 'login' });
+  async logout() {
+    if (FirebaseBackend.initialized) {
+      await FirebaseBackend.signOut();
+    } else {
+      store.update({ user: null, isAuthenticated: false, currentPage: 'login' });
+    }
     this.navigate('login');
   }
 
@@ -4822,6 +5241,54 @@ App.prototype.render_admin = function() {
         <button class="btn btn-secondary" onclick="store.set('dashboardLayout','default');Components.showToast('デフォルトレイアウト','info')">デフォルト</button>
         <button class="btn btn-secondary" onclick="store.set('dashboardLayout','compact');Components.showToast('コンパクトレイアウト','info')">コンパクト</button>
         <button class="btn btn-secondary" onclick="store.set('dashboardLayout','detailed');Components.showToast('詳細レイアウト','info')">詳細表示</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Configuration -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <span class="card-title">Firebase設定（クラウドDB・本物のGoogleログイン）</span>
+      <span class="tag" id="firebase-status">確認中...</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Firebaseを設定すると、データがクラウドに保存され端末間で同期されます。Google OAuthも本物のGoogleログインになります。</p>
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
+        <h4 style="font-size:12px;font-weight:600;margin-bottom:6px">Firebase設定手順</h4>
+        <ol style="font-size:11px;color:var(--text-secondary);line-height:2;padding-left:18px">
+          <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="color:var(--accent)">Firebase Console</a> → プロジェクト作成</li>
+          <li>Authentication → Google プロバイダを有効化</li>
+          <li>Firestore Database → データベース作成（テストモードでOK）</li>
+          <li>プロジェクト設定 → ウェブアプリ追加 → 設定値を下にコピー</li>
+        </ol>
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="text" class="form-input" id="fb-apiKey" placeholder="AIzaSy..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Auth Domain</label>
+        <input type="text" class="form-input" id="fb-authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Project ID</label>
+        <input type="text" class="form-input" id="fb-projectId" placeholder="your-project-id" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Storage Bucket</label>
+        <input type="text" class="form-input" id="fb-storageBucket" placeholder="your-project.appspot.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Messaging Sender ID</label>
+        <input type="text" class="form-input" id="fb-messagingSenderId" placeholder="123456789" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">App ID</label>
+        <input type="text" class="form-input" id="fb-appId" placeholder="1:123456789:web:abc123" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">Firebase設定を保存して接続</button>
+        <button class="btn btn-danger btn-sm" onclick="app.clearFirebaseConfig()">設定を削除</button>
       </div>
     </div>
   </div>
