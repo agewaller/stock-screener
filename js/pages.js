@@ -727,27 +727,27 @@ App.prototype.render_admin = function() {
   <div class="card" style="margin-bottom:28px">
     <div class="card-header">
       <span class="card-title">APIキー設定</span>
-      <span class="tag ${localStorage.getItem('apikey_anthropic') ? 'tag-success' : 'tag-warning'}">${localStorage.getItem('apikey_anthropic') ? 'Anthropic: 設定済' : 'APIキー未設定'}</span>
+      <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claude/GPT/Geminiによるリアルタイム分析が有効になります。未設定時はローカルキーワード分析を使用します。</p>
       <div class="form-group">
         <label class="form-label">Anthropic API Key（Claude Sonnet/Opus/Haiku）</label>
-        <input type="password" class="form-input" placeholder="sk-ant-api03-..." value="${localStorage.getItem('apikey_anthropic') ? '••••••••••••' : ''}"
-          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_anthropic',this.value);Components.showToast('Anthropic APIキーを保存しました','success')}">
+        <input type="text" class="form-input" id="input-apikey-anthropic" placeholder="sk-ant-api03-..." autocomplete="off">
         <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
       </div>
       <div class="form-group">
         <label class="form-label">OpenAI API Key（GPT-4o）</label>
-        <input type="password" class="form-input" placeholder="sk-proj-..." value="${localStorage.getItem('apikey_openai') ? '••••••••••••' : ''}"
-          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_openai',this.value);Components.showToast('OpenAI APIキーを保存しました','success')}">
+        <input type="text" class="form-input" id="input-apikey-openai" placeholder="sk-proj-..." autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Google AI API Key（Gemini 2.5 Pro）</label>
-        <input type="password" class="form-input" placeholder="AIza..." value="${localStorage.getItem('apikey_google') ? '••••••••••••' : ''}"
-          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_google',this.value);Components.showToast('Google AIキーを保存しました','success')}">
+        <input type="text" class="form-input" id="input-apikey-google" placeholder="AIza..." autocomplete="off">
       </div>
-      <button class="btn btn-sm btn-danger" onclick="localStorage.removeItem('apikey_anthropic');localStorage.removeItem('apikey_openai');localStorage.removeItem('apikey_google');Components.showToast('すべてのAPIキーを削除しました','info');app.navigate('admin')">すべてのキーを削除</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="app.saveApiKeys()">APIキーを保存</button>
+        <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">すべて削除</button>
+      </div>
     </div>
   </div>
 

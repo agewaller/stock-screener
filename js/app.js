@@ -93,6 +93,54 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') this.initDashboardCharts();
     if (page === 'analysis') this.loadLatestAnalysis();
+    if (page === 'admin') this.loadApiKeyFields();
+  }
+
+  // ---- API Key Management ----
+  loadApiKeyFields() {
+    const keys = ['anthropic', 'openai', 'google'];
+    keys.forEach(k => {
+      const el = document.getElementById('input-apikey-' + k);
+      const stored = localStorage.getItem('apikey_' + k);
+      if (el && stored) {
+        el.value = stored;
+      }
+    });
+    // Update status badge
+    const statusEl = document.getElementById('api-key-status');
+    if (statusEl) {
+      const hasAny = keys.some(k => localStorage.getItem('apikey_' + k));
+      statusEl.className = 'tag ' + (hasAny ? 'tag-success' : 'tag-warning');
+      statusEl.textContent = hasAny ? 'APIキー設定済' : 'APIキー未設定';
+    }
+  }
+
+  saveApiKeys() {
+    const keys = ['anthropic', 'openai', 'google'];
+    let saved = 0;
+    keys.forEach(k => {
+      const el = document.getElementById('input-apikey-' + k);
+      if (el && el.value.trim()) {
+        localStorage.setItem('apikey_' + k, el.value.trim());
+        saved++;
+      }
+    });
+    if (saved > 0) {
+      Components.showToast(saved + '個のAPIキーを保存しました', 'success');
+      this.loadApiKeyFields();
+    } else {
+      Components.showToast('保存するAPIキーがありません', 'error');
+    }
+  }
+
+  clearApiKeys() {
+    ['anthropic', 'openai', 'google'].forEach(k => {
+      localStorage.removeItem('apikey_' + k);
+      const el = document.getElementById('input-apikey-' + k);
+      if (el) el.value = '';
+    });
+    Components.showToast('すべてのAPIキーを削除しました', 'info');
+    this.loadApiKeyFields();
   }
 
   // ---- Auth ----
