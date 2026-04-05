@@ -24,65 +24,191 @@ var CONFIG = {
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', description: 'Google最新モデル' }
   ],
 
-  // Supported diseases (expandable)
-  DISEASES: [
+  // WHO ICD-11 based disease categories
+  DISEASE_CATEGORIES: [
     {
-      id: 'mecfs',
-      name: 'ME/CFS',
-      fullName: '筋痛性脳脊髄炎 / 慢性疲労症候群',
+      id: 'neuro',
+      name: '神経系疾患',
       icon: '🧠',
-      description: 'Myalgic Encephalomyelitis / Chronic Fatigue Syndrome',
-      color: '#6C63FF',
-      categories: ['免疫異常', 'ミトコンドリア機能不全', '腸内細菌', '自己抗体', '神経炎症', 'ウイルス持続感染', 'TRPM3', '代謝異常']
+      icd: 'ICD-11: 08',
+      diseases: [
+        { id: 'mecfs', name: 'ME/CFS（筋痛性脳脊髄炎/慢性疲労症候群）', icd: '8E49' },
+        { id: 'fibromyalgia', name: '線維筋痛症', icd: 'MG30.01' },
+        { id: 'migraine', name: '片頭痛', icd: '8A80' },
+        { id: 'epilepsy', name: 'てんかん', icd: '8A60' },
+        { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
+        { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
+        { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
+        { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
+        { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
+        { id: 'pots', name: 'POTS（体位性頻脈症候群）', icd: '8D40' },
+        { id: 'tbi', name: '外傷性脳損傷後遺症', icd: '8B20' },
+        { id: 'chronic_pain', name: '慢性疼痛症候群', icd: 'MG30' }
+      ]
     },
     {
-      id: 'fibromyalgia',
-      name: '線維筋痛症',
-      fullName: '線維筋痛症 (Fibromyalgia)',
-      icon: '💪',
-      description: 'Fibromyalgia Syndrome',
-      color: '#f59e0b'
+      id: 'mental',
+      name: '精神・行動の障害',
+      icon: '💭',
+      icd: 'ICD-11: 06',
+      diseases: [
+        { id: 'depression', name: 'うつ病（大うつ病性障害）', icd: '6A70' },
+        { id: 'bipolar', name: '双極性障害', icd: '6A60' },
+        { id: 'gad', name: '全般性不安障害（GAD）', icd: '6B00' },
+        { id: 'ptsd', name: 'PTSD（心的外傷後ストレス障害）', icd: '6B40' },
+        { id: 'cptsd', name: '複雑性PTSD', icd: '6B41' },
+        { id: 'ocd', name: '強迫性障害（OCD）', icd: '6B20' },
+        { id: 'adhd', name: 'ADHD（注意欠如多動性障害）', icd: '6A05' },
+        { id: 'asd', name: '自閉スペクトラム症（ASD）', icd: '6A02' },
+        { id: 'eating', name: '摂食障害', icd: '6B8' },
+        { id: 'insomnia', name: '不眠障害', icd: '7A00' },
+        { id: 'substance', name: '物質依存症', icd: '6C4' },
+        { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
+        { id: 'dissociative', name: '解離性障害', icd: '6B6' }
+      ]
     },
     {
-      id: 'long-covid',
-      name: 'Long COVID',
-      fullName: '新型コロナウイルス後遺症',
-      icon: '🦠',
-      description: 'Post-COVID-19 Condition',
-      color: '#ef4444'
+      id: 'immune',
+      name: '免疫系疾患',
+      icon: '🛡️',
+      icd: 'ICD-11: 04',
+      diseases: [
+        { id: 'long_covid', name: 'Long COVID（コロナ後遺症）', icd: 'RA02' },
+        { id: 'mcas', name: 'MCAS（マスト細胞活性化症候群）', icd: '4A44' },
+        { id: 'sle', name: '全身性エリテマトーデス（SLE）', icd: '4A40' },
+        { id: 'ra', name: '関節リウマチ', icd: 'FA20' },
+        { id: 'sjogrens', name: 'シェーグレン症候群', icd: '4A42' },
+        { id: 'hashimoto', name: '橋本病（慢性甲状腺炎）', icd: '5A00.1' },
+        { id: 'crohns', name: 'クローン病', icd: 'DD70' },
+        { id: 'uc', name: '潰瘍性大腸炎', icd: 'DD71' },
+        { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
+        { id: 'psoriasis', name: '乾癬', icd: 'EA90' },
+        { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
+        { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' }
+      ]
     },
     {
-      id: 'pots',
-      name: 'POTS',
-      fullName: '体位性頻脈症候群',
+      id: 'endocrine',
+      name: '内分泌・代謝疾患',
+      icon: '⚗️',
+      icd: 'ICD-11: 05',
+      diseases: [
+        { id: 'diabetes_t1', name: '1型糖尿病', icd: '5A10' },
+        { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
+        { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
+        { id: 'thyroid_hyper', name: '甲状腺機能亢進症（バセドウ病）', icd: '5A02' },
+        { id: 'adrenal', name: '副腎機能不全', icd: '5A70' },
+        { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
+        { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
+        { id: 'obesity', name: '肥満症', icd: '5B81' },
+        { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
+        { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' }
+      ]
+    },
+    {
+      id: 'cardiovascular',
+      name: '循環器疾患',
       icon: '❤️',
-      description: 'Postural Orthostatic Tachycardia Syndrome',
-      color: '#ec4899'
+      icd: 'ICD-11: 11',
+      diseases: [
+        { id: 'hypertension', name: '高血圧症', icd: 'BA00' },
+        { id: 'heart_failure', name: '心不全', icd: 'BD10' },
+        { id: 'arrhythmia', name: '不整脈', icd: 'BC6' },
+        { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
+        { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
+        { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' }
+      ]
     },
     {
-      id: 'eds',
-      name: 'EDS',
-      fullName: 'エーラス・ダンロス症候群',
+      id: 'respiratory',
+      name: '呼吸器疾患',
+      icon: '🫁',
+      icd: 'ICD-11: 12',
+      diseases: [
+        { id: 'asthma', name: '喘息', icd: 'CA23' },
+        { id: 'copd', name: 'COPD（慢性閉塞性肺疾患）', icd: 'CA22' },
+        { id: 'sleep_apnea', name: '睡眠時無呼吸症候群', icd: '7A40' },
+        { id: 'pulmonary_fibrosis', name: '肺線維症', icd: 'CB03' }
+      ]
+    },
+    {
+      id: 'digestive',
+      name: '消化器疾患',
+      icon: '🫃',
+      icd: 'ICD-11: 13',
+      diseases: [
+        { id: 'ibs', name: '過敏性腸症候群（IBS）', icd: 'DD91' },
+        { id: 'gerd', name: '逆流性食道炎（GERD）', icd: 'DA22' },
+        { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
+        { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
+        { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' }
+      ]
+    },
+    {
+      id: 'connective',
+      name: '筋骨格・結合組織疾患',
       icon: '🦴',
-      description: 'Ehlers-Danlos Syndrome',
-      color: '#14b8a6'
+      icd: 'ICD-11: 15',
+      diseases: [
+        { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
+        { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
+        { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
+        { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
+      ]
     },
     {
-      id: 'mcas',
-      name: 'MCAS',
-      fullName: 'マスト細胞活性化症候群',
+      id: 'cancer',
+      name: 'がん・腫瘍（経過観察・後遺症）',
+      icon: '🎗️',
+      icd: 'ICD-11: 02',
+      diseases: [
+        { id: 'cancer_survivor', name: 'がんサバイバー（治療後管理）', icd: '02' },
+        { id: 'cancer_fatigue', name: 'がん関連疲労', icd: 'MG22' },
+        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' }
+      ]
+    },
+    {
+      id: 'other',
+      name: 'その他・複合的症候群',
       icon: '🔬',
-      description: 'Mast Cell Activation Syndrome',
-      color: '#f97316'
-    },
-    {
-      id: 'custom',
-      name: 'その他',
-      fullName: 'カスタム疾患設定',
-      icon: '➕',
-      description: '他の慢性疾患を追加',
-      color: '#8896b0'
+      icd: '',
+      diseases: [
+        { id: 'mcs', name: '化学物質過敏症（MCS）', icd: 'NE61' },
+        { id: 'emf', name: '電磁波過敏症', icd: '' },
+        { id: 'lyme', name: 'ライム病（慢性）', icd: '1C1G' },
+        { id: 'mold', name: 'カビ毒（マイコトキシン）症', icd: '' },
+        { id: 'hsd', name: '関節過可動性症候群', icd: 'FB32' },
+        { id: 'custom', name: 'その他（自由記入）', icd: '' }
+      ]
     }
+  ],
+
+  // Test kits and lab recommendations
+  TEST_KITS: [
+    { id: 'blood_basic', name: '基本血液検査キット', description: '血算・肝機能・腎機能・CRP・甲状腺', price: '¥5,000〜¥10,000', where: 'クリニック', url: '' },
+    { id: 'nk_cell', name: 'NK細胞活性検査', description: '免疫機能の評価（ME/CFS重要指標）', price: '¥8,000〜¥15,000', where: 'クリニック', url: '' },
+    { id: 'cytokine', name: 'サイトカインパネル', description: 'IL-6, TNF-α, IFN-γ等の炎症マーカー', price: '¥20,000〜¥40,000', where: '専門病院', url: '' },
+    { id: 'thyroid', name: '甲状腺パネル', description: 'TSH, T3, T4, 抗TPO, 抗TG抗体', price: '¥5,000〜¥10,000', where: 'クリニック', url: '' },
+    { id: 'vitamin_d', name: 'ビタミンD検査（血清25-OH）', description: '免疫・骨代謝の重要指標', price: '¥3,000〜¥5,000', where: 'クリニック', url: 'https://www.amazon.co.jp/s?k=ビタミンD+検査キット' },
+    { id: 'cortisol', name: 'コルチゾール検査', description: 'HPA軸の評価（副腎疲労）', price: '¥3,000〜¥8,000', where: 'クリニック', url: '' },
+    { id: 'food_allergy', name: '遅延型食物アレルギー検査（IgG）', description: '96項目食物アレルギーパネル', price: '¥30,000〜¥40,000', where: '郵送検査', url: 'https://www.amazon.co.jp/s?k=IgG+食物アレルギー+検査' },
+    { id: 'gut_flora', name: '腸内フローラ検査', description: '腸内細菌叢の構成分析', price: '¥15,000〜¥25,000', where: '郵送検査', url: 'https://www.amazon.co.jp/s?k=腸内フローラ+検査キット' },
+    { id: 'genetic', name: '遺伝子検査', description: 'SNP解析、薬剤代謝、疾患リスク', price: '¥10,000〜¥30,000', where: '郵送検査', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット' },
+    { id: 'heavy_metal', name: '重金属・有害ミネラル検査（毛髪）', description: '水銀・鉛・カドミウム・ヒ素等', price: '¥10,000〜¥15,000', where: '郵送検査', url: 'https://www.amazon.co.jp/s?k=毛髪ミネラル検査' },
+    { id: 'hormone', name: 'ホルモンパネル（DUTCH）', description: 'コルチゾール・性ホルモン・メラトニン', price: '¥40,000〜¥60,000', where: '郵送検査', url: '' },
+    { id: 'organic_acid', name: '有機酸検査（OAT）', description: 'ミトコンドリア機能・栄養代謝の包括評価', price: '¥40,000〜¥60,000', where: '郵送（海外ラボ）', url: '' },
+    { id: 'sleep_study', name: '睡眠ポリグラフ検査', description: '無呼吸・睡眠の質の客観評価', price: '¥10,000〜¥30,000', where: '病院・在宅キット', url: 'https://www.amazon.co.jp/s?k=睡眠検査キット' },
+    { id: 'hrv_monitor', name: 'HRVモニター（Oura/Garmin）', description: '自律神経バランスの継続モニタリング', price: '¥30,000〜¥50,000', where: 'Amazon', url: 'https://www.amazon.co.jp/s?k=oura+ring' },
+    { id: 'autoantibody', name: '自己抗体パネル', description: 'ANA, 抗dsDNA, GPCR自己抗体等', price: '¥15,000〜¥30,000', where: '専門病院', url: '' }
+  ],
+
+  // Legacy single-disease selection (kept for backward compat)
+  DISEASES: [
+    { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎 / 慢性疲労症候群', icon: '🧠', color: '#6C63FF' },
+    { id: 'fibromyalgia', name: '線維筋痛症', fullName: '線維筋痛症', icon: '💪', color: '#f59e0b' },
+    { id: 'long_covid', name: 'Long COVID', fullName: '新型コロナウイルス後遺症', icon: '🦠', color: '#ef4444' },
+    { id: 'depression', name: 'うつ病', fullName: 'うつ病（大うつ病性障害）', icon: '💭', color: '#8b5cf6' },
+    { id: 'custom', name: 'その他', fullName: 'カスタム疾患設定', icon: '➕', color: '#8896b0' }
   ],
 
   // Data categories for user intake

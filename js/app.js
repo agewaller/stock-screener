@@ -237,8 +237,43 @@ var App = class App {
       photoURL: null
     };
     store.update({ user, isAuthenticated: true });
-    Components.showToast(`${email} でログインしました（ローカルモード）`, 'success');
-    this.navigate('disease-select');
+    this.finishLogin(email);
+  }
+
+  finishLogin(email) {
+    // Save custom disease name if selected
+    const customInput = document.getElementById('custom-disease-name');
+    if (customInput && customInput.value.trim()) {
+      const diseases = store.get('selectedDiseases') || [];
+      if (!diseases.includes('custom')) diseases.push('custom');
+      store.set('selectedDiseases', diseases);
+      store.set('customDiseaseName', customInput.value.trim());
+    }
+
+    // Ensure primary disease is set
+    const diseases = store.get('selectedDiseases') || [];
+    if (diseases.length > 0 && !store.get('selectedDisease')) {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === diseases[0]);
+        if (found) {
+          store.set('selectedDisease', { id: found.id, name: found.name, fullName: found.name, icon: cat.icon, color: '#6C63FF' });
+          break;
+        }
+      }
+    }
+
+    // Default to ME/CFS if nothing selected
+    if (!store.get('selectedDisease')) {
+      store.set('selectedDisease', { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎/慢性疲労症候群', icon: '🧠', color: '#6C63FF' });
+    }
+
+    // Load default prompts
+    if (!store.get('customPrompts') || Object.keys(store.get('customPrompts')).length === 0) {
+      store.set('customPrompts', { ...DEFAULT_PROMPTS });
+    }
+
+    Components.showToast(`${email} でログインしました（${diseases.length}疾患選択）`, 'success');
+    this.navigate('dashboard');
   }
 
   async loginWithEmail(e) {
@@ -270,11 +305,52 @@ var App = class App {
   }
 
   // ---- Disease Selection ----
+  // ---- Disease Selection (multi-select) ----
+  toggleDiseaseSelection(checkbox) {
+    const selected = store.get('selectedDiseases') || [];
+    const id = checkbox.value;
+
+    if (checkbox.checked) {
+      if (!selected.includes(id)) selected.push(id);
+    } else {
+      const idx = selected.indexOf(id);
+      if (idx >= 0) selected.splice(idx, 1);
+    }
+
+    store.set('selectedDiseases', selected);
+
+    // Update count badge
+    const countEl = document.getElementById('disease-count');
+    if (countEl) countEl.textContent = selected.length + '件選択中';
+
+    // Show/hide custom input
+    if (id === 'custom') {
+      const customInput = document.getElementById('custom-disease-name');
+      if (customInput) customInput.style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    // Also set primary disease for backward compat
+    if (selected.length > 0) {
+      const primaryId = selected[0];
+      // Find disease name from categories
+      let primaryDisease = null;
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === primaryId);
+        if (found) {
+          primaryDisease = { id: found.id, name: found.name, fullName: found.name, icon: cat.icon, color: '#6C63FF' };
+          break;
+        }
+      }
+      if (primaryDisease) store.set('selectedDisease', primaryDisease);
+    }
+  }
+
   selectDisease(diseaseId) {
+    // Legacy single-select support
     const disease = CONFIG.DISEASES.find(d => d.id === diseaseId);
     if (disease) {
       store.set('selectedDisease', disease);
-      // Load default prompts for this disease
+      store.set('selectedDiseases', [diseaseId]);
       if (!store.get('customPrompts') || Object.keys(store.get('customPrompts')).length === 0) {
         store.set('customPrompts', { ...DEFAULT_PROMPTS });
       }
