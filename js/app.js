@@ -90,6 +90,9 @@ var App = class App {
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
 
+    // Close sidebar on mobile after navigation
+    this.closeSidebar();
+
     // Render page
     const renderer = this['render_' + page.replace(/-/g, '_')];
     if (renderer) {
@@ -791,6 +794,22 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- Sidebar (mobile) ----
+  toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar) return;
+    const isOpen = sidebar.classList.toggle('open');
+    if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
+  }
+
+  closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.style.display = 'none';
+  }
+
   toggleTheme() {
     const t = store.get('theme') === 'dark' ? 'light' : 'dark';
     store.set('theme', t);
