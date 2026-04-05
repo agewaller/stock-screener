@@ -221,15 +221,18 @@ var App = class App {
     const category = document.getElementById('text-input-category')?.value || 'other';
     const title = document.getElementById('text-input-title')?.value?.trim() || '';
     const content = document.getElementById('text-input-content')?.value?.trim() || '';
+    const dateStr = document.getElementById('text-input-date')?.value || '';
 
     if (!content) {
       Components.showToast('内容を入力してください', 'error');
       return;
     }
 
+    const timestamp = dateStr ? new Date(dateStr + 'T12:00:00').toISOString() : new Date().toISOString();
+
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-      timestamp: new Date().toISOString(),
+      timestamp: timestamp,
       category: category,
       type: 'text_entry',
       title: title,
@@ -246,58 +249,171 @@ var App = class App {
     });
     store.set('conversationHistory', history);
 
+    // Always store in textEntries for AI analysis
+    const textEntries = store.get('textEntries') || [];
+    textEntries.push(entry);
+    store.set('textEntries', textEntries);
+
     // Also store as health data in the appropriate category
     const stateKey = store.categoryToStateKey(category);
     if (stateKey && Array.isArray(store.get(stateKey))) {
       store.addHealthData(category, { text_note: content, title: title });
-    } else {
-      // Store in a general text entries array
-      const textEntries = store.get('textEntries') || [];
-      textEntries.push(entry);
-      store.set('textEntries', textEntries);
     }
 
     // Clear form
     document.getElementById('text-input-content').value = '';
     document.getElementById('text-input-title').value = '';
 
-    // Show saved entry in the list
-    this.renderTextEntries();
-    Components.showToast('テキストを保存しました', 'success');
+    // Status feedback
+    const status = document.getElementById('text-save-status');
+    if (status) status.textContent = '保存しました。AI分析中...';
+
+    // Re-render page to show updated recent entries
+    this.navigate('data-input');
+
+    // Run instant AI analysis and display advice
+    this.showInstantAdvice(content, category);
+
+    Components.showToast('保存してAI分析を実行中...', 'success');
   }
 
-  renderTextEntries() {
-    const container = document.getElementById('text-entries-list');
-    if (!container) return;
+  showInstantAdvice(newText, category) {
+    const adviceArea = document.getElementById('instant-advice');
+    if (!adviceArea) return;
 
-    const textEntries = store.get('textEntries') || [];
-    const recent = textEntries.slice(-5).reverse();
+    adviceArea.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🤖 AIインスタントアドバイス</span>
+          <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
+        </div>
+        <div class="card-body" style="color:var(--text-muted);font-size:13px">入力内容を分析しています...</div>
+      </div>`;
 
-    if (recent.length === 0) {
-      container.innerHTML = '';
-      return;
+    // Small delay to let UI update, then generate advice
+    setTimeout(() => {
+      const advice = this.generateInstantAdvice(newText, category);
+      adviceArea.innerHTML = `
+        <div class="card" style="border-color:var(--accent-border)">
+          <div class="card-header" style="background:var(--accent-bg)">
+            <span class="card-title">🤖 AIインスタントアドバイス</span>
+            <span style="font-size:11px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
+          </div>
+          <div class="card-body">
+            ${advice.alerts.map(a => `
+              <div style="padding:10px 14px;background:${a.level === 'warning' ? 'var(--warning-bg)' : a.level === 'danger' ? 'var(--danger-bg)' : 'var(--info-bg)'};border-left:3px solid ${a.level === 'warning' ? 'var(--warning)' : a.level === 'danger' ? 'var(--danger)' : 'var(--info)'};border-radius:0 8px 8px 0;margin-bottom:10px;font-size:13px">
+                ${a.message}
+              </div>
+            `).join('')}
+            <div style="font-size:13px;line-height:1.8;color:var(--text-secondary);white-space:pre-wrap">${advice.text}</div>
+            ${advice.actions.length > 0 ? `
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+                <h4 style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">推奨アクション</h4>
+                ${advice.actions.map(a => `
+                  <div style="display:flex;align-items:start;gap:8px;margin-bottom:6px;font-size:13px">
+                    <span style="color:var(--accent)">→</span>
+                    <span>${a}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>`;
+
+      const status = document.getElementById('text-save-status');
+      if (status) status.textContent = 'AI分析完了';
+    }, 300);
+  }
+
+  generateInstantAdvice(text, category) {
+    const lower = text.toLowerCase();
+    const alerts = [];
+    const actions = [];
+    let advice = '';
+
+    // PEM detection
+    if (/pem|労作後|倦怠感がひどい|動けな[いく]|まったく動け|寝込/.test(lower)) {
+      alerts.push({ level: 'warning', message: 'PEM（労作後倦怠感）の兆候を検出しました。今日は活動を最小限に抑えてください。' });
+      advice += '【PEM管理】安静を最優先してください。横になり、刺激（スマホ・TV）を減らし、心拍数が安静時+20bpm以内に保たれるようにしてください。\n\n';
+      actions.push('活動を即座に中断し、安静にする');
+      actions.push('次の24-48時間は回復に充てる');
     }
 
-    const categoryLabels = {
-      symptoms: '症状', nutrition: '食事・栄養', medication: '服薬・処方',
-      mental: '精神状態', activity: '活動', sleep: '睡眠',
-      blood_test: '検査結果', doctor: '医師の所見', research: '調査メモ', other: 'その他'
-    };
+    // Pain
+    if (/疼痛|痛[いみむ]|頭痛|痛む|ぴきぴき|バキバキ/.test(lower)) {
+      alerts.push({ level: 'info', message: '疼痛の記録を検出。痛みの部位・強度・時間帯を追跡することで傾向が見えてきます。' });
+      advice += '【疼痛管理】記録された痛みのパターン分析：\n・ツートラム等の鎮痛剤は食事と一緒に服用\n・エプソムソルト入浴（38°C, 20分）で筋緊張を緩和\n・マグネシウムバーム外用も局所疼痛に有効\n\n';
+      actions.push('痛みの強度を0-7で記録する');
+    }
 
-    container.innerHTML = `
-      <div style="border-top:1px solid var(--border);padding-top:16px">
-        <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録</h4>
-        ${recent.map(e => `
-          <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <span class="tag tag-accent" style="font-size:10px">${categoryLabels[e.category] || e.category}</span>
-              <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
-            </div>
-            ${e.title ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${e.title}</div>` : ''}
-            <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${e.content.length > 200 ? e.content.substring(0, 200) + '...' : e.content}</div>
-          </div>
-        `).join('')}
-      </div>`;
+    // Mental health
+    if (/鬱|孤独|不安|辛[いか]|死|自殺|ネガティ|絶望|メンタル|イライラ|焦燥/.test(lower)) {
+      alerts.push({ level: 'danger', message: '精神面の不調を検出しました。信頼できる方への連絡、または専門家への相談を推奨します。' });
+      advice += '【メンタルケア】孤独感やネガティブな感情が記録されています。以下を試してください：\n・信頼できる人に電話する（短時間でもOK）\n・呼吸法：4秒吸って→7秒止めて→8秒吐く を3セット\n・「今あるもの」への感謝リストを3つ書く\n・無理に活動せず、副交感神経優位な環境を作る\n\n';
+      actions.push('信頼できる人に連絡する');
+      actions.push('4-7-8呼吸法を3セット実施');
+    }
+
+    // Medication notes
+    if (/ツートラム|リンデロン|エチゾラム|ステロイド|プレドニゾ|カロナール|リボトリール|減薬/.test(lower)) {
+      advice += '【服薬メモ】薬の変更や減薬に関する記録を検出。必ず主治医と相談の上で進めてください。特にベンゾジアゼピン系（エチゾラム・リボトリール）の減薬は10%/月の漸減が推奨されています。\n\n';
+      actions.push('次回診察時にお薬手帳を更新');
+    }
+
+    // Supplements
+    if (/coq10|コエンザイム|nmn|クレアチン|オメガ3|ビタミン|マグネシウム|サプリ|5-ala|カルニチン/.test(lower)) {
+      advice += '【サプリメント】言及されたサプリメントについて：飲み合わせの安全性を確認してください。CoQ10は食事と一緒に、マグネシウムは就寝前に、NMNは朝の空腹時がベストです。\n\n';
+    }
+
+    // Bath / Epsom salt
+    if (/エプソムソルト|風呂|入浴/.test(lower)) {
+      advice += '【入浴療法】エプソムソルト入浴の効果を記録されています。継続してください。推奨：38-39°C、15-20分、就寝90分前。マグネシウム経皮吸収により筋弛緩・自律神経調整効果が期待できます。\n\n';
+    }
+
+    // Weather sensitivity
+    if (/気圧|天候|気象病|五苓散/.test(lower)) {
+      advice += '【気象病対策】気圧変動への感受性が記録されています。「頭痛ーる」アプリで翌日の気圧を確認し、低気圧接近の6時間前に五苓散2.5gを予防服用してください。\n\n';
+      actions.push('気圧予報を確認する');
+    }
+
+    // Meditation / breathing
+    if (/瞑想|呼吸法|マインドフル|ムドラー|坐禅/.test(lower)) {
+      advice += '【瞑想・呼吸法】効果を感じている記録があります。迷走神経トーニング効果により自律神経バランスが改善されます。朝10分＋就寝前10分を目標に継続してください。\n\n';
+    }
+
+    // Activity / exercise
+    if (/ジム|運動|散歩|ストレッチ|ヨガ|自転車|ランニング/.test(lower)) {
+      advice += '【活動管理】運動記録を検出。ME/CFS患者は活動後のPEMに注意が必要です。心拍数が安静時+30bpmを超えない範囲で活動し、翌日の体調を必ず確認してください。\n\n';
+      actions.push('活動後24-48時間の体調をモニタリング');
+    }
+
+    // Sleep
+    if (/眠[れり]|寝[たて]|睡眠|不眠|マイスリー|ゾルピデム|起き[たれ]/.test(lower)) {
+      advice += '【睡眠管理】睡眠に関する記録あり。睡眠衛生チェック：①スマホは寝室に持ち込まない ②室温21-23°C ③就寝1時間前はスクリーンOFF ④一定の起床時間を保つ\n\n';
+    }
+
+    // Doctor visits
+    if (/先生|クリニック|病院|診察|受診/.test(lower)) {
+      advice += '【診察メモ】医療機関の受診記録です。次回の診察に向けて、このテキストをプリントして主治医に共有することを推奨します。\n\n';
+      actions.push('診察メモをまとめて主治医に共有する');
+    }
+
+    // GLP-1
+    if (/リベルサス|glp-1|セマグルチド/.test(lower)) {
+      alerts.push({ level: 'info', message: 'GLP-1受容体作動薬の使用を検出。消化器系副作用（吐き気）に注意し、医師の管理下での使用を推奨します。' });
+      advice += '【GLP-1薬】リベルサスは空腹時に少量の水で服用し、30分後に食事。吐き気がある場合は用量調整を検討してください。\n\n';
+    }
+
+    // Default if nothing detected
+    if (advice === '') {
+      advice = '記録ありがとうございます。この内容はAI分析のコンテキストに追加されました。\n\n日々の記録を続けることで、症状パターンの検出精度が向上します。体調の変化、薬の効果、気分の波など、気づいたことを自由に書き続けてください。';
+    }
+
+    if (actions.length === 0) {
+      actions.push('明日も体調を記録する');
+    }
+
+    return { text: advice, alerts, actions };
   }
 
   // ---- AI Analysis ----

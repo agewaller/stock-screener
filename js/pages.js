@@ -64,22 +64,51 @@ App.prototype.render_dashboard = function() {
   const symptoms = store.get('symptoms') || [];
   const latest = symptoms[symptoms.length - 1] || {};
   const recs = store.get('recommendations') || [];
+  const textEntries = store.get('textEntries') || [];
+  const conversations = store.get('conversationHistory') || [];
+  const latestAnalysis = store.get('latestAnalysis');
 
-  const quickEntryBtns = CONFIG.DATA_CATEGORIES.slice(0, 6).map(c => `
-    <button class="btn btn-secondary btn-sm" onclick="app.openDataInput('${c.id}')" style="gap:6px">
-      ${c.icon} ${c.name}
-    </button>
-  `).join('');
+  // Real data counts
+  const totalEntries = textEntries.length;
+  const totalSymptoms = symptoms.length;
+  const lastEntry = textEntries[textEntries.length - 1];
+  const lastUpdate = lastEntry ? new Date(lastEntry.timestamp).toLocaleString('ja-JP') : (symptoms.length ? new Date(latest.timestamp).toLocaleString('ja-JP') : '未記録');
+
+  // Calculate real stats from symptom data
+  const recent7 = symptoms.filter(s => (Date.now() - new Date(s.timestamp)) < 7 * 86400000);
+  const avgField = (arr, f) => { const v = arr.map(s => s[f]).filter(x => x != null); return v.length ? (v.reduce((a,b) => a+b, 0) / v.length).toFixed(1) : '--'; };
+  const changeField = (arr, f) => {
+    if (arr.length < 2) return 0;
+    const half = Math.floor(arr.length / 2);
+    const first = arr.slice(0, half).map(s => s[f]).filter(x => x != null);
+    const second = arr.slice(half).map(s => s[f]).filter(x => x != null);
+    if (!first.length || !second.length) return 0;
+    const avg1 = first.reduce((a,b) => a+b, 0) / first.length;
+    const avg2 = second.reduce((a,b) => a+b, 0) / second.length;
+    return avg1 === 0 ? 0 : Math.round(((avg2 - avg1) / avg1) * 100);
+  };
+
+  const fatigueAvg = avgField(recent7, 'fatigue_level');
+  const painAvg = avgField(recent7, 'pain_level');
+  const fogAvg = avgField(recent7, 'brain_fog');
+  const sleepAvg = avgField(recent7, 'sleep_quality');
+  const fatigueChange = changeField(recent7, 'fatigue_level');
+  const painChange = changeField(recent7, 'pain_level');
+  const fogChange = changeField(recent7, 'brain_fog');
+  const sleepChange = changeField(recent7, 'sleep_quality');
+
+  // Latest text entries for dashboard
+  const recentTexts = textEntries.slice(-3).reverse();
 
   return `
   <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <h2 style="font-size:20px;font-weight:700">${disease.icon} ${disease.name} ダッシュボード</h2>
-      <p style="font-size:13px;color:var(--text-muted)">最終更新: ${symptoms.length ? new Date(latest.timestamp).toLocaleString('ja-JP') : '未記録'}</p>
+      <p style="font-size:13px;color:var(--text-muted)">最終更新: ${lastUpdate}｜テキスト記録: ${totalEntries}件｜指標データ: ${totalSymptoms}件</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary btn-sm" onclick="app.runAnalysis('mecfs_daily')">🤖 AI分析を実行</button>
-      <button class="btn btn-secondary btn-sm" onclick="app.generateDemoData()">📊 デモデータ生成</button>
+      <button class="btn btn-primary btn-sm" onclick="app.navigate('data-input')">📝 データ入力</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_daily')">🤖 AI分析</button>
     </div>
   </div>
 
@@ -89,23 +118,32 @@ App.prototype.render_dashboard = function() {
       ${Components.healthGauge(score)}
     </div>
     <div class="grid grid-4">
-      ${Components.statCard('疲労度', latest.fatigue_level !== undefined ? latest.fatigue_level + '/7' : '--', -5, '😴')}
-      ${Components.statCard('痛みレベル', latest.pain_level !== undefined ? latest.pain_level + '/7' : '--', -12, '💢')}
-      ${Components.statCard('ブレインフォグ', latest.brain_fog !== undefined ? latest.brain_fog + '/7' : '--', 3, '🧠')}
-      ${Components.statCard('睡眠品質', latest.sleep_quality !== undefined ? latest.sleep_quality + '/7' : '--', 8, '🌙')}
+      ${Components.statCard('疲労度(7日平均)', fatigueAvg === '--' ? '--' : fatigueAvg + '/7', fatigueChange, '😴')}
+      ${Components.statCard('痛み(7日平均)', painAvg === '--' ? '--' : painAvg + '/7', painChange, '💢')}
+      ${Components.statCard('ブレインフォグ', fogAvg === '--' ? '--' : fogAvg + '/7', fogChange, '🧠')}
+      ${Components.statCard('睡眠品質', sleepAvg === '--' ? '--' : sleepAvg + '/7', sleepChange, '🌙')}
     </div>
   </div>
 
-  <!-- Quick Data Entry -->
+  <!-- Recent Diary Entries -->
+  ${recentTexts.length > 0 ? `
   <div class="card" style="margin-bottom:24px">
     <div class="card-header">
-      <span class="card-title">クイックデータ入力</span>
+      <span class="card-title">最近の日記</span>
+      <button class="btn btn-sm btn-outline" onclick="app.navigate('data-input')">すべて見る</button>
     </div>
-    <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px">
-      ${quickEntryBtns}
-      <button class="btn btn-outline btn-sm" onclick="app.navigate('data-input')">すべて表示 →</button>
+    <div class="card-body">
+      ${recentTexts.map(e => `
+        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:600">${e.title || new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
+            <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${(e.content || '').substring(0, 200)}${(e.content || '').length > 200 ? '...' : ''}</div>
+        </div>
+      `).join('')}
     </div>
-  </div>
+  </div>` : ''}
 
   <!-- Symptom Trend Chart -->
   <div class="card" style="margin-bottom:24px">
@@ -144,57 +182,101 @@ App.prototype.render_data_input = function() {
     </div>`;
   }).join('');
 
+  const textEntries = store.get('textEntries') || [];
+  const recentTexts = textEntries.slice(-5).reverse();
+  const categoryLabels = {
+    symptoms: '症状', nutrition: '食事・栄養', medication: '服薬・処方',
+    mental: '精神状態', activity: '活動', sleep: '睡眠',
+    blood_test: '検査結果', doctor: '医師の所見', research: '調査メモ', other: 'その他'
+  };
+
+  const recentHtml = recentTexts.length > 0 ? `
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
+      <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録（${textEntries.length}件）</h4>
+      ${recentTexts.map(e => `
+        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span class="tag tag-accent" style="font-size:10px">${categoryLabels[e.category] || e.category}</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+          </div>
+          ${e.title ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${e.title}</div>` : ''}
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${(e.content || '').length > 300 ? e.content.substring(0, 300) + '...' : e.content}</div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">データ入力</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">健康データを記録してAI分析の精度を高めましょう</p>
-  </div>
-  <div class="grid-auto" style="display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
-    ${cards}
+    <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストからAIが即座にアドバイスを生成します。</p>
   </div>
 
-  <!-- Free Text Input Section -->
-  <div class="card" style="margin-top:24px">
-    <div class="card-header"><span class="card-title">📝 フリーテキスト入力</span></div>
+  <!-- 1. Free Text Input (Primary) -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <span class="card-title">📝 日記・フリーテキスト入力</span>
+      <span class="tag tag-accent">メイン</span>
+    </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">症状の詳細、体調メモ、医師からのアドバイス、食事内容など自由に記録できます</p>
       <div class="form-group">
-        <label class="form-label">カテゴリ</label>
-        <select class="form-select" id="text-input-category">
-          <option value="symptoms">症状メモ</option>
-          <option value="nutrition">食事・栄養メモ</option>
-          <option value="medication">服薬・処方メモ</option>
-          <option value="mental">精神状態メモ</option>
-          <option value="activity">活動・ペーシングメモ</option>
-          <option value="sleep">睡眠メモ</option>
-          <option value="blood_test">検査結果メモ</option>
-          <option value="doctor">医師の所見・アドバイス</option>
-          <option value="research">調べたこと・論文メモ</option>
-          <option value="other">その他</option>
-        </select>
+        <label class="form-label">日付</label>
+        <input type="date" class="form-input" id="text-input-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px">
       </div>
       <div class="form-group">
-        <label class="form-label">タイトル（任意）</label>
-        <input type="text" class="form-input" id="text-input-title" placeholder="例: 朝の体調記録、血液検査の結果...">
+        <div style="display:flex;gap:12px;align-items:end">
+          <div style="flex:1">
+            <label class="form-label">カテゴリ</label>
+            <select class="form-select" id="text-input-category">
+              <option value="symptoms">症状メモ</option>
+              <option value="nutrition">食事・栄養メモ</option>
+              <option value="medication">服薬・処方メモ</option>
+              <option value="mental">精神状態メモ</option>
+              <option value="activity">活動・ペーシングメモ</option>
+              <option value="sleep">睡眠メモ</option>
+              <option value="blood_test">検査結果メモ</option>
+              <option value="doctor">医師の所見・アドバイス</option>
+              <option value="research">調べたこと・論文メモ</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label class="form-label">タイトル（任意）</label>
+            <input type="text" class="form-input" id="text-input-title" placeholder="例: 朝の体調、診察メモ...">
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">内容</label>
-        <textarea class="form-textarea" id="text-input-content" rows="6" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする"></textarea>
+        <textarea class="form-textarea" id="text-input-content" rows="8" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする&#10;・山村先生にアザルフィジンの相談をした&#10;・エプソムソルト風呂に入ったら疲れが取れた"></textarea>
       </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存</button>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存してAI分析</button>
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
+        <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>
-      <div id="text-entries-list" style="margin-top:16px"></div>
+      ${recentHtml}
     </div>
   </div>
 
-  <!-- File Upload Section -->
-  <div class="card" style="margin-top:24px">
+  <!-- 2. AI Instant Advice (appears after text save) -->
+  <div id="instant-advice" style="margin-bottom:24px"></div>
+
+  <!-- 3. File Upload -->
+  <div class="card" style="margin-bottom:24px">
     <div class="card-header"><span class="card-title">📎 ファイルアップロード</span></div>
     <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">血液検査結果、食事写真、処方箋、遺伝子データなど</p>
       ${Components.photoUpload('general')}
     </div>
+  </div>
+
+  <!-- 4. Structured Data Entry (bottom) -->
+  <div style="margin-bottom:12px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">指標データ入力</h3>
+    <p style="font-size:12px;color:var(--text-muted)">数値で記録したい項目はこちらから</p>
+  </div>
+  <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
+    ${cards}
   </div>`;
 };
 
