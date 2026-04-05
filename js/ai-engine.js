@@ -206,14 +206,32 @@ var AIEngine = class AIEngine {
       return ids.map(id => {
         const article = fetchData.result?.[id];
         if (!article) return null;
+
+        // Extract DOI properly from elocationid or articleids
+        let doi = '';
+        if (article.elocationid) {
+          const doiMatch = article.elocationid.match(/(?:doi:\s*)?((10\.\d{4,}\/[^\s]+))/i);
+          if (doiMatch) doi = doiMatch[1];
+        }
+        if (!doi && article.articleids) {
+          const doiEntry = article.articleids.find(a => a.idtype === 'doi');
+          if (doiEntry) doi = doiEntry.value;
+        }
+
+        const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
+
         return {
           pmid: id,
           title: article.title || '',
           authors: (article.authors || []).map(a => a.name).join(', '),
-          journal: article.source || '',
-          date: article.pubdate || '',
-          doi: (article.elocationid || '').replace('doi: ', ''),
-          url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+          journal: article.fulljournalname || article.source || '',
+          date: article.pubdate || article.sortpubdate || '',
+          doi: doi,
+          url: pubmedUrl,
+          // Google Translate URL for the PubMed page (translate to Japanese)
+          translateUrl: `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(pubmedUrl)}`,
+          doiUrl: doi ? `https://doi.org/${doi}` : '',
+          doiTranslateUrl: doi ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent('https://doi.org/' + doi)}` : '',
           summary: article.title
         };
       }).filter(Boolean);

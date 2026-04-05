@@ -686,9 +686,11 @@ var App = class App {
               </div>
               <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
               <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${a.authors.substring(0, 100)}${a.authors.length > 100 ? '...' : ''} — ${a.journal}</p>
-              <div style="display:flex;gap:8px">
-                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで見る</a>
-                ${a.doi ? `<a href="https://doi.org/${a.doi}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">DOI</a>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMed（英語）</a>
+                <a href="${a.translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>
+                ${a.doiUrl ? `<a href="${a.doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
+                ${a.doiTranslateUrl ? `<a href="${a.doiTranslateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
               </div>
             </div>
           </div>

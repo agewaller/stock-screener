@@ -135,6 +135,12 @@ var Components = {
   // Research Update Card
   researchCard(research) {
     const sigColors = { high: 'var(--danger)', medium: 'var(--warning)', low: 'var(--info)' };
+    // Build valid links
+    const doiUrl = research.doi && research.doi.startsWith('10.') ? `https://doi.org/${research.doi}` : '';
+    const pubmedSearchUrl = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(research.title.substring(0, 100))}`;
+    const sourceUrl = research.url || doiUrl || pubmedSearchUrl;
+    const translateUrl = sourceUrl ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(sourceUrl)}` : '';
+
     return `
       <div class="card" style="margin-bottom:12px">
         <div class="card-body" style="padding:16px 20px">
@@ -146,8 +152,13 @@ var Components = {
           </div>
           <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${research.title}</h4>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${research.authors} — ${research.journal}</p>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">${research.summary}</p>
-          ${research.doi ? `<a href="https://doi.org/${research.doi}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-top:8px;display:inline-block">${research.doi}</a>` : ''}
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">${research.summary}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="${pubmedSearchUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで検索</a>
+            ${translateUrl ? `<a href="${translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>` : ''}
+            ${doiUrl ? `<a href="${doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
+            ${doiUrl ? `<a href="https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(doiUrl)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
+          </div>
         </div>
       </div>
     `;

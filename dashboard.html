@@ -1958,14 +1958,32 @@ var AIEngine = class AIEngine {
       return ids.map(id => {
         const article = fetchData.result?.[id];
         if (!article) return null;
+
+        // Extract DOI properly from elocationid or articleids
+        let doi = '';
+        if (article.elocationid) {
+          const doiMatch = article.elocationid.match(/(?:doi:\s*)?((10\.\d{4,}\/[^\s]+))/i);
+          if (doiMatch) doi = doiMatch[1];
+        }
+        if (!doi && article.articleids) {
+          const doiEntry = article.articleids.find(a => a.idtype === 'doi');
+          if (doiEntry) doi = doiEntry.value;
+        }
+
+        const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
+
         return {
           pmid: id,
           title: article.title || '',
           authors: (article.authors || []).map(a => a.name).join(', '),
-          journal: article.source || '',
-          date: article.pubdate || '',
-          doi: (article.elocationid || '').replace('doi: ', ''),
-          url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+          journal: article.fulljournalname || article.source || '',
+          date: article.pubdate || article.sortpubdate || '',
+          doi: doi,
+          url: pubmedUrl,
+          // Google Translate URL for the PubMed page (translate to Japanese)
+          translateUrl: `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(pubmedUrl)}`,
+          doiUrl: doi ? `https://doi.org/${doi}` : '',
+          doiTranslateUrl: doi ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent('https://doi.org/' + doi)}` : '',
           summary: article.title
         };
       }).filter(Boolean);
@@ -2686,6 +2704,12 @@ var Components = {
   // Research Update Card
   researchCard(research) {
     const sigColors = { high: 'var(--danger)', medium: 'var(--warning)', low: 'var(--info)' };
+    // Build valid links
+    const doiUrl = research.doi && research.doi.startsWith('10.') ? `https://doi.org/${research.doi}` : '';
+    const pubmedSearchUrl = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(research.title.substring(0, 100))}`;
+    const sourceUrl = research.url || doiUrl || pubmedSearchUrl;
+    const translateUrl = sourceUrl ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(sourceUrl)}` : '';
+
     return `
       <div class="card" style="margin-bottom:12px">
         <div class="card-body" style="padding:16px 20px">
@@ -2697,8 +2721,13 @@ var Components = {
           </div>
           <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${research.title}</h4>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${research.authors} — ${research.journal}</p>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">${research.summary}</p>
-          ${research.doi ? `<a href="https://doi.org/${research.doi}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-top:8px;display:inline-block">${research.doi}</a>` : ''}
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">${research.summary}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="${pubmedSearchUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで検索</a>
+            ${translateUrl ? `<a href="${translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>` : ''}
+            ${doiUrl ? `<a href="${doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
+            ${doiUrl ? `<a href="https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(doiUrl)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -4337,9 +4366,11 @@ var App = class App {
               </div>
               <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
               <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${a.authors.substring(0, 100)}${a.authors.length > 100 ? '...' : ''} — ${a.journal}</p>
-              <div style="display:flex;gap:8px">
-                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで見る</a>
-                ${a.doi ? `<a href="https://doi.org/${a.doi}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">DOI</a>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMed（英語）</a>
+                <a href="${a.translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>
+                ${a.doiUrl ? `<a href="${a.doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
+                ${a.doiTranslateUrl ? `<a href="${a.doiTranslateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
               </div>
             </div>
           </div>
