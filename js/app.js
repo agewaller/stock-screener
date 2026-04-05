@@ -435,6 +435,53 @@ var App = class App {
     }
   }
 
+  // ---- PubMed Live Search ----
+  async searchPubMedLive() {
+    const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
+    const days = parseInt(document.getElementById('pubmed-search-days')?.value || '30');
+    const resultsArea = document.getElementById('pubmed-results');
+    if (!resultsArea) return;
+
+    resultsArea.innerHTML = Components.loading('PubMedを検索中...');
+
+    // Add date filter
+    const dateFilter = `AND ("last ${days} days"[dp])`;
+    const fullQuery = query + dateFilter;
+
+    try {
+      const articles = await aiEngine.searchPubMed(fullQuery, 20);
+
+      if (articles.length === 0) {
+        resultsArea.innerHTML = Components.emptyState('🔬', '該当する論文が見つかりませんでした', '検索期間を広げるか、キーワードを変更してみてください。');
+        return;
+      }
+
+      resultsArea.innerHTML = `
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">PubMed検索結果（${articles.length}件）</h3>
+        ${articles.map(a => `
+          <div class="card" style="margin-bottom:12px">
+            <div class="card-body" style="padding:16px 20px">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+                <span class="tag tag-info">PMID: ${a.pmid}</span>
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${a.date}</span>
+              </div>
+              <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${a.authors.substring(0, 100)}${a.authors.length > 100 ? '...' : ''} — ${a.journal}</p>
+              <div style="display:flex;gap:8px">
+                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで見る</a>
+                ${a.doi ? `<a href="https://doi.org/${a.doi}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">DOI</a>` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('')}`;
+
+      Components.showToast(`${articles.length}件の論文が見つかりました`, 'success');
+    } catch (err) {
+      resultsArea.innerHTML = `<div style="color:var(--danger);padding:20px">PubMed検索エラー: ${err.message}</div>`;
+      Components.showToast('PubMed検索に失敗しました', 'error');
+    }
+  }
+
   loadLatestAnalysis() {
     const latest = store.get('latestAnalysis');
     const resultArea = document.getElementById('analysis-result');

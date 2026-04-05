@@ -82,46 +82,157 @@ var AIEngine = class AIEngine {
     return prompt;
   }
 
-  // Call AI model API
+  // Call AI model API - real implementation
   async callModel(modelId, prompt, options = {}) {
-    // In production, this calls the actual API through a backend proxy
-    // For demo, we return a structured mock response
-    const endpoint = this.apiEndpoints[modelId];
+    const apiKey = this.getApiKey(modelId);
+
+    // If no API key, use local keyword analysis
+    if (!apiKey) {
+      console.warn('No API key for', modelId, '- using local analysis');
+      return this.generateDemoAnalysis();
+    }
 
     try {
-      const response = await fetch(endpoint || '/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getApiKey(modelId)}`
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            { role: 'system', content: 'あなたは慢性疾患管理の専門AIアシスタントです。' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: options.maxTokens || 4096,
-          temperature: options.temperature || 0.3
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (modelId.startsWith('claude-')) {
+        return await this.callAnthropic(modelId, prompt, apiKey, options);
+      } else if (modelId.startsWith('gpt-')) {
+        return await this.callOpenAI(modelId, prompt, apiKey, options);
+      } else if (modelId.startsWith('gemini-')) {
+        return await this.callGoogle(modelId, prompt, apiKey, options);
       }
-
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || data.content?.[0]?.text || data;
+      throw new Error('Unknown model: ' + modelId);
     } catch (error) {
-      // If API not available, return demo analysis
-      console.warn('API not available, using demo mode:', error.message);
+      console.error('API call failed:', error.message);
+      Components.showToast('API呼び出し失敗: ' + error.message + '（ローカル分析にフォールバック）', 'error');
       return this.generateDemoAnalysis();
     }
   }
 
+  // Anthropic Claude API (direct browser access)
+  async callAnthropic(modelId, prompt, apiKey, options) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature || 0.3,
+        system: 'あなたは慢性疾患管理の専門AIアシスタントです。ME/CFS（筋痛性脳脊髄炎/慢性疲労症候群）の世界的権威として、最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。出力はJSON形式を含めてください。',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Anthropic API ${response.status}: ${err.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.content?.[0]?.text || JSON.stringify(data);
+  }
+
+  // OpenAI GPT API
+  async callOpenAI(modelId, prompt, apiKey, options) {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: [
+          { role: 'system', content: 'あなたは慢性疾患管理の専門AIアシスタントです。ME/CFSの世界的権威として、最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature || 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`OpenAI API ${response.status}: ${err.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || JSON.stringify(data);
+  }
+
+  // Google Gemini API
+  async callGoogle(modelId, prompt, apiKey, options) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: options.temperature || 0.3,
+          maxOutputTokens: options.maxTokens || 4096
+        },
+        systemInstruction: { parts: [{ text: 'あなたは慢性疾患管理の専門AIアシスタントです。ME/CFSの世界的権威として回答してください。' }] }
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(`Google API ${response.status}: ${err.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+  }
+
+  // PubMed real search
+  async searchPubMed(query, maxResults = 10) {
+    try {
+      const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(query)}&retmax=${maxResults}&sort=date&retmode=json`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+      const ids = searchData.esearchresult?.idlist || [];
+
+      if (ids.length === 0) return [];
+
+      const fetchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`;
+      const fetchRes = await fetch(fetchUrl);
+      const fetchData = await fetchRes.json();
+
+      return ids.map(id => {
+        const article = fetchData.result?.[id];
+        if (!article) return null;
+        return {
+          pmid: id,
+          title: article.title || '',
+          authors: (article.authors || []).map(a => a.name).join(', '),
+          journal: article.source || '',
+          date: article.pubdate || '',
+          doi: (article.elocationid || '').replace('doi: ', ''),
+          url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+          summary: article.title
+        };
+      }).filter(Boolean);
+    } catch (error) {
+      console.error('PubMed search failed:', error);
+      return [];
+    }
+  }
+
   getApiKey(modelId) {
-    // In production, API keys are managed server-side
-    return localStorage.getItem(`apikey_${modelId}`) || '';
+    // Check all possible key storage patterns
+    const directKey = localStorage.getItem(`apikey_${modelId}`);
+    if (directKey) return directKey;
+
+    // Fallback to provider-level keys
+    if (modelId.startsWith('claude-')) return localStorage.getItem('apikey_anthropic') || '';
+    if (modelId.startsWith('gpt-')) return localStorage.getItem('apikey_openai') || '';
+    if (modelId.startsWith('gemini-')) return localStorage.getItem('apikey_google') || '';
+    return '';
   }
 
   // Parse analysis result into structured data

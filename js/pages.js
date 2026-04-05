@@ -377,18 +377,39 @@ App.prototype.render_research = function() {
   const updates = analysis?.parsed?.researchUpdates || analysis?.result?.researchUpdates || [];
 
   return `
-  <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究アップデート</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">ME/CFSに関する最新の研究論文・臨床試験情報</p>
+  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究アップデート</h2>
+      <p style="font-size:13px;color:var(--text-secondary)">PubMedからME/CFSの最新論文をリアルタイム検索</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">PubMed検索</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">AI分析で研究スキャン</button>
+    </div>
   </div>
-  ${updates.length > 0
-    ? updates.map(r => Components.researchCard(r)).join('')
-    : `<div class="card"><div class="card-body">
-        ${Components.emptyState('🔬', '研究データがありません', 'AI分析を実行すると最新の研究情報が収集されます。')}
-        <div style="text-align:center;margin-top:16px">
-          <button class="btn btn-primary" onclick="app.runAnalysis('mecfs_research')">最新研究をスキャン</button>
-        </div>
-      </div></div>`}`;
+
+  <!-- Search Bar -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-body" style="padding:14px 20px">
+      <div style="display:flex;gap:10px">
+        <input type="text" class="form-input" id="pubmed-search-query" value="ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome" placeholder="検索キーワード..." style="flex:1">
+        <select class="form-select" id="pubmed-search-days" style="width:120px">
+          <option value="7">過去7日</option>
+          <option value="30" selected>過去30日</option>
+          <option value="90">過去90日</option>
+          <option value="365">過去1年</option>
+        </select>
+        <button class="btn btn-primary" onclick="app.searchPubMedLive()">検索</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PubMed Results -->
+  <div id="pubmed-results">
+    ${updates.length > 0
+      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AI分析による研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
+      : Components.emptyState('🔬', 'PubMed検索を実行してください', '上の「PubMed検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
+  </div>`;
 };
 
 // Chat Page
@@ -523,20 +544,29 @@ App.prototype.render_admin = function() {
 
   <!-- API Key Configuration -->
   <div class="card" style="margin-bottom:28px">
-    <div class="card-header"><span class="card-title">APIキー設定</span></div>
+    <div class="card-header">
+      <span class="card-title">APIキー設定</span>
+      <span class="tag ${localStorage.getItem('apikey_anthropic') ? 'tag-success' : 'tag-warning'}">${localStorage.getItem('apikey_anthropic') ? 'Anthropic: 設定済' : 'APIキー未設定'}</span>
+    </div>
     <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claude/GPT/Geminiによるリアルタイム分析が有効になります。未設定時はローカルキーワード分析を使用します。</p>
       <div class="form-group">
-        <label class="form-label">Anthropic API Key</label>
-        <input type="password" class="form-input" placeholder="sk-ant-..." onchange="localStorage.setItem('apikey_claude-sonnet-4-6',this.value)">
+        <label class="form-label">Anthropic API Key（Claude Sonnet/Opus/Haiku）</label>
+        <input type="password" class="form-input" placeholder="sk-ant-api03-..." value="${localStorage.getItem('apikey_anthropic') ? '••••••••••••' : ''}"
+          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_anthropic',this.value);Components.showToast('Anthropic APIキーを保存しました','success')}">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
       </div>
       <div class="form-group">
-        <label class="form-label">OpenAI API Key</label>
-        <input type="password" class="form-input" placeholder="sk-..." onchange="localStorage.setItem('apikey_gpt-4o',this.value)">
+        <label class="form-label">OpenAI API Key（GPT-4o）</label>
+        <input type="password" class="form-input" placeholder="sk-proj-..." value="${localStorage.getItem('apikey_openai') ? '••••••••••••' : ''}"
+          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_openai',this.value);Components.showToast('OpenAI APIキーを保存しました','success')}">
       </div>
       <div class="form-group">
-        <label class="form-label">Google AI API Key</label>
-        <input type="password" class="form-input" placeholder="AIza..." onchange="localStorage.setItem('apikey_gemini-2.5-pro',this.value)">
+        <label class="form-label">Google AI API Key（Gemini 2.5 Pro）</label>
+        <input type="password" class="form-input" placeholder="AIza..." value="${localStorage.getItem('apikey_google') ? '••••••••••••' : ''}"
+          onchange="if(this.value && !this.value.startsWith('••')){localStorage.setItem('apikey_google',this.value);Components.showToast('Google AIキーを保存しました','success')}">
       </div>
+      <button class="btn btn-sm btn-danger" onclick="localStorage.removeItem('apikey_anthropic');localStorage.removeItem('apikey_openai');localStorage.removeItem('apikey_google');Components.showToast('すべてのAPIキーを削除しました','info');app.navigate('admin')">すべてのキーを削除</button>
     </div>
   </div>
 
