@@ -94,6 +94,7 @@ var Store = class Store {
   // Persistence
   saveToStorage(key, value) {
     const persistKeys = [
+      'user', 'isAuthenticated',
       'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
@@ -111,6 +112,7 @@ var Store = class Store {
 
   loadFromStorage() {
     const keys = [
+      'user', 'isAuthenticated',
       'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',

@@ -17,6 +17,8 @@ var FirebaseBackend = {
       // Firebase v9+ compat mode (loaded via CDN)
       this.app = firebase.initializeApp(firebaseConfig);
       this.auth = firebase.auth();
+      // Persist login across browser restarts (LOCAL = survives tab/browser close)
+      this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       this.db = firebase.firestore();
 
       // Enable offline persistence

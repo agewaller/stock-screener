@@ -1491,6 +1491,7 @@ var Store = class Store {
   // Persistence
   saveToStorage(key, value) {
     const persistKeys = [
+      'user', 'isAuthenticated',
       'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
@@ -1508,6 +1509,7 @@ var Store = class Store {
 
   loadFromStorage() {
     const keys = [
+      'user', 'isAuthenticated',
       'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
@@ -3199,6 +3201,8 @@ var FirebaseBackend = {
       // Firebase v9+ compat mode (loaded via CDN)
       this.app = firebase.initializeApp(firebaseConfig);
       this.auth = firebase.auth();
+      // Persist login across browser restarts (LOCAL = survives tab/browser close)
+      this.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       this.db = firebase.firestore();
 
       // Enable offline persistence
