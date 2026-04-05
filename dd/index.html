@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VM Due Diligence | Valuation Matrix</title>
+  <link rel="stylesheet" href="css/dd-styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=sb&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
+  <!-- Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app-root"></div>
+
+  <!-- App Scripts (order matters) -->
+  <script src="js/dd-config.js"></script>
+  <script src="js/dd-i18n.js"></script>
+  <script src="js/dd-prompts.js"></script>
+  <script src="js/dd-store.js"></script>
+  <script src="js/dd-auth.js"></script>
+  <script src="js/dd-payment.js"></script>
+  <script src="js/dd-engine.js"></script>
+  <script src="js/dd-reports.js"></script>
+  <script src="js/dd-admin.js"></script>
+  <script src="js/dd-landing.js"></script>
+  <script src="js/dd-app.js"></script>
+</body>
+</html>
