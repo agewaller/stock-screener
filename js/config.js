@@ -5,14 +5,15 @@ var CONFIG = {
   APP_NAME: 'ChronicCare AI',
   APP_VERSION: '1.0.0',
 
-  // Firebase config (replace with actual values in production)
+  // Firebase config
   FIREBASE: {
-    apiKey: 'YOUR_FIREBASE_API_KEY',
-    authDomain: 'YOUR_PROJECT.firebaseapp.com',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT.appspot.com',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    appId: 'YOUR_APP_ID'
+    apiKey: 'AIzaSyDx9ByplxdzaWkLJrHnPhbf13MmUBEmLT8',
+    authDomain: 'care-14c31.firebaseapp.com',
+    projectId: 'care-14c31',
+    storageBucket: 'care-14c31.firebasestorage.app',
+    messagingSenderId: '429015904719',
+    appId: '1:429015904719:web:0b57bb424006e86ab7a2ba',
+    measurementId: 'G-YEHQ7MNRFX'
   },
 
   // AI Model Options
