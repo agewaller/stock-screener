@@ -199,6 +199,90 @@ var App = class App {
     Components.showToast(`${files.length}件のファイルをアップロードしました`, 'success');
   }
 
+  // ---- Text Entry ----
+  submitTextEntry() {
+    const category = document.getElementById('text-input-category')?.value || 'other';
+    const title = document.getElementById('text-input-title')?.value?.trim() || '';
+    const content = document.getElementById('text-input-content')?.value?.trim() || '';
+
+    if (!content) {
+      Components.showToast('内容を入力してください', 'error');
+      return;
+    }
+
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      timestamp: new Date().toISOString(),
+      category: category,
+      type: 'text_entry',
+      title: title,
+      content: content
+    };
+
+    // Store in conversation history for AI context
+    const history = store.get('conversationHistory') || [];
+    history.push({
+      role: 'user',
+      content: `[${category}] ${title ? title + ': ' : ''}${content}`,
+      timestamp: entry.timestamp,
+      type: 'data_entry'
+    });
+    store.set('conversationHistory', history);
+
+    // Also store as health data in the appropriate category
+    const stateKey = store.categoryToStateKey(category);
+    if (stateKey && Array.isArray(store.get(stateKey))) {
+      store.addHealthData(category, { text_note: content, title: title });
+    } else {
+      // Store in a general text entries array
+      const textEntries = store.get('textEntries') || [];
+      textEntries.push(entry);
+      store.set('textEntries', textEntries);
+    }
+
+    // Clear form
+    document.getElementById('text-input-content').value = '';
+    document.getElementById('text-input-title').value = '';
+
+    // Show saved entry in the list
+    this.renderTextEntries();
+    Components.showToast('テキストを保存しました', 'success');
+  }
+
+  renderTextEntries() {
+    const container = document.getElementById('text-entries-list');
+    if (!container) return;
+
+    const textEntries = store.get('textEntries') || [];
+    const recent = textEntries.slice(-5).reverse();
+
+    if (recent.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const categoryLabels = {
+      symptoms: '症状', nutrition: '食事・栄養', medication: '服薬・処方',
+      mental: '精神状態', activity: '活動', sleep: '睡眠',
+      blood_test: '検査結果', doctor: '医師の所見', research: '調査メモ', other: 'その他'
+    };
+
+    container.innerHTML = `
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録</h4>
+        ${recent.map(e => `
+          <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span class="tag tag-accent" style="font-size:10px">${categoryLabels[e.category] || e.category}</span>
+              <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+            </div>
+            ${e.title ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${e.title}</div>` : ''}
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${e.content.length > 200 ? e.content.substring(0, 200) + '...' : e.content}</div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
   // ---- AI Analysis ----
   async runAnalysis(promptKey) {
     const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;

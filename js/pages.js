@@ -153,6 +153,42 @@ App.prototype.render_data_input = function() {
     ${cards}
   </div>
 
+  <!-- Free Text Input Section -->
+  <div class="card" style="margin-top:24px">
+    <div class="card-header"><span class="card-title">📝 フリーテキスト入力</span></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">症状の詳細、体調メモ、医師からのアドバイス、食事内容など自由に記録できます</p>
+      <div class="form-group">
+        <label class="form-label">カテゴリ</label>
+        <select class="form-select" id="text-input-category">
+          <option value="symptoms">症状メモ</option>
+          <option value="nutrition">食事・栄養メモ</option>
+          <option value="medication">服薬・処方メモ</option>
+          <option value="mental">精神状態メモ</option>
+          <option value="activity">活動・ペーシングメモ</option>
+          <option value="sleep">睡眠メモ</option>
+          <option value="blood_test">検査結果メモ</option>
+          <option value="doctor">医師の所見・アドバイス</option>
+          <option value="research">調べたこと・論文メモ</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">タイトル（任意）</label>
+        <input type="text" class="form-input" id="text-input-title" placeholder="例: 朝の体調記録、血液検査の結果...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">内容</label>
+        <textarea class="form-textarea" id="text-input-content" rows="6" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
+      </div>
+      <div id="text-entries-list" style="margin-top:16px"></div>
+    </div>
+  </div>
+
   <!-- File Upload Section -->
   <div class="card" style="margin-top:24px">
     <div class="card-header"><span class="card-title">📎 ファイルアップロード</span></div>

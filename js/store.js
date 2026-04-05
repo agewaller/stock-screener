@@ -98,7 +98,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory'
+      'actionItems', 'conversationHistory', 'textEntries'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -115,7 +115,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory'
+      'actionItems', 'conversationHistory', 'textEntries'
     ];
     keys.forEach(key => {
       try {
