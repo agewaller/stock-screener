@@ -6,6 +6,12 @@ var App = class App {
     this.pages = {};
     this.currentPage = null;
     this.chartInstances = {};
+    this.ADMIN_EMAILS = ['agewaller@gmail.com'];
+  }
+
+  isAdmin() {
+    const user = store.get('user');
+    return user && this.ADMIN_EMAILS.includes(user.email);
   }
 
   init() {
@@ -27,11 +33,22 @@ var App = class App {
 
   // ---- Navigation ----
   navigate(page) {
+    // Block non-admin users from admin page
+    if (page === 'admin' && !this.isAdmin()) {
+      Components.showToast('管理パネルへのアクセス権限がありません', 'error');
+      return;
+    }
+
     this.currentPage = page;
     const content = document.getElementById('page-content');
     const sidebar = document.getElementById('sidebar');
     const topbar = document.getElementById('top-bar');
     if (!content) return;
+
+    // Hide admin nav item for non-admin users
+    document.querySelectorAll('.nav-item[data-page="admin"]').forEach(el => {
+      el.style.display = this.isAdmin() ? '' : 'none';
+    });
 
     // Show/hide sidebar for login/disease-select
     if (['login', 'disease-select'].includes(page)) {
