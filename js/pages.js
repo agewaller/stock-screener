@@ -487,6 +487,187 @@ App.prototype.render_timeline = function() {
   </div>`;
 };
 
+// Integrations Page
+App.prototype.render_integrations = function() {
+  const userEmail = Integrations.generateUserEmail();
+  const fitbitConnected = Integrations.fitbit.connected;
+  const shortcutInfo = Integrations.appleHealth.getShortcutInstructions();
+
+  return `
+  <div style="margin-bottom:20px">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">デバイス・サービス連携</h2>
+    <p style="font-size:13px;color:var(--text-secondary)">外部デバイスやサービスからデータを自動取り込み</p>
+  </div>
+
+  <!-- Your Data Ingestion Email -->
+  <div class="card" style="margin-bottom:24px;border-color:var(--accent-border)">
+    <div class="card-header" style="background:var(--accent-bg)">
+      <span class="card-title">📧 あなた専用のデータ受信メールアドレス</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">以下のメールアドレスにデータを送信すると自動で取り込まれます。Plaudの転送先やiOSショートカットの送信先に設定してください。</p>
+      <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border)">
+        <code style="font-size:15px;font-weight:600;color:var(--accent);flex:1;font-family:'JetBrains Mono',monospace">${userEmail}</code>
+        <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${userEmail}');Components.showToast('コピーしました','success')">コピー</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">※ メール受信にはバックエンドサーバーの設定が必要です（Cloudflare Email Workers等）。手動の場合は下の各セクションからペースト/アップロードできます。</p>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-bottom:24px">
+    <!-- Plaud Card -->
+    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('plaud-section').scrollIntoView({behavior:'smooth'})">
+      <div style="font-size:32px;margin-bottom:8px">🎙️</div>
+      <div class="stat-card-label">Plaud</div>
+      <div style="font-size:14px;font-weight:600">会話記録</div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→AI分析</p>
+    </div>
+
+    <!-- Fitbit Card -->
+    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('fitbit-section').scrollIntoView({behavior:'smooth'})">
+      <div style="font-size:32px;margin-bottom:8px">⌚</div>
+      <div class="stat-card-label">Fitbit</div>
+      <div style="font-size:14px;font-weight:600">${fitbitConnected ? '<span style="color:var(--success)">接続中</span>' : '未接続'}</div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">心拍・睡眠・活動量</p>
+    </div>
+
+    <!-- Apple Health Card -->
+    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('apple-section').scrollIntoView({behavior:'smooth'})">
+      <div style="font-size:32px;margin-bottom:8px">🍎</div>
+      <div class="stat-card-label">Apple Health</div>
+      <div style="font-size:14px;font-weight:600">iPhone連携</div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">ヘルスケアデータ取込</p>
+    </div>
+  </div>
+
+  <!-- PLAUD SECTION -->
+  <div class="card" style="margin-bottom:24px" id="plaud-section">
+    <div class="card-header">
+      <span class="card-title">🎙️ Plaud 会話記録連携</span>
+      <span class="tag tag-info">メール転送 or ペースト</span>
+    </div>
+    <div class="card-body">
+      <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">自動連携の設定方法</h4>
+        <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
+          <li>Plaudアプリを開く</li>
+          <li>設定 → 共有 → メール転送先を追加</li>
+          <li>転送先に <strong>${userEmail}</strong> を入力</li>
+          <li>以降、録音→文字起こし完了時に自動転送されます</li>
+        </ol>
+      </div>
+
+      <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">手動ペースト</h4>
+      <div class="form-group">
+        <label class="form-label">会話の日付</label>
+        <input type="date" class="form-input" id="plaud-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">タイトル（例：山村先生診察、友人との会話）</label>
+        <input type="text" class="form-input" id="plaud-title" placeholder="会話のタイトル...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">文字起こしテキスト</label>
+        <textarea class="form-textarea" id="plaud-transcript" rows="8" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆AI分析</button>
+    </div>
+  </div>
+
+  <!-- FITBIT SECTION -->
+  <div class="card" style="margin-bottom:24px" id="fitbit-section">
+    <div class="card-header">
+      <span class="card-title">⌚ Fitbit連携</span>
+      <span class="tag ${fitbitConnected ? 'tag-success' : 'tag-warning'}">${fitbitConnected ? '接続中' : '未接続'}</span>
+    </div>
+    <div class="card-body">
+      ${fitbitConnected ? `
+        <p style="font-size:13px;color:var(--success);margin-bottom:16px">Fitbitに接続されています。データを取り込めます。</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-primary" onclick="app.importFitbitToday()">今日のデータを取得</button>
+          <button class="btn btn-secondary" onclick="app.importFitbitHistory()">過去7日分を取得</button>
+          <button class="btn btn-outline btn-danger" onclick="Integrations.fitbit.disconnect();app.navigate('integrations')">接続解除</button>
+        </div>
+        <div id="fitbit-import-status"></div>
+      ` : `
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">FitbitアカウントをOAuth2で接続すると、心拍数・睡眠・歩数・活動量を自動取得できます。</p>
+        <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">接続手順</h4>
+          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
+            <li><a href="https://dev.fitbit.com/apps/new" target="_blank" rel="noopener" style="color:var(--accent)">Fitbit開発者ポータル</a>でアプリを登録（OAuth 2.0 Application Type: Personal）</li>
+            <li>Redirect URLに <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px">${window.location.origin + window.location.pathname}</code> を設定</li>
+            <li>取得したClient IDを下に入力</li>
+            <li>「Fitbitに接続」ボタンをクリック</li>
+          </ol>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fitbit OAuth2 Client ID</label>
+          <input type="text" class="form-input" id="fitbit-client-id" value="${localStorage.getItem('fitbit_client_id') || ''}" placeholder="23XXXX">
+        </div>
+        <button class="btn btn-primary" onclick="app.connectFitbit()">Fitbitに接続</button>
+      `}
+    </div>
+  </div>
+
+  <!-- APPLE HEALTH SECTION -->
+  <div class="card" style="margin-bottom:24px" id="apple-section">
+    <div class="card-header">
+      <span class="card-title">🍎 Apple Health / iPhone連携</span>
+      <span class="tag tag-info">エクスポート & ショートカット</span>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-2" style="gap:20px">
+        <!-- Method 1: XML Export -->
+        <div>
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:10px">方法1: XMLエクスポート（一括取込）</h4>
+          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px;margin-bottom:16px">
+            <li>iPhoneの「ヘルスケア」アプリを開く</li>
+            <li>右上のプロフィールアイコンをタップ</li>
+            <li>「すべてのヘルスケアデータを書き出す」</li>
+            <li>書き出したZIPを解凍し、<code>export.xml</code>を下にドロップ</li>
+          </ol>
+          <div class="upload-area" style="padding:24px"
+            onclick="document.getElementById('apple-health-file').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+            ondragleave="this.style.borderColor='var(--border)'"
+            ondrop="event.preventDefault();app.importAppleHealthFile(event.dataTransfer.files[0])">
+            <div style="font-size:24px;margin-bottom:8px">📄</div>
+            <div style="font-size:13px">export.xml をドロップ</div>
+            <input type="file" id="apple-health-file" hidden accept=".xml" onchange="app.importAppleHealthFile(this.files[0])">
+          </div>
+        </div>
+
+        <!-- Method 2: iOS Shortcut -->
+        <div>
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:10px">方法2: iOSショートカット（毎日自動）</h4>
+          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
+            ${shortcutInfo.steps.map(s => s ? `<li>${s}</li>` : '').join('')}
+          </ol>
+        </div>
+      </div>
+      <div id="apple-import-status" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <!-- Generic File Import -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">📁 汎用ファイルインポート</span></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">CSV, JSON, XML, テキストファイルを自動判別して取り込みます</p>
+      <div class="upload-area" style="padding:24px"
+        onclick="document.getElementById('generic-import-file').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="event.preventDefault();Array.from(event.dataTransfer.files).forEach(f=>Integrations.importFile(f))">
+        <div style="font-size:24px;margin-bottom:8px">📁</div>
+        <div style="font-size:13px">ファイルをドロップまたはクリック</div>
+        <div style="font-size:11px;color:var(--text-muted)">対応形式: XML (Apple Health), CSV, JSON, TXT (Plaud)</div>
+        <input type="file" id="generic-import-file" hidden multiple accept=".xml,.csv,.json,.txt" onchange="Array.from(this.files).forEach(f=>Integrations.importFile(f))">
+      </div>
+    </div>
+  </div>`;
+};
+
 // Admin Page
 App.prototype.render_admin = function() {
   const model = store.get('selectedModel') || 'claude-sonnet-4-6';

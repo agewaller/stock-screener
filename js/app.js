@@ -74,6 +74,7 @@ var App = class App {
       actions: 'アクションセンター',
       research: '最新研究',
       chat: 'AIコンサルタント',
+      integrations: 'デバイス連携',
       timeline: 'タイムライン',
       admin: '管理パネル',
       settings: '設定'
@@ -589,6 +590,68 @@ var App = class App {
     const history = store.get('conversationHistory') || [];
     container.innerHTML = history.map(m => Components.chatMessage(m)).join('');
     container.scrollTop = container.scrollHeight;
+  }
+
+  // ---- Integrations ----
+  importPlaudTranscript() {
+    const text = document.getElementById('plaud-transcript')?.value?.trim();
+    const title = document.getElementById('plaud-title')?.value?.trim() || 'Plaud会話記録';
+    const date = document.getElementById('plaud-date')?.value;
+
+    if (!text) { Components.showToast('テキストを入力してください', 'error'); return; }
+
+    const parsed = Integrations.plaud.parseTranscript(text);
+    Integrations.plaud.saveTranscript(parsed, { title, date: date ? new Date(date + 'T12:00:00').toISOString() : undefined });
+
+    document.getElementById('plaud-transcript').value = '';
+    document.getElementById('plaud-title').value = '';
+
+    Components.showToast(`会話記録を取り込みました（${parsed.entries.length}発言, ${parsed.wordCount}語）`, 'success');
+
+    // Run instant advice on transcript
+    this.showInstantAdvice(text, 'conversation');
+    this.navigate('integrations');
+  }
+
+  connectFitbit() {
+    const clientId = document.getElementById('fitbit-client-id')?.value?.trim();
+    if (!clientId) { Components.showToast('Client IDを入力してください', 'error'); return; }
+    localStorage.setItem('fitbit_client_id', clientId);
+    Integrations.fitbit.connect();
+  }
+
+  async importFitbitToday() {
+    const status = document.getElementById('fitbit-import-status');
+    if (status) status.innerHTML = Components.loading('Fitbitからデータを取得中...');
+    try {
+      await Integrations.fitbit.importToday();
+      if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">今日のデータを取り込みました</div>';
+    } catch (err) {
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+    }
+  }
+
+  async importFitbitHistory() {
+    const status = document.getElementById('fitbit-import-status');
+    if (status) status.innerHTML = Components.loading('Fitbitから過去7日分を取得中...');
+    try {
+      await Integrations.fitbit.importHistory(7);
+      if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">過去7日分のデータを取り込みました</div>';
+    } catch (err) {
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+    }
+  }
+
+  async importAppleHealthFile(file) {
+    if (!file) return;
+    const status = document.getElementById('apple-import-status');
+    if (status) status.innerHTML = Components.loading('Apple Healthデータを解析中...');
+    try {
+      const count = await Integrations.importFile(file);
+      if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">${count}件のデータを取り込みました</div>`;
+    } catch (err) {
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+    }
   }
 
   // ---- Theme ----
