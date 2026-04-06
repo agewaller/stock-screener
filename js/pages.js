@@ -157,72 +157,96 @@ App.prototype.render_dashboard = function() {
     ? diseaseNames.map(n => `<span class="tag tag-accent" style="font-size:10px">${n}</span>`).join(' ')
     : `<span class="tag tag-accent" style="font-size:10px">${disease.name}</span>`;
 
+  // Latest AI analysis summary
+  const latestParsed = latestAnalysis?.parsed || latestAnalysis?.result || {};
+  const latestAlerts = latestParsed.riskAlerts || [];
+  const allRecs = recs.length > 0 ? recs : (latestParsed.recommendations || []);
+
   return `
-  <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-    <div>
-      <h2 style="font-size:20px;font-weight:700">${disease.icon} ダッシュボード</h2>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${diseaseTagsHtml}</div>
-      <p style="font-size:13px;color:var(--text-muted)">最終更新: ${lastUpdate}｜テキスト記録: ${totalEntries}件｜指標データ: ${totalSymptoms}件</p>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary btn-sm" onclick="app.navigate('data-input')">📝 データ入力</button>
-      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_daily')">🤖 AI分析</button>
+  <!-- Quick Input Area (TOP PRIORITY) -->
+  <div class="card" style="margin-bottom:20px;border-color:var(--accent-border)">
+    <div class="card-body" style="padding:16px 20px">
+      <div style="display:flex;gap:12px;align-items:start">
+        <div style="flex:1">
+          <textarea class="form-textarea" id="dash-quick-input" rows="3"
+            style="border:none;background:transparent;resize:none;font-size:14px;padding:0;min-height:auto"
+            placeholder="今日の体調、気づき、症状を自由に書いてください..."></textarea>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()">送信</button>
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+            📎
+            <input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt" onchange="app.dashQuickFile(event)">
+          </label>
+        </div>
+      </div>
+      <div id="dash-quick-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
     </div>
   </div>
 
-  <!-- Health Score + Stats -->
-  <div class="grid" style="grid-template-columns:220px 1fr;gap:20px;margin-bottom:24px">
-    <div class="card" style="display:flex;align-items:center;justify-content:center;padding:24px">
-      ${Components.healthGauge(score)}
+  <!-- AI Instant Feedback -->
+  <div id="dash-ai-feedback" style="margin-bottom:20px">
+    ${latestAlerts.length > 0 ? latestAlerts.map(a => `
+      <div style="padding:12px 16px;background:${a.level==='warning'?'var(--warning-bg)':'var(--info-bg)'};border-left:3px solid ${a.level==='warning'?'var(--warning)':'var(--info)'};border-radius:0 8px 8px 0;margin-bottom:8px;font-size:13px">${a.message}</div>
+    `).join('') : ''}
+  </div>
+
+  <!-- Health Score + Stats (compact) -->
+  <div class="grid" style="grid-template-columns:160px 1fr;gap:16px;margin-bottom:20px">
+    <div class="card" style="display:flex;align-items:center;justify-content:center;padding:16px">
+      ${Components.healthGauge(score, 140)}
     </div>
     <div class="grid grid-4">
-      ${Components.statCard('疲労度(7日平均)', fatigueAvg === '--' ? '--' : fatigueAvg + '/7', fatigueChange, '😴')}
-      ${Components.statCard('痛み(7日平均)', painAvg === '--' ? '--' : painAvg + '/7', painChange, '💢')}
-      ${Components.statCard('ブレインフォグ', fogAvg === '--' ? '--' : fogAvg + '/7', fogChange, '🧠')}
-      ${Components.statCard('睡眠品質', sleepAvg === '--' ? '--' : sleepAvg + '/7', sleepChange, '🌙')}
+      ${Components.statCard('疲労度', fatigueAvg === '--' ? '--' : fatigueAvg + '/7', fatigueChange, '😴')}
+      ${Components.statCard('痛み', painAvg === '--' ? '--' : painAvg + '/7', painChange, '💢')}
+      ${Components.statCard('脳霧', fogAvg === '--' ? '--' : fogAvg + '/7', fogChange, '🧠')}
+      ${Components.statCard('睡眠', sleepAvg === '--' ? '--' : sleepAvg + '/7', sleepChange, '🌙')}
     </div>
   </div>
 
-  <!-- Recent Diary Entries -->
-  ${recentTexts.length > 0 ? `
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <span class="card-title">最近の日記</span>
-      <button class="btn btn-sm btn-outline" onclick="app.navigate('data-input')">すべて見る</button>
-    </div>
-    <div class="card-body">
-      ${recentTexts.map(e => `
-        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:12px;font-weight:600">${e.title || new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
-            <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
-          </div>
-          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${(e.content || '').substring(0, 200)}${(e.content || '').length > 200 ? '...' : ''}</div>
-        </div>
-      `).join('')}
-    </div>
+  <!-- Recommendations (if available) -->
+  ${allRecs.length > 0 ? `
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへの推奨</h3>
+    ${allRecs.slice(0, 3).map(r => Components.recommendationCard(r)).join('')}
+    ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
   </div>` : ''}
 
-  <!-- Symptom Trend Chart -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <span class="card-title">症状トレンド（過去14日間）</span>
+  <!-- Recent Diary + Chart side by side -->
+  <div class="grid grid-2" style="margin-bottom:20px">
+    <!-- Recent entries -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">最近の記録</span>
+        <span style="font-size:11px;color:var(--text-muted)">${totalEntries}件</span>
+      </div>
+      <div class="card-body" style="max-height:300px;overflow-y:auto">
+        ${recentTexts.length > 0 ? recentTexts.map(e => `
+          <div style="padding:8px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px;border-left:3px solid var(--accent)">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:11px;font-weight:600">${e.title || ''}</span>
+              <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;white-space:pre-wrap">${(e.content || '').substring(0, 150)}${(e.content || '').length > 150 ? '...' : ''}</div>
+          </div>
+        `).join('') : '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px">上の入力欄から記録を始めましょう</p>'}
+      </div>
     </div>
-    <div class="card-body" style="height:300px">
-      ${symptoms.length > 0
-        ? '<canvas id="symptom-chart"></canvas>'
-        : Components.emptyState('📈', 'データがありません', '症状を記録するとトレンドチャートが表示されます。デモデータ生成ボタンでお試しできます。')}
+
+    <!-- Chart -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">トレンド</span></div>
+      <div class="card-body" style="height:300px">
+        ${symptoms.length > 0
+          ? '<canvas id="symptom-chart"></canvas>'
+          : '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:40px">指標データを入力するとチャートが表示されます</p>'}
+      </div>
     </div>
   </div>
 
-  <!-- Recommendations -->
-  <div style="margin-bottom:24px">
-    <h3 style="font-size:16px;font-weight:600;margin-bottom:14px">推奨アクション</h3>
-    ${recs.length > 0
-      ? recs.slice(0, 3).map(r => Components.recommendationCard(r)).join('')
-      : `<div class="card"><div class="card-body">${Components.emptyState('🤖', 'まだ推奨がありません', 'AI分析を実行すると、個別化された推奨アクションが表示されます。')}</div></div>`}
-    ${recs.length > 3 ? `<button class="btn btn-outline" onclick="app.navigate('actions')" style="margin-top:10px">すべての推奨を見る →</button>` : ''}
-  </div>`;
+  <!-- Disease tags (subtle) -->
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${diseaseTagsHtml}</div>
+  <p style="font-size:11px;color:var(--text-muted)">最終更新: ${lastUpdate}</p>`;
 };
 
 // Data Input Page

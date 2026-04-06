@@ -41,9 +41,9 @@ var App = class App {
 
   // ---- Navigation ----
   navigate(page) {
-    // Block non-admin users from admin page
-    if (page === 'admin' && !this.isAdmin()) {
-      Components.showToast('管理パネルへのアクセス権限がありません', 'error');
+    // Block non-admin users from admin-only pages
+    if (['admin', 'analysis'].includes(page) && !this.isAdmin()) {
+      Components.showToast('この機能は管理者専用です', 'error');
       return;
     }
 
@@ -53,8 +53,8 @@ var App = class App {
     const topbar = document.getElementById('top-bar');
     if (!content) return;
 
-    // Hide admin nav item for non-admin users
-    document.querySelectorAll('.nav-item[data-page="admin"]').forEach(el => {
+    // Hide admin-only nav items for non-admin users
+    document.querySelectorAll('.admin-only').forEach(el => {
       el.style.display = this.isAdmin() ? '' : 'none';
     });
 
@@ -1044,6 +1044,77 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- Dashboard Quick Input ----
+  dashQuickSubmit() {
+    const input = document.getElementById('dash-quick-input');
+    if (!input || !input.value.trim()) {
+      Components.showToast('テキストを入力してください', 'error');
+      return;
+    }
+
+    const content = input.value.trim();
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      timestamp: new Date().toISOString(),
+      category: 'symptoms',
+      type: 'text_entry',
+      title: '',
+      content: content
+    };
+
+    const textEntries = store.get('textEntries') || [];
+    textEntries.push(entry);
+    store.set('textEntries', textEntries);
+
+    const history = store.get('conversationHistory') || [];
+    history.push({ role: 'user', content: content, timestamp: entry.timestamp, type: 'data_entry' });
+    store.set('conversationHistory', history);
+
+    input.value = '';
+
+    // Show instant AI feedback on dashboard
+    const feedback = document.getElementById('dash-ai-feedback');
+    if (feedback) {
+      feedback.innerHTML = Components.loading('AI分析中...');
+      setTimeout(() => {
+        const advice = this.generateInstantAdvice(content, 'symptoms');
+        feedback.innerHTML = `
+          <div class="card" style="border-color:var(--accent-border)">
+            <div class="card-header" style="background:var(--accent-bg);padding:12px 16px">
+              <span style="font-size:13px;font-weight:600">AIアドバイス</span>
+              <span style="font-size:10px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
+            </div>
+            <div class="card-body" style="padding:14px 16px">
+              ${advice.alerts.map(a => `<div style="padding:8px 12px;background:${a.level==='warning'?'var(--warning-bg)':a.level==='danger'?'var(--danger-bg)':'var(--info-bg)'};border-left:3px solid ${a.level==='warning'?'var(--warning)':a.level==='danger'?'var(--danger)':'var(--info)'};border-radius:0 6px 6px 0;margin-bottom:8px;font-size:12px">${a.message}</div>`).join('')}
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${advice.text}</div>
+              ${advice.actions.length > 0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><h4 style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">推奨アクション</h4>${advice.actions.map(a => `<div style="font-size:12px;margin-bottom:4px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}</div>` : ''}
+            </div>
+          </div>`;
+
+        // Also run full AI analysis in background if API key exists
+        const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+        if (apiKey) {
+          this.runAnalysis(Object.keys(store.get('customPrompts') || DEFAULT_PROMPTS)[0]);
+        }
+      }, 200);
+    }
+
+    // Refresh recent entries on dashboard
+    this.navigate('dashboard');
+  }
+
+  dashQuickFile(event) {
+    const files = event.target.files;
+    if (!files.length) return;
+    this._pendingFiles = [];
+    this.previewFiles(files, 'general');
+
+    // Auto-save files from dashboard
+    setTimeout(() => {
+      if (this._pendingFiles.length > 0) this.saveUploadedFiles();
+    }, 500);
+  }
+
   // ---- User Profile ----
   saveProfile() {
     const profile = {
