@@ -1100,21 +1100,27 @@ var App = class App {
 【ユーザー情報】
 疾患: ${diseases.join(', ') || '未設定'}
 居住地: ${profile.location || '日本・関東'}
+言語: ${profile.language || 'ja'}
 年齢: ${profile.age || '未設定'}
 通院範囲: ${profile.travelRange || '関東圏'}
+
+【重要】居住地の国・地域に応じたイベントプラットフォームと医療検索サービスを使うこと。
+日本ならPeatix/病院なび/ストアカ、米国ならEventbrite/Zocdoc/Meetup、
+欧州ならDoctolib/Jameda等、その地域で実際に使われているサービスを特定して提案すること。
+すべての提案にクリック可能なURLを付けること（検索キーワード入り）。
 
 【最近の記録から推測される状態】
 ${recentText || '記録なし'}
 
 以下の5カテゴリから各1-2件、合計5-8件を提案してください：
 
-■ 1. クリニック・医療機関（ユーザーの通院範囲内）
-・疾患に専門性のある医療機関名、診療科、住所、特徴
-・なぜ今このクリニックを推奨するかの理由
-・予約方法（Web/電話）、保険適用の有無
+■ 1. クリニック・医療機関（ユーザーの国・地域の医療検索サイトで探す）
+・その地域の医療検索サービスで見つかる専門クリニック
+・医療機関名、診療科、住所、特徴
+・予約URL（その国の予約サイト経由）
 
-■ 2. ワークショップ・セミナー（オンライン含む）
-・疾患関連の患者向けワークショップ、セルフケア講座
+■ 2. ワークショップ・セミナー（その地域のイベントプラットフォームで探す）
+・その国で使われているイベントサイトの具体的な検索URL
 ・マインドフルネス、ヨガ、栄養学、運動療法のクラス
 ・Peatix/Eventbrite/connpass/ストアカで検索するためのキーワード
 ・具体的な検索URL例を提示
@@ -1170,13 +1176,57 @@ URL/連絡先：（あれば）`;
       '緑茶やほうじ茶でカフェインを控えめに。L-テアニンでリラックス。',
     ];
 
+    // Detect region from location
+    const lang = profile.language || 'ja';
+    const loc = (profile.location || '').toLowerCase();
+    const isJapan = lang === 'ja' || /日本|tokyo|osaka|神奈川|東京|秦野/.test(loc);
+    const isUS = /us|usa|america|new york|california|texas/.test(loc);
+    const isUK = /uk|england|london|manchester/.test(loc);
+    const isEU = /germany|france|spain|italy|deutschland|paris|berlin/.test(loc);
+    const isAU = /australia|sydney|melbourne/.test(loc);
+    const isKR = lang === 'ko' || /korea|seoul|부산/.test(loc);
+
+    // Region-specific event platform
+    const eventBase = isUS ? 'https://www.eventbrite.com/d/online/' :
+      isUK ? 'https://www.eventbrite.co.uk/d/online/' :
+      isAU ? 'https://www.eventbrite.com.au/d/online/' :
+      isKR ? 'https://www.meetup.com/find/?keywords=' :
+      isEU ? 'https://www.eventbrite.com/d/online/' :
+      'https://peatix.com/search?q=';
+
+    const clinicBase = isUS ? 'https://www.zocdoc.com/search?dr_specialty=' :
+      isUK ? 'https://www.nhs.uk/service-search/find-a-service?q=' :
+      isAU ? 'https://www.hotdoc.com.au/search?q=' :
+      'https://byoinnavi.jp/search?q=';
+
     const searchLinks = [];
-    if (diseases.includes('mecfs')) searchLinks.push({ label: 'ME/CFS患者会を探す', url: `https://peatix.com/search?q=ME%2FCFS+慢性疲労` });
-    if (diseases.includes('depression')) searchLinks.push({ label: 'うつ病の回復ワークショップ', url: `https://peatix.com/search?q=うつ+回復+ワークショップ` });
-    if (diseases.includes('fibromyalgia')) searchLinks.push({ label: '線維筋痛症の交流会', url: `https://peatix.com/search?q=線維筋痛症` });
-    searchLinks.push({ label: 'マインドフルネス講座', url: `https://peatix.com/search?q=マインドフルネス+${encodeURIComponent(location)}` });
-    searchLinks.push({ label: 'ヨガクラス', url: `https://peatix.com/search?q=ヨガ+初心者+${encodeURIComponent(location)}` });
-    searchLinks.push({ label: '栄養学セミナー', url: `https://peatix.com/search?q=栄養+健康+セミナー` });
+    // Disease-specific searches
+    const diseaseSearchTerms = {
+      mecfs: { ja: 'ME/CFS 慢性疲労', en: 'ME CFS chronic fatigue' },
+      depression: { ja: 'うつ病 回復', en: 'depression recovery support' },
+      fibromyalgia: { ja: '線維筋痛症', en: 'fibromyalgia support' },
+      long_covid: { ja: 'Long COVID 後遺症', en: 'long covid support' },
+      bipolar: { ja: '双極性障害 当事者会', en: 'bipolar support group' },
+      ptsd: { ja: 'PTSD トラウマ', en: 'PTSD trauma support' },
+      adhd: { ja: 'ADHD 大人の発達障害', en: 'adult ADHD support' },
+    };
+    diseases.forEach(d => {
+      const terms = diseaseSearchTerms[d];
+      if (terms) {
+        const q = isJapan ? terms.ja : terms.en;
+        searchLinks.push({ label: q, url: eventBase + encodeURIComponent(q) });
+      }
+    });
+
+    // Common wellness searches
+    const wellnessTerms = isJapan
+      ? [{ l: 'マインドフルネス', q: 'マインドフルネス ' + location }, { l: 'ヨガ教室', q: 'ヨガ 初心者 ' + location }, { l: '栄養セミナー', q: '栄養 健康 セミナー' }]
+      : [{ l: 'Mindfulness', q: 'mindfulness meditation' }, { l: 'Yoga class', q: 'yoga beginner' }, { l: 'Nutrition', q: 'nutrition wellness' }];
+    wellnessTerms.forEach(w => searchLinks.push({ label: w.l, url: eventBase + encodeURIComponent(w.q) }));
+
+    // Clinic search
+    const clinicTerms = isJapan ? '慢性疲労 専門' : 'chronic fatigue specialist';
+    searchLinks.push({ label: isJapan ? '専門クリニックを探す' : 'Find specialist', url: clinicBase + encodeURIComponent(clinicTerms) });
 
     return `
       <div style="margin-bottom:16px">

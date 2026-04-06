@@ -359,16 +359,66 @@ var PROMPT_HEADER = `【健康日記の理念】
 すべての提案に以下を含めてください：
 
 ■ ワークショップ・イベント・コミュニティ情報
-ユーザーの疾患・居住地（{{LOCATION}}）に関連する以下を検索・提案すること：
-- 患者会・支援団体の集まり（オンライン/オフライン）
-- 疾患関連のワークショップ・セミナー・勉強会
-- 具体的なイベントプラットフォーム：
-  日本：Peatix (peatix.com), connpass, ストアカ, こくちーず
-  英語圏：Eventbrite (eventbrite.com), Meetup (meetup.com)
-  グローバル：Facebook Groups, Discord communities
-- 当該疾患の国際カンファレンス・学会（患者参加可能なもの）
-- オンライン患者コミュニティ（Reddit, HealthUnlocked, Inspire, 日本の患者会）
-- マインドフルネス・ヨガ・瞑想のローカルクラス
+ユーザーの居住地（{{LOCATION}}）を基に、その地域で実際に利用可能な施設・サービス・イベントを提案すること。
+国や地域によって利用可能なプラットフォームが異なるため、以下のマッピングを参照：
+
+【地域別イベント・施設プラットフォーム】
+■ 日本
+  イベント：Peatix (peatix.com), connpass, ストアカ, こくちーず, Doorkeeper
+  医療機関検索：病院なび (byoinnavi.jp), カルー (caloo.jp), EPARKクリニック
+  患者会：難病情報センター (nanbyou.or.jp), 各疾患の全国患者会
+  ヨガ/瞑想：ストアカ, ホットペッパービューティー, ClassPass Japan
+  漢方/鍼灸：鍼灸コンパス (shinq-compass.jp), 日本東洋医学会の指定医
+  温泉療法：日本温泉気候物理医学会の認定施設
+  ウェルネス：じゃらん体験, asoview! (asoview.com)
+
+■ 米国 (US)
+  イベント：Eventbrite, Meetup, Facebook Events
+  医療検索：Zocdoc, Healthgrades, WebMD Doctor Finder
+  患者会：National Organization for Rare Disorders (NORD), PatientsLikeMe
+  ヨガ/瞑想：ClassPass, Mindbody, Insight Timer communities
+  サプリ：iHerb, Amazon.com, Thorne, Pure Encapsulations
+  臨床試験：ClinicalTrials.gov
+
+■ 英国 (UK)
+  イベント：Eventbrite UK, Meetup
+  医療検索：NHS Find a Service, Doctify
+  患者会：HealthUnlocked, Action for ME, Versus Arthritis
+  サプリ：Holland & Barrett, iHerb UK
+
+■ EU / ヨーロッパ
+  イベント：Eventbrite, Meetup, Facebook Groups
+  医療検索：各国のNHS相当 (Doctolib=仏, Jameda=独, Miodottore=伊)
+  患者会：EURORDIS (欧州希少疾患), 各国ME/CFS協会
+
+■ オーストラリア / NZ
+  イベント：Eventbrite AU, Humanitix, Meetup
+  医療検索：Healthdirect, HotDoc
+  患者会：Emerge Australia (ME/CFS), Pain Australia
+
+■ 東アジア
+  韓国：Naver Cafe (カフェ), KakaoTalk Open Chat, 네이버 예약
+  台湾：Accupass, KKTIX
+  中国：微信 (WeChat) Groups, 丁香医生 (DXY), 好大夫
+
+■ 東南アジア
+  シンガポール：Eventbrite SG, Meetup, Peatix Singapore
+  タイ/マレーシア/インドネシア：Eventbrite, Facebook Groups
+
+■ グローバル（全地域共通）
+  Facebook Groups（疾患名で検索）
+  Reddit (r/cfs, r/fibromyalgia, r/ChronicPain 等)
+  Discord servers
+  HealthUnlocked.com
+  Inspire.com
+  Patients Like Me
+  WHO/各国保健機関のリソース
+
+【重要】ユーザーの居住地から最適なプラットフォームを自動選択し、
+具体的な検索URL（検索キーワード入り）を必ず付けること。
+「Peatixで探してください」のような曖昧な案内ではなく、
+「https://peatix.com/search?q=ME%2FCFS+患者会+関東」のように
+クリック可能なURLを提示すること。
 
 検索キーワード例を提示すること（例：「ME/CFS 患者会 関東」「fibromyalgia support group online」等）。
 イベント情報は最新のものを優先し、URLを付けること。
