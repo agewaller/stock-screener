@@ -6169,50 +6169,180 @@ ${recentEntries.substring(0, 3000)}
 
     Components.showToast(`${files.length}件のファイルを処理中...`, 'info');
 
-    // Process each file directly
     Array.from(files).forEach(async (file) => {
-      const textForAnalysis = [];
+      // Determine file category from type and name
+      const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
+      const fileName = file.name.toLowerCase();
 
-      if (!file.type.startsWith('image/')) {
-        // Try auto-import for non-image files
-        try {
-          const count = await Integrations.importFile(file);
-          if (count > 0) textForAnalysis.push(`[ファイル取込] ${file.name}: ${count}件のデータ`);
-        } catch(e) { /* fall through */ }
+      // Auto-categorize
+      let category = 'その他';
+      let analysisPrompt = '';
+      if (isImage) {
+        // Images are likely: food photos, test results, prescriptions, skin conditions
+        category = '写真';
+        analysisPrompt = `[写真アップロード] ${file.name}
+これは画像ファイルです。以下の可能性があります：
+
+【食事写真の場合】
+・写真に写っている料理の推定カロリー、栄養バランス（タンパク質/脂質/炭水化物）を分析
+・慢性疾患との関連（抗炎症食か、血糖値への影響、腸内環境への影響）
+・改善提案（不足している栄養素、追加すべき食材）
+・この食事の良い点と注意点
+
+【検査結果写真の場合】
+・数値を読み取り、基準値との比較
+・異常値があれば具体的なアクション提案
+
+【処方箋/お薬手帳の場合】
+・薬の飲み合わせチェック
+・副作用の注意点
+
+写真の内容に応じて適切な分析を提供してください。`;
+      } else if (isPDF || fileName.includes('検査') || fileName.includes('test') || fileName.includes('result')) {
+        category = '検査結果';
+        analysisPrompt = `[検査結果ファイル] ${file.name} - 検査データの分析と基準値比較、要注意項目の指摘をしてください。`;
+      } else {
+        analysisPrompt = `[ファイル] ${file.name} (${file.type}) - このファイルの内容を分析してください。`;
       }
 
-      // Save file reference
+      // Save file
       const reader = new FileReader();
       reader.onload = (ev) => {
         store.addHealthData('photos', {
-          filename: file.name,
-          type: file.type,
-          size: file.size,
-          dataUrl: file.type.startsWith('image/') ? ev.target.result.substring(0, 500) : '',
-          category: 'general'
+          filename: file.name, type: file.type, size: file.size,
+          dataUrl: isImage ? ev.target.result.substring(0, 500) : '',
+          category: category
         });
 
-        textForAnalysis.push(`[ファイル] ${file.name} (${file.type}, ${(file.size/1024).toFixed(0)}KB)`);
+        // Save to text entries for timeline
+        const textEntries = store.get('textEntries') || [];
+        textEntries.push({
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          timestamp: new Date().toISOString(),
+          category: category,
+          type: 'file_upload',
+          title: `📎 ${file.name}`,
+          content: `${category}をアップロードしました（${(file.size/1024).toFixed(0)}KB）`
+        });
+        store.set('textEntries', textEntries);
 
         // Add to conversation history
         const history = store.get('conversationHistory') || [];
         history.push({
-          role: 'user',
-          content: textForAnalysis.join('\n'),
-          timestamp: new Date().toISOString(),
-          type: 'file_upload'
+          role: 'user', content: analysisPrompt,
+          timestamp: new Date().toISOString(), type: 'file_upload'
         });
         store.set('conversationHistory', history);
 
-        // Generate deep analysis
-        const analysis = this.generateDeepAnalysis(textForAnalysis.join('\n'));
+        // Generate analysis specific to file type
+        const analysis = this.generateFileAnalysis(file.name, file.type, category);
         store.set('latestFeedback', analysis);
 
         Components.showToast(`${file.name} を保存しました`, 'success');
         this.navigate('dashboard');
+
+        // Run API analysis if key exists
+        const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+        if (apiKey) {
+          this.runBackgroundAnalysis(analysisPrompt, document.getElementById('dash-ai-feedback'));
+        }
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // File-specific deep analysis
+  generateFileAnalysis(fileName, fileType, category) {
+    const sections = [];
+    const lower = fileName.toLowerCase();
+    const isImage = fileType.startsWith('image/');
+
+    sections.push({
+      title: '記録の分析',
+      icon: '📋',
+      content: `ファイル: ${fileName}\nカテゴリ: ${category}\n種類: ${isImage ? '画像' : fileType}`
+    });
+
+    if (isImage) {
+      // Assume food photo (most common use case)
+      sections.push({
+        title: '食事分析',
+        icon: '🍽️',
+        content: `写真を記録しました。食事写真の場合の一般的なアドバイス：
+
+【栄養バランスの目安】
+・タンパク質：手のひらサイズの量が目安
+・野菜：皿の半分以上が理想
+・炭水化物：こぶし1つ分が適量
+
+【慢性疾患との食事の関係】
+・抗炎症食：青魚、緑黄色野菜、ナッツ、オリーブオイル
+・腸内環境：発酵食品（味噌、納豆、漬物）を毎食
+・避けたい食品：精製糖、加工食品、トランス脂肪酸
+
+【ラーメン等の外食の場合】
+・塩分が高いのでスープは残す
+・野菜トッピングを追加
+・次の食事で野菜中心にバランスを取る
+・食後2-3時間の体調変化を記録すると食事との相関が見える`
+      });
+
+      sections.push({
+        title: '今すぐできること',
+        icon: '⚡',
+        content: '→ 食後2時間後の体調を記録する\n→ 水分をしっかり摂る（食後30分以降）\n→ 食後の軽い散歩（10分）で血糖値スパイクを抑制'
+      });
+
+      sections.push({
+        title: 'さらに精度を上げるには',
+        icon: '💡',
+        content: '・食事の内容をテキストでも記録すると、より詳細な栄養分析ができます\n・食後の体調変化（眠気、膨満感、エネルギー等）も記録してください\n・「ラーメンを食べた、チャーシュー3枚、野菜少なめ」のように具体的に書くとベスト'
+      });
+    } else if (category === '検査結果') {
+      sections.push({
+        title: '検査データ',
+        icon: '🔬',
+        content: `検査結果ファイルを記録しました。
+
+数値を手入力していただくと、より詳しい分析ができます：
+・CRP（炎症マーカー）
+・TSH（甲状腺機能）
+・フェリチン（鉄貯蔵）
+・ビタミンD
+・白血球数、赤血球数
+・肝機能（AST, ALT）
+・腎機能（クレアチニン）
+
+テキスト入力欄に「CRP 0.5, TSH 2.3, フェリチン 30」のように入力してください。`
+      });
+
+      sections.push({
+        title: '今すぐできること',
+        icon: '⚡',
+        content: '→ 検査数値をテキストで入力すると基準値比較ができます\n→ 前回の検査結果と比較して変化を追跡\n→ 異常値があれば主治医に相談の準備を'
+      });
+    } else {
+      sections.push({
+        title: 'ファイル記録',
+        icon: '📁',
+        content: `${fileName} を記録しました。\n\nこのファイルの内容について、テキストで補足情報を追加すると分析精度が向上します。`
+      });
+
+      sections.push({
+        title: '今すぐできること',
+        icon: '⚡',
+        content: '→ ファイルの内容をテキストで要約して入力する\n→ 関連する体調の変化を記録する'
+      });
+    }
+
+    return {
+      timestamp: new Date().toISOString(),
+      detected: [category],
+      urgency: 'normal',
+      isPositive: false,
+      sections
+    };
   }
 
   // ---- Data Page File Upload ----
@@ -6245,15 +6375,16 @@ ${recentEntries.substring(0, 3000)}
         history.push({ role: 'user', content: textForAnalysis.join('\n'), timestamp: new Date().toISOString(), type: 'file_upload' });
         store.set('conversationHistory', history);
 
-        const analysis = this.generateDeepAnalysis(textForAnalysis.join('\n'));
+        const isImage = file.type.startsWith('image/');
+        const category = isImage ? '写真' : '検査結果';
+        const analysis = this.generateFileAnalysis(file.name, file.type, category);
         store.set('latestFeedback', analysis);
 
         Components.showToast(`${file.name} を保存しました`, 'success');
 
         if (resultEl) {
-          const fb = analysis;
           resultEl.innerHTML = `<div class="card" style="border-left:4px solid var(--accent)">
-            ${fb.sections.map(s => `<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${s.icon} ${s.title}</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div></div>`).join('')}
+            ${analysis.sections.map(s => `<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${s.icon} ${s.title}</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div></div>`).join('')}
           </div>`;
         }
       };
