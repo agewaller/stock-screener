@@ -131,14 +131,24 @@ var AIEngine = class AIEngine {
     }
   }
 
-  // Anthropic Claude API (direct browser access)
+  // Anthropic Claude API (via proxy or direct)
   async callAnthropic(modelId, prompt, apiKey, options) {
     const apiModelId = 'claude-3-5-sonnet-20241022';
-    console.log('[Anthropic] Using model:', apiModelId, 'key starts with:', apiKey.substring(0, 12));
-    return await this._callAnthropicWithModel(apiModelId, prompt, apiKey, options);
-  }
+    const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+    const endpoint = proxyUrl || 'https://api.anthropic.com/v1/messages';
 
-  async _callAnthropicWithModel(apiModelId, prompt, apiKey, options) {
+    console.log('[Anthropic] Model:', apiModelId, 'via:', proxyUrl ? 'proxy' : 'direct');
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    };
+
+    // Only add these headers for direct API access (not through proxy)
+    if (!proxyUrl) {
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
 
     const body = {
       model: apiModelId,
@@ -148,29 +158,22 @@ var AIEngine = class AIEngine {
       messages: [{ role: 'user', content: prompt.substring(0, 100000) }]
     };
 
-    console.log('[Anthropic] Sending request, model:', apiModelId, 'prompt length:', prompt.length);
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers,
       body: JSON.stringify(body)
     });
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
-      console.error('[Anthropic] Error:', response.status, response.statusText, errBody);
+      console.error('[Anthropic] Error:', response.status, errBody);
       let errMsg = response.statusText;
       try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
       throw new Error(`Anthropic ${response.status}: ${errMsg}`);
     }
 
     const data = await response.json();
-    console.log('[Anthropic] Success, response length:', JSON.stringify(data).length);
+    console.log('[Anthropic] Success');
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 

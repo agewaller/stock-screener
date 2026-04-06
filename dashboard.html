@@ -2332,14 +2332,24 @@ var AIEngine = class AIEngine {
     }
   }
 
-  // Anthropic Claude API (direct browser access)
+  // Anthropic Claude API (via proxy or direct)
   async callAnthropic(modelId, prompt, apiKey, options) {
     const apiModelId = 'claude-3-5-sonnet-20241022';
-    console.log('[Anthropic] Using model:', apiModelId, 'key starts with:', apiKey.substring(0, 12));
-    return await this._callAnthropicWithModel(apiModelId, prompt, apiKey, options);
-  }
+    const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+    const endpoint = proxyUrl || 'https://api.anthropic.com/v1/messages';
 
-  async _callAnthropicWithModel(apiModelId, prompt, apiKey, options) {
+    console.log('[Anthropic] Model:', apiModelId, 'via:', proxyUrl ? 'proxy' : 'direct');
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    };
+
+    // Only add these headers for direct API access (not through proxy)
+    if (!proxyUrl) {
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
 
     const body = {
       model: apiModelId,
@@ -2349,29 +2359,22 @@ var AIEngine = class AIEngine {
       messages: [{ role: 'user', content: prompt.substring(0, 100000) }]
     };
 
-    console.log('[Anthropic] Sending request, model:', apiModelId, 'prompt length:', prompt.length);
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers,
       body: JSON.stringify(body)
     });
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
-      console.error('[Anthropic] Error:', response.status, response.statusText, errBody);
+      console.error('[Anthropic] Error:', response.status, errBody);
       let errMsg = response.statusText;
       try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
       throw new Error(`Anthropic ${response.status}: ${errMsg}`);
     }
 
     const data = await response.json();
-    console.log('[Anthropic] Success, response length:', JSON.stringify(data).length);
+    console.log('[Anthropic] Success');
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 
@@ -4527,6 +4530,11 @@ var App = class App {
     this.currentPage = null;
     this.chartInstances = {};
     this.ADMIN_EMAILS = ['agewaller@gmail.com'];
+    // Load additional admins from localStorage
+    try {
+      const extra = JSON.parse(localStorage.getItem('admin_emails') || '[]');
+      if (Array.isArray(extra)) this.ADMIN_EMAILS = [...new Set([...this.ADMIN_EMAILS, ...extra])];
+    } catch(e) {}
   }
 
   isAdmin() {
@@ -4687,6 +4695,11 @@ var App = class App {
   }
 
   loadApiKeyFields() {
+    // Load proxy URL
+    const proxyEl = document.getElementById('input-proxy-url');
+    const proxyStored = localStorage.getItem('anthropic_proxy_url');
+    if (proxyEl && proxyStored) proxyEl.value = proxyStored;
+
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
@@ -4708,6 +4721,13 @@ var App = class App {
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
     let saved = 0;
+    // Save proxy URL
+    const proxyEl = document.getElementById('input-proxy-url');
+    if (proxyEl && proxyEl.value.trim()) {
+      localStorage.setItem('anthropic_proxy_url', proxyEl.value.trim());
+      saved++;
+    }
+
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
       if (el && el.value.trim()) {
@@ -6344,6 +6364,38 @@ ${recentEntries.substring(0, 3000)}
     Components.showToast('プロンプトを削除しました', 'info');
   }
 
+  addAdmin() {
+    const input = document.getElementById('new-admin-email');
+    if (!input || !input.value.trim() || !input.value.includes('@')) {
+      Components.showToast('有効なメールアドレスを入力してください', 'error');
+      return;
+    }
+    const email = input.value.trim().toLowerCase();
+    if (this.ADMIN_EMAILS.includes(email)) {
+      Components.showToast('既に管理者です', 'error');
+      return;
+    }
+    this.ADMIN_EMAILS.push(email);
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ adminEmails: this.ADMIN_EMAILS });
+    }
+    input.value = '';
+    Components.showToast(`${email} を管理者に追加しました`, 'success');
+    this.navigate('admin');
+  }
+
+  removeAdmin(email) {
+    if (email === 'agewaller@gmail.com') {
+      Components.showToast('オーナーは削除できません', 'error');
+      return;
+    }
+    this.ADMIN_EMAILS = this.ADMIN_EMAILS.filter(e => e !== email);
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    Components.showToast(`${email} を管理者から削除しました`, 'info');
+    this.navigate('admin');
+  }
+
   setModel(modelId) {
     store.set('selectedModel', modelId);
     Components.showToast(`モデルを ${modelId} に変更しました`, 'success');
@@ -7783,9 +7835,14 @@ App.prototype.render_admin = function() {
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claude/GPT/Geminiによるリアルタイム分析が有効になります。未設定時はローカルキーワード分析を使用します。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
       <div class="form-group">
-        <label class="form-label">Anthropic API Key（Claude Sonnet/Opus/Haiku）</label>
+        <label class="form-label">APIプロキシURL（必須）</label>
+        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Workerのデプロイ後にURLを貼り付け</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anthropic API Key</label>
         <input type="text" class="form-input" id="input-apikey-anthropic" placeholder="sk-ant-api03-..." autocomplete="off">
         <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
       </div>
@@ -7845,6 +7902,26 @@ App.prototype.render_admin = function() {
 
   <!-- TAB: Data -->
   <div class="admin-tab-content" id="admin-tab-data" style="display:none">
+  <!-- Admin Users -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">管理者ユーザー</span></div>
+    <div class="card-body">
+      <div id="admin-list" style="margin-bottom:12px">
+        ${app.ADMIN_EMAILS.map(e => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px">${e}</span>
+            ${e === 'agewaller@gmail.com' ? '<span style="font-size:10px;color:var(--text-muted)">オーナー</span>' : '<button class="btn btn-sm btn-danger" onclick="app.removeAdmin(\\'' + e + '\\')">削除</button>'}
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="email" class="form-input" id="new-admin-email" placeholder="追加するメールアドレス" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="app.addAdmin()">追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Management -->
   <div class="card">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">

@@ -1322,9 +1322,14 @@ App.prototype.render_admin = function() {
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claude/GPT/Geminiによるリアルタイム分析が有効になります。未設定時はローカルキーワード分析を使用します。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
       <div class="form-group">
-        <label class="form-label">Anthropic API Key（Claude Sonnet/Opus/Haiku）</label>
+        <label class="form-label">APIプロキシURL（必須）</label>
+        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Workerのデプロイ後にURLを貼り付け</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anthropic API Key</label>
         <input type="text" class="form-input" id="input-apikey-anthropic" placeholder="sk-ant-api03-..." autocomplete="off">
         <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
       </div>
@@ -1384,6 +1389,26 @@ App.prototype.render_admin = function() {
 
   <!-- TAB: Data -->
   <div class="admin-tab-content" id="admin-tab-data" style="display:none">
+  <!-- Admin Users -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">管理者ユーザー</span></div>
+    <div class="card-body">
+      <div id="admin-list" style="margin-bottom:12px">
+        ${app.ADMIN_EMAILS.map(e => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px">${e}</span>
+            ${e === 'agewaller@gmail.com' ? '<span style="font-size:10px;color:var(--text-muted)">オーナー</span>' : '<button class="btn btn-sm btn-danger" onclick="app.removeAdmin(\\'' + e + '\\')">削除</button>'}
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input type="email" class="form-input" id="new-admin-email" placeholder="追加するメールアドレス" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="app.addAdmin()">追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Management -->
   <div class="card">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">

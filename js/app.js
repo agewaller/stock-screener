@@ -7,6 +7,11 @@ var App = class App {
     this.currentPage = null;
     this.chartInstances = {};
     this.ADMIN_EMAILS = ['agewaller@gmail.com'];
+    // Load additional admins from localStorage
+    try {
+      const extra = JSON.parse(localStorage.getItem('admin_emails') || '[]');
+      if (Array.isArray(extra)) this.ADMIN_EMAILS = [...new Set([...this.ADMIN_EMAILS, ...extra])];
+    } catch(e) {}
   }
 
   isAdmin() {
@@ -167,6 +172,11 @@ var App = class App {
   }
 
   loadApiKeyFields() {
+    // Load proxy URL
+    const proxyEl = document.getElementById('input-proxy-url');
+    const proxyStored = localStorage.getItem('anthropic_proxy_url');
+    if (proxyEl && proxyStored) proxyEl.value = proxyStored;
+
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
@@ -188,6 +198,13 @@ var App = class App {
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
     let saved = 0;
+    // Save proxy URL
+    const proxyEl = document.getElementById('input-proxy-url');
+    if (proxyEl && proxyEl.value.trim()) {
+      localStorage.setItem('anthropic_proxy_url', proxyEl.value.trim());
+      saved++;
+    }
+
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
       if (el && el.value.trim()) {
@@ -1822,6 +1839,38 @@ ${recentEntries.substring(0, 3000)}
     store.set('customPrompts', prompts);
     this.navigate('admin');
     Components.showToast('プロンプトを削除しました', 'info');
+  }
+
+  addAdmin() {
+    const input = document.getElementById('new-admin-email');
+    if (!input || !input.value.trim() || !input.value.includes('@')) {
+      Components.showToast('有効なメールアドレスを入力してください', 'error');
+      return;
+    }
+    const email = input.value.trim().toLowerCase();
+    if (this.ADMIN_EMAILS.includes(email)) {
+      Components.showToast('既に管理者です', 'error');
+      return;
+    }
+    this.ADMIN_EMAILS.push(email);
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ adminEmails: this.ADMIN_EMAILS });
+    }
+    input.value = '';
+    Components.showToast(`${email} を管理者に追加しました`, 'success');
+    this.navigate('admin');
+  }
+
+  removeAdmin(email) {
+    if (email === 'agewaller@gmail.com') {
+      Components.showToast('オーナーは削除できません', 'error');
+      return;
+    }
+    this.ADMIN_EMAILS = this.ADMIN_EMAILS.filter(e => e !== email);
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    Components.showToast(`${email} を管理者から削除しました`, 'info');
+    this.navigate('admin');
   }
 
   setModel(modelId) {
