@@ -1046,7 +1046,9 @@ App.prototype.render_integrations = function() {
 // Admin Page
 App.prototype.render_admin = function() {
   const model = store.get('selectedModel') || 'claude-sonnet-4-6';
-  const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
+  // Merge: DEFAULT_PROMPTS as base, user customPrompts override
+  const userPrompts = store.get('customPrompts') || {};
+  const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
 
   const modelCards = CONFIG.AI_MODELS.map(m => `
     <div class="action-card ${m.id === model ? 'selected' : ''}"

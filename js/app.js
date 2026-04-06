@@ -948,7 +948,7 @@ var App = class App {
 
   // ---- AI Analysis ----
   async runAnalysis(promptKey) {
-    const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
+    const prompts = { ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) };
     const promptConfig = prompts[promptKey] || Object.values(prompts)[0];
     if (!promptConfig) { Components.showToast('プロンプトが見つかりません', 'error'); return; }
 
@@ -1360,7 +1360,7 @@ var App = class App {
         // Also run full AI analysis in background if API key exists
         const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
         if (apiKey) {
-          this.runAnalysis(Object.keys(store.get('customPrompts') || DEFAULT_PROMPTS)[0]);
+          this.runAnalysis(Object.keys({ ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) })[0]);
         }
       }, 200);
     }
@@ -1519,8 +1519,8 @@ var App = class App {
 
   resetPromptsToDefault() {
     if (!confirm('すべてのプロンプトをデフォルトに戻しますか？カスタム変更は失われます。')) return;
-    store.set('customPrompts', { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS });
-    Components.showToast('プロンプトをデフォルトに戻しました', 'success');
+    store.set('customPrompts', {});  // Clear overrides so DEFAULT_PROMPTS shines through
+    Components.showToast(`プロンプトをデフォルトに戻しました（${Object.keys(DEFAULT_PROMPTS).length}件）`, 'success');
     this.navigate('admin');
   }
 
