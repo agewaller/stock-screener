@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["claude/chronic-disease-dashboard-Wv5OR", "main"]
+    branches: ["main"]
 
 permissions:
   contents: read
