@@ -209,6 +209,26 @@ var App = class App {
     }
   }
 
+  async testApiKey() {
+    const result = document.getElementById('api-test-result');
+    if (result) result.innerHTML = Components.loading('接続テスト中...');
+
+    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const apiKey = aiEngine.getApiKey(model);
+
+    if (!apiKey) {
+      if (result) result.innerHTML = '<div style="color:var(--danger);font-size:12px">APIキーが設定されていません。上のフィールドにキーを入力して「保存」してください。</div>';
+      return;
+    }
+
+    try {
+      const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
+      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
+    } catch (err) {
+      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${err.message}</div>`;
+    }
+  }
+
   async clearApiKeys() {
     ['anthropic', 'openai', 'google'].forEach(k => {
       localStorage.removeItem('apikey_' + k);
@@ -1428,16 +1448,65 @@ var App = class App {
             </div>
           </div>`;
 
-        // Also run full AI analysis in background if API key exists
+        // Also run full API analysis in background if API key exists
         const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
         if (apiKey) {
-          this.runAnalysis(Object.keys({ ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) })[0]);
+          this.runBackgroundAnalysis(content, feedback);
         }
       }, 200);
     }
 
     // Refresh recent entries on dashboard
     this.navigate('dashboard');
+  }
+
+  async runBackgroundAnalysis(userInput, feedbackEl) {
+    try {
+      const diseases = store.get('selectedDiseases') || [];
+      const profile = store.get('userProfile') || {};
+      const recentEntries = (store.get('textEntries') || []).slice(-5).map(e => e.content).join('\n---\n');
+
+      const prompt = `以下のユーザーの最新の記録に基づいて、具体的で実行可能なアドバイスを日本語で提供してください。
+
+【ユーザー情報】
+疾患: ${diseases.join(', ') || '未設定'}
+居住地: ${profile.location || '日本'}
+年齢: ${profile.age || '未設定'}
+
+【最新の記録】
+${userInput}
+
+【直近の記録履歴】
+${recentEntries.substring(0, 3000)}
+
+以下を必ず含めてください：
+1. この記録から読み取れる健康状態の評価
+2. 具体的な改善アクション（今日できること）
+3. 注意すべき兆候（レッドフラッグ）があれば
+4. 推奨するサプリメントや食事の変更
+5. 必要であれば受診の推奨`;
+
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, { maxTokens: 2048 });
+
+      if (typeof response === 'string' && response.length > 50) {
+        // API returned real response - update feedback
+        if (feedbackEl) {
+          feedbackEl.innerHTML = `
+            <div class="card" style="border-color:var(--success);border-left:4px solid var(--success)">
+              <div class="card-header" style="padding:10px 16px">
+                <span style="font-size:13px;font-weight:600">詳細分析</span>
+                <span class="tag tag-success" style="font-size:9px">API応答</span>
+              </div>
+              <div class="card-body" style="padding:14px 16px">
+                <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(response)}</div>
+              </div>
+            </div>`;
+        }
+      }
+    } catch (err) {
+      console.log('[Background Analysis] Failed:', err.message);
+      // Keep local analysis visible - don't replace
+    }
   }
 
   dashQuickFile(event) {

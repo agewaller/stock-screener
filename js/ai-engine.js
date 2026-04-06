@@ -110,9 +110,11 @@ var AIEngine = class AIEngine {
 
     // If no API key, use local keyword analysis
     if (!apiKey) {
-      console.warn('No API key for', modelId, '- using local analysis');
+      console.log('[AI Engine] No API key for', modelId, '- using local analysis');
       return this.generateDemoAnalysis();
     }
+
+    console.log('[AI Engine] Calling', modelId, 'with key:', apiKey.substring(0, 10) + '...');
 
     try {
       if (modelId.startsWith('claude-')) {
@@ -124,14 +126,32 @@ var AIEngine = class AIEngine {
       }
       throw new Error('Unknown model: ' + modelId);
     } catch (error) {
-      console.error('API call failed:', error.message);
-      Components.showToast('API呼び出し失敗: ' + error.message + '（ローカル分析にフォールバック）', 'error');
+      console.error('[AI Engine] API call failed:', error);
+      Components.showToast('API接続エラー: ' + error.message, 'error');
       return this.generateDemoAnalysis();
     }
   }
 
   // Anthropic Claude API (direct browser access)
   async callAnthropic(modelId, prompt, apiKey, options) {
+    // Map friendly model names to API model IDs
+    const modelMap = {
+      'claude-sonnet-4-6': 'claude-sonnet-4-6-20250514',
+      'claude-opus-4-6': 'claude-opus-4-6-20250514',
+      'claude-haiku-4-5': 'claude-haiku-4-5-20241022'
+    };
+    const apiModelId = modelMap[modelId] || modelId;
+
+    const body = {
+      model: apiModelId,
+      max_tokens: options.maxTokens || 4096,
+      temperature: options.temperature || 0.3,
+      system: 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。',
+      messages: [{ role: 'user', content: prompt.substring(0, 100000) }]
+    };
+
+    console.log('[Anthropic] Sending request, model:', apiModelId, 'prompt length:', prompt.length);
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -140,21 +160,18 @@ var AIEngine = class AIEngine {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: options.maxTokens || 4096,
-        temperature: options.temperature || 0.3,
-        system: 'あなたは慢性疾患管理の専門AIアシスタントです。ME/CFS（筋痛性脳脊髄炎/慢性疲労症候群）の世界的権威として、最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。出力はJSON形式を含めてください。',
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(`Anthropic API ${response.status}: ${err.error?.message || response.statusText}`);
+      const errMsg = err.error?.message || err.message || response.statusText;
+      console.error('[Anthropic] Error:', response.status, errMsg);
+      throw new Error(`Anthropic ${response.status}: ${errMsg}`);
     }
 
     const data = await response.json();
+    console.log('[Anthropic] Success, response length:', JSON.stringify(data).length);
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 

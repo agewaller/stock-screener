@@ -1254,6 +1254,8 @@ App.prototype.render_admin = function() {
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn btn-primary" onclick="app.saveApiKeys()">APIキーを保存</button>
+        <button class="btn btn-secondary" onclick="app.testApiKey()" style="margin-left:8px">接続テスト</button>
+        <div id="api-test-result" style="margin-top:8px"></div>
         <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">すべて削除</button>
       </div>
     </div>
