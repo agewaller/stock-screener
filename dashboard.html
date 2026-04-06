@@ -1097,7 +1097,6 @@ body {
         <h2 class="top-bar-title" id="top-bar-title">ダッシュボード</h2>
       </div>
       <div class="top-bar-right">
-        <button class="btn btn-sm btn-secondary" onclick="app.toggleTheme()" title="テーマ切替">🌓</button>
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')" title="設定">⚙️</button>
       </div>
     </div>
@@ -1547,7 +1546,7 @@ var Store = class Store {
       // App state
       currentPage: 'login',
       selectedDisease: null,
-      theme: localStorage.getItem('theme') || 'dark',
+      theme: 'light',
       sidebarOpen: window.innerWidth > 768,
 
       // Health data
@@ -5852,19 +5851,7 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
-  <!-- Theme -->
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">表示設定</span></div>
-    <div class="card-body">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span>テーマ</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm ${theme==='dark'?'btn-primary':'btn-secondary'}" onclick="store.set('theme','dark')">ダーク</button>
-          <button class="btn btn-sm ${theme==='light'?'btn-primary':'btn-secondary'}" onclick="store.set('theme','light')">ライト</button>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Data Migration & Export -->
   <div class="card" style="margin-bottom:20px">

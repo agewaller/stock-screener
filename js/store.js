@@ -12,7 +12,7 @@ var Store = class Store {
       // App state
       currentPage: 'login',
       selectedDisease: null,
-      theme: localStorage.getItem('theme') || 'dark',
+      theme: 'light',
       sidebarOpen: window.innerWidth > 768,
 
       // Health data

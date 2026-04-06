@@ -951,19 +951,7 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
-  <!-- Theme -->
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">表示設定</span></div>
-    <div class="card-body">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span>テーマ</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm ${theme==='dark'?'btn-primary':'btn-secondary'}" onclick="store.set('theme','dark')">ダーク</button>
-          <button class="btn btn-sm ${theme==='light'?'btn-primary':'btn-secondary'}" onclick="store.set('theme','light')">ライト</button>
-        </div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Data Migration & Export -->
   <div class="card" style="margin-bottom:20px">
