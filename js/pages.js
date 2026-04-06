@@ -765,21 +765,46 @@ App.prototype.render_admin = function() {
     </div>
   `).join('');
 
-  const promptEditors = Object.entries(prompts).map(([key, p]) => `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header">
-        <input class="form-input" data-prompt-name="${key}" value="${p.name}" style="font-weight:600;border:none;background:transparent;padding:0;font-size:14px;color:var(--text-primary)">
-        <div style="display:flex;gap:6px">
-          <span class="tag ${p.active ? 'tag-success' : 'tag-warning'}">${p.schedule || 'manual'}</span>
-          <button class="btn btn-sm btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+  // Group prompts by disease
+  const promptsByDisease = {};
+  Object.entries(prompts).forEach(([key, p]) => {
+    const group = p.disease || '_universal';
+    if (!promptsByDisease[group]) promptsByDisease[group] = [];
+    promptsByDisease[group].push({ key, ...p });
+  });
+
+  const diseaseLabels = { '_universal': '共通（全疾患・健常者）' };
+  CONFIG.DISEASE_CATEGORIES.forEach(cat => {
+    cat.diseases.forEach(d => { diseaseLabels[d.id] = d.name; });
+  });
+
+  const promptEditors = Object.entries(promptsByDisease).map(([diseaseId, promptList]) => `
+    <div style="margin-bottom:20px">
+      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${diseaseLabels[diseaseId] || diseaseId}</h4>
+      ${promptList.map(p => `
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header" style="padding:12px 16px">
+            <input class="form-input" data-prompt-name="${p.key}" value="${p.name}" style="font-weight:600;border:none;background:transparent;padding:0;font-size:13px;color:var(--text-primary)">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="tag ${p.active ? 'tag-success' : 'tag-warning'}" style="font-size:10px">${p.schedule || 'manual'}</span>
+              <button class="btn btn-sm btn-danger" onclick="app.deletePrompt('${p.key}')" style="padding:4px 8px;font-size:11px">削除</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:12px 16px;display:none" id="prompt-body-${p.key}">
+            <select class="form-select" data-prompt-disease="${p.key}" style="margin-bottom:8px;font-size:12px">
+              <option value="_universal" ${(p.disease||'_universal')==='_universal'?'selected':''}>共通</option>
+              ${CONFIG.DISEASE_CATEGORIES.map(cat => cat.diseases.map(d => `<option value="${d.id}" ${p.disease===d.id?'selected':''}>${d.name}</option>`).join('')).join('')}
+            </select>
+            <textarea class="form-textarea" data-prompt-text="${p.key}" style="min-height:150px;font-family:'JetBrains Mono',monospace;font-size:11px">${p.prompt}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${p.key}')">保存</button>
+            </div>
+          </div>
+          <div style="padding:8px 16px;cursor:pointer;font-size:11px;color:var(--text-muted)" onclick="var b=document.getElementById('prompt-body-${p.key}');b.style.display=b.style.display==='none'?'block':'none'">
+            クリックして展開/折りたたみ
+          </div>
         </div>
-      </div>
-      <div class="card-body">
-        <textarea class="form-textarea" data-prompt-text="${key}" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px">${p.prompt}</textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:10px">
-          <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${key}')">保存</button>
-        </div>
-      </div>
+      `).join('')}
     </div>
   `).join('');
 
@@ -935,19 +960,72 @@ App.prototype.render_settings = function() {
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">設定</h2>
   </div>
 
-  <!-- Profile -->
+  <!-- Profile & Health Info -->
   <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">プロフィール</span></div>
+    <div class="card-header"><span class="card-title">プロフィール・基本情報</span></div>
     <div class="card-body">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <div class="user-avatar" style="width:56px;height:56px;font-size:22px">${user.displayName?.[0] || '?'}</div>
         <div>
           <div style="font-size:16px;font-weight:600">${user.displayName || 'ゲスト'}</div>
           <div style="font-size:13px;color:var(--text-muted)">${user.email || ''}</div>
-          <div class="tag tag-accent" style="margin-top:6px">${disease.name || '未設定'} - ${disease.fullName || ''}</div>
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="app.navigate('disease-select')">疾患設定を変更</button>
+
+      <div class="grid grid-2" style="gap:12px;margin-bottom:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">年齢</label>
+          <input type="number" class="form-input" id="profile-age" placeholder="50" min="0" max="120">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">性別</label>
+          <select class="form-select" id="profile-gender">
+            <option value="">選択してください</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">身長 (cm)</label>
+          <input type="number" class="form-input" id="profile-height" placeholder="170" min="100" max="250">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">体重 (kg)</label>
+          <input type="number" class="form-input" id="profile-weight" placeholder="65" min="20" max="300">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">居住地（都道府県・市区町村）</label>
+        <input type="text" class="form-input" id="profile-location" placeholder="例: 神奈川県秦野市">
+      </div>
+      <div class="form-group">
+        <label class="form-label">通院可能範囲</label>
+        <select class="form-select" id="profile-travel-range">
+          <option value="local">近隣のみ（市内）</option>
+          <option value="prefecture">県内</option>
+          <option value="region" selected>関東圏・地方圏</option>
+          <option value="national">国内全域</option>
+          <option value="international">海外も含む</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主な言語</label>
+        <select class="form-select" id="profile-language">
+          <option value="ja" selected>日本語</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="ko">한국어</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">備考（アレルギー、既往歴、家族歴など）</label>
+        <textarea class="form-textarea" id="profile-notes" rows="3" placeholder="例: ペニシリンアレルギー、父が糖尿病、母が甲状腺疾患"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.saveProfile()">プロフィールを保存</button>
+      <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="app.navigate('login')">疾患設定を変更</button>
     </div>
   </div>
 

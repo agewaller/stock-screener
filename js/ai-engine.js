@@ -62,8 +62,36 @@ var AIEngine = class AIEngine {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    // Build user profile string
+    const profile = store.get('userProfile') || {};
+    const genderMap = { male: '男性', female: '女性', other: 'その他' };
+    const rangeMap = { local: '近隣のみ', prefecture: '県内', region: '関東圏・地方圏', national: '国内全域', international: '海外含む' };
+    const profileStr = [
+      profile.age ? `年齢: ${profile.age}歳` : '',
+      profile.gender ? `性別: ${genderMap[profile.gender] || profile.gender}` : '',
+      profile.height ? `身長: ${profile.height}cm` : '',
+      profile.weight ? `体重: ${profile.weight}kg` : '',
+      profile.location ? `居住地: ${profile.location}` : '',
+      profile.travelRange ? `通院可能範囲: ${rangeMap[profile.travelRange] || profile.travelRange}` : '',
+      profile.notes ? `備考: ${profile.notes}` : ''
+    ].filter(Boolean).join('\n') || '未設定';
+
+    // Build selected diseases string
+    const selectedDiseases = store.get('selectedDiseases') || [];
+    const diseaseNames = [];
+    selectedDiseases.forEach(id => {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === id);
+        if (found) { diseaseNames.push(found.name); break; }
+      }
+    });
+    const diseasesStr = diseaseNames.join('、') || (store.get('selectedDisease')?.fullName || '未設定');
+
     let prompt = template
       .replace(/\{\{DATE\}\}/g, today)
+      .replace(/\{\{USER_PROFILE\}\}/g, profileStr)
+      .replace(/\{\{SELECTED_DISEASES\}\}/g, diseasesStr)
+      .replace(/\{\{LOCATION\}\}/g, profile.location || '日本')
       .replace(/\{\{USER_DATA\}\}/g, JSON.stringify(data.current || {}, null, 2))
       .replace(/\{\{WEEKLY_DATA\}\}/g, JSON.stringify(data.weekly || {}, null, 2))
       .replace(/\{\{BLOOD_TEST_DATA\}\}/g, JSON.stringify(data.bloodTests || {}, null, 2))
@@ -72,12 +100,6 @@ var AIEngine = class AIEngine {
       .replace(/\{\{HRV_DATA\}\}/g, JSON.stringify(data.hrv || {}, null, 2))
       .replace(/\{\{ACTIVITY_DATA\}\}/g, JSON.stringify(data.activity || {}, null, 2))
       .replace(/\{\{PEM_HISTORY\}\}/g, JSON.stringify(data.pemHistory || {}, null, 2));
-
-    // Add user profile context
-    const disease = store.get('selectedDisease');
-    if (disease) {
-      prompt = `【対象疾患】${disease.fullName}\n\n` + prompt;
-    }
 
     return prompt;
   }

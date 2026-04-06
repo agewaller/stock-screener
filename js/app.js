@@ -105,6 +105,7 @@ var App = class App {
     if (page === 'dashboard') this.initDashboardCharts();
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
+    if (page === 'settings') this.loadProfileFields();
   }
 
   // ---- API Key Management ----
@@ -1043,6 +1044,34 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- User Profile ----
+  saveProfile() {
+    const profile = {
+      age: document.getElementById('profile-age')?.value || '',
+      gender: document.getElementById('profile-gender')?.value || '',
+      height: document.getElementById('profile-height')?.value || '',
+      weight: document.getElementById('profile-weight')?.value || '',
+      location: document.getElementById('profile-location')?.value || '',
+      travelRange: document.getElementById('profile-travel-range')?.value || 'region',
+      language: document.getElementById('profile-language')?.value || 'ja',
+      notes: document.getElementById('profile-notes')?.value || ''
+    };
+    store.set('userProfile', profile);
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ userProfile: profile });
+    }
+    Components.showToast('プロフィールを保存しました', 'success');
+  }
+
+  loadProfileFields() {
+    const profile = store.get('userProfile') || {};
+    const fields = { age: 'profile-age', gender: 'profile-gender', height: 'profile-height', weight: 'profile-weight', location: 'profile-location', travelRange: 'profile-travel-range', language: 'profile-language', notes: 'profile-notes' };
+    Object.entries(fields).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && profile[key]) el.value = profile[key];
+    });
+  }
+
   // ---- Sidebar (mobile) ----
   toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -1068,6 +1097,7 @@ var App = class App {
   savePrompt(key) {
     const nameEl = document.querySelector(`[data-prompt-name="${key}"]`);
     const textEl = document.querySelector(`[data-prompt-text="${key}"]`);
+    const diseaseEl = document.querySelector(`[data-prompt-disease="${key}"]`);
     if (!nameEl || !textEl) return;
 
     const prompts = store.get('customPrompts') || {};
@@ -1075,6 +1105,7 @@ var App = class App {
       ...prompts[key],
       name: nameEl.value,
       prompt: textEl.value,
+      disease: diseaseEl ? diseaseEl.value : (prompts[key]?.disease || '_universal'),
       active: true
     };
     store.set('customPrompts', prompts);

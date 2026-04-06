@@ -1439,96 +1439,396 @@ var MECFS_DEFAULT_PROMPT = `あなたは慢性疲労症候群/筋痛性脳脊髄
 【出力形式】JSON + マークダウンのハイブリッド形式で出力してください。`;
 
 // Default admin prompts library
-var DEFAULT_PROMPTS = {
-  mecfs_daily: {
-    name: 'ME/CFS 日次分析',
-    description: '毎日の症状・バイタルデータを分析し、個別化されたアドバイスを生成',
-    prompt: MECFS_DEFAULT_PROMPT,
+// ============================================================
+// Disease-specific and universal prompt library
+// ============================================================
+
+// Common header injected into all prompts
+var PROMPT_HEADER = `【ユーザープロフィール】
+{{USER_PROFILE}}
+
+【選択疾患】{{SELECTED_DISEASES}}
+
+【ユーザーの健康データ】
+{{USER_DATA}}
+
+【本日の日付】{{DATE}}
+`;
+
+// ---- UNIVERSAL PROMPTS (all diseases / healthy people) ----
+var UNIVERSAL_PROMPTS = {
+  universal_daily: {
+    name: '日次健康分析（共通）',
+    disease: '_universal',
+    description: '全疾患・健常者共通の毎日の健康分析',
     schedule: 'daily',
-    active: true
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは統合医療・予防医学の世界的専門家です。
+上記ユーザーデータを基に以下を分析・提案してください：
+
+1. 本日の体調評価と傾向分析
+2. 睡眠・栄養・活動量のバランス評価
+3. ストレスレベルの推定と対策
+4. 免疫力・炎症レベルの推定
+5. 具体的な改善アクション（優先度付き）
+6. 推奨サプリメント・食事
+7. 受診が必要な兆候があればアラート
+
+出力はユーザーの居住地（{{LOCATION}}）の医療機関・薬局を優先して提案すること。`
   },
-  mecfs_weekly: {
-    name: 'ME/CFS 週次レポート',
-    description: '1週間のデータを総合分析し、傾向とアクションプランを生成',
-    prompt: `ユーザーの過去7日間の健康データを総合的に分析してください。
+  universal_weekly: {
+    name: '週次レポート（共通）',
+    disease: '_universal',
+    description: '1週間の総合分析',
+    schedule: 'weekly',
+    active: true,
+    prompt: PROMPT_HEADER + `過去7日間の健康データを総合分析してください。
 {{WEEKLY_DATA}}
-1. 症状の傾向分析（改善/悪化/安定）
-2. PEM発生パターンの分析
-3. 睡眠品質の推移
-4. 栄養・サプリメント効果の評価
-5. 来週のペーシング戦略提案
-6. 医療機関受診の要否判断`,
-    schedule: 'weekly',
-    active: true
-  },
-  mecfs_research: {
-    name: 'ME/CFS 最新研究スキャン',
-    description: 'PubMed等から最新の研究論文を収集・要約',
-    prompt: `ME/CFS（筋痛性脳脊髄炎/慢性疲労症候群）に関する最新の研究論文を検索し、
-以下の形式で報告してください：
 
-検索対象：PubMed, bioRxiv, medRxiv, Google Scholar
-期間：過去7日間
-言語：英語・日本語
-
-各論文について：
-- タイトル（日本語訳付き）
-- 著者・ジャーナル
-- 要旨（200字以内）
-- 臨床的意義
-- DOI/URL
-- 患者にとっての重要度（★1-5）`,
-    schedule: 'weekly',
-    active: true
+1. 症状・体調の傾向（改善/悪化/安定をグラフ的に表現）
+2. 睡眠品質の推移と改善策
+3. 栄養・サプリメント効果の評価
+4. 活動量と回復のバランス
+5. メンタルヘルスの状態
+6. 来週の生活改善戦略
+7. 医療機関受診の要否判断`
   },
   supplement_optimizer: {
-    name: 'サプリメント最適化',
-    description: '血液検査結果と症状データからサプリメントプロトコルを最適化',
-    prompt: `以下のユーザーデータに基づいて、サプリメントプロトコルを最適化してください：
-
-【血液検査データ】
-{{BLOOD_TEST_DATA}}
-
-【現在のサプリメント】
-{{CURRENT_SUPPLEMENTS}}
-
-【症状データ】
-{{SYMPTOM_DATA}}
-
-分析項目：
-1. 現在のサプリメントの過不足
-2. 血液検査値から推測される不足栄養素
-3. 症状に対するエビデンスベースの推奨サプリメント
-4. 飲み合わせの安全性チェック
-5. コスト最適化（同等品の比較）
-6. 具体的な購入リンク（Amazon.co.jp, iHerb優先）`,
+    name: 'サプリメント最適化（共通）',
+    disease: '_universal',
+    description: '血液検査と症状からサプリプロトコルを最適化',
     schedule: 'on_data_update',
-    active: true
+    active: true,
+    prompt: PROMPT_HEADER + `以下のデータに基づき、サプリメントプロトコルを最適化してください：
+【血液検査】{{BLOOD_TEST_DATA}}
+【現在のサプリ】{{CURRENT_SUPPLEMENTS}}
+【症状】{{SYMPTOM_DATA}}
+
+分析：
+1. 不足栄養素の特定
+2. エビデンスベースの推奨サプリメント（用量・タイミング）
+3. 飲み合わせの安全性チェック
+4. コスト最適化
+5. 具体的な購入リンク（Amazon.co.jp, iHerb優先）`
   },
-  pacing_advisor: {
-    name: 'ペーシングアドバイザー',
-    description: 'HRVと活動量データからペーシング戦略を最適化',
-    prompt: `以下の活動量・HRVデータに基づいて、本日のペーシング戦略を提案してください：
-
-【HRVデータ】
-{{HRV_DATA}}
-
-【活動量データ】
-{{ACTIVITY_DATA}}
-
-【直近のPEM発生記録】
-{{PEM_HISTORY}}
-
-提案内容：
-1. 本日のエネルギーエンベロープ（推定利用可能エネルギー）
-2. 推奨活動時間と休憩間隔
-3. 避けるべき活動
-4. 安全な活動レベルの具体的数値
-5. PEM予防のためのアラート閾値設定`,
+  sleep_analysis: {
+    name: '睡眠分析（共通）',
+    disease: '_universal',
+    description: '睡眠の質を分析し改善策を提案',
     schedule: 'daily',
-    active: true
+    active: true,
+    prompt: PROMPT_HEADER + `睡眠データと日中の症状から睡眠の質を分析してください。
+
+1. 睡眠の量と質の評価
+2. 睡眠障害の兆候（無呼吸、中途覚醒、入眠困難等）
+3. 概日リズムの評価
+4. 睡眠環境の改善提案（温度・光・音・電磁波）
+5. 睡眠補助の推奨（メラトニン、マグネシウム、GABA等）
+6. 睡眠薬を使用中の場合、減薬に向けたアドバイス`
+  },
+  nutrition_analysis: {
+    name: '栄養分析（共通）',
+    disease: '_universal',
+    description: '食事内容を分析し栄養改善を提案',
+    schedule: 'on_data_update',
+    active: true,
+    prompt: PROMPT_HEADER + `ユーザーの食事記録・食事写真・栄養データを分析してください。
+
+1. 主要栄養素（タンパク質・脂質・炭水化物）のバランス
+2. 微量栄養素の過不足
+3. 抗炎症食の観点からの評価
+4. 腸内環境への影響
+5. 疾患特有の食事制限への適合性
+6. 具体的な食事改善提案（レシピ含む）
+7. 推奨食品の購入リンク`
+  },
+  mental_health: {
+    name: 'メンタルヘルス分析（共通）',
+    disease: '_universal',
+    description: '精神状態を分析しケアを提案',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `ユーザーの精神状態・会話記録・日記データを分析してください。
+
+1. 現在の気分・感情状態の評価
+2. ストレス要因の特定
+3. うつ・不安の兆候チェック
+4. 孤独感・社会的孤立のリスク評価
+5. 即実行可能なセルフケア手順
+6. 専門家（心療内科・カウンセラー）受診の要否
+7. 瞑想・呼吸法・マインドフルネスの具体的プロトコル`
   }
 };
+
+// ---- DISEASE-SPECIFIC PROMPTS ----
+var DISEASE_PROMPTS = {
+  // ME/CFS
+  mecfs_daily: {
+    name: 'ME/CFS 日次分析',
+    disease: 'mecfs',
+    description: 'ME/CFS専門の毎日の症状分析',
+    schedule: 'daily',
+    active: true,
+    prompt: MECFS_DEFAULT_PROMPT
+  },
+  mecfs_research: {
+    name: 'ME/CFS 最新研究',
+    disease: 'mecfs',
+    description: 'PubMed等からME/CFS最新論文を収集',
+    schedule: 'weekly',
+    active: true,
+    prompt: PROMPT_HEADER + `ME/CFS（筋痛性脳脊髄炎/慢性疲労症候群）の最新研究を報告してください。
+検索対象：PubMed, bioRxiv, medRxiv　期間：過去7日間
+重点領域：免疫異常、ミトコンドリア、TRPM3、自己抗体、LDN、BC007、迷走神経刺激
+各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI・重要度★1-5`
+  },
+  mecfs_pacing: {
+    name: 'ME/CFS ペーシング',
+    disease: 'mecfs',
+    description: 'PEM予防のためのペーシング戦略',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `ME/CFS患者のペーシング戦略を提案してください。
+【HRV】{{HRV_DATA}}　【活動量】{{ACTIVITY_DATA}}　【PEM履歴】{{PEM_HISTORY}}
+
+1. 本日のエネルギーエンベロープ推定
+2. 推奨活動時間と休憩間隔
+3. PEM発症リスク評価
+4. 心拍数ベースの活動限界値
+5. 安全な活動の具体例と時間配分`
+  },
+
+  // うつ病
+  depression_daily: {
+    name: 'うつ病 日次分析',
+    disease: 'depression',
+    description: 'うつ病の症状追跡と気分管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたはうつ病（大うつ病性障害）の専門医・認知行動療法の専門家です。
+ユーザーの日記・気分データ・活動量を分析してください。
+
+1. 今日の気分スコアとPHQ-9推定値
+2. 認知の歪み（全か無思考、過度の一般化等）の検出
+3. 行動活性化の提案（小さな達成可能な目標）
+4. 反芻思考パターンの分析と対策
+5. 社会的つながりの評価
+6. 服薬アドヒアランスの確認
+7. 自殺念慮のスクリーニング（該当時は即時受診推奨）
+8. 今日の具体的なセルフケアステップ`
+  },
+  depression_research: {
+    name: 'うつ病 最新研究',
+    disease: 'depression',
+    description: 'うつ病の最新治療研究',
+    schedule: 'weekly',
+    active: true,
+    prompt: PROMPT_HEADER + `うつ病の最新研究を報告してください。
+重点：ケタミン/エスケタミン、TMS、サイケデリクス療法（シロシビン）、腸脳相関、炎症性うつ病、デジタル治療（CBT-i等）、運動療法のRCT、栄養精神医学`
+  },
+
+  // 双極性障害
+  bipolar_daily: {
+    name: '双極性障害 日次分析',
+    disease: 'bipolar',
+    description: '気分の波の追跡と安定化',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは双極性障害の専門医です。
+ユーザーデータから気分エピソードの状態を評価してください。
+
+1. 現在の気分状態（うつ/正常/軽躁/躁）の推定
+2. 睡眠パターンからの躁転兆候チェック
+3. 活動量と気分の相関分析
+4. 服薬（リチウム・バルプロ酸等）の効果評価
+5. トリガー要因の特定（睡眠不足・ストレス・季節）
+6. 安定化のための具体的アクション`
+  },
+
+  // PTSD/C-PTSD
+  ptsd_daily: {
+    name: 'PTSD 日次分析',
+    disease: 'ptsd',
+    description: 'トラウマ症状の追跡とケア',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたはPTSD/複雑性PTSDの専門家（EMDR・CPT認定）です。
+
+1. フラッシュバック・悪夢の頻度と強度の追跡
+2. 回避行動パターンの分析
+3. 過覚醒・感情麻痺の評価
+4. ウィンドウ・オブ・トレランス（耐性の窓）の評価
+5. グラウンディングテクニックの提案
+6. EMDR・PE・CPTなど専門治療へのアクセス情報
+7. 安全な日常ルーティンの提案`
+  },
+
+  // ADHD
+  adhd_daily: {
+    name: 'ADHD 日次分析',
+    disease: 'adhd',
+    description: '注意力・実行機能の管理支援',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたはADHD（注意欠如多動性障害）の専門家です。
+
+1. 今日の集中力・実行機能の評価
+2. タスク管理・時間管理の改善提案
+3. 過集中と注意散漫のパターン分析
+4. 服薬効果の評価（メチルフェニデート・アトモキセチン等）
+5. 環境調整の提案（ノイズ・刺激管理）
+6. 運動・マインドフルネスによる自己制御戦略
+7. 睡眠と覚醒リズムの最適化`
+  },
+
+  // Long COVID
+  long_covid_daily: {
+    name: 'Long COVID 日次分析',
+    disease: 'long_covid',
+    description: 'コロナ後遺症の症状管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたはLong COVID（Post-COVID Condition）の専門医です。
+ME/CFSとの重複症状にも注意して分析してください。
+
+1. 主要症状クラスターの評価（疲労・認知・自律神経・呼吸・疼痛）
+2. PEM有無の評価とペーシング戦略
+3. ブレインフォグの程度と認知リハビリ提案
+4. 微小血栓・血管内皮障害の兆候チェック
+5. 免疫調整・抗炎症アプローチ
+6. ワクチン接種歴との関連評価
+7. 最新治療オプション（抗凝固、LDN、HBOT等）`
+  },
+
+  // 線維筋痛症
+  fibromyalgia_daily: {
+    name: '線維筋痛症 日次分析',
+    disease: 'fibromyalgia',
+    description: '疼痛管理と生活の質向上',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは線維筋痛症の専門医です。
+
+1. 疼痛マップ（部位・強度・種類）の評価
+2. 中枢性感作の程度評価
+3. 疼痛管理戦略（薬物・非薬物の組み合わせ）
+4. 睡眠の質と疼痛の相関分析
+5. 運動療法プロトコル（水中運動・ヨガ・太極拳）
+6. プレガバリン・デュロキセチン等の効果評価
+7. トリガーポイントのセルフケア手順`
+  },
+
+  // 甲状腺疾患
+  thyroid_daily: {
+    name: '甲状腺疾患 日次分析',
+    disease: 'hashimoto',
+    description: '甲状腺機能と症状の管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは甲状腺疾患（橋本病・バセドウ病・甲状腺機能低下/亢進症）の専門医です。
+
+1. 甲状腺関連症状の評価（疲労・体重変動・冷え・動悸等）
+2. TSH/T3/T4の推移分析（検査データがある場合）
+3. 薬用量（レボチロキシン等）の適正評価
+4. 自己免疫管理（抗TPO/TG抗体）
+5. セレン・亜鉛・ヨウ素の栄養管理
+6. グルテンフリー食の検討
+7. ストレスとHPA軸への影響`
+  },
+
+  // 糖尿病
+  diabetes_daily: {
+    name: '糖尿病 日次分析',
+    disease: 'diabetes_t2',
+    description: '血糖管理と合併症予防',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは糖尿病専門医・糖尿病療養指導士です。
+
+1. 血糖値パターンの分析（食前/食後/空腹時）
+2. HbA1c推定と目標管理
+3. 食事の血糖インパクト評価
+4. インスリン抵抗性の評価
+5. 運動と血糖の関係分析
+6. 合併症リスク評価（腎症・網膜症・神経障害）
+7. GLP-1受容体作動薬・SGLT2阻害薬の効果評価`
+  },
+
+  // 自己免疫疾患（共通）
+  autoimmune_daily: {
+    name: '自己免疫疾患 日次分析',
+    disease: 'sle',
+    description: 'SLE・RA等の自己免疫疾患管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは自己免疫疾患（SLE・関節リウマチ・シェーグレン等）の専門医です。
+
+1. フレア（増悪）の兆候チェック
+2. 炎症マーカー（CRP・ESR・補体）の推移
+3. 免疫抑制薬の効果と副作用モニタリング
+4. 紫外線・ストレス等のトリガー管理
+5. 疲労管理とペーシング
+6. 骨密度・感染リスクの評価
+7. 妊娠計画がある場合の薬剤調整`
+  },
+
+  // IBS（過敏性腸症候群）
+  ibs_daily: {
+    name: 'IBS 日次分析',
+    disease: 'ibs',
+    description: '腸症状と食事管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは消化器内科・IBS専門医です。
+
+1. 腸症状（腹痛・膨満・下痢・便秘）の評価
+2. 食事トリガーの特定（FODMAP分析）
+3. 腸内細菌叢の状態推定
+4. ストレスと腸症状の相関
+5. Low-FODMAPプロトコルの提案
+6. プロバイオティクス・プレバイオティクスの推奨
+7. 腸脳相関に基づく心理的アプローチ`
+  },
+
+  // POTS
+  pots_daily: {
+    name: 'POTS 日次分析',
+    disease: 'pots',
+    description: '起立不耐と自律神経管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたはPOTS（体位性頻脈症候群）・自律神経障害の専門医です。
+
+1. 起立時心拍数変動の評価
+2. 血圧・心拍のパターン分析
+3. 水分・塩分摂取量の適正評価
+4. 圧迫衣類・傾斜訓練の効果
+5. ミドドリン・フロリネフ等の薬効評価
+6. 運動プロトコル（臥位→座位→立位の段階的）
+7. ME/CFS・MCAS・EDS合併時の注意点`
+  },
+
+  // 不眠症
+  insomnia_daily: {
+    name: '不眠症 日次分析',
+    disease: 'insomnia',
+    description: '睡眠障害の分析と改善',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは睡眠医学の専門医・CBT-I（不眠症の認知行動療法）の専門家です。
+
+1. 睡眠効率の計算と評価
+2. 入眠潜時・中途覚醒・早朝覚醒のパターン
+3. 睡眠日誌分析
+4. CBT-Iの具体的介入（刺激制御・睡眠制限・認知再構成）
+5. 睡眠薬の減薬プロトコル（使用中の場合）
+6. 概日リズム調整（光療法・メラトニン）
+7. 睡眠衛生チェックリスト`
+  }
+};
+
+// Build DEFAULT_PROMPTS by merging universal + disease-specific
+var DEFAULT_PROMPTS = { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS };
 
 
 // === js/store.js ===
@@ -1633,7 +1933,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -1651,7 +1951,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile'
     ];
     keys.forEach(key => {
       try {
@@ -1814,8 +2114,36 @@ var AIEngine = class AIEngine {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    // Build user profile string
+    const profile = store.get('userProfile') || {};
+    const genderMap = { male: '男性', female: '女性', other: 'その他' };
+    const rangeMap = { local: '近隣のみ', prefecture: '県内', region: '関東圏・地方圏', national: '国内全域', international: '海外含む' };
+    const profileStr = [
+      profile.age ? `年齢: ${profile.age}歳` : '',
+      profile.gender ? `性別: ${genderMap[profile.gender] || profile.gender}` : '',
+      profile.height ? `身長: ${profile.height}cm` : '',
+      profile.weight ? `体重: ${profile.weight}kg` : '',
+      profile.location ? `居住地: ${profile.location}` : '',
+      profile.travelRange ? `通院可能範囲: ${rangeMap[profile.travelRange] || profile.travelRange}` : '',
+      profile.notes ? `備考: ${profile.notes}` : ''
+    ].filter(Boolean).join('\n') || '未設定';
+
+    // Build selected diseases string
+    const selectedDiseases = store.get('selectedDiseases') || [];
+    const diseaseNames = [];
+    selectedDiseases.forEach(id => {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === id);
+        if (found) { diseaseNames.push(found.name); break; }
+      }
+    });
+    const diseasesStr = diseaseNames.join('、') || (store.get('selectedDisease')?.fullName || '未設定');
+
     let prompt = template
       .replace(/\{\{DATE\}\}/g, today)
+      .replace(/\{\{USER_PROFILE\}\}/g, profileStr)
+      .replace(/\{\{SELECTED_DISEASES\}\}/g, diseasesStr)
+      .replace(/\{\{LOCATION\}\}/g, profile.location || '日本')
       .replace(/\{\{USER_DATA\}\}/g, JSON.stringify(data.current || {}, null, 2))
       .replace(/\{\{WEEKLY_DATA\}\}/g, JSON.stringify(data.weekly || {}, null, 2))
       .replace(/\{\{BLOOD_TEST_DATA\}\}/g, JSON.stringify(data.bloodTests || {}, null, 2))
@@ -1824,12 +2152,6 @@ var AIEngine = class AIEngine {
       .replace(/\{\{HRV_DATA\}\}/g, JSON.stringify(data.hrv || {}, null, 2))
       .replace(/\{\{ACTIVITY_DATA\}\}/g, JSON.stringify(data.activity || {}, null, 2))
       .replace(/\{\{PEM_HISTORY\}\}/g, JSON.stringify(data.pemHistory || {}, null, 2));
-
-    // Add user profile context
-    const disease = store.get('selectedDisease');
-    if (disease) {
-      prompt = `【対象疾患】${disease.fullName}\n\n` + prompt;
-    }
 
     return prompt;
   }
@@ -3785,6 +4107,7 @@ var App = class App {
     if (page === 'dashboard') this.initDashboardCharts();
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
+    if (page === 'settings') this.loadProfileFields();
   }
 
   // ---- API Key Management ----
@@ -4723,6 +5046,34 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- User Profile ----
+  saveProfile() {
+    const profile = {
+      age: document.getElementById('profile-age')?.value || '',
+      gender: document.getElementById('profile-gender')?.value || '',
+      height: document.getElementById('profile-height')?.value || '',
+      weight: document.getElementById('profile-weight')?.value || '',
+      location: document.getElementById('profile-location')?.value || '',
+      travelRange: document.getElementById('profile-travel-range')?.value || 'region',
+      language: document.getElementById('profile-language')?.value || 'ja',
+      notes: document.getElementById('profile-notes')?.value || ''
+    };
+    store.set('userProfile', profile);
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ userProfile: profile });
+    }
+    Components.showToast('プロフィールを保存しました', 'success');
+  }
+
+  loadProfileFields() {
+    const profile = store.get('userProfile') || {};
+    const fields = { age: 'profile-age', gender: 'profile-gender', height: 'profile-height', weight: 'profile-weight', location: 'profile-location', travelRange: 'profile-travel-range', language: 'profile-language', notes: 'profile-notes' };
+    Object.entries(fields).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && profile[key]) el.value = profile[key];
+    });
+  }
+
   // ---- Sidebar (mobile) ----
   toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -4748,6 +5099,7 @@ var App = class App {
   savePrompt(key) {
     const nameEl = document.querySelector(`[data-prompt-name="${key}"]`);
     const textEl = document.querySelector(`[data-prompt-text="${key}"]`);
+    const diseaseEl = document.querySelector(`[data-prompt-disease="${key}"]`);
     if (!nameEl || !textEl) return;
 
     const prompts = store.get('customPrompts') || {};
@@ -4755,6 +5107,7 @@ var App = class App {
       ...prompts[key],
       name: nameEl.value,
       prompt: textEl.value,
+      disease: diseaseEl ? diseaseEl.value : (prompts[key]?.disease || '_universal'),
       active: true
     };
     store.set('customPrompts', prompts);
@@ -5665,21 +6018,46 @@ App.prototype.render_admin = function() {
     </div>
   `).join('');
 
-  const promptEditors = Object.entries(prompts).map(([key, p]) => `
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-header">
-        <input class="form-input" data-prompt-name="${key}" value="${p.name}" style="font-weight:600;border:none;background:transparent;padding:0;font-size:14px;color:var(--text-primary)">
-        <div style="display:flex;gap:6px">
-          <span class="tag ${p.active ? 'tag-success' : 'tag-warning'}">${p.schedule || 'manual'}</span>
-          <button class="btn btn-sm btn-danger" onclick="app.deletePrompt('${key}')">削除</button>
+  // Group prompts by disease
+  const promptsByDisease = {};
+  Object.entries(prompts).forEach(([key, p]) => {
+    const group = p.disease || '_universal';
+    if (!promptsByDisease[group]) promptsByDisease[group] = [];
+    promptsByDisease[group].push({ key, ...p });
+  });
+
+  const diseaseLabels = { '_universal': '共通（全疾患・健常者）' };
+  CONFIG.DISEASE_CATEGORIES.forEach(cat => {
+    cat.diseases.forEach(d => { diseaseLabels[d.id] = d.name; });
+  });
+
+  const promptEditors = Object.entries(promptsByDisease).map(([diseaseId, promptList]) => `
+    <div style="margin-bottom:20px">
+      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${diseaseLabels[diseaseId] || diseaseId}</h4>
+      ${promptList.map(p => `
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-header" style="padding:12px 16px">
+            <input class="form-input" data-prompt-name="${p.key}" value="${p.name}" style="font-weight:600;border:none;background:transparent;padding:0;font-size:13px;color:var(--text-primary)">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="tag ${p.active ? 'tag-success' : 'tag-warning'}" style="font-size:10px">${p.schedule || 'manual'}</span>
+              <button class="btn btn-sm btn-danger" onclick="app.deletePrompt('${p.key}')" style="padding:4px 8px;font-size:11px">削除</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:12px 16px;display:none" id="prompt-body-${p.key}">
+            <select class="form-select" data-prompt-disease="${p.key}" style="margin-bottom:8px;font-size:12px">
+              <option value="_universal" ${(p.disease||'_universal')==='_universal'?'selected':''}>共通</option>
+              ${CONFIG.DISEASE_CATEGORIES.map(cat => cat.diseases.map(d => `<option value="${d.id}" ${p.disease===d.id?'selected':''}>${d.name}</option>`).join('')).join('')}
+            </select>
+            <textarea class="form-textarea" data-prompt-text="${p.key}" style="min-height:150px;font-family:'JetBrains Mono',monospace;font-size:11px">${p.prompt}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${p.key}')">保存</button>
+            </div>
+          </div>
+          <div style="padding:8px 16px;cursor:pointer;font-size:11px;color:var(--text-muted)" onclick="var b=document.getElementById('prompt-body-${p.key}');b.style.display=b.style.display==='none'?'block':'none'">
+            クリックして展開/折りたたみ
+          </div>
         </div>
-      </div>
-      <div class="card-body">
-        <textarea class="form-textarea" data-prompt-text="${key}" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:12px">${p.prompt}</textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:10px">
-          <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${key}')">保存</button>
-        </div>
-      </div>
+      `).join('')}
     </div>
   `).join('');
 
@@ -5835,19 +6213,72 @@ App.prototype.render_settings = function() {
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">設定</h2>
   </div>
 
-  <!-- Profile -->
+  <!-- Profile & Health Info -->
   <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">プロフィール</span></div>
+    <div class="card-header"><span class="card-title">プロフィール・基本情報</span></div>
     <div class="card-body">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
         <div class="user-avatar" style="width:56px;height:56px;font-size:22px">${user.displayName?.[0] || '?'}</div>
         <div>
           <div style="font-size:16px;font-weight:600">${user.displayName || 'ゲスト'}</div>
           <div style="font-size:13px;color:var(--text-muted)">${user.email || ''}</div>
-          <div class="tag tag-accent" style="margin-top:6px">${disease.name || '未設定'} - ${disease.fullName || ''}</div>
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="app.navigate('disease-select')">疾患設定を変更</button>
+
+      <div class="grid grid-2" style="gap:12px;margin-bottom:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">年齢</label>
+          <input type="number" class="form-input" id="profile-age" placeholder="50" min="0" max="120">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">性別</label>
+          <select class="form-select" id="profile-gender">
+            <option value="">選択してください</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">身長 (cm)</label>
+          <input type="number" class="form-input" id="profile-height" placeholder="170" min="100" max="250">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">体重 (kg)</label>
+          <input type="number" class="form-input" id="profile-weight" placeholder="65" min="20" max="300">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">居住地（都道府県・市区町村）</label>
+        <input type="text" class="form-input" id="profile-location" placeholder="例: 神奈川県秦野市">
+      </div>
+      <div class="form-group">
+        <label class="form-label">通院可能範囲</label>
+        <select class="form-select" id="profile-travel-range">
+          <option value="local">近隣のみ（市内）</option>
+          <option value="prefecture">県内</option>
+          <option value="region" selected>関東圏・地方圏</option>
+          <option value="national">国内全域</option>
+          <option value="international">海外も含む</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主な言語</label>
+        <select class="form-select" id="profile-language">
+          <option value="ja" selected>日本語</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="ko">한국어</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">備考（アレルギー、既往歴、家族歴など）</label>
+        <textarea class="form-textarea" id="profile-notes" rows="3" placeholder="例: ペニシリンアレルギー、父が糖尿病、母が甲状腺疾患"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="app.saveProfile()">プロフィールを保存</button>
+      <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="app.navigate('login')">疾患設定を変更</button>
     </div>
   </div>
 
