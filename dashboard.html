@@ -2335,14 +2335,32 @@ var AIEngine = class AIEngine {
 
   // Anthropic Claude API (direct browser access)
   async callAnthropic(modelId, prompt, apiKey, options) {
-    // Map friendly model names to API model IDs
-    // Use well-known stable model IDs
-    const modelMap = {
-      'claude-sonnet-4-6': 'claude-3-5-sonnet-20241022',
-      'claude-opus-4-6': 'claude-3-5-sonnet-20241022',
-      'claude-haiku-4-5': 'claude-3-5-haiku-20241022'
-    };
-    const apiModelId = modelMap[modelId] || 'claude-3-5-sonnet-20241022';
+    // Try multiple model IDs in order (different API plans have different access)
+    const modelCandidates = [
+      'claude-sonnet-4-5-20250514',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-sonnet-latest',
+      'claude-3-haiku-20240307',
+      'claude-3-sonnet-20240229'
+    ];
+
+    // Try each model until one works
+    let lastError = null;
+    for (const apiModelId of modelCandidates) {
+      try {
+        const result = await this._callAnthropicWithModel(apiModelId, prompt, apiKey, options);
+        console.log('[Anthropic] Success with model:', apiModelId);
+        return result;
+      } catch (err) {
+        console.log('[Anthropic] Model', apiModelId, 'failed:', err.message);
+        lastError = err;
+        if (!err.message.includes('404')) throw err; // Only retry on 404 (model not found)
+      }
+    }
+    throw lastError || new Error('All Anthropic models failed');
+  }
+
+  async _callAnthropicWithModel(apiModelId, prompt, apiKey, options) {
 
     const body = {
       model: apiModelId,
