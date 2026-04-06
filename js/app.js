@@ -125,8 +125,11 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') {
       this.initDashboardCharts();
-      // Auto-load research for selected diseases
       setTimeout(() => this.loadDashResearch(), 300);
+      setTimeout(() => this.loadActionRecommendations(), 600);
+    }
+    if (page === 'actions') {
+      setTimeout(() => this.loadActionRecommendations(), 300);
     }
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
@@ -1061,6 +1064,134 @@ var App = class App {
   }
 
   // ---- PubMed Live Search ----
+  // Generate clinic/workshop/event recommendations via API
+  async loadActionRecommendations() {
+    const container = document.getElementById('action-live-recs');
+    if (!container) return;
+
+    // Check cache (refresh every 12 hours)
+    const cached = store.get('cachedActions');
+    if (cached && cached.html && (Date.now() - cached.fetchedAt) < 12 * 60 * 60 * 1000) {
+      container.innerHTML = cached.html;
+      return;
+    }
+
+    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+    if (!apiKey) {
+      container.innerHTML = this.generateLocalActionRecs();
+      return;
+    }
+
+    container.innerHTML = Components.loading('あなたに合った施設・イベントを検索中...');
+
+    const diseases = store.get('selectedDiseases') || [];
+    const profile = store.get('userProfile') || {};
+    const recentText = (store.get('textEntries') || []).slice(-5).map(e => e.content || '').join('\n').substring(0, 2000);
+    const today = new Date();
+    const dayOfWeek = ['日','月','火','水','木','金','土'][today.getDay()];
+    const randomSeed = Math.floor(today.getTime() / 86400000); // Changes daily
+
+    const prompt = `あなたは慢性疾患患者の生活支援の専門家です。
+以下のユーザー情報に基づいて、今日（${today.toLocaleDateString('ja-JP')}・${dayOfWeek}曜日）おすすめのアクションを提案してください。
+
+【重要】毎回異なる視点・新しい選択肢を提示すること。前回と同じ提案は避けてください。
+ランダムシード: ${randomSeed}（この数値に基づいて提案内容を変化させてください）
+
+【ユーザー情報】
+疾患: ${diseases.join(', ') || '未設定'}
+居住地: ${profile.location || '日本・関東'}
+年齢: ${profile.age || '未設定'}
+通院範囲: ${profile.travelRange || '関東圏'}
+
+【最近の記録から推測される状態】
+${recentText || '記録なし'}
+
+以下の5カテゴリから各1-2件、合計5-8件を提案してください：
+
+■ 1. クリニック・医療機関（ユーザーの通院範囲内）
+・疾患に専門性のある医療機関名、診療科、住所、特徴
+・なぜ今このクリニックを推奨するかの理由
+・予約方法（Web/電話）、保険適用の有無
+
+■ 2. ワークショップ・セミナー（オンライン含む）
+・疾患関連の患者向けワークショップ、セルフケア講座
+・マインドフルネス、ヨガ、栄養学、運動療法のクラス
+・Peatix/Eventbrite/connpass/ストアカで検索するためのキーワード
+・具体的な検索URL例を提示
+
+■ 3. 患者会・コミュニティ
+・疾患別の患者支援団体、オンラインコミュニティ
+・参加方法、費用、次回の集まり
+・同じ疾患を持つ人とつながる具体的な方法
+
+■ 4. 今日できるセルフケア
+・今日の天気/曜日/季節に合わせた具体的な養生法
+・新しい食事法、入浴法、呼吸法、運動法の提案
+・初めて試すことを1つ含める
+
+■ 5. 新しい治療・アプローチ
+・最近注目されている治療法や臨床試験
+・海外で成果が出ている代替療法
+・日本で受けられる最新の統合医療
+
+各提案は以下の形式で出力：
+【カテゴリ】タイトル
+説明（2-3行）
+アクション：具体的な次のステップ
+URL/連絡先：（あれば）`;
+
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, { maxTokens: 3000 });
+      if (typeof response === 'string' && response.length > 100) {
+        const html = `<div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(response)}</div>`;
+        container.innerHTML = html;
+        store.set('cachedActions', { html, fetchedAt: Date.now() });
+      } else {
+        container.innerHTML = this.generateLocalActionRecs();
+      }
+    } catch (err) {
+      console.warn('[Action Recs] API failed:', err.message);
+      container.innerHTML = this.generateLocalActionRecs();
+    }
+  }
+
+  generateLocalActionRecs() {
+    const diseases = store.get('selectedDiseases') || [];
+    const profile = store.get('userProfile') || {};
+    const location = profile.location || '関東';
+    const day = new Date().getDay();
+    const tips = [
+      '朝日を浴びて体内時計をリセット。15分の散歩から始めてみましょう。',
+      '発酵食品（味噌汁、納豆、ぬか漬け）を1品追加して腸内環境を改善。',
+      'エプソムソルト入浴（38°C, 20分）で自律神経を整えてみましょう。',
+      '4-7-8呼吸法（吸う4秒→止める7秒→吐く8秒）を3セット試してみてください。',
+      'デジタルデトックス：今日1時間だけスマホを手放してみましょう。',
+      '感謝日記：今日良かったことを3つ書いてみてください。',
+      '緑茶やほうじ茶でカフェインを控えめに。L-テアニンでリラックス。',
+    ];
+
+    const searchLinks = [];
+    if (diseases.includes('mecfs')) searchLinks.push({ label: 'ME/CFS患者会を探す', url: `https://peatix.com/search?q=ME%2FCFS+慢性疲労` });
+    if (diseases.includes('depression')) searchLinks.push({ label: 'うつ病の回復ワークショップ', url: `https://peatix.com/search?q=うつ+回復+ワークショップ` });
+    if (diseases.includes('fibromyalgia')) searchLinks.push({ label: '線維筋痛症の交流会', url: `https://peatix.com/search?q=線維筋痛症` });
+    searchLinks.push({ label: 'マインドフルネス講座', url: `https://peatix.com/search?q=マインドフルネス+${encodeURIComponent(location)}` });
+    searchLinks.push({ label: 'ヨガクラス', url: `https://peatix.com/search?q=ヨガ+初心者+${encodeURIComponent(location)}` });
+    searchLinks.push({ label: '栄養学セミナー', url: `https://peatix.com/search?q=栄養+健康+セミナー` });
+
+    return `
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px">今日の養生ヒント</div>
+        <div style="padding:10px 14px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:12px;line-height:1.7">${tips[day]}</div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px">ワークショップ・イベントを探す</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${searchLinks.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:11px">${l.label}</a>`).join('')}
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted)">管理者がAPIキーを設定すると、あなたの疾患・地域に特化したクリニックやイベントの提案が自動生成されます。</div>`;
+  }
+
   async loadDashResearch() {
     const container = document.getElementById('dash-research');
     if (!container) return;

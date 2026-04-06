@@ -375,7 +375,17 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
-  <!-- 6. Latest Research (auto-loaded from PubMed) -->
+  <!-- 6. Clinics / Workshops / Events (auto-loaded) -->
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+      onclick="var c=document.getElementById('dash-actions-live');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+      <h3 style="font-size:15px;font-weight:600">クリニック・イベント・セルフケア</h3>
+      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span>
+    </div>
+    <div id="dash-actions-live" style="display:block"></div>
+  </div>
+
+  <!-- 7. Latest Research (auto-loaded from PubMed) -->
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
       onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
@@ -697,7 +707,16 @@ App.prototype.render_actions = function() {
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">アクションセンター</h2>
     <p style="font-size:13px;color:var(--text-secondary)">ワンクリックで健康改善のアクションを実行</p>
   </div>
-  ${sections || `<div class="card"><div class="card-body">${Components.emptyState('⚡', 'アクションはまだありません', 'データを記録すると、個別化されたアクションプランが生成されます。')}</div></div>`}
+  ${sections || ''}
+
+  <!-- Live Clinic/Workshop/Event Recommendations -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+      <span class="card-title">クリニック・イベント・セルフケア</span>
+      <span style="font-size:10px;color:var(--text-muted)">毎日更新</span>
+    </div>
+    <div class="card-body" id="action-live-recs"></div>
+  </div>
 
   <!-- Recommended Test Kits -->
   <div style="margin-top:24px;margin-bottom:24px">
