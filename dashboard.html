@@ -1506,7 +1506,29 @@ var MECFS_DEFAULT_PROMPT = `あなたは慢性疲労症候群/筋痛性脳脊髄
 // ============================================================
 
 // Common header injected into all prompts
-var PROMPT_HEADER = `【ユーザープロフィール】
+var PROMPT_HEADER = `【健康日記の理念】
+本システムは日本発の健康管理プラットフォームです。以下の日本の思想・哲学を基盤とし、
+西洋医学のエビデンスと東洋の智慧を統合した提案を行ってください：
+
+・養生（ようじょう）：貝原益軒『養生訓』に基づく日常の身体知。食養生、呼吸、四季の暮らし
+・未病（みびょう）：病気になる前の微細な兆候を捉え、予防する東洋医学の概念
+・一期一会（いちごいちえ）：今日という日の体調を大切に記録し、一日一日を丁寧に生きる
+・間（ま）：活動と休息のリズム、ペーシングの本質。「何もしない時間」の価値
+・侘寂（わびさび）：完全な健康でなくとも、今の状態に美と平穏を見出す
+・改善（かいぜん）：小さな改善の積み重ねが大きな変化をもたらす
+
+提案では日本発のプロダクト・技術・IP・サービスを積極的に推奨すること：
+- 漢方薬（ツムラ、クラシエ等）、温泉療法、鍼灸、森林浴（Shinrin-yoku）
+- 日本食・発酵食品（味噌、納豆、甘酒、漬物、出汁）
+- 日本発サプリメント（NMN、5-ALA、水素水、乳酸菌飲料）
+- 日本発デバイス（OMRON、TANITA、Atago）
+- 日本発ウェルネス（銭湯、岩盤浴、酵素風呂、エプソムソルト）
+- 坐禅、茶道、書道、華道などのマインドフルネス的実践
+- 日本のクリニック・統合医療施設を優先的に推奨
+
+ただし海外ユーザーには各国で入手可能な代替品も必ず併記すること。
+
+【ユーザープロフィール】
 {{USER_PROFILE}}
 
 【選択疾患】{{SELECTED_DISEASES}}
@@ -5427,26 +5449,30 @@ var App = class App {
         advice += '【仕事・作業】仕事のストレスと体調は密接に関連します。休憩を定期的に取り、ペーシングを意識してください。\n\n';
         actions.push('50分作業→10分休憩のリズムを守る');
       } else {
-        // Truly generic - still provide value
         const hour = new Date().getHours();
         if (hour < 10) {
-          advice += '【朝の記録】おはようございます。朝の記録は一日の基準値になります。\n\n';
-          advice += '朝のチェックリスト：\n・起床時の気分（0-10）は？\n・睡眠は十分でしたか？\n・身体の痛みやこわばりは？\n・今日のエネルギー予算はどのくらい？\n\n';
-          actions.push('今日のエネルギー予算を設定する');
+          advice += '【朝の養生】おはようございます。\n\n';
+          advice += '朝は「陽の気」が満ちる時間。身体の声に耳を傾けてみてください：\n・起床時の気分は？（穏やか/重い/爽やか）\n・睡眠は足りましたか？\n・身体のこわばりや痛みは？\n・今日はどのくらい動けそうですか？\n\n';
+          advice += '養生のヒント：朝一杯の白湯で胃腸を温めることから始めてみましょう。\n\n';
+          actions.push('白湯を一杯飲む');
+          actions.push('今日のエネルギー予算を決める');
         } else if (hour < 14) {
-          advice += '【昼の記録】午前中の振り返りと午後の計画を立てましょう。\n\nエネルギー残量を意識して、午後の活動を調整してください。\n\n';
-          actions.push('午後の活動計画を見直す');
+          advice += '【昼の養生】午前中の振り返りの時間です。\n\n';
+          advice += '「間（ま）」を大切に。活動と休息のリズムを意識して、午後に備えましょう。\nエネルギーの残量を感じてみてください。\n\n';
+          actions.push('5分間の深呼吸（腹式呼吸）');
         } else if (hour < 19) {
-          advice += '【午後の記録】今日一日の折り返しです。体調の変化はありましたか？\n\n夕方は副交感神経が優位になりやすい時間帯です。リラックスできる活動を計画しましょう。\n\n';
-          actions.push('就寝2時間前からスクリーンタイムを減らす');
+          advice += '【夕の養生】一日の折り返しです。\n\n';
+          advice += '夕方は副交感神経が優位になる「陰」の時間帯。\n身体が求める休息を聴いてあげてください。温かいお茶を一杯、ゆっくりと。\n\n';
+          actions.push('温かいお茶（緑茶・ほうじ茶）を飲む');
         } else {
-          advice += '【夜の記録】今日一日お疲れさまでした。\n\n就寝前の振り返りは翌日の健康管理に役立ちます。良かったこと、辛かったこと、気づいたことを書き留めておきましょう。\n\n';
-          advice += '就寝準備：\n・スマホを寝室に持ち込まない\n・室温を21-23°Cに調整\n・深呼吸を5回行う\n\n';
-          actions.push('就寝準備ルーティンを実行する');
+          advice += '【夜の養生】今日一日、お疲れさまでした。\n\n';
+          advice += '就寝前のふりかえりは養生の基本です。\n今日よかったこと、感謝できることを一つ思い浮かべてみてください。\n\n';
+          advice += '養生の夜の習慣：\n・ぬるめの入浴（38-39°C）で一日の疲れを流す\n・スマホを手放し、静かな時間を作る\n・深い呼吸を5回\n\n';
+          actions.push('入浴で一日をリセットする');
         }
       }
 
-      advice += '記録を続けることで、分析精度が日々向上していきます。';
+      advice += '改善（かいぜん）：小さな記録の積み重ねが、大きな変化をもたらします。';
     }
 
     // Ensure at least one action
@@ -5819,6 +5845,29 @@ var App = class App {
         relevance: (allText.includes('腸') || diseases.includes('ibs') || diseases.includes('crohns') ? 9 : 2) },
       { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=chroniccare-22',
         relevance: (allText.includes('遺伝') ? 8 : 1) },
+      // Japanese products
+      { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=chroniccare-22',
+        relevance: (allText.match(/倦怠|疲|だるい|食欲/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=��苓散+ツムラ&tag=chroniccare-22',
+        relevance: (allText.match(/気圧|天候|頭痛|むくみ/) ? 10 : 2) },
+      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味���遙散+クラシエ&tag=chroniccare-22',
+        relevance: (allText.match(/更年期|イライラ|のぼせ|不眠/) ? 9 : profile.gender === 'female' ? 4 : 1) },
+      { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=chroniccare-22',
+        relevance: (allText.match(/ミ���コンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+      { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=chroniccare-22',
+        relevance: (allText.match(/水素|酸化|抗���化/) ? 8 : 1) },
+      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オ��ロン+血圧計&tag=chroniccare-22',
+        relevance: (allText.match(/血圧|高血圧/) ? 9 : diseases.includes('hypertension') ? 7 : 1) },
+      { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=chroniccare-22',
+        relevance: (allText.match(/体重|体脂肪|肥満|ダイエット/) ? 8 : diseases.includes('metabolic_syndrome') ? 6 : 1) },
+      { id: 'miso', icon: '🫘', name: '有機味噌（発酵食品）', desc: '腸内環境・免疫・日本の智慧', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=有機+味噌+無添加&tag=chroniccare-22',
+        relevance: (allText.match(/腸|発酵|免疫|食事/) ? 7 : 2) },
+      { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=chroniccare-22',
+        relevance: (allText.match(/栄養|疲労|発酵|甘酒/) ? 7 : 2) },
+      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプ��ムソルト+国産&tag=chroniccare-22',
+        relevance: (allText.match(/風呂|入浴|エプソム|マグネシウム/) ? 9 : 3) },
+      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森���浴+ガイド&tag=chroniccare-22',
+        relevance: (allText.match(/自然|森|散歩|リラックス/) ? 6 : 1) },
       { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
         relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
       { id: 'equol', icon: '🫘', name: 'エクオール', desc: '更年期・女性ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エクオール+サプリ&tag=chroniccare-22',
@@ -6346,7 +6395,7 @@ App.prototype.render_login = function() {
           <svg width="52" height="52" viewBox="0 0 36 36" fill="none"><path d="M18 6C18 6 10 12 10 19C10 23.4 13.6 27 18 27C22.4 27 26 23.4 26 19C26 12 18 6 18 6Z" fill="white" opacity="0.9"/><path d="M18 10C18 10 13 14.5 13 19C13 21.8 15.2 24 18 24C20.8 24 23 21.8 23 19C23 14.5 18 10 18 10Z" fill="url(#lgH2)"/><path d="M15 18.5L17 20.5L21 16.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lgH2" x1="13" y1="10" x2="23" y2="24"><stop stop-color="#FF6584"/><stop offset="1" stop-color="#6C63FF"/></linearGradient></defs></svg>
         </div>
         <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
-        <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.6">あなたの体調を毎日記録するだけで<br>寛解への道筋が見えてきます</p>
+        <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
       </div>
 
       <!-- Features -->
@@ -6420,10 +6469,12 @@ App.prototype.render_login = function() {
       <!-- Trust -->
       <div style="text-align:center;padding:16px 0 32px;color:var(--text-muted);font-size:11px;line-height:1.8">
         <div style="margin-bottom:8px">
-          <span style="margin:0 8px">🔒 データは暗号化保存</span>
-          <span style="margin:0 8px">🏥 WHO ICD-11準拠</span>
+          <span style="margin:0 6px">🇯🇵 Made in Japan</span>
+          <span style="margin:0 6px">🔒 暗号化保存</span>
+          <span style="margin:0 6px">🏥 WHO準拠</span>
         </div>
-        <div>無料で利用できます・いつでも退会可能</div>
+        <div style="margin-bottom:4px">養生 × テクノロジー ×  エビデンス</div>
+        <div>無料で利用できます</div>
       </div>
 
     </div>
@@ -6508,13 +6559,13 @@ App.prototype.render_dashboard = function() {
 
   // Welcome message for new users
   const welcomeHtml = !hasData ? `
-    <div class="card" style="margin-bottom:20px;border-color:var(--success);background:var(--success-bg)">
-      <div class="card-body" style="text-align:center;padding:30px">
-        <div style="font-size:36px;margin-bottom:12px">👋</div>
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ 健康日記 へ</h3>
-        <p style="font-size:13px;color:var(--text-secondary);max-width:500px;margin:0 auto 16px;line-height:1.7">
-          まずは上の入力欄に今日の体調を書いてみてください。<br>
-          書くだけで即座に分析し、あなたに合ったアドバイスを表示します。
+    <div class="card" style="margin-bottom:20px;border:none;background:linear-gradient(135deg, rgba(108,99,255,0.06), rgba(255,101,132,0.06));border-radius:20px">
+      <div class="card-body" style="text-align:center;padding:28px 20px">
+        <div style="font-size:28px;margin-bottom:8px;letter-spacing:2px">一期一会</div>
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">今日という日を大切に</h3>
+        <p style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto 16px;line-height:1.7">
+          今の体調をひとこと書いてみてください。<br>
+          小さな記録の積み重ねが、寛解への道になります。
         </p>
         <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>

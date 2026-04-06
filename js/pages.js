@@ -41,7 +41,7 @@ App.prototype.render_login = function() {
           <svg width="52" height="52" viewBox="0 0 36 36" fill="none"><path d="M18 6C18 6 10 12 10 19C10 23.4 13.6 27 18 27C22.4 27 26 23.4 26 19C26 12 18 6 18 6Z" fill="white" opacity="0.9"/><path d="M18 10C18 10 13 14.5 13 19C13 21.8 15.2 24 18 24C20.8 24 23 21.8 23 19C23 14.5 18 10 18 10Z" fill="url(#lgH2)"/><path d="M15 18.5L17 20.5L21 16.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lgH2" x1="13" y1="10" x2="23" y2="24"><stop stop-color="#FF6584"/><stop offset="1" stop-color="#6C63FF"/></linearGradient></defs></svg>
         </div>
         <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
-        <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.6">あなたの体調を毎日記録するだけで<br>寛解への道筋が見えてきます</p>
+        <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
       </div>
 
       <!-- Features -->
@@ -115,10 +115,12 @@ App.prototype.render_login = function() {
       <!-- Trust -->
       <div style="text-align:center;padding:16px 0 32px;color:var(--text-muted);font-size:11px;line-height:1.8">
         <div style="margin-bottom:8px">
-          <span style="margin:0 8px">🔒 データは暗号化保存</span>
-          <span style="margin:0 8px">🏥 WHO ICD-11準拠</span>
+          <span style="margin:0 6px">🇯🇵 Made in Japan</span>
+          <span style="margin:0 6px">🔒 暗号化保存</span>
+          <span style="margin:0 6px">🏥 WHO準拠</span>
         </div>
-        <div>無料で利用できます・いつでも退会可能</div>
+        <div style="margin-bottom:4px">養生 × テクノロジー ×  エビデンス</div>
+        <div>無料で利用できます</div>
       </div>
 
     </div>
@@ -203,13 +205,13 @@ App.prototype.render_dashboard = function() {
 
   // Welcome message for new users
   const welcomeHtml = !hasData ? `
-    <div class="card" style="margin-bottom:20px;border-color:var(--success);background:var(--success-bg)">
-      <div class="card-body" style="text-align:center;padding:30px">
-        <div style="font-size:36px;margin-bottom:12px">👋</div>
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ 健康日記 へ</h3>
-        <p style="font-size:13px;color:var(--text-secondary);max-width:500px;margin:0 auto 16px;line-height:1.7">
-          まずは上の入力欄に今日の体調を書いてみてください。<br>
-          書くだけで即座に分析し、あなたに合ったアドバイスを表示します。
+    <div class="card" style="margin-bottom:20px;border:none;background:linear-gradient(135deg, rgba(108,99,255,0.06), rgba(255,101,132,0.06));border-radius:20px">
+      <div class="card-body" style="text-align:center;padding:28px 20px">
+        <div style="font-size:28px;margin-bottom:8px;letter-spacing:2px">一期一会</div>
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">今日という日を大切に</h3>
+        <p style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto 16px;line-height:1.7">
+          今の体調をひとこと書いてみてください。<br>
+          小さな記録の積み重ねが、寛解への道になります。
         </p>
         <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>

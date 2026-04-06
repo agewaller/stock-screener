@@ -928,26 +928,30 @@ var App = class App {
         advice += '【仕事・作業】仕事のストレスと体調は密接に関連します。休憩を定期的に取り、ペーシングを意識してください。\n\n';
         actions.push('50分作業→10分休憩のリズムを守る');
       } else {
-        // Truly generic - still provide value
         const hour = new Date().getHours();
         if (hour < 10) {
-          advice += '【朝の記録】おはようございます。朝の記録は一日の基準値になります。\n\n';
-          advice += '朝のチェックリスト：\n・起床時の気分（0-10）は？\n・睡眠は十分でしたか？\n・身体の痛みやこわばりは？\n・今日のエネルギー予算はどのくらい？\n\n';
-          actions.push('今日のエネルギー予算を設定する');
+          advice += '【朝の養生】おはようございます。\n\n';
+          advice += '朝は「陽の気」が満ちる時間。身体の声に耳を傾けてみてください：\n・起床時の気分は？（穏やか/重い/爽やか）\n・睡眠は足りましたか？\n・身体のこわばりや痛みは？\n・今日はどのくらい動けそうですか？\n\n';
+          advice += '養生のヒント：朝一杯の白湯で胃腸を温めることから始めてみましょう。\n\n';
+          actions.push('白湯を一杯飲む');
+          actions.push('今日のエネルギー予算を決める');
         } else if (hour < 14) {
-          advice += '【昼の記録】午前中の振り返りと午後の計画を立てましょう。\n\nエネルギー残量を意識して、午後の活動を調整してください。\n\n';
-          actions.push('午後の活動計画を見直す');
+          advice += '【昼の養生】午前中の振り返りの時間です。\n\n';
+          advice += '「間（ま）」を大切に。活動と休息のリズムを意識して、午後に備えましょう。\nエネルギーの残量を感じてみてください。\n\n';
+          actions.push('5分間の深呼吸（腹式呼吸）');
         } else if (hour < 19) {
-          advice += '【午後の記録】今日一日の折り返しです。体調の変化はありましたか？\n\n夕方は副交感神経が優位になりやすい時間帯です。リラックスできる活動を計画しましょう。\n\n';
-          actions.push('就寝2時間前からスクリーンタイムを減らす');
+          advice += '【夕の養生】一日の折り返しです。\n\n';
+          advice += '夕方は副交感神経が優位になる「陰」の時間帯。\n身体が求める休息を聴いてあげてください。温かいお茶を一杯、ゆっくりと。\n\n';
+          actions.push('温かいお茶（緑茶・ほうじ茶）を飲む');
         } else {
-          advice += '【夜の記録】今日一日お疲れさまでした。\n\n就寝前の振り返りは翌日の健康管理に役立ちます。良かったこと、辛かったこと、気づいたことを書き留めておきましょう。\n\n';
-          advice += '就寝準備：\n・スマホを寝室に持ち込まない\n・室温を21-23°Cに調整\n・深呼吸を5回行う\n\n';
-          actions.push('就寝準備ルーティンを実行する');
+          advice += '【夜の養生】今日一日、お疲れさまでした。\n\n';
+          advice += '就寝前のふりかえりは養生の基本です。\n今日よかったこと、感謝できることを一つ思い浮かべてみてください。\n\n';
+          advice += '養生の夜の習慣：\n・ぬるめの入浴（38-39°C）で一日の疲れを流す\n・スマホを手放し、静かな時間を作る\n・深い呼吸を5回\n\n';
+          actions.push('入浴で一日をリセットする');
         }
       }
 
-      advice += '記録を続けることで、分析精度が日々向上していきます。';
+      advice += '改善（かいぜん）：小さな記録の積み重ねが、大きな変化をもたらします。';
     }
 
     // Ensure at least one action
@@ -1320,6 +1324,29 @@ var App = class App {
         relevance: (allText.includes('腸') || diseases.includes('ibs') || diseases.includes('crohns') ? 9 : 2) },
       { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=chroniccare-22',
         relevance: (allText.includes('遺伝') ? 8 : 1) },
+      // Japanese products
+      { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=chroniccare-22',
+        relevance: (allText.match(/倦怠|疲|だるい|食欲/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=��苓散+ツムラ&tag=chroniccare-22',
+        relevance: (allText.match(/気圧|天候|頭痛|むくみ/) ? 10 : 2) },
+      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味���遙散+クラシエ&tag=chroniccare-22',
+        relevance: (allText.match(/更年期|イライラ|のぼせ|不眠/) ? 9 : profile.gender === 'female' ? 4 : 1) },
+      { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=chroniccare-22',
+        relevance: (allText.match(/ミ���コンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+      { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=chroniccare-22',
+        relevance: (allText.match(/水素|酸化|抗���化/) ? 8 : 1) },
+      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オ��ロン+血圧計&tag=chroniccare-22',
+        relevance: (allText.match(/血圧|高血圧/) ? 9 : diseases.includes('hypertension') ? 7 : 1) },
+      { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=chroniccare-22',
+        relevance: (allText.match(/体重|体脂肪|肥満|ダイエット/) ? 8 : diseases.includes('metabolic_syndrome') ? 6 : 1) },
+      { id: 'miso', icon: '🫘', name: '有機味噌（発酵食品）', desc: '腸内環境・免疫・日本の智慧', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=有機+味噌+無添加&tag=chroniccare-22',
+        relevance: (allText.match(/腸|発酵|免疫|食事/) ? 7 : 2) },
+      { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=chroniccare-22',
+        relevance: (allText.match(/栄養|疲労|発酵|甘酒/) ? 7 : 2) },
+      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプ��ムソルト+国産&tag=chroniccare-22',
+        relevance: (allText.match(/風呂|入浴|エプソム|マグネシウム/) ? 9 : 3) },
+      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森���浴+ガイド&tag=chroniccare-22',
+        relevance: (allText.match(/自然|森|散歩|リラックス/) ? 6 : 1) },
       { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
         relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
       { id: 'equol', icon: '🫘', name: 'エクオール', desc: '更年期・女性ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エクオール+サプリ&tag=chroniccare-22',
