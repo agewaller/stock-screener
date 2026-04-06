@@ -6166,13 +6166,53 @@ ${recentEntries.substring(0, 3000)}
   dashQuickFile(event) {
     const files = event.target.files;
     if (!files.length) return;
-    this._pendingFiles = [];
-    this.previewFiles(files, 'general');
 
-    // Auto-save files from dashboard
-    setTimeout(() => {
-      if (this._pendingFiles.length > 0) this.saveUploadedFiles();
-    }, 500);
+    Components.showToast(`${files.length}件のファイルを処理中...`, 'info');
+
+    // Process each file directly
+    Array.from(files).forEach(async (file) => {
+      const textForAnalysis = [];
+
+      if (!file.type.startsWith('image/')) {
+        // Try auto-import for non-image files
+        try {
+          const count = await Integrations.importFile(file);
+          if (count > 0) textForAnalysis.push(`[ファイル取込] ${file.name}: ${count}件のデータ`);
+        } catch(e) { /* fall through */ }
+      }
+
+      // Save file reference
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        store.addHealthData('photos', {
+          filename: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: file.type.startsWith('image/') ? ev.target.result.substring(0, 500) : '',
+          category: 'general'
+        });
+
+        textForAnalysis.push(`[ファイル] ${file.name} (${file.type}, ${(file.size/1024).toFixed(0)}KB)`);
+
+        // Add to conversation history
+        const history = store.get('conversationHistory') || [];
+        history.push({
+          role: 'user',
+          content: textForAnalysis.join('\n'),
+          timestamp: new Date().toISOString(),
+          type: 'file_upload'
+        });
+        store.set('conversationHistory', history);
+
+        // Generate deep analysis
+        const analysis = this.generateDeepAnalysis(textForAnalysis.join('\n'));
+        store.set('latestFeedback', analysis);
+
+        Components.showToast(`${file.name} を保存しました`, 'success');
+        this.navigate('dashboard');
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // ---- User Profile ----
