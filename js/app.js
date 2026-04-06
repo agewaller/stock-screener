@@ -2098,6 +2098,10 @@ ${recentEntries.substring(0, 3000)}
 
   setModel(modelId) {
     store.set('selectedModel', modelId);
+    // Persist to Firestore so it survives reload
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ settings: { selectedModel: modelId } });
+    }
     Components.showToast(`モデルを ${modelId} に変更しました`, 'success');
   }
 
