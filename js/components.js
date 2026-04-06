@@ -278,9 +278,9 @@ var Components = {
            ondrop="app.handlePhotoDrop(event, '${category}')">
         <div class="upload-area-icon">📸</div>
         <div class="upload-area-text">クリックまたはドラッグ&ドロップ</div>
-        <div class="upload-area-hint">写真・画像・PDF（血液検査結果、食事写真など）</div>
+        <div class="upload-area-hint">写真・画像・PDF・CSV・JSON・XML・テキスト</div>
         <input type="file" id="photo-input-${category}" hidden multiple
-          accept="image/*,.pdf" onchange="app.handlePhotoUpload(event, '${category}')">
+          accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.handlePhotoUpload(event, '${category}')">
       </div>
       <div id="photo-preview-${category}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px"></div>
     `;

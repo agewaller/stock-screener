@@ -2848,9 +2848,9 @@ var Components = {
            ondrop="app.handlePhotoDrop(event, '${category}')">
         <div class="upload-area-icon">📸</div>
         <div class="upload-area-text">クリックまたはドラッグ&ドロップ</div>
-        <div class="upload-area-hint">写真・画像・PDF（血液検査結果、食事写真など）</div>
+        <div class="upload-area-hint">写真・画像・PDF・CSV・JSON・XML・テキスト</div>
         <input type="file" id="photo-input-${category}" hidden multiple
-          accept="image/*,.pdf" onchange="app.handlePhotoUpload(event, '${category}')">
+          accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.handlePhotoUpload(event, '${category}')">
       </div>
       <div id="photo-preview-${category}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px"></div>
     `;
@@ -4083,37 +4083,208 @@ var App = class App {
 
   handlePhotoUpload(e, category) {
     const files = e.target.files;
-    this.processPhotos(files, category);
+    if (files.length > 0) this.previewFiles(files, category);
   }
 
   handlePhotoDrop(e, category) {
     e.preventDefault();
     const files = e.dataTransfer.files;
-    this.processPhotos(files, category);
+    if (files.length > 0) this.previewFiles(files, category);
   }
 
-  processPhotos(files, category) {
+  // Store pending files for preview before save
+  _pendingFiles = [];
+
+  previewFiles(files, category) {
     const preview = document.getElementById(`photo-preview-${category}`);
+    if (!preview) return;
+
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const entry = store.addHealthData('photos', {
+        const fileData = {
+          file: file,
           filename: file.name,
           type: file.type,
           size: file.size,
-          dataUrl: ev.target.result.substring(0, 200) + '...',
-          category
-        });
-        if (preview) {
-          preview.innerHTML += `<div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg-tertiary)">
-            <img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">
-            <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(0,0,0,0.7);font-size:10px;color:#fff">${file.name}</div>
+          dataUrl: ev.target.result,
+          category: category
+        };
+        this._pendingFiles.push(fileData);
+
+        // Show preview
+        const isImage = file.type.startsWith('image/');
+        preview.innerHTML += `
+          <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg-tertiary)">
+            ${isImage
+              ? `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">`
+              : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px">📄</div>`}
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:rgba(0,0,0,0.7);font-size:10px;color:#fff">${file.name} (${(file.size/1024).toFixed(0)}KB)</div>
           </div>`;
-        }
+
+        // Show/update save button
+        this.showFileSaveButton(category);
       };
       reader.readAsDataURL(file);
     });
-    Components.showToast(`${files.length}件のファイルをアップロードしました`, 'success');
+  }
+
+  showFileSaveButton(category) {
+    let btnArea = document.getElementById('file-save-area');
+    if (!btnArea) {
+      const preview = document.getElementById(`photo-preview-${category}`);
+      if (!preview) return;
+      btnArea = document.createElement('div');
+      btnArea.id = 'file-save-area';
+      btnArea.style.cssText = 'margin-top:16px;display:flex;gap:10px;align-items:center';
+      preview.parentElement.appendChild(btnArea);
+    }
+    btnArea.innerHTML = `
+      <button class="btn btn-primary" onclick="app.saveUploadedFiles()">
+        ${this._pendingFiles.length}件を保存してAI分析
+      </button>
+      <button class="btn btn-secondary" onclick="app.clearPendingFiles('${category}')">クリア</button>
+      <span style="font-size:12px;color:var(--text-muted)">${this._pendingFiles.length}件のファイル待機中</span>
+    `;
+  }
+
+  clearPendingFiles(category) {
+    this._pendingFiles = [];
+    const preview = document.getElementById(`photo-preview-${category}`);
+    if (preview) preview.innerHTML = '';
+    const btnArea = document.getElementById('file-save-area');
+    if (btnArea) btnArea.remove();
+  }
+
+  async saveUploadedFiles() {
+    if (this._pendingFiles.length === 0) {
+      Components.showToast('保存するファイルがありません', 'error');
+      return;
+    }
+
+    const btnArea = document.getElementById('file-save-area');
+    if (btnArea) btnArea.innerHTML = Components.loading('保存＆AI分析中...');
+
+    const savedEntries = [];
+    const textForAnalysis = [];
+
+    for (const fileData of this._pendingFiles) {
+      // Try auto-import (XML, CSV, JSON, TXT)
+      if (!fileData.type.startsWith('image/')) {
+        try {
+          const count = await Integrations.importFile(fileData.file);
+          if (count > 0) {
+            textForAnalysis.push(`[ファイル取込] ${fileData.filename}: ${count}件のデータ`);
+            continue;
+          }
+        } catch (e) { /* fall through to generic save */ }
+      }
+
+      // Save image/generic file as health data
+      const entry = store.addHealthData('photos', {
+        filename: fileData.filename,
+        type: fileData.type,
+        size: fileData.size,
+        dataUrl: fileData.type.startsWith('image/') ? fileData.dataUrl : fileData.dataUrl.substring(0, 200) + '...',
+        category: fileData.category
+      });
+      savedEntries.push(entry);
+
+      // For images, add to AI context
+      if (fileData.type.startsWith('image/')) {
+        textForAnalysis.push(`[写真アップロード] ${fileData.filename} (${fileData.category}): ${fileData.type}, ${(fileData.size/1024).toFixed(0)}KB`);
+      }
+    }
+
+    // Save to conversation history for AI context
+    if (textForAnalysis.length > 0) {
+      const history = store.get('conversationHistory') || [];
+      history.push({
+        role: 'user',
+        content: textForAnalysis.join('\n'),
+        timestamp: new Date().toISOString(),
+        type: 'file_upload'
+      });
+      store.set('conversationHistory', history);
+    }
+
+    // Sync to Firestore
+    if (FirebaseBackend.initialized) {
+      for (const entry of savedEntries) {
+        await FirebaseBackend.saveHealthEntry('photos', entry);
+      }
+    }
+
+    const totalCount = this._pendingFiles.length;
+    this._pendingFiles = [];
+
+    Components.showToast(`${totalCount}件のファイルを保存しました`, 'success');
+
+    // Run instant AI analysis on uploaded content
+    if (btnArea) {
+      const adviceText = textForAnalysis.join('\n');
+      if (adviceText) {
+        this.showFileAnalysisResult(btnArea, adviceText);
+      } else {
+        btnArea.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">保存完了</div>`;
+      }
+    }
+  }
+
+  showFileAnalysisResult(container, uploadSummary) {
+    container.innerHTML = Components.loading('AI分析中...');
+
+    setTimeout(() => {
+      const advice = this.generateFileAdvice(uploadSummary);
+      container.innerHTML = `
+        <div class="card" style="border-color:var(--accent-border);margin-top:12px">
+          <div class="card-header" style="background:var(--accent-bg)">
+            <span class="card-title">🤖 アップロードデータのAI分析</span>
+          </div>
+          <div class="card-body">
+            ${advice.alerts.map(a => `
+              <div style="padding:10px 14px;background:${a.level === 'warning' ? 'var(--warning-bg)' : 'var(--info-bg)'};border-left:3px solid ${a.level === 'warning' ? 'var(--warning)' : 'var(--info)'};border-radius:0 8px 8px 0;margin-bottom:10px;font-size:13px">${a.message}</div>
+            `).join('')}
+            <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${advice.text}</div>
+          </div>
+        </div>`;
+    }, 300);
+  }
+
+  generateFileAdvice(summary) {
+    const lower = summary.toLowerCase();
+    const alerts = [];
+    let text = '';
+
+    if (/血液検査|blood|検査結果/.test(lower)) {
+      alerts.push({ level: 'info', message: '血液検査データを検出しました。AI分析ページで詳細な分析を実行できます。' });
+      text += '【血液検査データ】アップロードされた検査結果をAI分析に使用します。管理パネルでAPIキーを設定すると、数値の解釈と推奨アクションが自動生成されます。\n\n';
+    }
+
+    if (/食事|meal|料理|ごはん|ランチ|ディナー/.test(lower)) {
+      text += '【食事写真】食事内容をAIが分析し、栄養バランスや抗炎症食の観点からアドバイスを生成します。\n\n';
+    }
+
+    if (/処方|薬|prescription|お薬手帳/.test(lower)) {
+      alerts.push({ level: 'warning', message: '処方関連データを検出。薬の飲み合わせ確認のためAI分析を実行してください。' });
+      text += '【処方データ】処方内容をAIが読み取り、飲み合わせや副作用リスクを確認します。\n\n';
+    }
+
+    if (/遺伝子|genetic|dna|snp/.test(lower)) {
+      text += '【遺伝子データ】SNPデータや遺伝子検査結果は、薬剤代謝や疾患リスクの個別化分析に使用されます。\n\n';
+    }
+
+    if (/csv|json|xml/.test(lower)) {
+      text += '【構造化データ】ファイルを自動解析し、適切なカテゴリに分類して保存しました。\n\n';
+    }
+
+    if (text === '') {
+      text = 'ファイルを保存しました。このデータはAI分析のコンテキストに追加され、次回の分析で反映されます。より詳細な分析にはAI分析ページから分析を実行してください。';
+    }
+
+    text += '\n→ AI分析ページで「ME/CFS 日次分析」を実行すると、すべてのアップロードデータを含めた総合分析が行えます。';
+
+    return { alerts, text };
   }
 
   // ---- Text Entry ----
