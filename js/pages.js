@@ -265,7 +265,7 @@ App.prototype.render_dashboard = function() {
         <div style="flex:1">
           <textarea class="form-textarea" id="dash-quick-input" rows="2"
             style="border:none;background:transparent;resize:none;font-size:14px;padding:0;min-height:auto"
-            placeholder="今日の体調は？（例：頭痛がする、生理2日目で辛い、昨日よく眠れた、薬を飲んだ...）"></textarea>
+            placeholder="体調・食事・薬・検査結果など何でも記録（📎で写真も添付可）"></textarea>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()">送信</button>
@@ -518,34 +518,71 @@ App.prototype.render_data_input = function() {
         <input type="date" class="form-input" id="text-input-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px">
       </div>
       <div class="form-group">
-        <div style="display:flex;gap:12px;align-items:end">
-          <div style="flex:1">
+        <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
             <label class="form-label">カテゴリ</label>
-            <select class="form-select" id="text-input-category">
-              <option value="symptoms">症状メモ</option>
-              <option value="nutrition">食事・栄養メモ</option>
-              <option value="medication">服薬・処方メモ</option>
-              <option value="mental">精神状態メモ</option>
-              <option value="activity">活動・ペーシングメモ</option>
-              <option value="sleep">睡眠メモ</option>
-              <option value="blood_test">検査結果メモ</option>
-              <option value="doctor">医師の所見・アドバイス</option>
-              <option value="research">調べたこと・論文メモ</option>
-              <option value="other">その他</option>
+            <select class="form-select" id="text-input-category" onchange="app.updateInputHint(this.value)">
+              <optgroup label="体調・症状">
+                <option value="symptoms">体調・症状</option>
+                <option value="mental">気分・メンタル</option>
+                <option value="sleep">睡眠</option>
+                <option value="pain">痛み・疼痛</option>
+              </optgroup>
+              <optgroup label="医療">
+                <option value="blood_test">検査結果（血液・尿・画像）</option>
+                <option value="medication">服薬・処方・漢方</option>
+                <option value="supplement">サプリメント</option>
+                <option value="doctor">診察・医師の所見</option>
+                <option value="allergy">アレルギー検査</option>
+                <option value="hormone">ホルモン検査</option>
+                <option value="genetic">遺伝子検査</option>
+              </optgroup>
+              <optgroup label="食事・栄養">
+                <option value="nutrition">食事・栄養</option>
+                <option value="water">水分摂取</option>
+                <option value="alcohol">飲酒</option>
+              </optgroup>
+              <optgroup label="生活・バイタル">
+                <option value="vitals">バイタル（心拍・血圧・体温）</option>
+                <option value="weight">体重・体組成</option>
+                <option value="activity">運動・活動量</option>
+                <option value="menstrual">生理・月経周期</option>
+                <option value="weather">天気・気圧</option>
+                <option value="environment">住環境（温度・湿度）</option>
+              </optgroup>
+              <optgroup label="人間関係・生活">
+                <option value="conversation">会話・コミュニケーション</option>
+                <option value="work">仕事・予定</option>
+                <option value="family">家族・人間関係</option>
+                <option value="travel">旅行・移動</option>
+                <option value="finance">医療費・経済</option>
+                <option value="meditation">瞑想・呼吸法</option>
+              </optgroup>
+              <optgroup label="その他">
+                <option value="research">調べたこと・論文</option>
+                <option value="other">その他</option>
+              </optgroup>
             </select>
           </div>
-          <div style="flex:1">
+          <div style="flex:1;min-width:140px">
             <label class="form-label">タイトル（任意）</label>
             <input type="text" class="form-input" id="text-input-title" placeholder="例: 朝の体調、診察メモ...">
           </div>
         </div>
       </div>
+
+      <!-- Input hints by category -->
+      <div id="input-hint" style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);margin-bottom:10px;font-size:11px;color:var(--accent);line-height:1.6">
+        💡 テキスト入力のほか、📎ボタンで写真を撮影してアップロードできます（血液検査結果、お薬手帳、食事写真など）
+      </div>
+
       <div class="form-group">
         <label class="form-label">内容</label>
-        <textarea class="form-textarea" id="text-input-content" rows="8" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする&#10;・山村先生にアザルフィジンの相談をした&#10;・エプソムソルト風呂に入ったら疲れが取れた"></textarea>
+        <textarea class="form-textarea" id="text-input-content" rows="6" placeholder="体調や気づきを自由に記録してください..."></textarea>
       </div>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="app.submitTextEntry()">保存して分析</button>
+        <label class="btn btn-secondary" style="cursor:pointer">📎 写真・ファイル<input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.dataPageFileUpload(this.files)"></label>
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>

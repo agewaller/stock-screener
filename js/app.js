@@ -662,6 +662,46 @@ var App = class App {
   }
 
   // ---- Text Entry ----
+  updateInputHint(category) {
+    const hints = {
+      symptoms: '例：今朝は倦怠感が強い、頭痛がする、ブレインフォグで集中できない\n📎 体温計やパルスオキシメーターの画面写真もOK',
+      mental: '例：気分が落ち込む、不安が強い、孤独感、イライラ、やる気が出ない\n気分を1-10で数値化すると経過追跡しやすくなります',
+      sleep: '例：23時就寝→7時起床、中途覚醒2回、夢を見た、寝起きのだるさ\n📎 Fitbit/Oura等の睡眠画面のスクリーンショットもOK',
+      pain: '例：右肩の鈍痛 強度6/10、14時から、天気が曇り\n部位・強度・時間帯・トリガーを書くとパターンが見えてきます',
+      blood_test: '例：CRP 0.8, WBC 5200, Hb 12.5, TSH 3.2, フェリチン 25\n📎 検査結果の写真をアップロードすると自動で数値を読み取ります',
+      medication: '例：ツートラム100mg×2回/日、リンデロン0.5mg朝1回、五苓散2.5g×3回\n📎 お薬手帳や処方箋の写真をアップロードできます',
+      supplement: '例：CoQ10 200mg朝食後、マグネシウム400mg就寝前、NMN 250mg空腹時\n効果の実感や副作用も記録してください',
+      doctor: '例：山村先生：アザルフィジン追加、次回4週後に血液検査\n📎 紹介状や診断書の写真もアップロードできます',
+      allergy: '例：IgE検査でダニ・ハウスダスト陽性、IgG検査で小麦・乳製品に反応\n📎 アレルギー検査結果の写真をアップロード',
+      hormone: '例：コルチゾール朝8時: 12μg/dL、DHEA-S: 150μg/dL、エストラジオール: 25pg/mL\n📎 ホルモン検査結果の写真をアップロード',
+      genetic: '例：MTHFR C677T ヘテロ、CYP2D6 Poor Metabolizer、COMT Val/Met\n📎 遺伝子検査レポートのスクリーンショットもOK',
+      nutrition: '例：朝:オートミール+バナナ+プロテイン、昼:サバ定食、夜:鍋\n📎 食事の写真を撮ってアップロードするとカロリー・栄養素を自動推定',
+      water: '例：今日の水分摂取 - 朝500ml、昼300ml、夕500ml、合計1.3L\nPOTS/ME/CFS患者は2-3L/日+塩分が推奨です',
+      alcohol: '例：ビール350ml×1本、夕食と一緒に\n薬との相互作用や睡眠への影響を分析します',
+      vitals: '例：心拍65bpm、血圧120/78、SpO2 98%、HRV 35ms\n📎 血圧計やパルスオキシメーターの画面写真もOK',
+      weight: '例：体重65.2kg、体脂肪率22%、筋肉量48kg\n📎 体組成計（TANITA等）の画面写真もOK',
+      activity: '例：散歩15分、ヨガ20分、家事30分、合計活動1時間\n翌日のPEM有無も忘れず記録してください',
+      menstrual: '例：生理2日目、経血量多い、下腹部痛あり、PMS症状5日前から\n基礎体温も記録すると排卵日予測ができます',
+      weather: '例：気圧1005hPa→998hPaに低下、曇り→雨、頭痛発症\n📎 気圧アプリのスクリーンショットもOK',
+      environment: '例：室温24°C、湿度45%、エアコン使用、窓を開けて換気\nスマホの寝室持ち込みの有無も体調に影響します',
+      conversation: '例：山村先生との診察で免疫抑制剤の追加を検討、友人と電話30分\n📎 Plaudの文字起こしをペースト or 連携ページから取り込み',
+      work: '例：ミーティング2件（合計2時間）、資料作成1時間、午後にPEM症状\n50分作業→10分休憩のリズムを守りましょう',
+      family: '例：母と電話30分（元気をもらった）、一人で夕食（孤独感）\n社会的つながりは回復の重要な要素です',
+      travel: '例：東京→秦野 電車1.5時間、帰宅後強い倦怠感\n移動後は1-2日の回復期間を確保してください',
+      finance: '例：今月の医療費合計3万円、サプリ代1.5万円\n高額療養費制度や難病助成制度の対象になる場合があります',
+      meditation: '例：朝10分の坐禅、4-7-8呼吸法×3セット、ボディスキャン瞑想\n継続日数と体調の相関を追跡しています',
+      research: '例：LDNのME/CFS効果の論文を読んだ、PubMed PMID: 12345678\n気になった治療法や論文の情報を記録してください',
+      other: '何でも自由に記録してください。内容を自動で分類・分析します。'
+    };
+    const hint = hints[category] || hints.other;
+    const hintEl = document.getElementById('input-hint');
+    if (hintEl) hintEl.innerHTML = '💡 ' + hint.replace(/\n/g, '<br>');
+
+    // Update placeholder
+    const textarea = document.getElementById('text-input-content');
+    if (textarea) textarea.placeholder = hint.split('\n')[0].replace('例：', '');
+  }
+
   submitTextEntry() {
     const category = document.getElementById('text-input-category')?.value || 'other';
     const title = document.getElementById('text-input-title')?.value?.trim() || '';
