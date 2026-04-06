@@ -1122,13 +1122,13 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <a class="sidebar-logo" onclick="app.navigate('dashboard')" style="cursor:pointer">
-        <div style="position:relative;width:36px;height:36px;flex-shrink:0">
-          <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#1a1a1a 60%,#6C63FF);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12)">
-            <span style="color:white;font-size:20px;font-family:Georgia,serif;font-style:italic;line-height:1">B</span>
-          </div>
-          <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;background:linear-gradient(135deg,#6C63FF,#FF6584);border-radius:50%;border:2px solid var(--bg-secondary);display:flex;align-items:center;justify-content:center">
-            <span style="color:white;font-size:7px;line-height:1">+</span>
-          </div>
+        <div style="width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="url(#sideGr)"/>
+            <path d="M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z" fill="white" fill-opacity="0.25"/>
+            <path d="M16 11L16 20M12 15.5L16 20L20 15.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs><linearGradient id="sideGr" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+          </svg>
         </div>
         <div>
           <span class="sidebar-logo-text">健康日記</span>
@@ -6499,13 +6499,13 @@ App.prototype.render_login = function() {
 
       <!-- Hero -->
       <div style="text-align:center;margin-bottom:28px;padding-top:24px">
-        <div style="position:relative;width:88px;height:88px;margin:0 auto 16px">
-          <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#1a1a1a 55%,#6C63FF);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-            <span style="color:white;font-size:52px;font-family:Georgia,serif;font-style:italic;line-height:1">B</span>
-          </div>
-          <div style="position:absolute;bottom:-4px;right:-4px;width:28px;height:28px;background:linear-gradient(135deg,#6C63FF,#FF6584);border-radius:50%;border:3px solid #f8f9fc;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(108,99,255,0.4)">
-            <span style="color:white;font-size:13px;font-weight:700;line-height:1">+</span>
-          </div>
+        <div style="width:88px;height:88px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center">
+          <svg width="80" height="80" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="url(#lgGr)"/>
+            <path d="M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z" fill="white" fill-opacity="0.25"/>
+            <path d="M16 11L16 20M12 15.5L16 20L20 15.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <defs><linearGradient id="lgGr" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+          </svg>
         </div>
         <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
         <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
