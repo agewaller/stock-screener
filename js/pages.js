@@ -37,7 +37,13 @@ App.prototype.render_login = function() {
 
       <!-- Hero -->
       <div style="text-align:center;margin-bottom:28px;padding-top:24px">
-        <div style="margin:0 auto 16px;background:#1a1a1a;width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.15)"><span style="color:white;font-size:48px;font-family:Georgia,serif;font-style:italic;line-height:1;margin-top:-2px">B</span></div>
+        <div style="position:relative;width:88px;height:88px;margin:0 auto 16px">
+          <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#1a1a1a 55%,#6C63FF);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+            <span style="color:white;font-size:52px;font-family:Georgia,serif;font-style:italic;line-height:1">B</span>
+          </div>
+          <div style="position:absolute;bottom:-4px;right:-4px;width:28px;height:28px;background:linear-gradient(135deg,#6C63FF,#FF6584);border-radius:50%;border:3px solid #f8f9fc;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(108,99,255,0.4)">
+            <span style="color:white;font-size:13px;font-weight:700;line-height:1">+</span>
+          </div>
         </div>
         <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
         <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
