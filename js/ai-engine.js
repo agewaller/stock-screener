@@ -177,8 +177,18 @@ var AIEngine = class AIEngine {
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 
-  // OpenAI GPT API
+  // OpenAI GPT API (with Vision support for images)
   async callOpenAI(modelId, prompt, apiKey, options) {
+    // Build messages - support image content
+    const userContent = options.imageBase64
+      ? [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: options.imageBase64, detail: 'high' } }
+        ]
+      : prompt;
+
+    const systemPrompt = options.systemPrompt || 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。ユーザーの疾患歴や服薬情報を考慮し、具体的で実行可能な提案をしてください。';
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -188,8 +198,8 @@ var AIEngine = class AIEngine {
       body: JSON.stringify({
         model: modelId,
         messages: [
-          { role: 'system', content: 'あなたは慢性疾患管理の専門AIアシスタントです。ME/CFSの世界的権威として、最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。' },
-          { role: 'user', content: prompt }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
         ],
         max_tokens: options.maxTokens || 4096,
         temperature: options.temperature || 0.3

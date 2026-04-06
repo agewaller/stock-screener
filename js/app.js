@@ -1743,17 +1743,102 @@ ${recentEntries.substring(0, 3000)}
         const analysis = this.generateFileAnalysis(file.name, file.type, category);
         store.set('latestFeedback', analysis);
 
-        Components.showToast(`${file.name} を保存しました`, 'success');
+        Components.showToast(`${file.name} を分析中...`, 'info');
         this.navigate('dashboard');
 
-        // Run API analysis if key exists
+        // Run Vision API analysis with image
         const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-        if (apiKey) {
+        if (apiKey && isImage) {
+          this.runImageAnalysis(ev.target.result, file.name, category, document.getElementById('dash-ai-feedback'));
+        } else if (apiKey) {
           this.runBackgroundAnalysis(analysisPrompt, document.getElementById('dash-ai-feedback'));
         }
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // Image analysis using Vision API
+  async runImageAnalysis(imageBase64, fileName, category, feedbackEl) {
+    try {
+      const diseases = store.get('selectedDiseases') || [];
+      const profile = store.get('userProfile') || {};
+      const recentMeds = (store.get('textEntries') || [])
+        .filter(e => (e.content || '').match(/薬|ツートラム|リンデロン|エチゾラム|ステロイド|サプリ|ビタミン/))
+        .slice(-3).map(e => e.content).join('\n');
+
+      const prompt = `この画像を詳しく分析してください。
+
+【ユーザー情報】
+疾患: ${diseases.join(', ') || '未設定'}
+居住地: ${profile.location || '日本'}
+年齢: ${profile.age || '未設定'}歳
+${recentMeds ? '【最近の服薬記録】\n' + recentMeds.substring(0, 500) : ''}
+
+【分析指示】
+この画像が何であるかを判断し、以下の該当するカテゴリで詳細に分析してください：
+
+■ 食事写真の場合：
+1. 写っている料理名・食材を特定
+2. 推定カロリー（kcal）と三大栄養素（タンパク質/脂質/炭水化物のg数）
+3. ビタミン・ミネラルの評価
+4. 抗炎症スコア（1-10、10が最も抗炎症的）
+5. 慢性疾患患者にとっての良い点と注意点
+6. この食事の改善提案（具体的な食材追加・変更）
+7. 食後に推奨する行動
+
+■ 血液検査結果の場合：
+1. 読み取れるすべての検査項目と数値を列挙
+2. 各数値の基準値との比較（正常/高値/低値）
+3. 異常値の臨床的意義（何を示唆するか）
+4. 慢性疾患との関連性
+5. 推奨される追加検査
+6. 栄養・サプリメントの提案
+7. 主治医に相談すべき点
+
+■ 処方箋・お薬手帳の場合：
+1. 読み取れるすべての薬剤名と用量
+2. 各薬の効能と分類
+3. 飲み合わせの注意（相互作用）
+4. 想定される副作用
+5. 服薬タイミングの最適化
+6. 併用注意のサプリメント
+
+■ その他の医療文書・画像の場合：
+読み取れる情報をすべて抽出し、健康管理の観点から分析してください。
+
+必ず日本語で回答してください。`;
+
+      const model = store.get('selectedModel') || 'gpt-4o';
+      const response = await aiEngine.callModel(model, prompt, {
+        maxTokens: 4096,
+        imageBase64: imageBase64,
+        systemPrompt: `あなたは統合医療の専門家です。画像を詳細に分析し、慢性疾患患者の健康管理に役立つ具体的なアドバイスを日本語で提供してください。養生（日本の健康哲学）の視点も含めてください。`
+      });
+
+      if (typeof response === 'string' && response.length > 50 && feedbackEl) {
+        feedbackEl.innerHTML = `
+          <div class="card" style="border-left:4px solid var(--success)">
+            <div class="card-header" style="padding:10px 16px">
+              <span style="font-size:13px;font-weight:600">📸 画像分析結果</span>
+              <span class="tag tag-success" style="font-size:9px">Vision分析</span>
+            </div>
+            <div class="card-body" style="padding:14px 16px">
+              <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(response)}</div>
+            </div>
+          </div>`;
+
+        // Save analysis to feedback
+        store.set('latestFeedback', {
+          timestamp: new Date().toISOString(),
+          detected: ['画像分析'],
+          urgency: 'normal',
+          sections: [{ title: '画像分析結果', icon: '📸', content: response.substring(0, 2000) }]
+        });
+      }
+    } catch (err) {
+      console.warn('[Image Analysis] Failed:', err.message);
+    }
   }
 
   // File-specific deep analysis
