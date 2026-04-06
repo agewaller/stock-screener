@@ -965,10 +965,20 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
-  <!-- Data Export -->
+  <!-- Data Migration & Export -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--text-primary)">
+        <strong>旧ドメインからのデータ移行</strong><br>
+        agewaller.github.io で入力したデータがある場合、以下の手順で移行できます：<br>
+        1. <a href="https://agewaller.github.io/stock-screener/dashboard.html" target="_blank" style="color:var(--accent)">旧サイト</a>を開く → 設定 →「すべてのデータをエクスポート」<br>
+        2. 下の「データインポート」でそのJSONファイルを選択
+      </div>
+      <div>
+        <label class="form-label">データインポート（JSONファイル）</label>
+        <input type="file" class="form-input" accept=".json" onchange="app.importDataFile(this.files[0])">
+      </div>
       <button class="btn btn-secondary" onclick="app.exportData()">すべてのデータをエクスポート (JSON)</button>
       <button class="btn btn-danger" onclick="if(confirm('本当にログアウトしますか？')){app.logout()}">ログアウト</button>
     </div>
@@ -981,6 +991,7 @@ App.prototype.exportData = function() {
     exportDate: new Date().toISOString(),
     user: store.get('user'),
     disease: store.get('selectedDisease'),
+    selectedDiseases: store.get('selectedDiseases'),
     symptoms: store.get('symptoms'),
     vitals: store.get('vitals'),
     bloodTests: store.get('bloodTests'),
@@ -990,7 +1001,10 @@ App.prototype.exportData = function() {
     sleepData: store.get('sleepData'),
     activityData: store.get('activityData'),
     analysisHistory: store.get('analysisHistory'),
-    conversationHistory: store.get('conversationHistory')
+    conversationHistory: store.get('conversationHistory'),
+    textEntries: store.get('textEntries'),
+    customPrompts: store.get('customPrompts'),
+    selectedModel: store.get('selectedModel')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1000,4 +1014,60 @@ App.prototype.exportData = function() {
   a.click();
   URL.revokeObjectURL(url);
   Components.showToast('データをエクスポートしました', 'success');
+};
+
+// Import Data from JSON file
+App.prototype.importDataFile = function(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      let count = 0;
+
+      const importKeys = [
+        'selectedDisease', 'selectedDiseases', 'symptoms', 'vitals',
+        'bloodTests', 'medications', 'supplements', 'meals',
+        'sleepData', 'activityData', 'analysisHistory',
+        'conversationHistory', 'textEntries', 'customPrompts', 'selectedModel'
+      ];
+
+      importKeys.forEach(key => {
+        if (data[key] !== undefined && data[key] !== null) {
+          const existing = store.get(key);
+          if (Array.isArray(existing) && Array.isArray(data[key])) {
+            // Merge arrays (avoid duplicates by id)
+            const existingIds = new Set(existing.map(e => e.id).filter(Boolean));
+            const newItems = data[key].filter(item => !item.id || !existingIds.has(item.id));
+            store.set(key, [...existing, ...newItems]);
+            count += newItems.length;
+          } else if (!existing || (Array.isArray(existing) && existing.length === 0) || (typeof existing === 'object' && Object.keys(existing).length === 0)) {
+            store.set(key, data[key]);
+            count++;
+          }
+        }
+      });
+
+      store.calculateHealthScore();
+      Components.showToast('データをインポートしました（' + count + '件）', 'success');
+
+      // Sync to Firestore if connected
+      if (FirebaseBackend.initialized) {
+        FirebaseBackend.loadAllData().then(() => {
+          // Re-save all imported data to Firestore
+          const textEntries = store.get('textEntries') || [];
+          textEntries.forEach(entry => {
+            if (!entry._synced) {
+              FirebaseBackend.saveHealthEntry('textEntries', entry);
+              entry._synced = true;
+            }
+          });
+        });
+        Components.showToast('Firestoreに同期中...', 'info');
+      }
+    } catch (err) {
+      Components.showToast('インポートエラー: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
 };
