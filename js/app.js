@@ -123,7 +123,11 @@ var App = class App {
   }
 
   afterRender(page) {
-    if (page === 'dashboard') this.initDashboardCharts();
+    if (page === 'dashboard') {
+      this.initDashboardCharts();
+      // Auto-load research for selected diseases
+      setTimeout(() => this.loadDashResearch(), 300);
+    }
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
     if (page === 'settings') this.loadProfileFields();
@@ -1060,6 +1064,15 @@ var App = class App {
   async loadDashResearch() {
     const container = document.getElementById('dash-research');
     if (!container) return;
+
+    // Check cache: only fetch once per day
+    const cached = store.get('cachedResearch');
+    const now = Date.now();
+    if (cached && cached.articles && (now - cached.fetchedAt) < 24 * 60 * 60 * 1000) {
+      this.renderDashResearch(container, cached.articles);
+      return;
+    }
+
     container.innerHTML = Components.loading('最新論文を検索中...');
 
     // Build search query from user's diseases
@@ -1083,20 +1096,22 @@ var App = class App {
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
 
     try {
-      const articles = await aiEngine.searchPubMed(query + ' AND ("last 7 days"[dp])', 5);
+      let articles = await aiEngine.searchPubMed(query + ' AND ("last 7 days"[dp])', 5);
       if (articles.length === 0) {
-        // Fallback to 30 days
-        const articles30 = await aiEngine.searchPubMed(query + ' AND ("last 30 days"[dp])', 5);
-        if (articles30.length === 0) {
-          container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);padding:10px">該当する最新論文が見つかりませんでした。</p>';
-          return;
-        }
-        this.renderDashResearch(container, articles30);
-      } else {
-        this.renderDashResearch(container, articles);
+        articles = await aiEngine.searchPubMed(query + ' AND ("last 30 days"[dp])', 5);
       }
+      if (articles.length === 0) {
+        articles = await aiEngine.searchPubMed(query, 5);
+      }
+      if (articles.length === 0) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);padding:10px">該当する最新論文が見つかりませんでした。</p>';
+        return;
+      }
+      // Cache results
+      store.set('cachedResearch', { articles, fetchedAt: Date.now() });
+      this.renderDashResearch(container, articles);
     } catch (err) {
-      container.innerHTML = `<p style="font-size:12px;color:var(--danger);padding:10px">検索エラー: ${err.message}</p>`;
+      container.innerHTML = `<p style="font-size:12px;color:var(--text-muted);padding:10px">論文検索中にエラーが発生しました</p>`;
     }
   }
 
