@@ -1382,6 +1382,32 @@ var App = class App {
   }
 
   // ---- User Profile ----
+  saveDiseaseSettings() {
+    const checkboxes = document.querySelectorAll('.settings-disease-cb');
+    const selected = [];
+    checkboxes.forEach(cb => { if (cb.checked) selected.push(cb.value); });
+    store.set('selectedDiseases', selected);
+
+    // Set primary disease
+    if (selected.length > 0) {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === selected[0]);
+        if (found) {
+          store.set('selectedDisease', { id: found.id, name: found.name, fullName: found.name, icon: cat.icon, color: '#6C63FF' });
+          break;
+        }
+      }
+    }
+
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ settings: { selectedDiseases: selected, selectedDisease: store.get('selectedDisease') } });
+    }
+
+    const countEl = document.getElementById('settings-disease-count');
+    if (countEl) countEl.textContent = selected.length + '件選択';
+    Components.showToast(`${selected.length}件の疾患を保存しました`, 'success');
+  }
+
   saveProfile() {
     const profile = {
       age: document.getElementById('profile-age')?.value || '',

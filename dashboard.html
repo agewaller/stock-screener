@@ -920,10 +920,30 @@ body {
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0 !important; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .page-content { padding: 16px; }
-  .top-bar { padding: 12px 16px; }
+  .page-content { padding: 12px; }
+  .top-bar { padding: 10px 12px; }
+  .top-bar-title { font-size: 15px; }
   #menu-toggle { display: inline-flex !important; }
   .sidebar-overlay { display: block; }
+  .card-header { padding: 10px 14px; }
+  .card-body { padding: 12px 14px; }
+  .stat-card { padding: 12px; }
+  .stat-card-value { font-size: 22px; }
+  .stat-card-label { font-size: 10px; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .form-input, .form-select, .form-textarea { padding: 8px 10px; font-size: 13px; }
+  .tabs { gap: 0; }
+  .tab { padding: 8px 12px; font-size: 12px; }
+  .modal { width: 95%; max-height: 90vh; }
+  .login-page { padding-top: 16px !important; }
+  .login-page > div { padding: 0 12px !important; }
+  .disease-grid { grid-template-columns: 1fr !important; }
+  .action-card { padding: 14px; }
+  .health-gauge { width: 100px !important; height: 100px !important; }
+  .health-gauge-value { font-size: 24px !important; }
+  .health-gauge-label { font-size: 9px !important; }
+  .nav-item { padding: 12px; font-size: 14px; }
+  .data-table td, .data-table th { padding: 8px 10px; font-size: 12px; }
 }
 
 .sidebar-overlay {
@@ -5750,6 +5770,32 @@ var App = class App {
   }
 
   // ---- User Profile ----
+  saveDiseaseSettings() {
+    const checkboxes = document.querySelectorAll('.settings-disease-cb');
+    const selected = [];
+    checkboxes.forEach(cb => { if (cb.checked) selected.push(cb.value); });
+    store.set('selectedDiseases', selected);
+
+    // Set primary disease
+    if (selected.length > 0) {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const found = cat.diseases.find(d => d.id === selected[0]);
+        if (found) {
+          store.set('selectedDisease', { id: found.id, name: found.name, fullName: found.name, icon: cat.icon, color: '#6C63FF' });
+          break;
+        }
+      }
+    }
+
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveProfile({ settings: { selectedDiseases: selected, selectedDisease: store.get('selectedDisease') } });
+    }
+
+    const countEl = document.getElementById('settings-disease-count');
+    if (countEl) countEl.textContent = selected.length + '件選択';
+    Components.showToast(`${selected.length}件の疾患を保存しました`, 'success');
+  }
+
   saveProfile() {
     const profile = {
       age: document.getElementById('profile-age')?.value || '',
@@ -7256,84 +7302,68 @@ App.prototype.render_admin = function() {
 // Settings Page
 App.prototype.render_settings = function() {
   const user = store.get('user') || {};
-  const disease = store.get('selectedDisease') || {};
-  const theme = store.get('theme');
+  const selected = store.get('selectedDiseases') || [];
+
+  // Build disease checkboxes
+  const diseaseSections = CONFIG.DISEASE_CATEGORIES.map(cat => `
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">${cat.icon} ${cat.name}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${cat.diseases.map(d => `
+          <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:${selected.includes(d.id)?'var(--accent-bg)':'var(--bg-tertiary)'};border:1px solid ${selected.includes(d.id)?'var(--accent-border)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:11px">
+            <input type="checkbox" class="settings-disease-cb" value="${d.id}" ${selected.includes(d.id)?'checked':''}
+              style="width:12px;height:12px;accent-color:var(--accent)">
+            ${d.name}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">設定</h2>
   </div>
 
-  <!-- Profile & Health Info -->
-  <div class="card" style="margin-bottom:20px">
-    <div class="card-header"><span class="card-title">プロフィール・基本情報</span></div>
-    <div class="card-body">
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-        <div class="user-avatar" style="width:56px;height:56px;font-size:22px">${user.displayName?.[0] || '?'}</div>
-        <div>
-          <div style="font-size:16px;font-weight:600">${user.displayName || 'ゲスト'}</div>
-          <div style="font-size:13px;color:var(--text-muted)">${user.email || ''}</div>
-        </div>
-      </div>
-
-      <div class="grid grid-2" style="gap:12px;margin-bottom:16px">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">年齢</label>
-          <input type="number" class="form-input" id="profile-age" placeholder="50" min="0" max="120">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">性別</label>
-          <select class="form-select" id="profile-gender">
-            <option value="">選択してください</option>
-            <option value="male">男性</option>
-            <option value="female">女性</option>
-            <option value="other">その他</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">身長 (cm)</label>
-          <input type="number" class="form-input" id="profile-height" placeholder="170" min="100" max="250">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">体重 (kg)</label>
-          <input type="number" class="form-input" id="profile-weight" placeholder="65" min="20" max="300">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">居住地（都道府県・市区町村）</label>
-        <input type="text" class="form-input" id="profile-location" placeholder="例: 神奈川県秦野市">
-      </div>
-      <div class="form-group">
-        <label class="form-label">通院可能範囲</label>
-        <select class="form-select" id="profile-travel-range">
-          <option value="local">近隣のみ（市内）</option>
-          <option value="prefecture">県内</option>
-          <option value="region" selected>関東圏・地方圏</option>
-          <option value="national">国内全域</option>
-          <option value="international">海外も含む</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">主な言語</label>
-        <select class="form-select" id="profile-language">
-          <option value="ja" selected>日本語</option>
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-          <option value="ko">한국어</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">備考（アレルギー、既往歴、家族歴など）</label>
-        <textarea class="form-textarea" id="profile-notes" rows="3" placeholder="例: ペニシリンアレルギー、父が糖尿病、母が甲状腺疾患"></textarea>
-      </div>
-
-      <button class="btn btn-primary" onclick="app.saveProfile()">プロフィールを保存</button>
-      <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="app.navigate('login')">疾患設定を変更</button>
+  <!-- Disease Selection -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">対象疾患</span>
+      <span class="tag tag-accent" id="settings-disease-count">${selected.length}件選択</span>
+    </div>
+    <div class="card-body" style="padding:12px 16px">
+      ${diseaseSections}
+      <button class="btn btn-primary btn-sm" onclick="app.saveDiseaseSettings()" style="margin-top:8px">疾患を保存</button>
     </div>
   </div>
 
+  <!-- Profile -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">プロフィール</span></div>
+    <div class="card-body" style="padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${user.displayName?.[0] || '?'}</div>
+        <div>
+          <div style="font-size:14px;font-weight:600">${user.displayName || 'ゲスト'}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${user.email || ''}</div>
+        </div>
+      </div>
 
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin:0"><label class="form-label">年齢</label><input type="number" class="form-input" id="profile-age" placeholder="50" min="0" max="120" style="padding:8px 10px"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">性別</label><select class="form-select" id="profile-gender" style="padding:8px 10px"><option value="">未選択</option><option value="male">男性</option><option value="female">女性</option><option value="other">その他</option></select></div>
+        <div class="form-group" style="margin:0"><label class="form-label">身長(cm)</label><input type="number" class="form-input" id="profile-height" placeholder="170" style="padding:8px 10px"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">体重(kg)</label><input type="number" class="form-input" id="profile-weight" placeholder="65" style="padding:8px 10px"></div>
+      </div>
+
+      <div class="form-group"><label class="form-label">居住地</label><input type="text" class="form-input" id="profile-location" placeholder="神奈川県秦野市" style="padding:8px 10px"></div>
+      <div class="form-group"><label class="form-label">通院範囲</label><select class="form-select" id="profile-travel-range" style="padding:8px 10px"><option value="local">近隣</option><option value="prefecture">県内</option><option value="region" selected>関東圏</option><option value="national">国内全域</option><option value="international">海外含</option></select></div>
+      <div class="form-group"><label class="form-label">言語</label><select class="form-select" id="profile-language" style="padding:8px 10px"><option value="ja" selected>日本語</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option></select></div>
+      <div class="form-group"><label class="form-label">備考</label><textarea class="form-textarea" id="profile-notes" rows="2" placeholder="アレルギー、既往歴、家族歴..." style="padding:8px 10px"></textarea></div>
+
+      <button class="btn btn-primary btn-sm" onclick="app.saveProfile()">プロフィールを保存</button>
+    </div>
+  </div>
 
   <!-- Data Migration & Export -->
   <div class="card" style="margin-bottom:20px">
