@@ -172,6 +172,7 @@ App.prototype.render_disease_select = function() {
 
 // Dashboard Page
 App.prototype.render_dashboard = function() {
+  try {
   const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
   const score = store.get('healthScore') || 50;
   const symptoms = store.get('symptoms') || [];
@@ -455,6 +456,10 @@ App.prototype.render_dashboard = function() {
   })() : ''}
 
   <div style="display:flex;flex-wrap:wrap;gap:4px">${diseaseTagsHtml}</div>`;
+  } catch(err) {
+    console.error('Dashboard render error:', err);
+    return `<div style="padding:20px"><p>読み込みエラーが発生しました。</p><p style="font-size:12px;color:var(--text-muted)">${err.message}</p><button class="btn btn-primary" onclick="localStorage.clear();location.reload()">データをリセットして再読み込み</button></div>`;
+  }
 };
 
 // Data Input Page

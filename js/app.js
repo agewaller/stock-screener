@@ -112,8 +112,13 @@ var App = class App {
     // Render page
     const renderer = this['render_' + page.replace(/-/g, '_')];
     if (renderer) {
-      content.innerHTML = renderer.call(this);
-      this.afterRender(page);
+      try {
+        content.innerHTML = renderer.call(this);
+        this.afterRender(page);
+      } catch(err) {
+        console.error('Page render error:', page, err);
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="localStorage.clear();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+      }
     }
   }
 
