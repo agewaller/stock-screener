@@ -37,8 +37,7 @@ App.prototype.render_login = function() {
 
       <!-- Hero -->
       <div style="text-align:center;margin-bottom:28px;padding-top:24px">
-        <div style="margin:0 auto 16px;background:linear-gradient(135deg,#6C63FF,#FF6584);width:80px;height:80px;border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(108,99,255,0.3)">
-          <svg width="52" height="52" viewBox="0 0 36 36" fill="none"><path d="M18 6C18 6 10 12 10 19C10 23.4 13.6 27 18 27C22.4 27 26 23.4 26 19C26 12 18 6 18 6Z" fill="white" opacity="0.9"/><path d="M18 10C18 10 13 14.5 13 19C13 21.8 15.2 24 18 24C20.8 24 23 21.8 23 19C23 14.5 18 10 18 10Z" fill="url(#lgH2)"/><path d="M15 18.5L17 20.5L21 16.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lgH2" x1="13" y1="10" x2="23" y2="24"><stop stop-color="#FF6584"/><stop offset="1" stop-color="#6C63FF"/></linearGradient></defs></svg>
+        <div style="margin:0 auto 16px;background:#1a1a1a;width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,0.15)"><span style="color:white;font-size:48px;font-family:Georgia,serif;font-style:italic;line-height:1;margin-top:-2px">B</span></div>
         </div>
         <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
         <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
@@ -119,8 +118,9 @@ App.prototype.render_login = function() {
           <span style="margin:0 6px">🔒 暗号化保存</span>
           <span style="margin:0 6px">🏥 WHO準拠</span>
         </div>
-        <div style="margin-bottom:4px">養生 × テクノロジー ×  エビデンス</div>
+        <div style="margin-bottom:4px">養生 × テクノロジー × エビデンス</div>
         <div>無料で利用できます</div>
+        <div style="margin-top:12px;font-size:9px;color:#b0b8c8">&copy; 2025 Shares Inc. All rights reserved.</div>
       </div>
 
     </div>
