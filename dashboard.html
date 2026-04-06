@@ -2073,7 +2073,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -2091,7 +2091,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback'
     ];
     keys.forEach(key => {
       try {
@@ -5110,15 +5110,16 @@ var App = class App {
 
     Components.showToast(`${totalCount}件のファイルを保存しました`, 'success');
 
-    // Run instant AI analysis on uploaded content
-    if (btnArea) {
-      const adviceText = textForAnalysis.join('\n');
-      if (adviceText) {
-        this.showFileAnalysisResult(btnArea, adviceText);
-      } else {
-        btnArea.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">保存完了</div>`;
-      }
+    // Generate deep analysis for uploaded content
+    const adviceText = textForAnalysis.join('\n');
+    if (adviceText) {
+      const analysis = this.generateDeepAnalysis(adviceText);
+      store.set('latestFeedback', analysis);
     }
+
+    // Re-render to show analysis
+    if (this.currentPage === 'dashboard') this.navigate('dashboard');
+    else if (this.currentPage === 'data-input') this.navigate('data-input');
   }
 
   showFileAnalysisResult(container, uploadSummary) {
@@ -5225,17 +5226,20 @@ var App = class App {
     document.getElementById('text-input-content').value = '';
     document.getElementById('text-input-title').value = '';
 
-    // Status feedback
-    const status = document.getElementById('text-save-status');
-    if (status) status.textContent = '保存しました。分析中...';
+    // Generate deep analysis and save
+    const analysis = this.generateDeepAnalysis(content);
+    store.set('latestFeedback', analysis);
 
-    // Re-render page to show updated recent entries
-    this.navigate('data-input');
+    // Navigate to dashboard to show analysis
+    this.navigate('dashboard');
 
-    // Run instant AI analysis and display advice
-    this.showInstantAdvice(content, category);
+    // Run API analysis in background if available
+    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+    if (apiKey) {
+      setTimeout(() => this.runBackgroundAnalysis(content, document.getElementById('dash-ai-feedback')), 500);
+    }
 
-    Components.showToast('保存して分析を実行中...', 'success');
+    Components.showToast('保存しました', 'success');
   }
 
   showInstantAdvice(newText, category) {
@@ -5996,35 +6000,139 @@ var App = class App {
 
     input.value = '';
 
-    // Show instant AI feedback on dashboard
-    const feedback = document.getElementById('dash-ai-feedback');
-    if (feedback) {
-      feedback.innerHTML = Components.loading('分析中...');
-      setTimeout(() => {
-        const advice = this.generateInstantAdvice(content, 'symptoms');
-        feedback.innerHTML = `
-          <div class="card" style="border-color:var(--accent-border)">
-            <div class="card-header" style="background:var(--accent-bg);padding:12px 16px">
-              <span style="font-size:13px;font-weight:600">アドバイス</span>
-              <span style="font-size:10px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
-            </div>
-            <div class="card-body" style="padding:14px 16px">
-              ${advice.alerts.map(a => `<div style="padding:8px 12px;background:${a.level==='warning'?'var(--warning-bg)':a.level==='danger'?'var(--danger-bg)':'var(--info-bg)'};border-left:3px solid ${a.level==='warning'?'var(--warning)':a.level==='danger'?'var(--danger)':'var(--info)'};border-radius:0 6px 6px 0;margin-bottom:8px;font-size:12px">${a.message}</div>`).join('')}
-              <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${advice.text}</div>
-              ${advice.actions.length > 0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><h4 style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">推奨アクション</h4>${advice.actions.map(a => `<div style="font-size:12px;margin-bottom:4px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}</div>` : ''}
-            </div>
-          </div>`;
+    // Generate deep structured analysis and save to store
+    const analysis = this.generateDeepAnalysis(content);
+    store.set('latestFeedback', analysis);
 
-        // Also run full API analysis in background if API key exists
-        const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-        if (apiKey) {
-          this.runBackgroundAnalysis(content, feedback);
-        }
-      }, 200);
+    // Re-render dashboard with feedback
+    this.navigate('dashboard');
+
+    // Run API analysis in background if available
+    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+    if (apiKey) {
+      this.runBackgroundAnalysis(content, document.getElementById('dash-ai-feedback'));
+    }
+  }
+
+  // Deep structured analysis of any user input
+  generateDeepAnalysis(text) {
+    const lower = text.toLowerCase();
+    const sections = [];
+
+    // 1. Content Classification
+    const detected = [];
+    if (/痛|疼痛|頭痛|腰痛|関節/.test(lower)) detected.push('疼痛');
+    if (/疲|だるい|倦怠|しんどい|動けな/.test(lower)) detected.push('疲労');
+    if (/眠|不眠|寝|睡眠|起き/.test(lower)) detected.push('睡眠');
+    if (/鬱|不安|孤独|辛|メンタル|焦燥|イライラ|死|絶望/.test(lower)) detected.push('精神');
+    if (/薬|ツートラム|リンデロン|エチゾラム|ステロイド|プレドニゾ|カロナール|処方|服薬|飲[んむ]/.test(lower)) detected.push('服薬');
+    if (/食[べ事]|ご飯|栄養|サプリ|ビタミン|マグネシウム|コエンザイム|NMN/.test(lower)) detected.push('栄養');
+    if (/検査|血液|CRP|数値|結果|フェリチン|甲状腺|TSH/.test(lower)) detected.push('検査');
+    if (/先生|医師|診察|クリニック|病院|山村|川村/.test(lower)) detected.push('診察');
+    if (/運動|ジム|散歩|ヨガ|ストレッチ|歩/.test(lower)) detected.push('運動');
+    if (/気圧|天候|天気|気象/.test(lower)) detected.push('気象');
+    if (/生理|月経|PMS|ホルモン|更年期/.test(lower)) detected.push('ホルモン');
+    if (/風呂|入浴|エプソムソルト|温泉/.test(lower)) detected.push('入浴');
+    if (/瞑想|呼吸|マインドフル|坐禅/.test(lower)) detected.push('瞑想');
+    if (/PEM|労作後/.test(lower)) detected.push('PEM');
+    if (/お腹|下痢|便秘|吐き気|胃|腸/.test(lower)) detected.push('消化器');
+    if (/めまい|ふらつき|立ちくらみ/.test(lower)) detected.push('めまい');
+    if (detected.length === 0) detected.push('日常記録');
+
+    // 2. Status Assessment
+    const isPositive = /良[いか]|楽|嬉し|元気|回復|改善|できた|調子/.test(lower);
+    const isNegative = /悪[いか]|辛|つら|ひどい|最悪|動けな|痛[いみ]|だるい/.test(lower);
+    const urgency = /死|自殺|救急|呼吸困難|意識/.test(lower) ? 'urgent' : isNegative ? 'attention' : 'normal';
+
+    // 3. Build structured sections
+    // Section: 記録の要約
+    sections.push({
+      title: '記録の分析',
+      icon: '📋',
+      content: `検出カテゴリ：${detected.join('・')}\n状態評価：${urgency === 'urgent' ? '緊急性あり' : isPositive ? '改善傾向' : isNegative ? '注意が必要' : '経過観察'}`
+    });
+
+    // Section: 具体的な所見
+    let findings = '';
+    if (detected.includes('服薬')) {
+      const meds = [];
+      if (/ツートラム/.test(lower)) meds.push('トラマドール（疼痛管理）');
+      if (/リンデロン|ベタメタゾン/.test(lower)) meds.push('ベタメタゾン（抗炎症・ステロイド）');
+      if (/エチゾラム|デパス/.test(lower)) meds.push('エチゾラム（抗不安・筋弛緩）');
+      if (/プレドニゾ/.test(lower)) meds.push('プレドニゾン/プレドニゾロン（免疫抑制）');
+      if (/カロナール/.test(lower)) meds.push('アセトアミノフェン（解熱鎮痛）');
+      if (/リボトリール/.test(lower)) meds.push('クロナゼパム（抗てんかん・抗不安）');
+      if (/レクサプロ/.test(lower)) meds.push('エスシタロプラム（SSRI）');
+      if (/五苓散/.test(lower)) meds.push('五苓散（漢方・水分代謝）');
+      if (/リベルサス|セマグルチド/.test(lower)) meds.push('セマグルチド（GLP-1受容体作動薬）');
+      if (meds.length > 0) findings += `【検出された薬剤】\n${meds.map(m => '・' + m).join('\n')}\n\n`;
+      findings += '注意：複数の薬剤を使用中の場合、相互作用に注意が必要です。次回診察時にお薬手帳を必ず持参してください。\n\n';
+    }
+    if (detected.includes('検査')) {
+      findings += '【検査データ】\n記録された検査情報を追跡しています。基準値との比較や推移の分析には、具体的な数値（例：CRP 0.5, TSH 2.3 等）を入力するとより精密な分析が可能です。\n\n';
+    }
+    if (detected.includes('疼痛')) {
+      findings += '【疼痛分析】\n痛みのパターンを追跡中です。より精密な分析のために、以下も記録してください：\n・部位（頭/首/肩/腰/全身）\n・強度（1-10）\n・種類（鈍痛/鋭痛/灼熱感/しびれ）\n・時間帯（朝/午後/夜間）\n・トリガー（活動後/天気/ストレス/食事後）\n\n';
+    }
+    if (detected.includes('ホルモン')) {
+      findings += '【ホルモン・月経分析】\n周期と体調の相関を追跡しています。月経周期日数、基礎体温、症状の強さを継続記録すると、予測と予防が可能になります。\n\n';
+    }
+    if (findings) sections.push({ title: '詳細所見', icon: '🔍', content: findings });
+
+    // Section: 即時アクション
+    const actions = [];
+    if (urgency === 'urgent') {
+      actions.push('今すぐ信頼できる人に連絡してください');
+      actions.push('必要であれば救急（119）に電話を');
+    }
+    if (detected.includes('PEM')) {
+      actions.push('活動を即座に中断し、暗く静かな環境で安静に');
+      actions.push('次の24-48時間は回復に充てる');
+    }
+    if (detected.includes('疼痛')) {
+      actions.push('痛み止めは早めに服用（食事と一緒に）');
+      actions.push('エプソムソルト入浴（38°C, 20分）を試す');
+    }
+    if (detected.includes('睡眠')) {
+      actions.push('就寝2時間前からスクリーンを避ける');
+      actions.push('寝室の温度を21-23°Cに調整');
+    }
+    if (detected.includes('精神')) {
+      actions.push('4-7-8呼吸法を3セット行う');
+      actions.push('信頼できる人と話す');
+    }
+    if (detected.includes('気象')) {
+      actions.push('気圧予報を確認し、五苓散の予防服用を検討');
+    }
+    if (detected.includes('消化器')) {
+      actions.push('消化に優しい食事（おかゆ、味噌汁等）を摂る');
+      actions.push('水分をこまめに補給する');
+    }
+    if (isPositive) {
+      actions.push('良かった要因を振り返ってメモする（再現性の鍵）');
+    }
+    if (actions.length === 0) {
+      actions.push('この記録を継続してください（パターン分析に活用されます）');
+    }
+    sections.push({ title: '今すぐできること', icon: '⚡', content: actions.map(a => '→ ' + a).join('\n') });
+
+    // Section: より深い分析のために
+    const deeperPrompts = [];
+    if (!detected.includes('服薬')) deeperPrompts.push('現在服用中の薬とサプリメントを記録すると、飲み合わせ分析ができます');
+    if (!detected.includes('検査')) deeperPrompts.push('血液検査の数値を入力すると、栄養状態と炎症レベルを評価できます');
+    if (!detected.includes('睡眠')) deeperPrompts.push('睡眠時間と質を記録すると、体調との相関が見えてきます');
+    if (!detected.includes('栄養')) deeperPrompts.push('食事内容を記録すると、栄養バランスの最適化提案ができます');
+    if (deeperPrompts.length > 0) {
+      sections.push({ title: 'さらに精度を上げるには', icon: '💡', content: deeperPrompts.map(p => '・' + p).join('\n') });
     }
 
-    // Refresh recent entries on dashboard
-    this.navigate('dashboard');
+    return {
+      timestamp: new Date().toISOString(),
+      detected,
+      urgency,
+      isPositive,
+      sections
+    };
   }
 
   async runBackgroundAnalysis(userInput, feedbackEl) {
@@ -6652,7 +6760,23 @@ App.prototype.render_dashboard = function() {
   </div>
 
   <!-- 2. AI Instant Feedback (appears after input) -->
-  <div id="dash-ai-feedback" style="margin-bottom:16px"></div>
+  <div id="dash-ai-feedback" style="margin-bottom:16px">
+    ${(() => {
+      const fb = store.get('latestFeedback');
+      if (!fb || !fb.sections) return '';
+      const urgencyColors = { urgent: 'var(--danger)', attention: 'var(--warning)', normal: 'var(--accent)' };
+      const urgencyBg = { urgent: 'var(--danger-bg)', attention: 'var(--warning-bg)', normal: 'var(--accent-bg)' };
+      return `<div class="card" style="border-left:4px solid ${urgencyColors[fb.urgency] || 'var(--accent)'};margin-bottom:8px">
+        ${fb.sections.map(s => `
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${s.icon} ${s.title}</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div>
+          </div>
+        `).join('')}
+        <div style="padding:8px 16px;font-size:10px;color:var(--text-muted)">分析: ${new Date(fb.timestamp).toLocaleString('ja-JP')}</div>
+      </div>`;
+    })()}
+  </div>
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
