@@ -803,29 +803,34 @@ App.prototype.render_admin = function() {
   });
 
   const promptEditors = Object.entries(promptsByDisease).map(([diseaseId, promptList]) => `
-    <div style="margin-bottom:20px">
-      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${diseaseLabels[diseaseId] || diseaseId}</h4>
+    <div style="margin-bottom:24px">
+      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${diseaseLabels[diseaseId] || diseaseId}（${promptList.length}件）</h4>
       ${promptList.map(p => `
-        <div class="card" style="margin-bottom:12px">
-          <div class="card-header" style="padding:12px 16px">
-            <input class="form-input" data-prompt-name="${p.key}" value="${p.name}" style="font-weight:600;border:none;background:transparent;padding:0;font-size:13px;color:var(--text-primary)">
-            <div style="display:flex;gap:6px;align-items:center">
-              <span class="tag ${p.active ? 'tag-success' : 'tag-warning'}" style="font-size:10px">${p.schedule || 'manual'}</span>
-              <button class="btn btn-sm btn-danger" onclick="app.deletePrompt('${p.key}')" style="padding:4px 8px;font-size:11px">削除</button>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header" style="padding:14px 20px">
+            <div style="flex:1">
+              <input class="form-input" data-prompt-name="${p.key}" value="${p.name}"
+                style="font-weight:600;border:none;background:transparent;padding:0;font-size:14px;color:var(--text-primary);width:100%">
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.description || ''}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+              <select class="form-select" data-prompt-disease="${p.key}" style="font-size:11px;padding:4px 8px;width:auto">
+                <option value="_universal" ${(p.disease||'_universal')==='_universal'?'selected':''}>共通</option>
+                ${CONFIG.DISEASE_CATEGORIES.map(cat => `<optgroup label="${cat.name}">${cat.diseases.map(d => `<option value="${d.id}" ${p.disease===d.id?'selected':''}>${d.name}</option>`).join('')}</optgroup>`).join('')}
+              </select>
+              <select class="form-select" data-prompt-schedule="${p.key}" style="font-size:11px;padding:4px 8px;width:auto">
+                <option value="daily" ${p.schedule==='daily'?'selected':''}>毎日</option>
+                <option value="weekly" ${p.schedule==='weekly'?'selected':''}>毎週</option>
+                <option value="on_data_update" ${p.schedule==='on_data_update'?'selected':''}>データ更新時</option>
+                <option value="manual" ${p.schedule==='manual'?'selected':''}>手動</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${p.key}')" style="padding:5px 12px">保存</button>
+              <button class="btn btn-danger btn-sm" onclick="if(confirm('削除しますか？'))app.deletePrompt('${p.key}')" style="padding:5px 10px">×</button>
             </div>
           </div>
-          <div class="card-body" style="padding:12px 16px;display:none" id="prompt-body-${p.key}">
-            <select class="form-select" data-prompt-disease="${p.key}" style="margin-bottom:8px;font-size:12px">
-              <option value="_universal" ${(p.disease||'_universal')==='_universal'?'selected':''}>共通</option>
-              ${CONFIG.DISEASE_CATEGORIES.map(cat => cat.diseases.map(d => `<option value="${d.id}" ${p.disease===d.id?'selected':''}>${d.name}</option>`).join('')).join('')}
-            </select>
-            <textarea class="form-textarea" data-prompt-text="${p.key}" style="min-height:150px;font-family:'JetBrains Mono',monospace;font-size:11px">${p.prompt}</textarea>
-            <div style="display:flex;justify-content:flex-end;margin-top:8px">
-              <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${p.key}')">保存</button>
-            </div>
-          </div>
-          <div style="padding:8px 16px;cursor:pointer;font-size:11px;color:var(--text-muted)" onclick="var b=document.getElementById('prompt-body-${p.key}');b.style.display=b.style.display==='none'?'block':'none'">
-            クリックして展開/折りたたみ
+          <div class="card-body" style="padding:0">
+            <textarea class="form-textarea" data-prompt-text="${p.key}"
+              style="min-height:300px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;border:none;border-radius:0;border-top:1px solid var(--border);resize:vertical">${p.prompt}</textarea>
           </div>
         </div>
       `).join('')}

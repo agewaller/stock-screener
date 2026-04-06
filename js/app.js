@@ -795,13 +795,76 @@ var App = class App {
       advice += '【GLP-1薬】リベルサスは空腹時に少量の水で服用し、30分後に食事。吐き気がある場合は用量調整を検討してください。\n\n';
     }
 
-    // Default if nothing detected
+    // Always provide meaningful feedback - never empty
     if (advice === '') {
-      advice = '記録ありがとうございます。この内容はAI分析のコンテキストに追加されました。\n\n日々の記録を続けることで、症状パターンの検出精度が向上します。体調の変化、薬の効果、気分の波など、気づいたことを自由に書き続けてください。';
+      // Analyze text properties for general feedback
+      const wordCount = text.split(/\s+/).length;
+      const hour = new Date().getHours();
+      const isPositive = /良[いか]|楽|嬉し|ありがた|できた|回復|改善|元気|快適|調子が良/.test(lower);
+      const isNegative = /悪[いか]|辛|つら|しんど|きつ|ダメ|無理|厳し|最悪|絶望/.test(lower);
+      const mentionsFood = /食[べ事]|ご飯|ランチ|ディナー|朝食|昼食|夕食|料理|カフェ|レストラン/.test(lower);
+      const mentionsExercise2 = /歩[いく]|走|筋トレ|体操|泳|登|スポーツ/.test(lower);
+      const mentionsPeople = /友人|友達|家族|彼女|彼氏|先生|会議|ミーティング|電話|会[っ話]/.test(lower);
+      const mentionsWork = /仕事|作業|プロジェクト|ミーティング|締切|タスク/.test(lower);
+
+      if (isPositive) {
+        alerts.push({ level: 'info', message: '良い傾向が記録されました。何が効果的だったか振り返ると、今後の参考になります。' });
+        advice += '【ポジティブな記録】体調の良い日の記録はとても貴重です。このパターンを分析することで、何があなたの体調を改善するかが見えてきます。\n\n';
+        advice += '振り返りのポイント：\n・昨日の睡眠時間と質はどうでしたか？\n・食事内容で特別なものはありましたか？\n・ストレスレベルは低かったですか？\n・天気や気圧は安定していましたか？\n\n';
+        actions.push('良い日の条件を振り返ってメモする');
+      } else if (isNegative) {
+        alerts.push({ level: 'warning', message: '体調の不調を検出しました。無理をせず休息を優先してください。' });
+        advice += '【体調不良の記録】辛い時の記録も大切です。パターンを分析することで予防策が見えてきます。\n\n';
+        advice += '今すぐできること：\n・活動を最小限に抑える\n・水分をしっかり取る\n・深呼吸を5回行う\n・楽な姿勢で横になる\n\n';
+        actions.push('今日は無理をせず休息する');
+        actions.push('水分を500ml以上摂取する');
+      } else if (mentionsFood) {
+        advice += '【食事の記録】食事内容をAIが栄養面から分析します。写真を添付するとより詳細な分析が可能です。\n\n';
+        advice += 'ヒント：食事と体調の相関を見つけるために、食後2-3時間の体調も記録してみてください。\n\n';
+        actions.push('食後の体調を記録する');
+      } else if (mentionsExercise2) {
+        advice += '【活動の記録】活動内容を記録しました。ME/CFSなど慢性疲労がある場合は、活動後24-48時間の体調変化を追跡することが重要です。\n\n';
+        actions.push('明日の体調を確認して記録する');
+      } else if (mentionsPeople) {
+        advice += '【社会的交流】人との交流は精神面に大きな影響があります。エネルギー消費も大きいので、交流後の体調も記録してみてください。\n\n';
+        actions.push('交流後のエネルギーレベルを記録する');
+      } else if (mentionsWork) {
+        advice += '【仕事・作業】仕事のストレスと体調は密接に関連します。休憩を定期的に取り、ペーシングを意識してください。\n\n';
+        actions.push('50分作業→10分休憩のリズムを守る');
+      } else {
+        // Truly generic - still provide value
+        const hour = new Date().getHours();
+        if (hour < 10) {
+          advice += '【朝の記録】おはようございます。朝の記録は一日の基準値になります。\n\n';
+          advice += '朝のチェックリスト：\n・起床時の気分（0-10）は？\n・睡眠は十分でしたか？\n・身体の痛みやこわばりは？\n・今日のエネルギー予算はどのくらい？\n\n';
+          actions.push('今日のエネルギー予算を設定する');
+        } else if (hour < 14) {
+          advice += '【昼の記録】午前中の振り返りと午後の計画を立てましょう。\n\nエネルギー残量を意識して、午後の活動を調整してください。\n\n';
+          actions.push('午後の活動計画を見直す');
+        } else if (hour < 19) {
+          advice += '【午後の記録】今日一日の折り返しです。体調の変化はありましたか？\n\n夕方は副交感神経が優位になりやすい時間帯です。リラックスできる活動を計画しましょう。\n\n';
+          actions.push('就寝2時間前からスクリーンタイムを減らす');
+        } else {
+          advice += '【夜の記録】今日一日お疲れさまでした。\n\n就寝前の振り返りは翌日の健康管理に役立ちます。良かったこと、辛かったこと、気づいたことを書き留めておきましょう。\n\n';
+          advice += '就寝準備：\n・スマホを寝室に持ち込まない\n・室温を21-23°Cに調整\n・深呼吸を5回行う\n\n';
+          actions.push('就寝準備ルーティンを実行する');
+        }
+      }
+
+      advice += '記録を続けることで、AIの分析精度が日々向上していきます。';
     }
 
+    // Ensure at least one action
     if (actions.length === 0) {
-      actions.push('明日も体調を記録する');
+      actions.push('次の体調変化時にも記録する');
+    }
+
+    // Add streak/motivation message
+    const totalEntries = (store.get('textEntries') || []).length;
+    if (totalEntries > 0 && totalEntries % 7 === 0) {
+      alerts.unshift({ level: 'info', message: `${totalEntries}件目の記録です！継続は力なり。データが蓄積されるほどAI分析の精度が向上します。` });
+    } else if (totalEntries === 1) {
+      alerts.unshift({ level: 'info', message: '最初の記録です！毎日続けると、体調パターンが見えてきます。' });
     }
 
     return { text: advice, alerts, actions };
@@ -1169,6 +1232,7 @@ var App = class App {
     const nameEl = document.querySelector(`[data-prompt-name="${key}"]`);
     const textEl = document.querySelector(`[data-prompt-text="${key}"]`);
     const diseaseEl = document.querySelector(`[data-prompt-disease="${key}"]`);
+    const scheduleEl = document.querySelector(`[data-prompt-schedule="${key}"]`);
     if (!nameEl || !textEl) return;
 
     const prompts = store.get('customPrompts') || {};
@@ -1177,10 +1241,11 @@ var App = class App {
       name: nameEl.value,
       prompt: textEl.value,
       disease: diseaseEl ? diseaseEl.value : (prompts[key]?.disease || '_universal'),
+      schedule: scheduleEl ? scheduleEl.value : (prompts[key]?.schedule || 'manual'),
       active: true
     };
     store.set('customPrompts', prompts);
-    Components.showToast('プロンプトを保存しました', 'success');
+    Components.showToast(`「${nameEl.value}」を保存しました`, 'success');
   }
 
   addNewPrompt() {
