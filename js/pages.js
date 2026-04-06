@@ -194,7 +194,7 @@ App.prototype.render_dashboard = function() {
         <div style="flex:1">
           <textarea class="form-textarea" id="dash-quick-input" rows="2"
             style="border:none;background:transparent;resize:none;font-size:14px;padding:0;min-height:auto"
-            placeholder="今日の体調、気づき、症状を自由に書いてください..."></textarea>
+            placeholder="今日の体調は？（例：頭痛がする、生理2日目で辛い、昨日よく眠れた、薬を飲んだ...）"></textarea>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()">送信</button>

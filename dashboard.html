@@ -4942,11 +4942,77 @@ var App = class App {
       actions.push('次の24-48時間は回復に充てる');
     }
 
-    // Pain
-    if (/疼痛|痛[いみむ]|頭痛|痛む|ぴきぴき|バキバキ/.test(lower)) {
+    // Headache (specific)
+    if (/頭痛|偏頭痛|片頭痛|頭が痛|頭が重|ズキズキ/.test(lower)) {
+      alerts.push({ level: 'info', message: '頭痛の記録を検出。頻度・部位・トリガーを追跡すると予防策が見えてきます。' });
+      advice += '【頭痛管理】\n・片頭痛の場合：暗い静かな部屋で休む、こめかみを冷やす\n・緊張型頭痛の場合：首・肩のストレッチ、温める\n・マグネシウム（400mg/日）は片頭痛予防のエビデンスあり\n・気圧変動が原因の場合は五苓散の予防服用を\n・頻回（月10日以上）の場合は神経内科受診を推奨\n\n';
+      advice += '記録のコツ：頭痛の部位（前頭/側頭/後頭）、持続時間、吐き気の有無、トリガー（天気/食事/ストレス/睡眠不足/生理周期）も書くとパターンが見えてきます。\n\n';
+      actions.push('頭痛の部位・強度・トリガーを記録する');
+    }
+
+    // Pain (general)
+    if (/疼痛|痛[いみむ]|痛む|ぴきぴき|バキバキ|関節|筋肉痛|腰痛|肩こり/.test(lower) && !/頭痛|偏頭痛/.test(lower)) {
       alerts.push({ level: 'info', message: '疼痛の記録を検出。痛みの部位・強度・時間帯を追跡することで傾向が見えてきます。' });
-      advice += '【疼痛管理】記録された痛みのパターン分析：\n・ツートラム等の鎮痛剤は食事と一緒に服用\n・エプソムソルト入浴（38°C, 20分）で筋緊張を緩和\n・マグネシウムバーム外用も局所疼痛に有効\n\n';
-      actions.push('痛みの強度を0-7で記録する');
+      advice += '【疼痛管理】\n・痛み止めは食事と一緒に服用\n・エプソムソルト入浴（38°C, 20分）で筋緊張を緩和\n・マグネシウムバーム外用も局所疼痛に有効\n・痛みが2週間以上続く場合は専門医受診を\n\n';
+      actions.push('痛みの部位と強度を記録する');
+    }
+
+    // Menstruation / hormonal
+    if (/生理|月経|PMS|排卵|更年期|ホルモン|おりもの|子宮|卵巣|月のもの|整理|レディース/.test(lower)) {
+      alerts.push({ level: 'info', message: '月経・ホルモン関連の記録を検出。周期と体調の相関を追跡しています。' });
+      advice += '【月経・ホルモン管理】\n';
+      if (/pms|生理前|月経前/.test(lower)) {
+        advice += '・PMS症状にはマグネシウム（300-400mg/日）、ビタミンB6（50mg/日）、月見草オイルが有効\n';
+        advice += '・カフェイン・塩分・精製糖を控えると症状が軽減する場合あり\n';
+      }
+      if (/痛|つらい|辛い|重い|だるい/.test(lower)) {
+        advice += '・月経痛には温める（腹部にカイロ）、軽いストレッチ、鎮痛剤は早めに服用\n';
+        advice += '・痛みがひどい場合は子宮内膜症の可能性も。婦人科受診を検討\n';
+      }
+      if (/更年期|ホットフラッシュ|のぼせ/.test(lower)) {
+        advice += '・更年期症状にはエクオール（大豆イソフラボン代謝物）のサプリメントが有効な場合あり\n';
+        advice += '・漢方（加味逍遙散、当帰芍薬散等）も選択肢。婦人科で相談を\n';
+      }
+      advice += '・基礎体温や月経周期の記録を続けると、体調パターンが明確になります\n\n';
+      actions.push('月経周期と体調の関連を記録する');
+    }
+
+    // Digestive symptoms
+    if (/お腹|腹痛|下痢|便秘|吐き気|嘔吐|胃|膨満|ガス|消化|食欲不振|胃もたれ/.test(lower)) {
+      advice += '【消化器症状】\n';
+      if (/下痢/.test(lower)) advice += '・水分補給を十分に（経口補水液推奨）\n・BRAT食（バナナ・米・りんご・トースト）で消化器を休める\n';
+      if (/便秘/.test(lower)) advice += '・水溶性食物繊維（サイリウムハスク等）を増やす\n・水分を1日1.5L以上\n・適度な運動と腹部マッサージ\n';
+      if (/吐き気|嘔吐|気持ち悪/.test(lower)) advice += '・生姜（ジンジャーティー）が制吐作用あり\n・少量ずつ頻回に水分を摂る\n';
+      if (/胃もたれ|膨満|ガス/.test(lower)) advice += '・食事はゆっくり噛んで食べる\n・発酵食品（ヨーグルト・味噌）で腸内環境改善\n';
+      advice += '・症状が2週間以上続く場合は消化器内科受診を\n\n';
+      actions.push('食事内容と消化器症状の関連を記録する');
+    }
+
+    // Dizziness / vertigo
+    if (/めまい|立ちくらみ|ふらつき|回転|耳鳴り|目眩/.test(lower)) {
+      alerts.push({ level: 'warning', message: 'めまいの記録を検出。転倒に注意してください。頻回の場合は耳鼻科・神経内科の受診を。' });
+      advice += '【めまい管理】\n・急な立ち上がりを避ける（座位→立位はゆっくり）\n・水分と塩分を十分に摂取（POTS/起立性低血圧対策）\n・横になれる場所を確保してから活動\n・めまいの種類（回転性/浮動性/立ちくらみ）を記録すると診断の助けに\n\n';
+      actions.push('めまいの種類と発生状況を記録する');
+    }
+
+    // Skin symptoms
+    if (/肌荒れ|かゆ[いみ]|湿疹|蕁麻疹|アトピー|乾燥|肌|ニキビ|発疹/.test(lower)) {
+      advice += '【皮膚症状】\n・保湿を基本に（セラミド配合のクリーム推奨）\n・かゆみには冷やすことが即効性あり\n・食事アレルギーや腸内環境との関連も検討\n・IgG食物アレルギー検査で隠れた原因がわかる場合も\n\n';
+      actions.push('皮膚症状と食事・ストレスの関連を記録する');
+    }
+
+    // Breathing / respiratory
+    if (/息苦し|呼吸|咳|喘息|胸[がの]|息が|喉[がの]詰|過呼吸/.test(lower)) {
+      if (/過呼吸|パニック/.test(lower)) {
+        alerts.push({ level: 'warning', message: '過呼吸・パニックの兆候。紙袋呼吸は推奨されません。ゆっくり腹式呼吸（4秒吸う→6秒吐く）を。' });
+      }
+      advice += '【呼吸器症状】\n・腹式呼吸の練習（横隔膜を意識して）\n・姿勢を正す（猫背は呼吸を浅くする）\n・室内の湿度50-60%を維持\n・症状が続く場合は呼吸器内科受診を\n\n';
+    }
+
+    // Fatigue (standalone, not PEM)
+    if (/だるい|だるさ|倦怠|疲れ[がた]|疲労|しんどい|エネルギーが/.test(lower) && !/pem|労作後/.test(lower)) {
+      advice += '【疲労管理】\n・まず水分補給と軽い栄養補給を\n・鉄分・ビタミンB12・甲状腺機能の検査を推奨\n・慢性的な場合はCFS/ME、副腎疲労、甲状腺機能低下を疑い検査を\n・今できること：横になる、深呼吸5回、ミント or 柑橘系のアロマ\n\n';
+      actions.push('疲労の程度と可能な原因を記録する');
     }
 
     // Mental health
@@ -5365,6 +5431,20 @@ var App = class App {
         relevance: (allText.includes('腸') || diseases.includes('ibs') || diseases.includes('crohns') ? 9 : 2) },
       { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=chroniccare-22',
         relevance: (allText.includes('遺伝') ? 8 : 1) },
+      { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
+        relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
+      { id: 'equol', icon: '🫘', name: 'エクオール', desc: '更年期・女性ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エクオール+サプリ&tag=chroniccare-22',
+        relevance: (allText.match(/更年期|ホットフラッシュ|のぼせ/) ? 10 : profile.gender === 'female' && parseInt(profile.age) >= 40 ? 5 : 0) },
+      { id: 'iron', icon: '🩸', name: '鉄分（ヘム鉄）', desc: '貧血・疲労対策', store: 'iherb', url: 'https://www.iherb.com/search?kw=heme+iron&rcode=CHRONICCARE',
+        relevance: (allText.match(/貧血|鉄|フェリチン|めまい|立ちくらみ/) ? 10 : profile.gender === 'female' ? 4 : 1) },
+      { id: 'ginger', icon: '🫚', name: 'ジンジャーサプリ', desc: '吐き気・消化・抗炎症', store: 'iherb', url: 'https://www.iherb.com/search?kw=ginger+extract&rcode=CHRONICCARE',
+        relevance: (allText.match(/吐き気|嘔吐|気持ち悪|消化|胃/) ? 9 : 1) },
+      { id: 'psyllium', icon: '🌾', name: 'サイリウムハスク', desc: '食物繊維・腸内環境', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=サイリウムハスク&tag=chroniccare-22',
+        relevance: (allText.match(/便秘|腸|食物繊維/) ? 9 : diseases.includes('ibs') ? 6 : 1) },
+      { id: 'headache_app', icon: '📱', name: '頭痛ーる（アプリ）', desc: '気圧予報・頭痛予防', store: 'amazon', url: 'https://zutool.jp/',
+        relevance: (allText.match(/頭痛|偏頭痛|片頭痛|気圧/) ? 10 : 1) },
+      { id: 'feverfew', icon: '🌼', name: 'フィーバーフュー', desc: '片頭痛予防ハーブ', store: 'iherb', url: 'https://www.iherb.com/search?kw=feverfew&rcode=CHRONICCARE',
+        relevance: (allText.match(/頭痛|偏頭痛|片頭痛/) ? 9 : 0) },
     ];
 
     // Add recency bonus: if mentioned in last 3 entries, boost relevance
@@ -5406,6 +5486,14 @@ var App = class App {
     // Pattern-based quick insights
     if (/pem|労作後|倦怠感がひどい|動けな/.test(lower)) return 'PEMの兆候。24-48時間の安静を推奨。活動量の見直しが必要です。';
     if (/疼痛|痛[いみ]|頭痛/.test(lower)) return '疼痛記録。痛みの時間帯・トリガーのパターンを追跡中。';
+    if (/頭痛|偏頭痛|片頭痛/.test(lower)) return '頭痛パターンを追跡中。頻度・トリガー（気圧/食事/ストレス/生理周期）の記録が予防に繋がります。';
+    if (/生理|月経|pms|ホルモン/.test(lower)) return '月経・ホルモン周期を追跡中。体調との相関分析で症状予防が可能になります。';
+    if (/更年期|ホットフラッシュ/.test(lower)) return '更年期症状の記録。エクオール・漢方・HRT等の選択肢を主治医と相談してください。';
+    if (/お腹|下痢|便秘|吐き気|胃/.test(lower)) return '消化器症状を追跡中。食事内容との相関が見えてくると改善策が明確に。';
+    if (/めまい|ふらつき|立ちくらみ/.test(lower)) return 'めまいの記録。水分・塩分摂取量と起立時の状況を合わせて記録すると診断の助けに。';
+    if (/肌荒れ|かゆ|湿疹|アトピー/.test(lower)) return '皮膚症状を記録中。食事・ストレス・環境との相関を分析しています。';
+    if (/息苦し|呼吸|胸が/.test(lower)) return '呼吸器症状の記録。腹式呼吸の練習と姿勢改善が基本的な対策です。';
+    if (/だるい|倦怠|疲れ/.test(lower)) return '疲労の記録。鉄・ビタミンB12・甲状腺機能の検査を検討してください。';
     if (/鬱|孤独|辛|死|ネガティ|絶望/.test(lower)) return '精神面のケアが重要です。信頼できる方への連絡を検討してください。';
     if (/眠[れり]|不眠|寝[れた]/.test(lower)) return '睡眠パターンを追跡中。睡眠衛生の見直しで改善の可能性があります。';
     if (/先生|診察|クリニック|病院/.test(lower)) return '医療記録。次回診察に向けてこの記録を共有することを推奨。';
@@ -5948,7 +6036,7 @@ App.prototype.render_dashboard = function() {
         <div style="flex:1">
           <textarea class="form-textarea" id="dash-quick-input" rows="2"
             style="border:none;background:transparent;resize:none;font-size:14px;padding:0;min-height:auto"
-            placeholder="今日の体調、気づき、症状を自由に書いてください..."></textarea>
+            placeholder="今日の体調は？（例：頭痛がする、生理2日目で辛い、昨日よく眠れた、薬を飲んだ...）"></textarea>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()">送信</button>
