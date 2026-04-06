@@ -845,21 +845,110 @@ App.prototype.render_admin = function() {
     </div>
   `).join('');
 
+  // Flat list of all prompts for table view
+  const allPromptsList = Object.entries(prompts);
+  const totalPrompts = allPromptsList.length;
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">管理パネル</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">AIモデル・プロンプト・アフィリエイトの設定</p>
   </div>
 
-  <!-- AI Model Selection -->
-  <div style="margin-bottom:28px">
+  <!-- Admin Tabs -->
+  <div class="tabs" id="admin-tabs">
+    <div class="tab active" onclick="app.switchAdminTab('prompts')">プロンプト管理（${totalPrompts}）</div>
+    <div class="tab" onclick="app.switchAdminTab('models')">AIモデル</div>
+    <div class="tab" onclick="app.switchAdminTab('api')">APIキー</div>
+    <div class="tab" onclick="app.switchAdminTab('affiliate')">アフィリエイト</div>
+    <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
+    <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
+  </div>
+
+  <!-- TAB: Prompts -->
+  <div class="admin-tab-content" id="admin-tab-prompts">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <h3 style="font-size:15px;font-weight:600">全プロンプト一覧</h3>
+        <p style="font-size:12px;color:var(--text-muted)">疾患別に分類されたAI分析プロンプト。クリックして編集。</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="app.addNewPrompt()">+ 新規プロンプト</button>
+        <button class="btn btn-secondary btn-sm" onclick="app.resetPromptsToDefault()">デフォルトに戻す</button>
+      </div>
+    </div>
+
+    <!-- Prompt Filter -->
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <input type="text" class="form-input" placeholder="プロンプト名で検索..."
+        style="flex:1" oninput="app.filterPrompts(this.value)">
+      <select class="form-select" style="width:auto" onchange="app.filterPromptsByDisease(this.value)">
+        <option value="">すべての疾患</option>
+        <option value="_universal">共通</option>
+        ${CONFIG.DISEASE_CATEGORIES.map(cat => `<optgroup label="${cat.name}">${cat.diseases.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}</optgroup>`).join('')}
+      </select>
+    </div>
+
+    <!-- Prompt List -->
+    <div id="prompt-list">
+      ${allPromptsList.map(([key, p], idx) => `
+        <div class="card prompt-item" data-prompt-key="${key}" data-disease="${p.disease || '_universal'}" style="margin-bottom:12px">
+          <div class="card-header" style="padding:12px 16px;cursor:pointer" onclick="app.togglePromptEdit('${key}')">
+            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;min-width:24px">${idx+1}</span>
+              <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</span>
+              <span class="tag tag-accent" style="font-size:9px;flex-shrink:0">${diseaseLabels[p.disease || '_universal'] || p.disease || '共通'}</span>
+              <span class="tag ${p.schedule==='daily'?'tag-success':p.schedule==='weekly'?'tag-info':'tag-warning'}" style="font-size:9px;flex-shrink:0">${p.schedule || 'manual'}</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();app.savePrompt('${key}')" style="padding:3px 10px;font-size:11px">保存</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();if(confirm('「${p.name}」を削除しますか？'))app.deletePrompt('${key}')" style="padding:3px 8px;font-size:11px">×</button>
+            </div>
+          </div>
+          <div class="card-body" id="prompt-edit-${key}" style="padding:0;display:none">
+            <div style="display:flex;gap:10px;padding:12px 16px;background:var(--bg-tertiary);border-bottom:1px solid var(--border);flex-wrap:wrap">
+              <div style="flex:1;min-width:200px">
+                <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px">名前</label>
+                <input class="form-input" data-prompt-name="${key}" value="${p.name}" style="font-size:13px">
+              </div>
+              <div style="min-width:160px">
+                <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px">対象疾患</label>
+                <select class="form-select" data-prompt-disease="${key}" style="font-size:12px">
+                  <option value="_universal" ${(p.disease||'_universal')==='_universal'?'selected':''}>共通（全疾患）</option>
+                  ${CONFIG.DISEASE_CATEGORIES.map(cat => `<optgroup label="${cat.name}">${cat.diseases.map(d => `<option value="${d.id}" ${p.disease===d.id?'selected':''}>${d.name}</option>`).join('')}</optgroup>`).join('')}
+                </select>
+              </div>
+              <div style="min-width:120px">
+                <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px">スケジュール</label>
+                <select class="form-select" data-prompt-schedule="${key}" style="font-size:12px">
+                  <option value="daily" ${p.schedule==='daily'?'selected':''}>毎日</option>
+                  <option value="weekly" ${p.schedule==='weekly'?'selected':''}>毎週</option>
+                  <option value="on_data_update" ${p.schedule==='on_data_update'?'selected':''}>データ更新時</option>
+                  <option value="manual" ${p.schedule==='manual'?'selected':''}>手動</option>
+                </select>
+              </div>
+            </div>
+            <textarea class="form-textarea" data-prompt-text="${key}"
+              style="min-height:400px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;border:none;border-radius:0;resize:vertical;padding:16px">${p.prompt}</textarea>
+            <div style="padding:10px 16px;background:var(--bg-tertiary);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:var(--text-muted)">${(p.prompt || '').length}文字</span>
+              <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${key}')">保存</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+
+  <!-- TAB: Models -->
+  <div class="admin-tab-content" id="admin-tab-models" style="display:none">
     <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AIモデル選択</h3>
     <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
       ${modelCards}
     </div>
   </div>
 
-  <!-- API Key Configuration -->
+  <!-- TAB: API Keys -->
+  <div class="admin-tab-content" id="admin-tab-api" style="display:none">
   <div class="card" style="margin-bottom:28px">
     <div class="card-header">
       <span class="card-title">APIキー設定</span>
@@ -887,16 +976,10 @@ App.prototype.render_admin = function() {
     </div>
   </div>
 
-  <!-- Prompt Management -->
-  <div style="margin-bottom:28px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h3 style="font-size:15px;font-weight:600">分析プロンプト管理</h3>
-      <button class="btn btn-primary btn-sm" onclick="app.addNewPrompt()">+ 新規プロンプト</button>
-    </div>
-    ${promptEditors}
   </div>
 
-  <!-- Affiliate Configuration -->
+  <!-- TAB: Affiliate -->
+  <div class="admin-tab-content" id="admin-tab-affiliate" style="display:none">
   <div class="card" style="margin-bottom:28px">
     <div class="card-header"><span class="card-title">アフィリエイト設定</span></div>
     <div class="card-body">
@@ -906,68 +989,32 @@ App.prototype.render_admin = function() {
       </form>
     </div>
   </div>
-
-  <!-- Dashboard Layout -->
-  <div class="card" style="margin-bottom:28px">
-    <div class="card-header"><span class="card-title">ダッシュボードレイアウト</span></div>
-    <div class="card-body">
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-secondary" onclick="store.set('dashboardLayout','default');Components.showToast('デフォルトレイアウト','info')">デフォルト</button>
-        <button class="btn btn-secondary" onclick="store.set('dashboardLayout','compact');Components.showToast('コンパクトレイアウト','info')">コンパクト</button>
-        <button class="btn btn-secondary" onclick="store.set('dashboardLayout','detailed');Components.showToast('詳細レイアウト','info')">詳細表示</button>
-      </div>
-    </div>
   </div>
 
-  <!-- Firebase Configuration -->
+  <!-- TAB: Firebase -->
+  <div class="admin-tab-content" id="admin-tab-firebase" style="display:none">
   <div class="card" style="margin-bottom:28px">
     <div class="card-header">
-      <span class="card-title">Firebase設定（クラウドDB・本物のGoogleログイン）</span>
+      <span class="card-title">Firebase設定</span>
       <span class="tag" id="firebase-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Firebaseを設定すると、データがクラウドに保存され端末間で同期されます。Google OAuthも本物のGoogleログインになります。</p>
-      <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
-        <h4 style="font-size:12px;font-weight:600;margin-bottom:6px">Firebase設定手順</h4>
-        <ol style="font-size:11px;color:var(--text-secondary);line-height:2;padding-left:18px">
-          <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener" style="color:var(--accent)">Firebase Console</a> → プロジェクト作成</li>
-          <li>Authentication → Google プロバイダを有効化</li>
-          <li>Firestore Database → データベース作成（テストモードでOK）</li>
-          <li>プロジェクト設定 → ウェブアプリ追加 → 設定値を下にコピー</li>
-        </ol>
-      </div>
-      <div class="form-group">
-        <label class="form-label">API Key</label>
-        <input type="text" class="form-input" id="fb-apiKey" placeholder="AIzaSy..." autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Auth Domain</label>
-        <input type="text" class="form-input" id="fb-authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Project ID</label>
-        <input type="text" class="form-input" id="fb-projectId" placeholder="your-project-id" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Storage Bucket</label>
-        <input type="text" class="form-input" id="fb-storageBucket" placeholder="your-project.appspot.com" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Messaging Sender ID</label>
-        <input type="text" class="form-input" id="fb-messagingSenderId" placeholder="123456789" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">App ID</label>
-        <input type="text" class="form-input" id="fb-appId" placeholder="1:123456789:web:abc123" autocomplete="off">
-      </div>
+      <div class="form-group"><label class="form-label">API Key</label><input type="text" class="form-input" id="fb-apiKey" placeholder="AIzaSy..." autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Auth Domain</label><input type="text" class="form-input" id="fb-authDomain" placeholder="your-project.firebaseapp.com" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Project ID</label><input type="text" class="form-input" id="fb-projectId" placeholder="your-project-id" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Storage Bucket</label><input type="text" class="form-input" id="fb-storageBucket" placeholder="your-project.appspot.com" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Messaging Sender ID</label><input type="text" class="form-input" id="fb-messagingSenderId" placeholder="123456789" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">App ID</label><input type="text" class="form-input" id="fb-appId" placeholder="1:123456789:web:abc123" autocomplete="off"></div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">Firebase設定を保存して接続</button>
-        <button class="btn btn-danger btn-sm" onclick="app.clearFirebaseConfig()">設定を削除</button>
+        <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存して接続</button>
+        <button class="btn btn-danger btn-sm" onclick="app.clearFirebaseConfig()">削除</button>
       </div>
     </div>
   </div>
+  </div>
 
-  <!-- Demo & Data -->
+  <!-- TAB: Data -->
+  <div class="admin-tab-content" id="admin-tab-data" style="display:none">
   <div class="card">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
@@ -975,6 +1022,7 @@ App.prototype.render_admin = function() {
       <button class="btn btn-secondary" onclick="app.exportData()">データエクスポート</button>
       <button class="btn btn-danger" onclick="if(confirm('すべてのデータを削除しますか？')){store.clearAll();location.reload()}">データ全削除</button>
     </div>
+  </div>
   </div>`;
 };
 

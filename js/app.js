@@ -1248,18 +1248,68 @@ var App = class App {
     Components.showToast(`「${nameEl.value}」を保存しました`, 'success');
   }
 
+  // ---- Admin Tab Navigation ----
+  switchAdminTab(tabId) {
+    document.querySelectorAll('.admin-tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#admin-tabs .tab').forEach(el => el.classList.remove('active'));
+
+    const target = document.getElementById('admin-tab-' + tabId);
+    if (target) target.style.display = 'block';
+
+    const tabs = document.querySelectorAll('#admin-tabs .tab');
+    const tabNames = ['prompts', 'models', 'api', 'affiliate', 'firebase', 'data'];
+    const idx = tabNames.indexOf(tabId);
+    if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+
+    // Load fields for specific tabs
+    if (tabId === 'api') this.loadApiKeyFields();
+    if (tabId === 'firebase') this.loadFirebaseConfigFields();
+  }
+
+  togglePromptEdit(key) {
+    const el = document.getElementById('prompt-edit-' + key);
+    if (!el) return;
+    const isOpen = el.style.display !== 'none';
+    el.style.display = isOpen ? 'none' : 'block';
+  }
+
+  filterPrompts(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('.prompt-item').forEach(el => {
+      const name = el.querySelector('[data-prompt-name]')?.value?.toLowerCase() || '';
+      el.style.display = name.includes(q) || q === '' ? '' : 'none';
+    });
+  }
+
+  filterPromptsByDisease(diseaseId) {
+    document.querySelectorAll('.prompt-item').forEach(el => {
+      const d = el.dataset.disease || '_universal';
+      el.style.display = !diseaseId || d === diseaseId ? '' : 'none';
+    });
+  }
+
+  resetPromptsToDefault() {
+    if (!confirm('すべてのプロンプトをデフォルトに戻しますか？カスタム変更は失われます。')) return;
+    store.set('customPrompts', { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS });
+    Components.showToast('プロンプトをデフォルトに戻しました', 'success');
+    this.navigate('admin');
+  }
+
   addNewPrompt() {
     const key = 'custom_' + Date.now();
     const prompts = store.get('customPrompts') || {};
     prompts[key] = {
       name: '新しいプロンプト',
+      disease: '_universal',
       description: '',
-      prompt: 'ここにプロンプトを入力してください...',
+      prompt: PROMPT_HEADER + 'ここにプロンプトを入力してください...\n\n{{USER_DATA}} や {{SELECTED_DISEASES}} 等の変数が使えます。',
       schedule: 'manual',
       active: true
     };
     store.set('customPrompts', prompts);
     this.navigate('admin');
+    // Auto-open the new prompt
+    setTimeout(() => this.togglePromptEdit(key), 100);
   }
 
   deletePrompt(key) {
