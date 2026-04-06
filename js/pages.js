@@ -561,7 +561,17 @@ App.prototype.render_data_input = function() {
     <div class="card-header"><span class="card-title">📎 ファイルアップロード</span></div>
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">血液検査結果、食事写真、処方箋、遺伝子データなど</p>
-      ${Components.photoUpload('general')}
+      <div class="upload-area" onclick="document.getElementById('data-file-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="event.preventDefault();app.dataPageFileUpload(event.dataTransfer.files)">
+        <div class="upload-area-icon">📸</div>
+        <div class="upload-area-text">クリックまたはドラッグ&ドロップ</div>
+        <div class="upload-area-hint">写真・画像・PDF・CSV・JSON・XML・テキスト</div>
+        <input type="file" id="data-file-input" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx"
+          onchange="app.dataPageFileUpload(this.files)">
+      </div>
+      <div id="data-file-result" style="margin-top:12px"></div>
     </div>
   </div>
 

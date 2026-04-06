@@ -6215,6 +6215,52 @@ ${recentEntries.substring(0, 3000)}
     });
   }
 
+  // ---- Data Page File Upload ----
+  dataPageFileUpload(files) {
+    if (!files || !files.length) return;
+    const resultEl = document.getElementById('data-file-result');
+    if (resultEl) resultEl.innerHTML = Components.loading('ファイルを処理中...');
+
+    Array.from(files).forEach(async (file) => {
+      const textForAnalysis = [];
+
+      if (!file.type.startsWith('image/')) {
+        try {
+          const count = await Integrations.importFile(file);
+          if (count > 0) textForAnalysis.push(`[ファイル取込] ${file.name}: ${count}件のデータ`);
+        } catch(e) { /* fall through */ }
+      }
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        store.addHealthData('photos', {
+          filename: file.name, type: file.type, size: file.size,
+          dataUrl: file.type.startsWith('image/') ? ev.target.result.substring(0, 500) : '',
+          category: 'general'
+        });
+
+        textForAnalysis.push(`[ファイル] ${file.name} (${file.type}, ${(file.size/1024).toFixed(0)}KB)`);
+
+        const history = store.get('conversationHistory') || [];
+        history.push({ role: 'user', content: textForAnalysis.join('\n'), timestamp: new Date().toISOString(), type: 'file_upload' });
+        store.set('conversationHistory', history);
+
+        const analysis = this.generateDeepAnalysis(textForAnalysis.join('\n'));
+        store.set('latestFeedback', analysis);
+
+        Components.showToast(`${file.name} を保存しました`, 'success');
+
+        if (resultEl) {
+          const fb = analysis;
+          resultEl.innerHTML = `<div class="card" style="border-left:4px solid var(--accent)">
+            ${fb.sections.map(s => `<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${s.icon} ${s.title}</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div></div>`).join('')}
+          </div>`;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   // ---- User Profile ----
   saveDiseaseSettings() {
     const checkboxes = document.querySelectorAll('.settings-disease-cb');
@@ -7093,7 +7139,17 @@ App.prototype.render_data_input = function() {
     <div class="card-header"><span class="card-title">📎 ファイルアップロード</span></div>
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">血液検査結果、食事写真、処方箋、遺伝子データなど</p>
-      ${Components.photoUpload('general')}
+      <div class="upload-area" onclick="document.getElementById('data-file-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="event.preventDefault();app.dataPageFileUpload(event.dataTransfer.files)">
+        <div class="upload-area-icon">📸</div>
+        <div class="upload-area-text">クリックまたはドラッグ&ドロップ</div>
+        <div class="upload-area-hint">写真・画像・PDF・CSV・JSON・XML・テキスト</div>
+        <input type="file" id="data-file-input" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx"
+          onchange="app.dataPageFileUpload(this.files)">
+      </div>
+      <div id="data-file-result" style="margin-top:12px"></div>
     </div>
   </div>
 
