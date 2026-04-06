@@ -126,8 +126,7 @@ var AIEngine = class AIEngine {
       }
       throw new Error('Unknown model: ' + modelId);
     } catch (error) {
-      console.error('[AI Engine] API call failed:', error);
-      Components.showToast('API接続エラー: ' + error.message, 'error');
+      console.warn('[AI Engine] API call failed, using local analysis:', error.message);
       return this.generateDemoAnalysis();
     }
   }
