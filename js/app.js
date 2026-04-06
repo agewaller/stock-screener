@@ -91,7 +91,7 @@ var App = class App {
       analysis: 'AI分析',
       actions: 'アクションセンター',
       research: '最新研究',
-      chat: 'AIコンサルタント',
+      chat: '相談する',
       integrations: 'デバイス連携',
       timeline: 'タイムライン',
       admin: '管理パネル',
@@ -493,7 +493,7 @@ var App = class App {
     }
 
     const btnArea = document.getElementById('file-save-area');
-    if (btnArea) btnArea.innerHTML = Components.loading('保存＆AI分析中...');
+    if (btnArea) btnArea.innerHTML = Components.loading('保存＆分析中...');
 
     const savedEntries = [];
     const textForAnalysis = [];
@@ -562,14 +562,14 @@ var App = class App {
   }
 
   showFileAnalysisResult(container, uploadSummary) {
-    container.innerHTML = Components.loading('AI分析中...');
+    container.innerHTML = Components.loading('分析中...');
 
     setTimeout(() => {
       const advice = this.generateFileAdvice(uploadSummary);
       container.innerHTML = `
         <div class="card" style="border-color:var(--accent-border);margin-top:12px">
           <div class="card-header" style="background:var(--accent-bg)">
-            <span class="card-title">🤖 アップロードデータのAI分析</span>
+            <span class="card-title">アップロードデータの分析結果</span>
           </div>
           <div class="card-body">
             ${advice.alerts.map(a => `
@@ -587,12 +587,12 @@ var App = class App {
     let text = '';
 
     if (/血液検査|blood|検査結果/.test(lower)) {
-      alerts.push({ level: 'info', message: '血液検査データを検出しました。AI分析ページで詳細な分析を実行できます。' });
+      alerts.push({ level: 'info', message: '血液検査データを検出しました。分析ページで詳細な分析を実行できます。' });
       text += '【血液検査データ】アップロードされた検査結果をAI分析に使用します。管理パネルでAPIキーを設定すると、数値の解釈と推奨アクションが自動生成されます。\n\n';
     }
 
     if (/食事|meal|料理|ごはん|ランチ|ディナー/.test(lower)) {
-      text += '【食事写真】食事内容をAIが分析し、栄養バランスや抗炎症食の観点からアドバイスを生成します。\n\n';
+      text += '【食事写真】食事内容を自動分析し、栄養バランスや抗炎症食の観点からアドバイスを生成します。\n\n';
     }
 
     if (/処方|薬|prescription|お薬手帳/.test(lower)) {
@@ -612,7 +612,7 @@ var App = class App {
       text = 'ファイルを保存しました。このデータはAI分析のコンテキストに追加され、次回の分析で反映されます。より詳細な分析にはAI分析ページから分析を実行してください。';
     }
 
-    text += '\n→ AI分析ページで「ME/CFS 日次分析」を実行すると、すべてのアップロードデータを含めた総合分析が行えます。';
+    text += '\n→ 分析ページで「ME/CFS 日次分析」を実行すると、すべてのアップロードデータを含めた総合分析が行えます。';
 
     return { alerts, text };
   }
@@ -667,7 +667,7 @@ var App = class App {
 
     // Status feedback
     const status = document.getElementById('text-save-status');
-    if (status) status.textContent = '保存しました。AI分析中...';
+    if (status) status.textContent = '保存しました。分析中...';
 
     // Re-render page to show updated recent entries
     this.navigate('data-input');
@@ -675,7 +675,7 @@ var App = class App {
     // Run instant AI analysis and display advice
     this.showInstantAdvice(content, category);
 
-    Components.showToast('保存してAI分析を実行中...', 'success');
+    Components.showToast('保存して分析を実行中...', 'success');
   }
 
   showInstantAdvice(newText, category) {
@@ -685,7 +685,7 @@ var App = class App {
     adviceArea.innerHTML = `
       <div class="card">
         <div class="card-header">
-          <span class="card-title">🤖 AIインスタントアドバイス</span>
+          <span class="card-title">🤖 アドバイス</span>
           <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
         </div>
         <div class="card-body" style="color:var(--text-muted);font-size:13px">入力内容を分析しています...</div>
@@ -697,7 +697,7 @@ var App = class App {
       adviceArea.innerHTML = `
         <div class="card" style="border-color:var(--accent-border)">
           <div class="card-header" style="background:var(--accent-bg)">
-            <span class="card-title">🤖 AIインスタントアドバイス</span>
+            <span class="card-title">🤖 アドバイス</span>
             <span style="font-size:11px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
           </div>
           <div class="card-body">
@@ -927,7 +927,7 @@ var App = class App {
         }
       }
 
-      advice += '記録を続けることで、AIの分析精度が日々向上していきます。';
+      advice += '記録を続けることで、分析精度が日々向上していきます。';
     }
 
     // Ensure at least one action
@@ -938,7 +938,7 @@ var App = class App {
     // Add streak/motivation message
     const totalEntries = (store.get('textEntries') || []).length;
     if (totalEntries > 0 && totalEntries % 7 === 0) {
-      alerts.unshift({ level: 'info', message: `${totalEntries}件目の記録です！継続は力なり。データが蓄積されるほどAI分析の精度が向上します。` });
+      alerts.unshift({ level: 'info', message: `${totalEntries}件目の記録です！継続は力なり。データが蓄積されるほど分析精度が向上します。` });
     } else if (totalEntries === 1) {
       alerts.unshift({ level: 'info', message: '最初の記録です！毎日続けると、体調パターンが見えてきます。' });
     }
@@ -953,7 +953,7 @@ var App = class App {
     if (!promptConfig) { Components.showToast('プロンプトが見つかりません', 'error'); return; }
 
     const resultArea = document.getElementById('analysis-result');
-    if (resultArea) resultArea.innerHTML = Components.loading('AI分析を実行中...');
+    if (resultArea) resultArea.innerHTML = Components.loading('分析を実行中...');
 
     try {
       const result = await aiEngine.runScheduledAnalysis(promptConfig);
@@ -1341,13 +1341,13 @@ var App = class App {
     // Show instant AI feedback on dashboard
     const feedback = document.getElementById('dash-ai-feedback');
     if (feedback) {
-      feedback.innerHTML = Components.loading('AI分析中...');
+      feedback.innerHTML = Components.loading('分析中...');
       setTimeout(() => {
         const advice = this.generateInstantAdvice(content, 'symptoms');
         feedback.innerHTML = `
           <div class="card" style="border-color:var(--accent-border)">
             <div class="card-header" style="background:var(--accent-bg);padding:12px 16px">
-              <span style="font-size:13px;font-weight:600">AIアドバイス</span>
+              <span style="font-size:13px;font-weight:600">アドバイス</span>
               <span style="font-size:10px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
             </div>
             <div class="card-body" style="padding:14px 16px">

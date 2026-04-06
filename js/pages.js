@@ -37,8 +37,8 @@ App.prototype.render_login = function() {
     <div style="width:100%;max-width:720px;padding:0 20px">
       <div class="login-logo" style="text-align:center;margin-bottom:24px">
         <div class="login-logo-icon" style="margin:0 auto 12px">⚕️</div>
-        <h1>ChronicCare AI</h1>
-        <p>慢性疾患管理ダッシュボード</p>
+        <h1>健康日記</h1>
+        <p>慢性疾患寛解サポート</p>
       </div>
 
       <!-- Step 1: Disease Selection -->
@@ -174,10 +174,10 @@ App.prototype.render_dashboard = function() {
     <div class="card" style="margin-bottom:20px;border-color:var(--success);background:var(--success-bg)">
       <div class="card-body" style="text-align:center;padding:30px">
         <div style="font-size:36px;margin-bottom:12px">👋</div>
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ ChronicCare AI へ</h3>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ 健康日記 へ</h3>
         <p style="font-size:13px;color:var(--text-secondary);max-width:500px;margin:0 auto 16px;line-height:1.7">
           まずは上の入力欄に今日の体調を書いてみてください。<br>
-          書くだけでAIが即座に分析し、あなたに合ったアドバイスを表示します。
+          書くだけで即座に分析し、あなたに合ったアドバイスを表示します。
         </p>
         <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>
@@ -240,7 +240,7 @@ App.prototype.render_dashboard = function() {
         </div>
         <div id="${eid}" style="display:none;padding:0 16px 12px">
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
-          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>AI:</strong> ${e._insight}</div>` : ''}
+          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : ''}
         </div>
       </div>`;
     }).join('')}
@@ -402,7 +402,7 @@ App.prototype.render_data_input = function() {
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">データ入力</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストからAIが即座にアドバイスを生成します。</p>
+    <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストから即座にアドバイスを生成します。</p>
   </div>
 
   <!-- 1. Free Text Input (Primary) -->
@@ -444,7 +444,7 @@ App.prototype.render_data_input = function() {
         <textarea class="form-textarea" id="text-input-content" rows="8" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする&#10;・山村先生にアザルフィジンの相談をした&#10;・エプソムソルト風呂に入ったら疲れが取れた"></textarea>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
-        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存してAI分析</button>
+        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存して分析</button>
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>
@@ -549,7 +549,7 @@ App.prototype.render_actions = function() {
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">アクションセンター</h2>
     <p style="font-size:13px;color:var(--text-secondary)">ワンクリックで健康改善のアクションを実行</p>
   </div>
-  ${sections || `<div class="card"><div class="card-body">${Components.emptyState('⚡', 'アクションはまだありません', 'AI分析を実行すると、個別化されたアクションプランが生成されます。')}</div></div>`}
+  ${sections || `<div class="card"><div class="card-body">${Components.emptyState('⚡', 'アクションはまだありません', 'データを記録すると、個別化されたアクションプランが生成されます。')}</div></div>`}
 
   <!-- Recommended Test Kits -->
   <div style="margin-top:24px;margin-bottom:24px">
@@ -602,7 +602,7 @@ App.prototype.render_research = function() {
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">PubMed検索</button>
-      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">AI分析で研究スキャン</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
     </div>
   </div>
 
@@ -625,7 +625,7 @@ App.prototype.render_research = function() {
   <!-- PubMed Results -->
   <div id="pubmed-results">
     ${updates.length > 0
-      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AI分析による研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
+      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
       : Components.emptyState('🔬', 'PubMed検索を実行してください', '上の「PubMed検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
   </div>`;
 };
@@ -637,7 +637,7 @@ App.prototype.render_chat = function() {
 
   return `
   <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">AIコンサルタント</h2>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
     <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
   </div>
   <div class="card">
@@ -754,7 +754,7 @@ App.prototype.render_timeline = function() {
               <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
-            ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>AI:</strong> ${aiInsight}</div>` : ''}
+            ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>分析:</strong> ${aiInsight}</div>` : ''}
           </div>
         </div>`;
     }
@@ -876,7 +876,7 @@ App.prototype.render_integrations = function() {
       <div style="font-size:32px;margin-bottom:8px">🎙️</div>
       <div class="stat-card-label">Plaud</div>
       <div style="font-size:14px;font-weight:600">会話記録</div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→AI分析</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→自動分析</p>
     </div>
 
     <!-- Fitbit Card -->
@@ -903,7 +903,7 @@ App.prototype.render_integrations = function() {
       <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同��済' : '未同期'}</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報からPEM予防のための活動量管理���AIが分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報から活動量を自動分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
       <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
         <div style="font-size:12px;color:var(--text-secondary)">
           <strong>同期��法：</strong>このClaude Codeチャッ��で「カレンダーを同期して」と依頼してください。自動でGoogleカレンダーからデータを取得しダッシュボードに反映します。
@@ -945,7 +945,7 @@ App.prototype.render_integrations = function() {
         <label class="form-label">文字起こしテキスト</label>
         <textarea class="form-textarea" id="plaud-transcript" rows="8" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..."></textarea>
       </div>
-      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆AI分析</button>
+      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆分析</button>
     </div>
   </div>
 

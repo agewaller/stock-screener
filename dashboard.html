@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChronicCare AI - 慢性疾患管理ダッシュボード</title>
+<title>健康日記 - 慢性疾患寛解サポート</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -1081,8 +1081,8 @@ body {
       <a class="sidebar-logo" onclick="app.navigate('dashboard')" style="cursor:pointer">
         <div class="sidebar-logo-icon">⚕️</div>
         <div>
-          <span class="sidebar-logo-text">ChronicCare AI</span>
-          <span class="sidebar-logo-sub">慢性疾患管理システム</span>
+          <span class="sidebar-logo-text">健康日記</span>
+          <span class="sidebar-logo-sub">慢性疾患寛解サポート</span>
         </div>
       </a>
     </div>
@@ -1092,7 +1092,7 @@ body {
       <a class="nav-item" data-page="data-input" onclick="app.navigate('data-input')"><span class="icon">📝</span> 記録する</a>
       <a class="nav-item" data-page="actions" onclick="app.navigate('actions')"><span class="icon">⚡</span> アクション</a>
       <a class="nav-item" data-page="research" onclick="app.navigate('research')"><span class="icon">🔬</span> 最新研究</a>
-      <a class="nav-item" data-page="chat" onclick="app.navigate('chat')"><span class="icon">💬</span> AIに相談</a>
+      <a class="nav-item" data-page="chat" onclick="app.navigate('chat')"><span class="icon">💬</span> 相談する</a>
       <a class="nav-item" data-page="integrations" onclick="app.navigate('integrations')"><span class="icon">🔗</span> 連携</a>
       <a class="nav-item" data-page="settings" onclick="app.navigate('settings')"><span class="icon">👤</span> 設定</a>
       <a class="nav-item admin-only" data-page="analysis" onclick="app.navigate('analysis')"><span class="icon">🤖</span> AI分析</a>
@@ -1136,7 +1136,7 @@ body {
    Configuration & Constants
    ============================================================ */
 var CONFIG = {
-  APP_NAME: 'ChronicCare AI',
+  APP_NAME: '健康日記',
   APP_VERSION: '1.0.0',
 
   // Firebase config
@@ -3308,21 +3308,22 @@ var i18n = {
 
   translations: {
     ja: {
+      // App
+      app_name: '健康日記',
+      app_subtitle: '慢性疾患寛解サポート',
       // Nav
-      dashboard: 'ダッシュボード',
+      dashboard: 'ホーム',
       record: '記録する',
       actions: 'アクション',
       research: '最新研究',
-      ask_ai: 'AIに相談',
-      timeline: '経過',
+      ask_ai: '相談する',
       integrations: '連携',
       settings: '設定',
       admin: '管理パネル',
-      ai_analysis: 'AI分析',
       // Dashboard
-      quick_input_placeholder: '今日の体調、気づき、症状を自由に書いてください...',
+      quick_input_placeholder: '今日の体調は？（例：頭痛がする、生理2日目で辛い、昨日よく眠れた...）',
       send: '送信',
-      ai_advice: 'AIアドバイス',
+      advice: 'アドバイス',
       your_recommendations: 'あなたへの推奨',
       recent_records: '最近の記録',
       trend: 'トレンド',
@@ -3376,12 +3377,13 @@ var i18n = {
       error: 'エラー',
     },
     en: {
-      dashboard: 'Dashboard',
+      app_name: 'Health Diary',
+      app_subtitle: 'Chronic Illness Remission Support',
+      dashboard: 'Home',
       record: 'Record',
       actions: 'Actions',
       research: 'Research',
-      ask_ai: 'Ask AI',
-      timeline: 'Timeline',
+      ask_ai: 'Consult',
       integrations: 'Connect',
       settings: 'Settings',
       admin: 'Admin',
@@ -3438,11 +3440,12 @@ var i18n = {
       error: 'Error',
     },
     zh: {
-      dashboard: '仪表盘', record: '记录', actions: '行动', research: '研究',
-      ask_ai: 'AI咨询', timeline: '时间线', integrations: '连接', settings: '设置',
-      admin: '管理', ai_analysis: 'AI分析',
-      quick_input_placeholder: '记录今天的身体状况...',
-      send: '发送', ai_advice: 'AI建议', your_recommendations: '推荐',
+      app_name: '健康日记', app_subtitle: '慢性疾病缓解支持',
+      dashboard: '首页', record: '记录', actions: '行动', research: '研究',
+      ask_ai: '咨询', integrations: '连接', settings: '设置',
+      admin: '管理',
+      quick_input_placeholder: '今天身体怎么样？（例：头痛、失眠、吃了什么药...）',
+      send: '发送', advice: '建议', your_recommendations: '推荐',
       recent_records: '最近记录', trend: '趋势', fatigue: '疲劳', pain: '疼痛',
       brain_fog: '脑雾', sleep: '睡眠', last_updated: '最后更新', view_all: '查看全部',
       save_and_analyze: '保存并分析', clear: '清除', file_upload: '文件上传',
@@ -3452,9 +3455,10 @@ var i18n = {
       selected: '已选', items: '条', loading: '加载中...', saved: '已保存',
     },
     ko: {
-      dashboard: '대시보드', record: '기록', actions: '액션', research: '연구',
-      ask_ai: 'AI 상담', timeline: '타임라인', settings: '설정',
-      quick_input_placeholder: '오늘의 건강 상태를 기록하세요...',
+      app_name: '건강일기', app_subtitle: '만성질환 관해 지원',
+      dashboard: '홈', record: '기록', actions: '액션', research: '연구',
+      ask_ai: '상담', integrations: '연결', settings: '설정',
+      quick_input_placeholder: '오늘 몸 상태는 어떠세요? (예: 두통, 피곤함, 약 복용...)',
       send: '보내기', save_and_analyze: '저장 및 분석', login_google: 'Google로 로그인',
       login: '로그인', logout: '로그아웃', saved: '저장됨',
     }
@@ -4478,7 +4482,7 @@ var App = class App {
       analysis: 'AI分析',
       actions: 'アクションセンター',
       research: '最新研究',
-      chat: 'AIコンサルタント',
+      chat: '相談する',
       integrations: 'デバイス連携',
       timeline: 'タイムライン',
       admin: '管理パネル',
@@ -4880,7 +4884,7 @@ var App = class App {
     }
 
     const btnArea = document.getElementById('file-save-area');
-    if (btnArea) btnArea.innerHTML = Components.loading('保存＆AI分析中...');
+    if (btnArea) btnArea.innerHTML = Components.loading('保存＆分析中...');
 
     const savedEntries = [];
     const textForAnalysis = [];
@@ -4949,14 +4953,14 @@ var App = class App {
   }
 
   showFileAnalysisResult(container, uploadSummary) {
-    container.innerHTML = Components.loading('AI分析中...');
+    container.innerHTML = Components.loading('分析中...');
 
     setTimeout(() => {
       const advice = this.generateFileAdvice(uploadSummary);
       container.innerHTML = `
         <div class="card" style="border-color:var(--accent-border);margin-top:12px">
           <div class="card-header" style="background:var(--accent-bg)">
-            <span class="card-title">🤖 アップロードデータのAI分析</span>
+            <span class="card-title">アップロードデータの分析結果</span>
           </div>
           <div class="card-body">
             ${advice.alerts.map(a => `
@@ -4974,12 +4978,12 @@ var App = class App {
     let text = '';
 
     if (/血液検査|blood|検査結果/.test(lower)) {
-      alerts.push({ level: 'info', message: '血液検査データを検出しました。AI分析ページで詳細な分析を実行できます。' });
+      alerts.push({ level: 'info', message: '血液検査データを検出しました。分析ページで詳細な分析を実行できます。' });
       text += '【血液検査データ】アップロードされた検査結果をAI分析に使用します。管理パネルでAPIキーを設定すると、数値の解釈と推奨アクションが自動生成されます。\n\n';
     }
 
     if (/食事|meal|料理|ごはん|ランチ|ディナー/.test(lower)) {
-      text += '【食事写真】食事内容をAIが分析し、栄養バランスや抗炎症食の観点からアドバイスを生成します。\n\n';
+      text += '【食事写真】食事内容を自動分析し、栄養バランスや抗炎症食の観点からアドバイスを生成します。\n\n';
     }
 
     if (/処方|薬|prescription|お薬手帳/.test(lower)) {
@@ -4999,7 +5003,7 @@ var App = class App {
       text = 'ファイルを保存しました。このデータはAI分析のコンテキストに追加され、次回の分析で反映されます。より詳細な分析にはAI分析ページから分析を実行してください。';
     }
 
-    text += '\n→ AI分析ページで「ME/CFS 日次分析」を実行すると、すべてのアップロードデータを含めた総合分析が行えます。';
+    text += '\n→ 分析ページで「ME/CFS 日次分析」を実行すると、すべてのアップロードデータを含めた総合分析が行えます。';
 
     return { alerts, text };
   }
@@ -5054,7 +5058,7 @@ var App = class App {
 
     // Status feedback
     const status = document.getElementById('text-save-status');
-    if (status) status.textContent = '保存しました。AI分析中...';
+    if (status) status.textContent = '保存しました。分析中...';
 
     // Re-render page to show updated recent entries
     this.navigate('data-input');
@@ -5062,7 +5066,7 @@ var App = class App {
     // Run instant AI analysis and display advice
     this.showInstantAdvice(content, category);
 
-    Components.showToast('保存してAI分析を実行中...', 'success');
+    Components.showToast('保存して分析を実行中...', 'success');
   }
 
   showInstantAdvice(newText, category) {
@@ -5072,7 +5076,7 @@ var App = class App {
     adviceArea.innerHTML = `
       <div class="card">
         <div class="card-header">
-          <span class="card-title">🤖 AIインスタントアドバイス</span>
+          <span class="card-title">🤖 アドバイス</span>
           <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
         </div>
         <div class="card-body" style="color:var(--text-muted);font-size:13px">入力内容を分析しています...</div>
@@ -5084,7 +5088,7 @@ var App = class App {
       adviceArea.innerHTML = `
         <div class="card" style="border-color:var(--accent-border)">
           <div class="card-header" style="background:var(--accent-bg)">
-            <span class="card-title">🤖 AIインスタントアドバイス</span>
+            <span class="card-title">🤖 アドバイス</span>
             <span style="font-size:11px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
           </div>
           <div class="card-body">
@@ -5314,7 +5318,7 @@ var App = class App {
         }
       }
 
-      advice += '記録を続けることで、AIの分析精度が日々向上していきます。';
+      advice += '記録を続けることで、分析精度が日々向上していきます。';
     }
 
     // Ensure at least one action
@@ -5325,7 +5329,7 @@ var App = class App {
     // Add streak/motivation message
     const totalEntries = (store.get('textEntries') || []).length;
     if (totalEntries > 0 && totalEntries % 7 === 0) {
-      alerts.unshift({ level: 'info', message: `${totalEntries}件目の記録です！継続は力なり。データが蓄積されるほどAI分析の精度が向上します。` });
+      alerts.unshift({ level: 'info', message: `${totalEntries}件目の記録です！継続は力なり。データが蓄積されるほど分析精度が向上します。` });
     } else if (totalEntries === 1) {
       alerts.unshift({ level: 'info', message: '最初の記録です！毎日続けると、体調パターンが見えてきます。' });
     }
@@ -5340,7 +5344,7 @@ var App = class App {
     if (!promptConfig) { Components.showToast('プロンプトが見つかりません', 'error'); return; }
 
     const resultArea = document.getElementById('analysis-result');
-    if (resultArea) resultArea.innerHTML = Components.loading('AI分析を実行中...');
+    if (resultArea) resultArea.innerHTML = Components.loading('分析を実行中...');
 
     try {
       const result = await aiEngine.runScheduledAnalysis(promptConfig);
@@ -5728,13 +5732,13 @@ var App = class App {
     // Show instant AI feedback on dashboard
     const feedback = document.getElementById('dash-ai-feedback');
     if (feedback) {
-      feedback.innerHTML = Components.loading('AI分析中...');
+      feedback.innerHTML = Components.loading('分析中...');
       setTimeout(() => {
         const advice = this.generateInstantAdvice(content, 'symptoms');
         feedback.innerHTML = `
           <div class="card" style="border-color:var(--accent-border)">
             <div class="card-header" style="background:var(--accent-bg);padding:12px 16px">
-              <span style="font-size:13px;font-weight:600">AIアドバイス</span>
+              <span style="font-size:13px;font-weight:600">アドバイス</span>
               <span style="font-size:10px;color:var(--text-muted)">${new Date().toLocaleTimeString('ja-JP')}</span>
             </div>
             <div class="card-body" style="padding:14px 16px">
@@ -6090,8 +6094,8 @@ App.prototype.render_login = function() {
     <div style="width:100%;max-width:720px;padding:0 20px">
       <div class="login-logo" style="text-align:center;margin-bottom:24px">
         <div class="login-logo-icon" style="margin:0 auto 12px">⚕️</div>
-        <h1>ChronicCare AI</h1>
-        <p>慢性疾患管理ダッシュボード</p>
+        <h1>健康日記</h1>
+        <p>慢性疾患寛解サポート</p>
       </div>
 
       <!-- Step 1: Disease Selection -->
@@ -6227,10 +6231,10 @@ App.prototype.render_dashboard = function() {
     <div class="card" style="margin-bottom:20px;border-color:var(--success);background:var(--success-bg)">
       <div class="card-body" style="text-align:center;padding:30px">
         <div style="font-size:36px;margin-bottom:12px">👋</div>
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ ChronicCare AI へ</h3>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:8px">ようこそ 健康日記 へ</h3>
         <p style="font-size:13px;color:var(--text-secondary);max-width:500px;margin:0 auto 16px;line-height:1.7">
           まずは上の入力欄に今日の体調を書いてみてください。<br>
-          書くだけでAIが即座に分析し、あなたに合ったアドバイスを表示します。
+          書くだけで即座に分析し、あなたに合ったアドバイスを表示します。
         </p>
         <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>
@@ -6293,7 +6297,7 @@ App.prototype.render_dashboard = function() {
         </div>
         <div id="${eid}" style="display:none;padding:0 16px 12px">
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
-          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>AI:</strong> ${e._insight}</div>` : ''}
+          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : ''}
         </div>
       </div>`;
     }).join('')}
@@ -6455,7 +6459,7 @@ App.prototype.render_data_input = function() {
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">データ入力</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストからAIが即座にアドバイスを生成します。</p>
+    <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストから即座にアドバイスを生成します。</p>
   </div>
 
   <!-- 1. Free Text Input (Primary) -->
@@ -6497,7 +6501,7 @@ App.prototype.render_data_input = function() {
         <textarea class="form-textarea" id="text-input-content" rows="8" placeholder="自由にテキストを入力してください...&#10;&#10;例:&#10;・今朝は頭痛がひどく、ブレインフォグも強い&#10;・昨日の散歩（15分）の後にPEMが出た&#10;・CoQ10を200mgに増量して3日目、少し楽になった気がする&#10;・山村先生にアザルフィジンの相談をした&#10;・エプソムソルト風呂に入ったら疲れが取れた"></textarea>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
-        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存してAI分析</button>
+        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存して分析</button>
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>
@@ -6602,7 +6606,7 @@ App.prototype.render_actions = function() {
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">アクションセンター</h2>
     <p style="font-size:13px;color:var(--text-secondary)">ワンクリックで健康改善のアクションを実行</p>
   </div>
-  ${sections || `<div class="card"><div class="card-body">${Components.emptyState('⚡', 'アクションはまだありません', 'AI分析を実行すると、個別化されたアクションプランが生成されます。')}</div></div>`}
+  ${sections || `<div class="card"><div class="card-body">${Components.emptyState('⚡', 'アクションはまだありません', 'データを記録すると、個別化されたアクションプランが生成されます。')}</div></div>`}
 
   <!-- Recommended Test Kits -->
   <div style="margin-top:24px;margin-bottom:24px">
@@ -6655,7 +6659,7 @@ App.prototype.render_research = function() {
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">PubMed検索</button>
-      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">AI分析で研究スキャン</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
     </div>
   </div>
 
@@ -6678,7 +6682,7 @@ App.prototype.render_research = function() {
   <!-- PubMed Results -->
   <div id="pubmed-results">
     ${updates.length > 0
-      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AI分析による研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
+      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
       : Components.emptyState('🔬', 'PubMed検索を実行してください', '上の「PubMed検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
   </div>`;
 };
@@ -6690,7 +6694,7 @@ App.prototype.render_chat = function() {
 
   return `
   <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">AIコンサルタント</h2>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
     <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
   </div>
   <div class="card">
@@ -6807,7 +6811,7 @@ App.prototype.render_timeline = function() {
               <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
-            ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>AI:</strong> ${aiInsight}</div>` : ''}
+            ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>分析:</strong> ${aiInsight}</div>` : ''}
           </div>
         </div>`;
     }
@@ -6929,7 +6933,7 @@ App.prototype.render_integrations = function() {
       <div style="font-size:32px;margin-bottom:8px">🎙️</div>
       <div class="stat-card-label">Plaud</div>
       <div style="font-size:14px;font-weight:600">会話記録</div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→AI分析</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→自動分析</p>
     </div>
 
     <!-- Fitbit Card -->
@@ -6956,7 +6960,7 @@ App.prototype.render_integrations = function() {
       <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同��済' : '未同期'}</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報からPEM予防のための活動量管理���AIが分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報から活動量を自動分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
       <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
         <div style="font-size:12px;color:var(--text-secondary)">
           <strong>同期��法：</strong>このClaude Codeチャッ��で「カレンダーを同期して」と依頼してください。自動でGoogleカレンダーからデータを取得しダッシュボードに反映します。
@@ -6998,7 +7002,7 @@ App.prototype.render_integrations = function() {
         <label class="form-label">文字起こしテキスト</label>
         <textarea class="form-textarea" id="plaud-transcript" rows="8" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..."></textarea>
       </div>
-      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆AI分析</button>
+      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆分析</button>
     </div>
   </div>
 
