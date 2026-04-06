@@ -36,7 +36,9 @@ App.prototype.render_login = function() {
   <div class="login-page" style="align-items:flex-start;padding-top:30px">
     <div style="width:100%;max-width:720px;padding:0 20px">
       <div class="login-logo" style="text-align:center;margin-bottom:24px">
-        <div class="login-logo-icon" style="margin:0 auto 12px">⚕️</div>
+        <div class="login-logo-icon" style="margin:0 auto 12px;background:linear-gradient(135deg,#6C63FF,#FF6584);width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center">
+          <svg width="48" height="48" viewBox="0 0 36 36" fill="none"><path d="M18 6C18 6 10 12 10 19C10 23.4 13.6 27 18 27C22.4 27 26 23.4 26 19C26 12 18 6 18 6Z" fill="white" opacity="0.9"/><path d="M18 10C18 10 13 14.5 13 19C13 21.8 15.2 24 18 24C20.8 24 23 21.8 23 19C23 14.5 18 10 18 10Z" fill="url(#lgHG)"/><path d="M15 18.5L17 20.5L21 16.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="lgHG" x1="13" y1="10" x2="23" y2="24"><stop stop-color="#FF6584"/><stop offset="1" stop-color="#6C63FF"/></linearGradient></defs></svg>
+        </div>
         <h1>健康日記</h1>
         <p>慢性疾患寛解サポート</p>
       </div>
