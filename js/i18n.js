@@ -8,7 +8,7 @@ var i18n = {
     ja: {
       // App
       app_name: '健康日記',
-      app_subtitle: '慢性疾患寛解サポート',
+      app_subtitle: '慢性疾患の寛解サポート',
       // Nav
       dashboard: 'ホーム',
       record: '記録する',
@@ -76,7 +76,7 @@ var i18n = {
     },
     en: {
       app_name: 'Health Diary',
-      app_subtitle: 'Chronic Illness Remission Support',
+      app_subtitle: 'Your path to chronic illness remission',
       dashboard: 'Home',
       record: 'Record',
       actions: 'Actions',
@@ -138,7 +138,7 @@ var i18n = {
       error: 'Error',
     },
     zh: {
-      app_name: '健康日记', app_subtitle: '慢性疾病缓解支持',
+      app_name: '健康日记', app_subtitle: '慢性疾病的缓解支持',
       dashboard: '首页', record: '记录', actions: '行动', research: '研究',
       ask_ai: '咨询', integrations: '连接', settings: '设置',
       admin: '管理',
@@ -153,7 +153,7 @@ var i18n = {
       selected: '已选', items: '条', loading: '加载中...', saved: '已保存',
     },
     ko: {
-      app_name: '건강일기', app_subtitle: '만성질환 관해 지원',
+      app_name: '건강일기', app_subtitle: '만성질환의 관해를 서포트',
       dashboard: '홈', record: '기록', actions: '액션', research: '연구',
       ask_ai: '상담', integrations: '연결', settings: '설정',
       quick_input_placeholder: '오늘 몸 상태는 어떠세요? (예: 두통, 피곤함, 약 복용...)',
