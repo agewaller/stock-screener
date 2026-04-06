@@ -686,18 +686,47 @@ App.prototype.render_actions = function() {
     </div>
   </div>
 
-  <!-- Quick Action Grid -->
-  <div style="margin-top:24px">
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">クイックアクション</h3>
-    <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
-      ${CONFIG.ACTION_TYPES.map(at => `
-        <div class="action-card" style="text-align:center" onclick="Components.showToast('${at.name}機能は準備中です','info')">
-          <div style="font-size:28px;margin-bottom:8px">${at.icon}</div>
-          <div class="action-card-title">${at.name}</div>
-        </div>
-      `).join('')}
+  <!-- Dynamic Product Recommendations (same as dashboard) -->
+  <div style="margin-top:24px;margin-bottom:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+      onclick="var c=document.getElementById('action-recs');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+      <h3 style="font-size:15px;font-weight:600">あなたへのおすすめ</h3>
+      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span>
     </div>
-  </div>`;
+    <div id="action-recs">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" class="grid-recs">
+        ${app.generateDynamicRecommendations().map(item => `
+          <a href="${item.url}" target="_blank" rel="noopener"
+            onclick="affiliateEngine.trackClick('${item.id}','${item.store === 'iherb' ? 'iherb' : 'amazon_jp'}','supplement')"
+            class="card" style="text-decoration:none;color:inherit">
+            <div class="card-body" style="padding:10px;text-align:center">
+              <div style="font-size:18px;margin-bottom:2px">${item.icon}</div>
+              <div style="font-size:11px;font-weight:600;line-height:1.3">${item.name}</div>
+              <div style="font-size:9px;color:var(--text-muted)">${item.desc}</div>
+              <div style="font-size:9px;color:var(--accent);margin-top:2px">${item.store === 'iherb' ? 'iHerb' : 'Amazon'} →</div>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Feedback Actions (from dashboard analysis) -->
+  ${(() => {
+    const fb = store.get('latestFeedback');
+    if (!fb || !fb.sections) return '';
+    const actionSection = fb.sections.find(s => s.title.includes('今すぐ'));
+    const findingSection = fb.sections.find(s => s.title.includes('詳細'));
+    if (!actionSection && !findingSection) return '';
+    return '<div style="margin-top:24px;margin-bottom:24px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0" onclick="var c=document.getElementById(\\x27action-insights\\x27);c.style.display=c.style.display===\\x27none\\x27?\\x27block\\x27:\\x27none\\x27;this.querySelector(\\x27.arrow\\x27).textContent=c.style.display===\\x27none\\x27?\\x27▸\\x27:\\x27▾\\x27">' +
+      '<h3 style="font-size:15px;font-weight:600">最新の分析からのアクション</h3>' +
+      '<span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span></div>' +
+      '<div id="action-insights"><div class="card" style="border-left:4px solid var(--accent)">' +
+      (actionSection ? '<div style="padding:12px 16px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;margin-bottom:4px">' + actionSection.icon + ' ' + actionSection.title + '</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">' + actionSection.content + '</div></div>' : '') +
+      (findingSection ? '<div style="padding:12px 16px"><div style="font-size:12px;font-weight:600;margin-bottom:4px">' + findingSection.icon + ' ' + findingSection.title + '</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">' + findingSection.content + '</div></div>' : '') +
+      '</div></div></div>';
+  })()}`;
 };
 
 // Research Page
