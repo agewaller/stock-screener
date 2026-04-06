@@ -266,22 +266,22 @@ App.prototype.render_dashboard = function() {
   <!-- 5. Dynamic Recommendations (based on user data) -->
   <div style="margin-bottom:20px">
     <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへのおすすめ</h3>
-    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" class="grid-recs">
       ${app.generateDynamicRecommendations().map(item => `
         <a href="${item.url}" target="_blank" rel="noopener"
           onclick="affiliateEngine.trackClick('${item.id}','${item.store === 'iherb' ? 'iherb' : 'amazon_jp'}','supplement')"
-          class="card" style="min-width:170px;flex-shrink:0;text-decoration:none;color:inherit">
-          <div class="card-body" style="padding:12px;text-align:center">
-            <div style="font-size:20px;margin-bottom:4px">${item.icon}</div>
-            <div style="font-size:12px;font-weight:600">${item.name}</div>
-            <div style="font-size:10px;color:var(--text-muted)">${item.desc}</div>
-            <div style="font-size:10px;color:var(--accent);margin-top:4px">${item.store === 'iherb' ? 'iHerb' : 'Amazon'} →</div>
+          class="card" style="text-decoration:none;color:inherit">
+          <div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:18px;margin-bottom:2px">${item.icon}</div>
+            <div style="font-size:11px;font-weight:600;line-height:1.3">${item.name}</div>
+            <div style="font-size:9px;color:var(--text-muted)">${item.desc}</div>
+            <div style="font-size:9px;color:var(--accent);margin-top:2px">${item.store === 'iherb' ? 'iHerb' : 'Amazon'} →</div>
           </div>
         </a>
       `).join('')}
-      <div class="card" style="min-width:140px;flex-shrink:0;cursor:pointer" onclick="app.navigate('actions')">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">→</div>
+      <div class="card" style="cursor:pointer" onclick="app.navigate('actions')">
+        <div class="card-body" style="padding:10px;text-align:center">
+          <div style="font-size:18px;margin-bottom:2px">→</div>
           <div style="font-size:12px;font-weight:600">もっと見る</div>
         </div>
       </div>
