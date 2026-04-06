@@ -134,29 +134,9 @@ var AIEngine = class AIEngine {
 
   // Anthropic Claude API (direct browser access)
   async callAnthropic(modelId, prompt, apiKey, options) {
-    // Try multiple model IDs in order (different API plans have different access)
-    const modelCandidates = [
-      'claude-sonnet-4-5-20250514',
-      'claude-3-5-sonnet-20241022',
-      'claude-3-5-sonnet-latest',
-      'claude-3-haiku-20240307',
-      'claude-3-sonnet-20240229'
-    ];
-
-    // Try each model until one works
-    let lastError = null;
-    for (const apiModelId of modelCandidates) {
-      try {
-        const result = await this._callAnthropicWithModel(apiModelId, prompt, apiKey, options);
-        console.log('[Anthropic] Success with model:', apiModelId);
-        return result;
-      } catch (err) {
-        console.log('[Anthropic] Model', apiModelId, 'failed:', err.message);
-        lastError = err;
-        if (!err.message.includes('404')) throw err; // Only retry on 404 (model not found)
-      }
-    }
-    throw lastError || new Error('All Anthropic models failed');
+    const apiModelId = 'claude-3-5-sonnet-20241022';
+    console.log('[Anthropic] Using model:', apiModelId, 'key starts with:', apiKey.substring(0, 12));
+    return await this._callAnthropicWithModel(apiModelId, prompt, apiKey, options);
   }
 
   async _callAnthropicWithModel(apiModelId, prompt, apiKey, options) {
@@ -183,9 +163,10 @@ var AIEngine = class AIEngine {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      const errMsg = err.error?.message || err.message || response.statusText;
-      console.error('[Anthropic] Error:', response.status, errMsg);
+      const errBody = await response.text().catch(() => '');
+      console.error('[Anthropic] Error:', response.status, response.statusText, errBody);
+      let errMsg = response.statusText;
+      try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
       throw new Error(`Anthropic ${response.status}: ${errMsg}`);
     }
 
