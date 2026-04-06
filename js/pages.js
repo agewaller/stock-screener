@@ -1402,7 +1402,7 @@ App.prototype.render_admin = function() {
         ${app.ADMIN_EMAILS.map(e => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
             <span style="font-size:13px">${e}</span>
-            ${e === 'agewaller@gmail.com' ? '<span style="font-size:10px;color:var(--text-muted)">オーナー</span>' : '<button class="btn btn-sm btn-danger" onclick="app.removeAdmin(\\'' + e + '\\')">削除</button>'}
+            ${e === 'agewaller@gmail.com' ? '<span style="font-size:10px;color:var(--text-muted)">オーナー</span>' : `<button class="btn btn-sm btn-danger" onclick="app.removeAdmin('${e}')">削除</button>`}
           </div>
         `).join('')}
       </div>
