@@ -2,7 +2,7 @@
    Configuration & Constants
    ============================================================ */
 var CONFIG = {
-  APP_NAME: '健康日記',
+  APP_NAME: '未病ダイアリー',
   APP_VERSION: '1.0.0',
 
   // Firebase config

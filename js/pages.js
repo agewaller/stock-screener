@@ -45,7 +45,7 @@ App.prototype.render_login = function() {
             <defs><linearGradient id="lgGr" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
           </svg>
         </div>
-        <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">健康日記</h1>
+        <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">未病ダイアリー</h1>
         <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
       </div>
 
@@ -124,7 +124,7 @@ App.prototype.render_login = function() {
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin-bottom:14px">
             「2024年春から2年間、ME/CFS（慢性疲労症候群）と向き合ってきました。<br>
             毎日の症状、薬、医師との会話、絶望と希望を記録し続けた日々。<br>
-            この経験から生まれたのが「健康日記」です。<br><br>
+            この経験から生まれたのが「未病ダイアリー」です。<br><br>
             免疫・神経・内分泌の複雑な絡み合い、<br>
             わずかな活動で24-48時間後に全身が動かなくなるPEM。<br>
             現代医学でもまだ解明しきれないこの病と<br>
