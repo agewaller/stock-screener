@@ -135,12 +135,13 @@ var AIEngine = class AIEngine {
   // Anthropic Claude API (direct browser access)
   async callAnthropic(modelId, prompt, apiKey, options) {
     // Map friendly model names to API model IDs
+    // Use well-known stable model IDs
     const modelMap = {
-      'claude-sonnet-4-6': 'claude-sonnet-4-6-20250514',
-      'claude-opus-4-6': 'claude-opus-4-6-20250514',
-      'claude-haiku-4-5': 'claude-haiku-4-5-20241022'
+      'claude-sonnet-4-6': 'claude-sonnet-4-5-20241022',
+      'claude-opus-4-6': 'claude-sonnet-4-5-20241022',
+      'claude-haiku-4-5': 'claude-haiku-3-5-20241022'
     };
-    const apiModelId = modelMap[modelId] || modelId;
+    const apiModelId = modelMap[modelId] || 'claude-sonnet-4-5-20241022';
 
     const body = {
       model: apiModelId,
