@@ -1258,9 +1258,40 @@ var App = class App {
 
     Components.showToast(`会話記録を取り込みました（${parsed.entries.length}発言, ${parsed.wordCount}語）`, 'success');
 
-    // Run instant advice on transcript
-    this.showInstantAdvice(text, 'conversation');
-    this.navigate('integrations');
+    // Generate deep analysis including conversation patterns
+    const analysis = this.generateDeepAnalysis('[会話データ] ' + title + '\n' + text);
+    store.set('latestFeedback', analysis);
+
+    // Navigate to dashboard to show analysis
+    this.navigate('dashboard');
+
+    // Run API analysis for deeper insights
+    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+    if (apiKey) {
+      const diseases = store.get('selectedDiseases') || [];
+      const profile = store.get('userProfile') || {};
+      const prompt = `以下はPlaud（音声文字起こしデバイス）から取得した会話の文字起こしです。
+この会話を分析し、ユーザーの健康状態とストレスレベルを評価してください。
+
+【会話タイトル】${title}
+【ユーザー情報】疾患: ${diseases.join(', ') || '未設定'}、居住地: ${profile.location || '日本'}
+
+【会話内容】
+${text.substring(0, 8000)}
+
+【分析してください】
+1. 会話の要約（3行以内）
+2. 検出された体調・症状の言及
+3. ストレスレベルの評価（1-10）と根拠
+4. 精神状態の評価（気分、不安、エネルギー）
+5. 医師との会話の場合：診断内容・処方変更・指示事項の抽出
+6. 具体的なアクション提案（3-5項目）
+7. 養生の視点からのアドバイス`;
+
+      setTimeout(() => {
+        this.runBackgroundAnalysis(prompt, document.getElementById('dash-ai-feedback'));
+      }, 500);
+    }
   }
 
   connectFitbit() {
@@ -1519,6 +1550,7 @@ var App = class App {
     if (/瞑想|呼吸|マインドフル|坐禅/.test(lower)) detected.push('瞑想');
     if (/PEM|労作後/.test(lower)) detected.push('PEM');
     if (/お腹|下痢|便秘|吐き気|胃|腸/.test(lower)) detected.push('消化器');
+    if (/会話|文字起こし|plaud|transcript|先生.*言|診察.*記録|ミーティング|電話/.test(lower)) detected.push('会話データ');
     if (/めまい|ふらつき|立ちくらみ/.test(lower)) detected.push('めまい');
     if (detected.length === 0) detected.push('日常記録');
 
@@ -1560,6 +1592,29 @@ var App = class App {
     if (detected.includes('ホルモン')) {
       findings += '【ホルモン・月経分析】\n周期と体調の相関を追跡しています。月経周期日数、基礎体温、症状の強さを継続記録すると、予測と予防が可能になります。\n\n';
     }
+    if (detected.includes('会話データ')) {
+      // Analyze conversation patterns
+      const negWords = (lower.match(/辛|つら|痛|だるい|しんどい|死|無理|不安|孤独|鬱|厳し|最悪|ダメ|嫌/g) || []).length;
+      const posWords = (lower.match(/良[いか]|楽し|嬉し|ありがた|元気|回復|できた|感謝|幸せ|大丈夫/g) || []).length;
+      const stressLevel = Math.min(10, Math.max(1, Math.round(negWords * 2 - posWords + 5)));
+      const energyLevel = posWords > negWords ? '比較的良好' : negWords > 3 ? '低下傾向' : '普通';
+
+      findings += '【会話データ分析】\n';
+      findings += `ストレス推定スコア: ${stressLevel}/10\n`;
+      findings += `エネルギーレベル: ${energyLevel}\n`;
+      findings += `ネガティブ語検出: ${negWords}件 / ポジティブ語検出: ${posWords}件\n\n`;
+
+      if (negWords > posWords * 2) {
+        findings += '⚠️ ネガティブな表現が多く、精神的な負荷が高い状態と推定されます。\n';
+        findings += '信頼できる方との対話や、専門家への相談を検討してください。\n\n';
+      }
+      if (/先生|医師|クリニック|病院|診察/.test(lower)) {
+        findings += '【医療者との会話を検出】\n';
+        findings += '診察内容や処方の変更点を整理しています。\n';
+        findings += 'テキストで補足（「○○先生から△△の処方が追加された」等）を入力すると、より正確な追跡ができます。\n\n';
+      }
+    }
+
     if (findings) sections.push({ title: '詳細所見', icon: '🔍', content: findings });
 
     // Section: 即時アクション
@@ -1583,6 +1638,14 @@ var App = class App {
     if (detected.includes('精神')) {
       actions.push('4-7-8呼吸法を3セット行う');
       actions.push('信頼できる人と話す');
+    }
+    if (detected.includes('会話データ')) {
+      actions.push('会話で気になった点をテキストでメモする');
+      actions.push('ストレスが高い場合は4-7-8呼吸法を実施');
+      if (/先生|医師|診察/.test(lower)) {
+        actions.push('診察内容をテキストで整理して記録する');
+        actions.push('次回の診察で確認したいことをメモする');
+      }
     }
     if (detected.includes('気象')) {
       actions.push('気圧予報を確認し、五苓散の予防服用を検討');
