@@ -242,69 +242,26 @@ App.prototype.render_dashboard = function() {
     ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
   </div>` : ''}
 
-  <!-- 5. Quick Shopping Recommendations (always visible) -->
+  <!-- 5. Dynamic Recommendations (based on user data) -->
   <div style="margin-bottom:20px">
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">おすすめアイテム</h3>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへのおすすめ</h3>
     <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px">
-      <a href="https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('coq10','iherb','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">💊</div>
-          <div style="font-size:12px;font-weight:600">CoQ10（ユビキノール）</div>
-          <div style="font-size:10px;color:var(--text-muted)">ミトコンドリアサポート</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
-        </div>
-      </a>
-      <a href="https://www.amazon.co.jp/s?k=マグネシウム+サプリ&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('mg','amazon_jp','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">✨</div>
-          <div style="font-size:12px;font-weight:600">マグネシウム</div>
-          <div style="font-size:10px;color:var(--text-muted)">筋弛緩・睡眠改善</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
-        </div>
-      </a>
-      <a href="https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('vitd','iherb','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">☀️</div>
-          <div style="font-size:12px;font-weight:600">ビタミンD3+K2</div>
-          <div style="font-size:10px;color:var(--text-muted)">免疫・骨代謝サポート</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
-        </div>
-      </a>
-      <a href="https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('omega3','amazon_jp','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">🐟</div>
-          <div style="font-size:12px;font-weight:600">オメガ3（EPA/DHA）</div>
-          <div style="font-size:10px;color:var(--text-muted)">抗炎症・脳機能</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
-        </div>
-      </a>
-      <a href="https://www.amazon.co.jp/s?k=エプソムソルト&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('epsom','amazon_jp','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">🛁</div>
-          <div style="font-size:12px;font-weight:600">エプソムソルト</div>
-          <div style="font-size:10px;color:var(--text-muted)">入浴・マグネシウム吸収</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
-        </div>
-      </a>
-      <a href="https://www.iherb.com/search?kw=NMN+supplement&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('nmn','iherb','supplement')"
-        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
-        <div class="card-body" style="padding:12px;text-align:center">
-          <div style="font-size:20px;margin-bottom:4px">🧬</div>
-          <div style="font-size:12px;font-weight:600">NMN</div>
-          <div style="font-size:10px;color:var(--text-muted)">NAD+・細胞修復</div>
-          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
-        </div>
-      </a>
-      <div class="card" style="min-width:180px;flex-shrink:0;cursor:pointer" onclick="app.navigate('actions')">
+      ${app.generateDynamicRecommendations().map(item => `
+        <a href="${item.url}" target="_blank" rel="noopener"
+          onclick="affiliateEngine.trackClick('${item.id}','${item.store === 'iherb' ? 'iherb' : 'amazon_jp'}','supplement')"
+          class="card" style="min-width:170px;flex-shrink:0;text-decoration:none;color:inherit">
+          <div class="card-body" style="padding:12px;text-align:center">
+            <div style="font-size:20px;margin-bottom:4px">${item.icon}</div>
+            <div style="font-size:12px;font-weight:600">${item.name}</div>
+            <div style="font-size:10px;color:var(--text-muted)">${item.desc}</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">${item.store === 'iherb' ? 'iHerb' : 'Amazon'} →</div>
+          </div>
+        </a>
+      `).join('')}
+      <div class="card" style="min-width:140px;flex-shrink:0;cursor:pointer" onclick="app.navigate('actions')">
         <div class="card-body" style="padding:12px;text-align:center">
           <div style="font-size:20px;margin-bottom:4px">→</div>
           <div style="font-size:12px;font-weight:600">もっと見る</div>
-          <div style="font-size:10px;color:var(--text-muted)">検査キット・デバイス</div>
         </div>
       </div>
     </div>

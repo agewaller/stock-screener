@@ -1107,6 +1107,73 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- Dynamic Recommendations ----
+  generateDynamicRecommendations() {
+    const textEntries = store.get('textEntries') || [];
+    const allText = textEntries.map(e => e.content || '').join('\n').toLowerCase();
+    const diseases = store.get('selectedDiseases') || [];
+    const profile = store.get('userProfile') || {};
+    const score = store.get('healthScore') || 50;
+
+    // All possible items with relevance scoring
+    const items = [
+      { id: 'coq10', icon: '💊', name: 'CoQ10（ユビキノール）', desc: 'ミトコンドリアサポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE',
+        relevance: (allText.includes('倦怠') || allText.includes('疲') || diseases.includes('mecfs') ? 10 : 3) },
+      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=マグネシウム+グリシネート&tag=chroniccare-22',
+        relevance: (allText.includes('痛') || allText.includes('眠') || allText.includes('筋肉') ? 10 : 4) },
+      { id: 'vitd', icon: '☀️', name: 'ビタミンD3+K2', desc: '免疫・骨代謝', store: 'iherb', url: 'https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE',
+        relevance: (diseases.some(d => ['sle','ra','hashimoto','osteoporosis'].includes(d)) ? 10 : allText.includes('免疫') ? 8 : 3) },
+      { id: 'omega3', icon: '🐟', name: 'オメガ3（EPA/DHA）', desc: '抗炎症・脳機能', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=chroniccare-22',
+        relevance: (allText.includes('炎症') || allText.includes('頭') || diseases.includes('depression') ? 9 : 4) },
+      { id: 'epsom', icon: '🛁', name: 'エプソムソルト', desc: '入浴療法・Mg吸収', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト&tag=chroniccare-22',
+        relevance: (allText.includes('エプソム') || allText.includes('風呂') || allText.includes('入浴') ? 10 : 3) },
+      { id: 'nmn', icon: '🧬', name: 'NMN', desc: 'NAD+・細胞修復', store: 'iherb', url: 'https://www.iherb.com/search?kw=NMN+supplement&rcode=CHRONICCARE',
+        relevance: (allText.includes('nmn') || allText.includes('老化') || diseases.includes('mecfs') ? 9 : 2) },
+      { id: 'melatonin', icon: '🌙', name: 'メラトニン（低用量）', desc: '睡眠リズム調整', store: 'iherb', url: 'https://www.iherb.com/search?kw=melatonin+0.5mg&rcode=CHRONICCARE',
+        relevance: (allText.includes('不眠') || allText.includes('眠れ') || diseases.includes('insomnia') ? 10 : 2) },
+      { id: 'probiotics', icon: '🦠', name: 'プロバイオティクス', desc: '腸内環境改善', store: 'iherb', url: 'https://www.iherb.com/search?kw=probiotics+lactobacillus&rcode=CHRONICCARE',
+        relevance: (allText.includes('腸') || allText.includes('お腹') || diseases.includes('ibs') || diseases.includes('crohns') ? 10 : 3) },
+      { id: 'bcomplex', icon: '⚡', name: 'ビタミンB群', desc: 'エネルギー代謝・神経', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=ビタミンB群+コンプレックス&tag=chroniccare-22',
+        relevance: (allText.includes('ビタミンb') || allText.includes('エネルギー') || diseases.includes('mecfs') ? 8 : 3) },
+      { id: 'ltheanine', icon: '🍵', name: 'L-テアニン', desc: 'リラックス・集中', store: 'iherb', url: 'https://www.iherb.com/search?kw=l-theanine&rcode=CHRONICCARE',
+        relevance: (allText.includes('不安') || allText.includes('ストレス') || diseases.includes('gad') || diseases.includes('adhd') ? 9 : 2) },
+      { id: 'creatine', icon: '💪', name: 'クレアチン', desc: '筋力・脳エネルギー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=クレアチン+モノハイドレート&tag=chroniccare-22',
+        relevance: (allText.includes('クレアチン') || allText.includes('筋') || diseases.includes('mecfs') ? 8 : 2) },
+      { id: 'ashwagandha', icon: '🌿', name: 'アシュワガンダ', desc: '副腎サポート・ストレス', store: 'iherb', url: 'https://www.iherb.com/search?kw=ashwagandha+ksm66&rcode=CHRONICCARE',
+        relevance: (allText.includes('アシュワガンダ') || allText.includes('副腎') || allText.includes('ストレス') ? 9 : 2) },
+      { id: 'curcumin', icon: '🟡', name: 'クルクミン', desc: '抗炎症・関節サポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=curcumin+bcm95&rcode=CHRONICCARE',
+        relevance: (allText.includes('炎症') || allText.includes('関節') || diseases.includes('ra') || diseases.includes('fibromyalgia') ? 9 : 2) },
+      { id: 'zinc', icon: '🔩', name: '亜鉛', desc: '免疫・ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=亜鉛+サプリメント&tag=chroniccare-22',
+        relevance: (allText.includes('亜鉛') || allText.includes('免疫') || allText.includes('性欲') ? 8 : 3) },
+      { id: 'pea', icon: '🧪', name: 'PEA（パルミトイルエタノールアミド）', desc: '神経障害性疼痛', store: 'iherb', url: 'https://www.iherb.com/search?kw=palmitoylethanolamide+PEA&rcode=CHRONICCARE',
+        relevance: (allText.includes('疼痛') || allText.includes('神経痛') || diseases.includes('fibromyalgia') ? 10 : 1) },
+      { id: 'oura', icon: '⌚', name: 'Oura Ring（HRVモニター）', desc: '自律神経・睡眠トラッキング', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=oura+ring&tag=chroniccare-22',
+        relevance: (allText.includes('hrv') || allText.includes('ペーシング') || diseases.includes('pots') || diseases.includes('mecfs') ? 8 : 2) },
+      { id: 'gut_test', icon: '🔬', name: '腸内フローラ検査キット', desc: '腸内細菌叢の分析', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=腸内フローラ+検査キット&tag=chroniccare-22',
+        relevance: (allText.includes('腸') || diseases.includes('ibs') || diseases.includes('crohns') ? 9 : 2) },
+      { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=chroniccare-22',
+        relevance: (allText.includes('遺伝') ? 8 : 1) },
+    ];
+
+    // Add recency bonus: if mentioned in last 3 entries, boost relevance
+    const recentText = textEntries.slice(-3).map(e => (e.content || '').toLowerCase()).join('\n');
+    items.forEach(item => {
+      const keywords = item.name.toLowerCase().split(/[（）/・]+/).filter(k => k.length > 1);
+      if (keywords.some(k => recentText.includes(k))) item.relevance += 5;
+    });
+
+    // Low health score boosts energy/recovery items
+    if (score < 40) {
+      items.find(i => i.id === 'coq10').relevance += 3;
+      items.find(i => i.id === 'bcomplex').relevance += 3;
+      items.find(i => i.id === 'magnesium').relevance += 2;
+    }
+
+    // Sort by relevance and pick top 6
+    items.sort((a, b) => b.relevance - a.relevance);
+    return items.slice(0, 6);
+  }
+
   // ---- Timeline ----
   filterTimeline(type) {
     // Re-render with filter
