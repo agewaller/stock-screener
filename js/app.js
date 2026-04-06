@@ -966,6 +966,62 @@ var App = class App {
   }
 
   // ---- PubMed Live Search ----
+  async loadDashResearch() {
+    const container = document.getElementById('dash-research');
+    if (!container) return;
+    container.innerHTML = Components.loading('最新論文を検索中...');
+
+    // Build search query from user's diseases
+    const diseases = store.get('selectedDiseases') || [];
+    const diseaseTerms = {
+      mecfs: 'ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome',
+      depression: 'major depressive disorder treatment',
+      bipolar: 'bipolar disorder treatment',
+      ptsd: 'PTSD treatment',
+      adhd: 'ADHD treatment',
+      long_covid: 'long COVID OR post-COVID',
+      fibromyalgia: 'fibromyalgia treatment',
+      hashimoto: 'Hashimoto thyroiditis',
+      diabetes_t2: 'type 2 diabetes treatment',
+      sle: 'systemic lupus erythematosus',
+      ibs: 'irritable bowel syndrome treatment',
+      pots: 'postural orthostatic tachycardia',
+      insomnia: 'insomnia treatment',
+    };
+    const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
+    const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
+
+    try {
+      const articles = await aiEngine.searchPubMed(query + ' AND ("last 7 days"[dp])', 5);
+      if (articles.length === 0) {
+        // Fallback to 30 days
+        const articles30 = await aiEngine.searchPubMed(query + ' AND ("last 30 days"[dp])', 5);
+        if (articles30.length === 0) {
+          container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);padding:10px">該当する最新論文が見つかりませんでした。</p>';
+          return;
+        }
+        this.renderDashResearch(container, articles30);
+      } else {
+        this.renderDashResearch(container, articles);
+      }
+    } catch (err) {
+      container.innerHTML = `<p style="font-size:12px;color:var(--danger);padding:10px">検索エラー: ${err.message}</p>`;
+    }
+  }
+
+  renderDashResearch(container, articles) {
+    container.innerHTML = articles.map(a => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;line-height:1.4;margin-bottom:4px">${a.title}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${(a.authors||'').substring(0,60)} — ${a.journal} (${a.date})</div>
+        <div style="display:flex;gap:6px">
+          <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--accent)">日本語で読む</a>
+          <a href="${a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--text-muted)">PubMed</a>
+        </div>
+      </div>
+    `).join('') + `<div style="padding:8px 0"><button class="btn btn-outline btn-sm" onclick="app.navigate('research')" style="font-size:11px">もっと見る</button></div>`;
+  }
+
   async searchPubMedLive() {
     const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
     const days = parseInt(document.getElementById('pubmed-search-days')?.value || '30');
@@ -1089,24 +1145,39 @@ var App = class App {
     store.set('conversationHistory', history);
     this.renderChatMessages();
 
-    // Get AI response
+    // Generate response
     try {
-      const disease = store.get('selectedDisease');
-      const systemPrompt = `あなたは${disease?.fullName || '慢性疾患'}の専門AIアシスタントです。患者に寄り添い、最新のエビデンスに基づいたアドバイスを提供してください。`;
-      const userData = aiEngine.collectCurrentUserData();
+      const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+      let responseText;
 
-      const response = await aiEngine.callModel(
-        store.get('selectedModel'),
-        `${systemPrompt}\n\nユーザーの健康データ: ${JSON.stringify(userData.current)}\n\nユーザーの質問: ${msg}`,
-        { maxTokens: 2048 }
-      );
+      if (apiKey) {
+        // Use real API
+        const disease = store.get('selectedDisease');
+        const systemPrompt = `あなたは${disease?.fullName || '慢性疾患'}の専門家です。患者に寄り添い、最新のエビデンスに基づいたアドバイスを提供してください。`;
+        const userData = aiEngine.collectCurrentUserData();
+        const response = await aiEngine.callModel(
+          store.get('selectedModel'),
+          `${systemPrompt}\n\nユーザーの健康データ: ${JSON.stringify(userData.current)}\n\nユーザーの質問: ${msg}`,
+          { maxTokens: 2048 }
+        );
+        responseText = typeof response === 'string' ? response : (response.summary || JSON.stringify(response));
+      } else {
+        // Local keyword-based response (no API key needed)
+        const advice = this.generateInstantAdvice(msg, 'chat');
+        responseText = advice.text;
+        if (advice.alerts.length > 0) {
+          responseText = advice.alerts.map(a => '⚠️ ' + a.message).join('\n') + '\n\n' + responseText;
+        }
+        if (advice.actions.length > 0) {
+          responseText += '\n\n📋 推奨アクション:\n' + advice.actions.map(a => '→ ' + a).join('\n');
+        }
+      }
 
-      const aiMsg = typeof response === 'string' ? response : (response.summary || JSON.stringify(response));
-      history.push({ role: 'assistant', content: aiMsg, timestamp: new Date().toISOString() });
+      history.push({ role: 'assistant', content: responseText, timestamp: new Date().toISOString() });
       store.set('conversationHistory', history);
       this.renderChatMessages();
     } catch (err) {
-      history.push({ role: 'assistant', content: 'すみません、応答の生成中にエラーが発生しました。もう一度お試しください。', timestamp: new Date().toISOString() });
+      history.push({ role: 'assistant', content: 'すみません、応答の生成中にエラーが発生しました。もう一度お試しください。\n\nエラー: ' + err.message, timestamp: new Date().toISOString() });
       store.set('conversationHistory', history);
       this.renderChatMessages();
     }

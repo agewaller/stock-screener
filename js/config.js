@@ -717,7 +717,31 @@ ME/CFSとの重複症状にも注意して分析してください。
 5. 睡眠薬の減薬プロトコル（使用中の場合）
 6. 概日リズム調整（光療法・メラトニン）
 7. 睡眠衛生チェックリスト`
-  }
+  },
+
+  // ---- RESEARCH PROMPTS (all diseases) ----
+  bipolar_research: { name: '双極性障害 最新研究', disease: 'bipolar', schedule: 'daily', active: true, description: '双極性障害の最新治療・研究',
+    prompt: PROMPT_HEADER + `双極性障害の最新研究を報告してください。重点：リチウム最適用量、バルプロ酸、ラモトリギン、ケタミン、TMS、デジタルフェノタイピング（スマホ行動解析）、概日リズム介入、腸脳軸、炎症マーカー。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  ptsd_research: { name: 'PTSD 最新研究', disease: 'ptsd', schedule: 'daily', active: true, description: 'PTSD/C-PTSDの最新治療・研究',
+    prompt: PROMPT_HEADER + `PTSD/複雑性PTSDの最新研究を報告してください。重点：MDMA支援療法、サイケデリクス療法、長時間暴露療法（PE）改良、EMDR新プロトコル、ステロイド早期介入、迷走神経刺激、VR暴露療法、エピジェネティクス。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  adhd_research: { name: 'ADHD 最新研究', disease: 'adhd', schedule: 'daily', active: true, description: 'ADHDの最新治療・研究',
+    prompt: PROMPT_HEADER + `ADHDの最新研究を報告してください。重点：新規薬物（ビロキサジン等）、デジタル治療（EndeavorRx）、ニューロフィードバック、実行機能トレーニング、運動療法RCT、腸内細菌叢、栄養介入（鉄・亜鉛・オメガ3）、成人ADHD診断基準改訂。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  long_covid_research: { name: 'Long COVID 最新研究', disease: 'long_covid', schedule: 'daily', active: true, description: 'コロナ後遺症の最新治療・研究',
+    prompt: PROMPT_HEADER + `Long COVID（Post-COVID Condition）の最新研究を報告してください。重点：微小血栓・マイクロクロット、ウイルス持続感染、自己抗体、免疫異常、抗凝固療法、HBOT（高気圧酸素療法）、LDN、ナルトレキソン、ペーシング、ME/CFSとの重複、ワクチン後遺症。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  fibromyalgia_research: { name: '線維筋痛症 最新研究', disease: 'fibromyalgia', schedule: 'daily', active: true, description: '線維筋痛症の最新治療・研究',
+    prompt: PROMPT_HEADER + `線維筋痛症の最新研究を報告してください。重点：中枢性感作メカニズム、LDN（低用量ナルトレキソン）、TMS/tDCS、運動療法（水中運動・太極拳）、小繊維ニューロパチー、自己免疫仮説（IgG除去）、マイクロバイオーム、プレガバリン/デュロキセチン比較。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  thyroid_research: { name: '甲状腺疾患 最新研究', disease: 'hashimoto', schedule: 'daily', active: true, description: '甲状腺疾患の最新治療・研究',
+    prompt: PROMPT_HEADER + `甲状腺疾患（橋本病・バセドウ病・機能低下/亢進）の最新研究を報告してください。重点：T3/T4併用療法、セレン・亜鉛介入、グルテンフリー食と自己抗体、甲状腺がんスクリーニング、分子標的薬、妊娠中の甲状腺管理、腸内細菌叢と自己免疫。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  diabetes_research: { name: '糖尿病 最新研究', disease: 'diabetes_t2', schedule: 'daily', active: true, description: '糖尿病の最新治療・研究',
+    prompt: PROMPT_HEADER + `糖尿病（1型・2型）の最新研究を報告してください。重点：GLP-1受容体作動薬（セマグルチド/チルゼパチド）、SGLT2阻害薬の心腎保護、人工膵臓、幹細胞治療（1型）、糖尿病寛解（2型）、時間制限食、CGM（持続血糖モニタリング）、合併症予防。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  autoimmune_research: { name: '自己免疫疾患 最新研究', disease: 'sle', schedule: 'daily', active: true, description: '自己免疫疾患の最新治療・研究',
+    prompt: PROMPT_HEADER + `自己免疫疾患（SLE・関節リウマチ・シェーグレン等）の最新研究を報告してください。重点：CAR-T細胞療法、JAK阻害薬、B細胞標的療法（リツキシマブ・ベリムマブ）、補体阻害薬、腸管透過性とリーキーガット、分子擬態、エピジェネティクス、食事介入（AIP）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  ibs_research: { name: 'IBS 最新研究', disease: 'ibs', schedule: 'daily', active: true, description: '過敏性腸症候群の最新治療・研究',
+    prompt: PROMPT_HEADER + `IBS（過敏性腸症候群）の最新研究を報告してください。重点：Low-FODMAP食の長期データ、FMT（便移植）、SIBO治療（リファキシミン）、腸脳軸と神経伝達物質、プロバイオティクス菌株比較、胆汁酸異常、GI指向催眠療法、新薬（エルキサドリン・リナクロチド等）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  pots_research: { name: 'POTS 最新研究', disease: 'pots', schedule: 'daily', active: true, description: '体位性頻脈症候群の最新治療・研究',
+    prompt: PROMPT_HEADER + `POTS（体位性頻脈症候群）の最新研究を報告してください。重点：自己抗体（α1/β1/β2アドレナリン受容体・ムスカリン受容体）、免疫吸着療法、IVIG、ミドドリン/フロリネフ比較、イバブラジン、運動リハビリプロトコル、COVID後POTS、EDS/MCAS合併管理。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` },
+  insomnia_research: { name: '不眠症 最新研究', disease: 'insomnia', schedule: 'daily', active: true, description: '不眠症の最新治療・研究',
+    prompt: PROMPT_HEADER + `不眠症の最新研究を報告してください。重点：CBT-I（デジタル版含む）、オレキシン受容体拮抗薬（レンボレキサント・スボレキサント）、メラトニン受容体作動薬、光療法、睡眠制限療法の新エビデンス、ベンゾジアゼピン減薬プロトコル、マインドフルネス、腸内細菌叢と睡眠。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI` }
 };
 
 // Build DEFAULT_PROMPTS by merging universal + disease-specific

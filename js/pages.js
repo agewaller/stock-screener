@@ -288,7 +288,17 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
-  <!-- 6. Stats + Chart (collapsible) -->
+  <!-- 6. Latest Research (auto-loaded from PubMed) -->
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+      onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾';if(c.style.display!=='none'&&!c.dataset.loaded){c.dataset.loaded='1';app.loadDashResearch()}">
+      <h3 style="font-size:15px;font-weight:600">最新研究</h3>
+      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▸</span>
+    </div>
+    <div id="dash-research" style="display:none"></div>
+  </div>
+
+  <!-- 7. Stats + Chart (collapsible) -->
   ${hasData ? `
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
