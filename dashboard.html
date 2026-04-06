@@ -15,40 +15,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* Theme Colors - Default Dark */
-  --bg-primary: #0b0d14;
-  --bg-secondary: #111520;
-  --bg-tertiary: #181d2a;
-  --bg-card: #151a28;
-  --bg-hover: #1c2235;
-  --border: #252d42;
-  --border-light: #2a3350;
-  --accent: #6C63FF;
-  --accent-light: #8B85FF;
-  --accent-bg: rgba(108, 99, 255, 0.08);
-  --accent-border: rgba(108, 99, 255, 0.25);
-  --success: #22c55e;
-  --success-bg: rgba(34, 197, 94, 0.1);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --info: #3b82f6;
-  --info-bg: rgba(59, 130, 246, 0.1);
-  --text-primary: #e8edf5;
-  --text-secondary: #8896b0;
-  --text-muted: #5a6680;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --radius-xs: 6px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.3);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
-  --transition: 0.2s ease;
-  --sidebar-width: 260px;
-}
-
-/* Light Theme Override */
-[data-theme="light"] {
+  /* Light Theme Only */
   --bg-primary: #f8f9fc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f3f4f8;
@@ -71,10 +38,16 @@
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --text-muted: #94a3b8;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
   --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+  --transition: 0.2s ease;
+  --sidebar-width: 260px;
 }
 
+/* Light Theme Override */
 * { box-sizing: border-box; margin: 0; padding: 0; max-width: 100%; }
 
 html { font-size: 14px; overflow-x: hidden; }
@@ -4543,8 +4516,9 @@ var App = class App {
   }
 
   init() {
-    document.documentElement.setAttribute('data-theme', store.get('theme'));
-    store.on('theme', (t) => document.documentElement.setAttribute('data-theme', t));
+    // Force light theme always
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('cc_theme');
     store.on('currentPage', (p) => this.navigate(p));
 
     // Initialize Firebase if configured

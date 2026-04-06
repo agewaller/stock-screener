@@ -20,8 +20,9 @@ var App = class App {
   }
 
   init() {
-    document.documentElement.setAttribute('data-theme', store.get('theme'));
-    store.on('theme', (t) => document.documentElement.setAttribute('data-theme', t));
+    // Force light theme always
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('cc_theme');
     store.on('currentPage', (p) => this.navigate(p));
 
     // Initialize Firebase if configured
