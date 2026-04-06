@@ -1107,6 +1107,44 @@ var App = class App {
   }
 
   // ---- Theme ----
+  // ---- Timeline ----
+  filterTimeline(type) {
+    // Re-render with filter
+    const content = document.getElementById('timeline-content');
+    if (!content) return;
+
+    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
+    // Simple approach: re-navigate to refresh, store filter
+    store.set('_timelineFilter', type);
+    this.navigate('timeline');
+  }
+
+  // Generate quick AI insight for timeline entries
+  generateQuickInsight(text) {
+    if (!text || text.length < 10) return '';
+    const lower = text.toLowerCase();
+
+    // Pattern-based quick insights
+    if (/pem|労作後|倦怠感がひどい|動けな/.test(lower)) return 'PEMの兆候。24-48時間の安静を推奨。活動量の見直しが必要です。';
+    if (/疼痛|痛[いみ]|頭痛/.test(lower)) return '疼痛記録。痛みの時間帯・トリガーのパターンを追跡中。';
+    if (/鬱|孤独|辛|死|ネガティ|絶望/.test(lower)) return '精神面のケアが重要です。信頼できる方への連絡を検討してください。';
+    if (/眠[れり]|不眠|寝[れた]/.test(lower)) return '睡眠パターンを追跡中。睡眠衛生の見直しで改善の可能性があります。';
+    if (/先生|診察|クリニック|病院/.test(lower)) return '医療記録。次回診察に向けてこの記録を共有することを推奨。';
+    if (/ツートラム|リンデロン|エチゾラム|ステロイド|プレドニゾ/.test(lower)) return '服薬メモ。効果と副作用を追跡しています。';
+    if (/コエンザイム|nmn|ビタミン|マグネシウム|サプリ/.test(lower)) return 'サプリメント記録。効果評価のため2-4週間の継続観察を。';
+    if (/良[いか]|楽|元気|調子が良|できた|回復/.test(lower)) return '改善傾向。何が効果的だったか分析し、再現性を高めましょう。';
+    if (/エプソムソルト|風呂|入浴/.test(lower)) return '入浴療法の記録。マグネシウム吸収と自律神経調整の効果を追跡。';
+    if (/瞑想|呼吸法|ヨガ/.test(lower)) return '迷走神経トーニング効果を記録中。継続が自律神経改善の鍵です。';
+    if (/気圧|天候|天気/.test(lower)) return '気象感受性を記録。気圧変動と症状の相関を分析しています。';
+    if (/ジム|運動|散歩|ストレッチ/.test(lower)) return '活動記録。翌日のPEM有無を確認し、安全な活動量を学習中。';
+    if (/食[べ事]|ご飯|料理/.test(lower)) return '食事記録。栄養バランスと体調の相関を分析中。';
+
+    // Generic insight based on text length
+    if (text.length > 200) return '詳細な記録です。AI分析でより深い洞察を得られます。';
+    if (text.length > 50) return '記録を継続中。パターン分析の精度が向上しています。';
+    return '';
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     const input = document.getElementById('dash-quick-input');

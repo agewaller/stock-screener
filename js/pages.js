@@ -550,46 +550,184 @@ App.prototype.render_chat = function() {
 
 // Timeline Page
 App.prototype.render_timeline = function() {
-  const allData = [];
-  ['symptoms', 'vitals', 'bloodTests', 'medications', 'sleepData'].forEach(key => {
-    const data = store.get(key) || [];
-    data.forEach(d => allData.push({ ...d, _type: key }));
+  // Collect ALL data sources
+  const allEntries = [];
+
+  // Text entries (diary, notes)
+  (store.get('textEntries') || []).forEach(d => allEntries.push({
+    ...d, _type: 'text', _icon: '📝', _label: d.title || '日記',
+    _category: d.category || 'other'
+  }));
+
+  // Symptoms
+  (store.get('symptoms') || []).forEach(d => {
+    if (d.text_note) {
+      allEntries.push({ ...d, _type: 'symptom_note', _icon: '📝', _label: d.title || '症状メモ' });
+    } else {
+      allEntries.push({ ...d, _type: 'symptom_data', _icon: '📊', _label: '症状スコア' });
+    }
   });
 
-  allData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  const recent = allData.slice(0, 50);
+  // Vitals
+  (store.get('vitals') || []).forEach(d => allEntries.push({
+    ...d, _type: 'vitals', _icon: '💓', _label: 'バイタル'
+  }));
 
-  const typeLabels = { symptoms: '症状記録', vitals: 'バイタル', bloodTests: '血液検査', medications: '服薬', sleepData: '睡眠' };
-  const typeIcons = { symptoms: '📝', vitals: '💓', bloodTests: '🩸', medications: '💊', sleepData: '😴' };
+  // Blood tests
+  (store.get('bloodTests') || []).forEach(d => allEntries.push({
+    ...d, _type: 'blood', _icon: '🩸', _label: '血液検査'
+  }));
 
-  const items = recent.map(d => {
-    const date = new Date(d.timestamp);
-    const summary = Object.entries(d)
-      .filter(([k]) => !['id', 'timestamp', 'category', '_type'].includes(k))
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
+  // Medications
+  (store.get('medications') || []).forEach(d => allEntries.push({
+    ...d, _type: 'medication', _icon: '💊', _label: '服薬記録'
+  }));
 
+  // Sleep
+  (store.get('sleepData') || []).forEach(d => allEntries.push({
+    ...d, _type: 'sleep', _icon: '😴', _label: '睡眠'
+  }));
+
+  // Activity
+  (store.get('activityData') || []).forEach(d => allEntries.push({
+    ...d, _type: 'activity', _icon: '🚶', _label: '活動量'
+  }));
+
+  // Photos
+  (store.get('photos') || []).forEach(d => allEntries.push({
+    ...d, _type: 'photo', _icon: '📸', _label: d.filename || '写真'
+  }));
+
+  // Conversation history (AI chat)
+  (store.get('conversationHistory') || []).filter(c => c.type === 'data_entry').forEach(d => {
+    // Already in textEntries, skip duplicates
+  });
+
+  // Sort by timestamp (newest first)
+  allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+  // Group by date
+  const byDate = {};
+  allEntries.forEach(e => {
+    const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
+    if (!byDate[dateKey]) byDate[dateKey] = [];
+    byDate[dateKey].push(e);
+  });
+
+  // Category labels for filter
+  const categoryLabels = {
+    text: '日記・メモ', symptom_note: '症状メモ', symptom_data: '症状スコア',
+    vitals: 'バイタル', blood: '血液検査', medication: '服薬',
+    sleep: '睡眠', activity: '活動', photo: '写真'
+  };
+
+  // Render entries
+  const renderEntry = (e) => {
+    const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
+    const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
+
+    // Text entries - show formatted content
+    if (e._type === 'text' || e._type === 'symptom_note') {
+      const content = e.content || e.text_note || '';
+      const aiInsight = app.generateQuickInsight(content);
+      return `
+        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+          <div class="card-body" style="padding:12px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span>${e._icon}</span>
+                <span style="font-size:12px;font-weight:600">${e._label}</span>
+                ${e._category ? `<span class="tag tag-accent" style="font-size:9px">${e._category}</span>` : ''}
+              </div>
+              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+            </div>
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
+            ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>AI:</strong> ${aiInsight}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // Symptom scores
+    if (e._type === 'symptom_data') {
+      const fields = [];
+      if (e.fatigue_level != null) fields.push(`疲労: ${e.fatigue_level}/7`);
+      if (e.pain_level != null) fields.push(`痛み: ${e.pain_level}/7`);
+      if (e.brain_fog != null) fields.push(`脳霧: ${e.brain_fog}/7`);
+      if (e.sleep_quality != null) fields.push(`睡眠: ${e.sleep_quality}/7`);
+      if (e.pem_status) fields.push('PEM: あり');
+      const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+          <span>${e._icon}</span>
+          <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+        </div>`;
+    }
+
+    // Vitals
+    if (e._type === 'vitals') {
+      const fields = [];
+      if (e.heart_rate) fields.push(`HR: ${e.heart_rate}bpm`);
+      if (e.temperature) fields.push(`体温: ${e.temperature}°C`);
+      if (e.spo2) fields.push(`SpO2: ${e.spo2}%`);
+      if (e.bp_systolic) fields.push(`BP: ${e.bp_systolic}/${e.bp_diastolic}`);
+      if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
+      if (e.weight) fields.push(`体重: ${e.weight}kg`);
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+          <span>💓</span>
+          <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+        </div>`;
+    }
+
+    // Photos
+    if (e._type === 'photo') {
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+          <span>📸</span>
+          <span style="font-size:12px;flex:1">${e.filename || '画像'} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+        </div>`;
+    }
+
+    // Generic data entry
+    const dataFields = Object.entries(e)
+      .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
+      .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${k}:</strong> ${v}</span>`)
+      .join('');
     return `
-    <div class="timeline-item">
-      <div class="timeline-dot"></div>
-      <div class="timeline-date">${date.toLocaleString('ja-JP')}</div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:4px">
-        ${typeIcons[d._type] || '📋'} ${typeLabels[d._type] || d._type}
-      </div>
-      <div class="timeline-content">${summary.substring(0, 200)}</div>
-    </div>`;
-  }).join('');
+      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <span>${e._icon}</span>
+        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
+        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+      </div>`;
+  };
+
+  // Render by date
+  const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
+    <div style="margin-bottom:24px">
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
+      ${entries.map(renderEntry).join('')}
+    </div>
+  `).join('');
 
   return `
-  <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">タイムライン</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">すべての健康データの時系列表示</p>
-  </div>
-  <div class="card">
-    <div class="card-body">
-      ${items ? `<div class="timeline">${items}</div>` :
-        Components.emptyState('📅', 'タイムラインにデータがありません', 'データを入力するとここに時系列で表示されます。')}
+  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
     </div>
+    <div style="display:flex;gap:8px">
+      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+        <option value="">すべて表示</option>
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div id="timeline-content">
+    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
   </div>`;
 };
 
