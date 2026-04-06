@@ -242,23 +242,96 @@ App.prototype.render_dashboard = function() {
     ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
   </div>` : ''}
 
-  <!-- 5. Stats + Chart (bottom, only shown when data exists) -->
-  ${hasData ? `
-  <div class="grid" style="grid-template-columns:140px 1fr;gap:14px;margin-bottom:16px">
-    <div class="card" style="display:flex;align-items:center;justify-content:center;padding:12px">
-      ${Components.healthGauge(score, 120)}
+  <!-- 5. Quick Shopping Recommendations (always visible) -->
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">おすすめアイテム</h3>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px">
+      <a href="https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('coq10','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">💊</div>
+          <div style="font-size:12px;font-weight:600">CoQ10（ユビキノール）</div>
+          <div style="font-size:10px;color:var(--text-muted)">ミトコンドリアサポート</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=マグネシウム+サプリ&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('mg','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">✨</div>
+          <div style="font-size:12px;font-weight:600">マグネシウム</div>
+          <div style="font-size:10px;color:var(--text-muted)">筋弛緩・睡眠改善</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('vitd','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">☀️</div>
+          <div style="font-size:12px;font-weight:600">ビタミンD3+K2</div>
+          <div style="font-size:10px;color:var(--text-muted)">免疫・骨代謝サポート</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('omega3','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🐟</div>
+          <div style="font-size:12px;font-weight:600">オメガ3（EPA/DHA）</div>
+          <div style="font-size:10px;color:var(--text-muted)">抗炎症・脳機能</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=エプソムソルト&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('epsom','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🛁</div>
+          <div style="font-size:12px;font-weight:600">エプソムソルト</div>
+          <div style="font-size:10px;color:var(--text-muted)">入浴・マグネシウム吸収</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.iherb.com/search?kw=NMN+supplement&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('nmn','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🧬</div>
+          <div style="font-size:12px;font-weight:600">NMN</div>
+          <div style="font-size:10px;color:var(--text-muted)">NAD+・細胞修復</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <div class="card" style="min-width:180px;flex-shrink:0;cursor:pointer" onclick="app.navigate('actions')">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">→</div>
+          <div style="font-size:12px;font-weight:600">もっと見る</div>
+          <div style="font-size:10px;color:var(--text-muted)">検査キット・デバイス</div>
+        </div>
+      </div>
     </div>
-    <div class="grid grid-4">
-      ${Components.statCard('疲労', fatigueAvg === '--' ? '--' : fatigueAvg + '/7', fatigueChange, '😴')}
-      ${Components.statCard('痛み', painAvg === '--' ? '--' : painAvg + '/7', painChange, '💢')}
-      ${Components.statCard('脳霧', fogAvg === '--' ? '--' : fogAvg + '/7', fogChange, '🧠')}
-      ${Components.statCard('睡眠', sleepAvg === '--' ? '--' : sleepAvg + '/7', sleepChange, '🌙')}
+  </div>
+
+  <!-- 6. Simple condition tracker + chart (bottom) -->
+  ${hasData ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="text-align:center;min-width:80px">
+          <div style="font-size:32px;font-weight:800;color:${score >= 60 ? 'var(--success)' : score >= 35 ? 'var(--warning)' : 'var(--danger)'}">${score}</div>
+          <div style="font-size:10px;color:var(--text-muted)">体調スコア</div>
+        </div>
+        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7">
+          ${score >= 60 ? '比較的安定した状態です。この調子を維持しましょう。' :
+            score >= 35 ? '少し注意が必要な状態です。無理せず休息を取ってください。' :
+            '体調が優れない状態です。安静を優先し、必要であれば医療機関に相談してください。'}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);text-align:right;min-width:60px">${totalEntries + totalSymptoms}件<br>記録済</div>
+      </div>
     </div>
   </div>
   ${symptoms.length > 0 ? `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header"><span class="card-title">トレンド</span></div>
-    <div class="card-body" style="height:250px"><canvas id="symptom-chart"></canvas></div>
+    <div class="card-body" style="height:220px"><canvas id="symptom-chart"></canvas></div>
   </div>` : ''}
   ` : ''}
 

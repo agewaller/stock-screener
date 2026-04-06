@@ -179,11 +179,31 @@ var Components = {
       blood_pressure: () => this.bpField(),
       temperature: () => this.numberField('temperature', '体温', '°C', 34, 42, 0.1),
       spo2: () => this.numberField('spo2', 'SpO2', '%', 80, 100),
-      mood: () => this.sliderField('mood', '気分', 0, 7),
-      anxiety: () => this.sliderField('anxiety', '不安レベル', 0, 7),
-      stress_level: () => this.sliderField('stress_level', 'ストレスレベル', 0, 7),
+      condition_level: () => `
+        <div class="form-group">
+          <label class="form-label">今日の体調 <span id="val-condition_level">5</span>/10</label>
+          <input type="range" name="condition_level" min="1" max="10" value="5"
+            style="width:100%;accent-color:var(--accent)"
+            oninput="document.getElementById('val-condition_level').textContent=this.value">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px">
+            <span>最悪</span><span>絶好調</span>
+          </div>
+        </div>`,
+      mood: () => `
+        <div class="form-group">
+          <label class="form-label">気分 <span id="val-mood">5</span>/10</label>
+          <input type="range" name="mood" min="1" max="10" value="5"
+            style="width:100%;accent-color:var(--accent)"
+            oninput="document.getElementById('val-mood').textContent=this.value">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px">
+            <span>落ち込み</span><span>最高</span>
+          </div>
+        </div>`,
       steps: () => this.numberField('steps', '歩数', '歩', 0, 50000),
       duration: () => this.numberField('duration', '睡眠時間', '時間', 0, 24, 0.5),
+      meals: () => this.textField('meals', '食事内容'),
+      medications: () => this.textField('medications', '薬の名前'),
+      dosage: () => this.textField('dosage', '用量・飲み方'),
     };
 
     let fields = '';

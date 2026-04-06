@@ -212,20 +212,17 @@ var CONFIG = {
     { id: 'custom', name: 'その他', fullName: 'カスタム疾患設定', icon: '➕', color: '#8896b0' }
   ],
 
-  // Data categories for user intake
+  // Data categories for user intake (simplified)
   DATA_CATEGORIES: [
-    { id: 'vitals', name: 'バイタルサイン', icon: '💓', fields: ['heart_rate', 'blood_pressure', 'temperature', 'spo2', 'respiratory_rate'] },
-    { id: 'symptoms', name: '症状記録', icon: '📝', fields: ['fatigue_level', 'pain_level', 'brain_fog', 'sleep_quality', 'pem_status'] },
-    { id: 'blood_test', name: '血液検査', icon: '🩸', fields: ['wbc', 'rbc', 'hemoglobin', 'crp', 'esr', 'nk_cell', 'cytokines'] },
-    { id: 'genetic', name: '遺伝子データ', icon: '🧬', fields: ['snp_data', 'hla_typing', 'pharmacogenomics'] },
-    { id: 'nutrition', name: '食事・栄養', icon: '🥗', fields: ['meals', 'supplements', 'calories', 'macros', 'micronutrients'] },
-    { id: 'activity', name: '活動量', icon: '🚶', fields: ['steps', 'hrv', 'active_minutes', 'rest_time', 'pacing_data'] },
-    { id: 'sleep', name: '睡眠データ', icon: '😴', fields: ['duration', 'deep_sleep', 'rem_sleep', 'awakenings', 'sleep_score'] },
-    { id: 'mental', name: '精神状態', icon: '🧘', fields: ['mood', 'anxiety', 'depression_score', 'stress_level', 'cognitive_function'] },
-    { id: 'medication', name: '服薬記録', icon: '💊', fields: ['medications', 'dosage', 'timing', 'side_effects'] },
-    { id: 'environment', name: '環境データ', icon: '🌡️', fields: ['weather', 'air_quality', 'humidity', 'allergens'] },
-    { id: 'photos', name: '写真・画像', icon: '📸', fields: ['meal_photos', 'skin_condition', 'test_results_photo'] },
-    { id: 'wearable', name: 'ウェアラブル', icon: '⌚', fields: ['fitbit', 'apple_watch', 'garmin', 'oura_ring'] }
+    { id: 'symptoms', name: '今日の体調', icon: '🌡️', fields: ['condition_level', 'sleep_quality'] },
+    { id: 'vitals', name: 'バイタル', icon: '💓', fields: ['heart_rate', 'blood_pressure', 'temperature', 'spo2'] },
+    { id: 'medication', name: '服薬', icon: '💊', fields: ['medications', 'dosage'] },
+    { id: 'sleep', name: '睡眠', icon: '😴', fields: ['duration'] },
+    { id: 'activity', name: '活動', icon: '🚶', fields: ['steps'] },
+    { id: 'nutrition', name: '食事', icon: '🥗', fields: ['meals'] },
+    { id: 'blood_test', name: '検査結果', icon: '🩸', fields: ['wbc', 'rbc', 'hemoglobin', 'crp'] },
+    { id: 'mental', name: '気分', icon: '🧘', fields: ['mood'] },
+    { id: 'photos', name: '写真', icon: '📸', fields: ['meal_photos', 'test_results_photo'] }
   ],
 
   // Symptom severity levels

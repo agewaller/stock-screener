@@ -180,12 +180,21 @@ var Store = class Store {
     const recentSymptoms = this.getDataRange('symptoms', 7);
     if (recentSymptoms.length === 0) return 50;
 
+    // Use simple condition_level (1-10) if available
+    const conditionScores = recentSymptoms.map(s => s.condition_level).filter(v => v != null);
+    if (conditionScores.length > 0) {
+      const avg = conditionScores.reduce((a, b) => a + b, 0) / conditionScores.length;
+      const score = Math.round(avg * 10); // 1-10 → 10-100
+      this.set('healthScore', score);
+      return score;
+    }
+
+    // Fallback to detailed scores
     const avgFatigue = this.avg(recentSymptoms, 'fatigue_level');
     const avgPain = this.avg(recentSymptoms, 'pain_level');
     const avgBrainFog = this.avg(recentSymptoms, 'brain_fog');
     const avgSleep = this.avg(recentSymptoms, 'sleep_quality');
 
-    // Score 0-100, higher is better
     const symptomScore = Math.max(0, 100 - ((avgFatigue + avgPain + avgBrainFog) / 3) * (100 / 7));
     const sleepScore = (avgSleep / 7) * 100;
 

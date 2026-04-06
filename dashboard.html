@@ -1327,20 +1327,17 @@ var CONFIG = {
     { id: 'custom', name: 'その他', fullName: 'カスタム疾患設定', icon: '➕', color: '#8896b0' }
   ],
 
-  // Data categories for user intake
+  // Data categories for user intake (simplified)
   DATA_CATEGORIES: [
-    { id: 'vitals', name: 'バイタルサイン', icon: '💓', fields: ['heart_rate', 'blood_pressure', 'temperature', 'spo2', 'respiratory_rate'] },
-    { id: 'symptoms', name: '症状記録', icon: '📝', fields: ['fatigue_level', 'pain_level', 'brain_fog', 'sleep_quality', 'pem_status'] },
-    { id: 'blood_test', name: '血液検査', icon: '🩸', fields: ['wbc', 'rbc', 'hemoglobin', 'crp', 'esr', 'nk_cell', 'cytokines'] },
-    { id: 'genetic', name: '遺伝子データ', icon: '🧬', fields: ['snp_data', 'hla_typing', 'pharmacogenomics'] },
-    { id: 'nutrition', name: '食事・栄養', icon: '🥗', fields: ['meals', 'supplements', 'calories', 'macros', 'micronutrients'] },
-    { id: 'activity', name: '活動量', icon: '🚶', fields: ['steps', 'hrv', 'active_minutes', 'rest_time', 'pacing_data'] },
-    { id: 'sleep', name: '睡眠データ', icon: '😴', fields: ['duration', 'deep_sleep', 'rem_sleep', 'awakenings', 'sleep_score'] },
-    { id: 'mental', name: '精神状態', icon: '🧘', fields: ['mood', 'anxiety', 'depression_score', 'stress_level', 'cognitive_function'] },
-    { id: 'medication', name: '服薬記録', icon: '💊', fields: ['medications', 'dosage', 'timing', 'side_effects'] },
-    { id: 'environment', name: '環境データ', icon: '🌡️', fields: ['weather', 'air_quality', 'humidity', 'allergens'] },
-    { id: 'photos', name: '写真・画像', icon: '📸', fields: ['meal_photos', 'skin_condition', 'test_results_photo'] },
-    { id: 'wearable', name: 'ウェアラブル', icon: '⌚', fields: ['fitbit', 'apple_watch', 'garmin', 'oura_ring'] }
+    { id: 'symptoms', name: '今日の体調', icon: '🌡️', fields: ['condition_level', 'sleep_quality'] },
+    { id: 'vitals', name: 'バイタル', icon: '💓', fields: ['heart_rate', 'blood_pressure', 'temperature', 'spo2'] },
+    { id: 'medication', name: '服薬', icon: '💊', fields: ['medications', 'dosage'] },
+    { id: 'sleep', name: '睡眠', icon: '😴', fields: ['duration'] },
+    { id: 'activity', name: '活動', icon: '🚶', fields: ['steps'] },
+    { id: 'nutrition', name: '食事', icon: '🥗', fields: ['meals'] },
+    { id: 'blood_test', name: '検査結果', icon: '🩸', fields: ['wbc', 'rbc', 'hemoglobin', 'crp'] },
+    { id: 'mental', name: '気分', icon: '🧘', fields: ['mood'] },
+    { id: 'photos', name: '写真', icon: '📸', fields: ['meal_photos', 'test_results_photo'] }
   ],
 
   // Symptom severity levels
@@ -2011,12 +2008,21 @@ var Store = class Store {
     const recentSymptoms = this.getDataRange('symptoms', 7);
     if (recentSymptoms.length === 0) return 50;
 
+    // Use simple condition_level (1-10) if available
+    const conditionScores = recentSymptoms.map(s => s.condition_level).filter(v => v != null);
+    if (conditionScores.length > 0) {
+      const avg = conditionScores.reduce((a, b) => a + b, 0) / conditionScores.length;
+      const score = Math.round(avg * 10); // 1-10 → 10-100
+      this.set('healthScore', score);
+      return score;
+    }
+
+    // Fallback to detailed scores
     const avgFatigue = this.avg(recentSymptoms, 'fatigue_level');
     const avgPain = this.avg(recentSymptoms, 'pain_level');
     const avgBrainFog = this.avg(recentSymptoms, 'brain_fog');
     const avgSleep = this.avg(recentSymptoms, 'sleep_quality');
 
-    // Score 0-100, higher is better
     const symptomScore = Math.max(0, 100 - ((avgFatigue + avgPain + avgBrainFog) / 3) * (100 / 7));
     const sleepScore = (avgSleep / 7) * 100;
 
@@ -3067,11 +3073,31 @@ var Components = {
       blood_pressure: () => this.bpField(),
       temperature: () => this.numberField('temperature', '体温', '°C', 34, 42, 0.1),
       spo2: () => this.numberField('spo2', 'SpO2', '%', 80, 100),
-      mood: () => this.sliderField('mood', '気分', 0, 7),
-      anxiety: () => this.sliderField('anxiety', '不安レベル', 0, 7),
-      stress_level: () => this.sliderField('stress_level', 'ストレスレベル', 0, 7),
+      condition_level: () => `
+        <div class="form-group">
+          <label class="form-label">今日の体調 <span id="val-condition_level">5</span>/10</label>
+          <input type="range" name="condition_level" min="1" max="10" value="5"
+            style="width:100%;accent-color:var(--accent)"
+            oninput="document.getElementById('val-condition_level').textContent=this.value">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px">
+            <span>最悪</span><span>絶好調</span>
+          </div>
+        </div>`,
+      mood: () => `
+        <div class="form-group">
+          <label class="form-label">気分 <span id="val-mood">5</span>/10</label>
+          <input type="range" name="mood" min="1" max="10" value="5"
+            style="width:100%;accent-color:var(--accent)"
+            oninput="document.getElementById('val-mood').textContent=this.value">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px">
+            <span>落ち込み</span><span>最高</span>
+          </div>
+        </div>`,
       steps: () => this.numberField('steps', '歩数', '歩', 0, 50000),
       duration: () => this.numberField('duration', '睡眠時間', '時間', 0, 24, 0.5),
+      meals: () => this.textField('meals', '食事内容'),
+      medications: () => this.textField('medications', '薬の名前'),
+      dosage: () => this.textField('dosage', '用量・飲み方'),
     };
 
     let fields = '';
@@ -5903,23 +5929,96 @@ App.prototype.render_dashboard = function() {
     ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
   </div>` : ''}
 
-  <!-- 5. Stats + Chart (bottom, only shown when data exists) -->
-  ${hasData ? `
-  <div class="grid" style="grid-template-columns:140px 1fr;gap:14px;margin-bottom:16px">
-    <div class="card" style="display:flex;align-items:center;justify-content:center;padding:12px">
-      ${Components.healthGauge(score, 120)}
+  <!-- 5. Quick Shopping Recommendations (always visible) -->
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">おすすめアイテム</h3>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:8px">
+      <a href="https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('coq10','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">💊</div>
+          <div style="font-size:12px;font-weight:600">CoQ10（ユビキノール）</div>
+          <div style="font-size:10px;color:var(--text-muted)">ミトコンドリアサポート</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=マグネシウム+サプリ&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('mg','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">✨</div>
+          <div style="font-size:12px;font-weight:600">マグネシウム</div>
+          <div style="font-size:10px;color:var(--text-muted)">筋弛緩・睡眠改善</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('vitd','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">☀️</div>
+          <div style="font-size:12px;font-weight:600">ビタミンD3+K2</div>
+          <div style="font-size:10px;color:var(--text-muted)">免疫・骨代謝サポート</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('omega3','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🐟</div>
+          <div style="font-size:12px;font-weight:600">オメガ3（EPA/DHA）</div>
+          <div style="font-size:10px;color:var(--text-muted)">抗炎症・脳機能</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.amazon.co.jp/s?k=エプソムソルト&tag=chroniccare-22" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('epsom','amazon_jp','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🛁</div>
+          <div style="font-size:12px;font-weight:600">エプソムソルト</div>
+          <div style="font-size:10px;color:var(--text-muted)">入浴・マグネシウム吸収</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">Amazon →</div>
+        </div>
+      </a>
+      <a href="https://www.iherb.com/search?kw=NMN+supplement&rcode=CHRONICCARE" target="_blank" rel="noopener" onclick="affiliateEngine.trackClick('nmn','iherb','supplement')"
+        class="card" style="min-width:180px;flex-shrink:0;text-decoration:none;color:inherit">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🧬</div>
+          <div style="font-size:12px;font-weight:600">NMN</div>
+          <div style="font-size:10px;color:var(--text-muted)">NAD+・細胞修復</div>
+          <div style="font-size:11px;color:var(--accent);margin-top:4px">iHerb →</div>
+        </div>
+      </a>
+      <div class="card" style="min-width:180px;flex-shrink:0;cursor:pointer" onclick="app.navigate('actions')">
+        <div class="card-body" style="padding:12px;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">→</div>
+          <div style="font-size:12px;font-weight:600">もっと見る</div>
+          <div style="font-size:10px;color:var(--text-muted)">検査キット・デバイス</div>
+        </div>
+      </div>
     </div>
-    <div class="grid grid-4">
-      ${Components.statCard('疲労', fatigueAvg === '--' ? '--' : fatigueAvg + '/7', fatigueChange, '😴')}
-      ${Components.statCard('痛み', painAvg === '--' ? '--' : painAvg + '/7', painChange, '💢')}
-      ${Components.statCard('脳霧', fogAvg === '--' ? '--' : fogAvg + '/7', fogChange, '🧠')}
-      ${Components.statCard('睡眠', sleepAvg === '--' ? '--' : sleepAvg + '/7', sleepChange, '🌙')}
+  </div>
+
+  <!-- 6. Simple condition tracker + chart (bottom) -->
+  ${hasData ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="text-align:center;min-width:80px">
+          <div style="font-size:32px;font-weight:800;color:${score >= 60 ? 'var(--success)' : score >= 35 ? 'var(--warning)' : 'var(--danger)'}">${score}</div>
+          <div style="font-size:10px;color:var(--text-muted)">体調スコア</div>
+        </div>
+        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7">
+          ${score >= 60 ? '比較的安定した状態です。この調子を維持しましょう。' :
+            score >= 35 ? '少し注意が必要な状態です。無理せず休息を取ってください。' :
+            '体調が優れない状態です。安静を優先し、必要であれば医療機関に相談してください。'}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);text-align:right;min-width:60px">${totalEntries + totalSymptoms}件<br>記録済</div>
+      </div>
     </div>
   </div>
   ${symptoms.length > 0 ? `
   <div class="card" style="margin-bottom:16px">
     <div class="card-header"><span class="card-title">トレンド</span></div>
-    <div class="card-body" style="height:250px"><canvas id="symptom-chart"></canvas></div>
+    <div class="card-body" style="height:220px"><canvas id="symptom-chart"></canvas></div>
   </div>` : ''}
   ` : ''}
 
