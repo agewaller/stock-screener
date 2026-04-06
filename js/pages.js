@@ -249,12 +249,18 @@ App.prototype.render_dashboard = function() {
   <!-- 4. Calendar Widget -->
   ${CalendarIntegration.renderWidget()}
 
-  <!-- 5. Recommendations -->
+  <!-- 5. Recommendations (collapsible) -->
   ${allRecs.length > 0 ? `
-  <div style="margin-bottom:20px">
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへの推奨</h3>
-    ${allRecs.slice(0, 3).map(r => Components.recommendationCard(r)).join('')}
-    ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+      onclick="var c=document.getElementById('dash-recs');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+      <h3 style="font-size:15px;font-weight:600">あなたへの推奨（${allRecs.length}件）</h3>
+      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span>
+    </div>
+    <div id="dash-recs">
+      ${allRecs.slice(0, 3).map(r => Components.recommendationCard(r)).join('')}
+      ${allRecs.length > 3 ? `<button class="btn btn-outline btn-sm" onclick="app.navigate('actions')">すべて見る →</button>` : ''}
+    </div>
   </div>` : ''}
 
   <!-- 5. Dynamic Recommendations (based on user data) -->
@@ -282,32 +288,76 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
-  <!-- 6. Simple condition tracker + chart (bottom) -->
+  <!-- 6. Stats + Chart (collapsible) -->
   ${hasData ? `
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-body" style="padding:16px 20px">
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <div style="text-align:center;min-width:80px">
-          <div style="font-size:32px;font-weight:800;color:${score >= 60 ? 'var(--success)' : score >= 35 ? 'var(--warning)' : 'var(--danger)'}">${score}</div>
-          <div style="font-size:10px;color:var(--text-muted)">体調スコア</div>
-        </div>
-        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7">
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+      onclick="var c=document.getElementById('dash-stats');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px;font-weight:800;color:${score >= 60 ? 'var(--success)' : score >= 35 ? 'var(--warning)' : 'var(--danger)'}">${score}</span>
+        <span style="font-size:13px;color:var(--text-secondary)">体調スコア・${totalEntries + totalSymptoms}件記録済</span>
+      </div>
+      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▸</span>
+    </div>
+    <div id="dash-stats" style="display:none">
+      <div class="card" style="margin-bottom:8px">
+        <div class="card-body" style="padding:12px 16px;font-size:13px;color:var(--text-secondary);line-height:1.7">
           ${score >= 60 ? '比較的安定した状態です。この調子を維持しましょう。' :
             score >= 35 ? '少し注意が必要な状態です。無理せず休息を取ってください。' :
             '体調が優れない状態です。安静を優先し、必要であれば医療機関に相談してください。'}
         </div>
-        <div style="font-size:11px;color:var(--text-muted);text-align:right;min-width:60px">${totalEntries + totalSymptoms}件<br>記録済</div>
       </div>
+      ${symptoms.length > 0 ? `
+      <div class="card" style="margin-bottom:8px">
+        <div class="card-header" style="padding:8px 14px"><span class="card-title" style="font-size:13px">トレンド</span></div>
+        <div class="card-body" style="height:200px"><canvas id="symptom-chart"></canvas></div>
+      </div>` : ''}
     </div>
   </div>
-  ${symptoms.length > 0 ? `
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-header"><span class="card-title">トレンド</span></div>
-    <div class="card-body" style="height:220px"><canvas id="symptom-chart"></canvas></div>
-  </div>` : ''}
   ` : ''}
 
-  <!-- Disease tags -->
+  <!-- 7. Full Timeline (collapsible) -->
+  ${totalEntries > 0 ? (() => {
+    const allTL = (store.get('textEntries') || []).slice().reverse();
+    const byDate = {};
+    allTL.forEach(e => {
+      const dk = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', {year:'numeric',month:'short',day:'numeric',weekday:'short'}) : '不明';
+      if (!byDate[dk]) byDate[dk] = [];
+      byDate[dk].push(e);
+    });
+    const dateKeys = Object.keys(byDate);
+    return `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:10px 0"
+        onclick="var c=document.getElementById('dash-timeline');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+        <h3 style="font-size:15px;font-weight:600">全記録（${allTL.length}件）</h3>
+        <span class="arrow" style="font-size:14px;color:var(--text-muted)">▸</span>
+      </div>
+      <div id="dash-timeline" style="display:none">
+        ${dateKeys.slice(0, 30).map(dk => `
+          <div style="margin-bottom:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px">${dk}（${byDate[dk].length}件）</div>
+            ${byDate[dk].map(e => {
+              const content = e.content || '';
+              const preview = content.substring(0, 80).replace(/\n/g, ' ');
+              const eid = 'tl-' + (e.id || Math.random().toString(36).substr(2));
+              return `
+              <div style="margin-bottom:4px;border-left:2px solid var(--border);padding-left:10px">
+                <div style="cursor:pointer;display:flex;align-items:center;gap:6px"
+                  onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none'">
+                  <span style="font-size:10px;color:var(--text-muted)">${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                  <span style="font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview}${content.length > 80 ? '...' : ''}</span>
+                </div>
+                <div id="${eid}" style="display:none;padding:6px 0;font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        `).join('')}
+        ${dateKeys.length > 30 ? '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px">さらに古い記録は「記録する」ページで確認できます</div>' : ''}
+      </div>
+    </div>`;
+  })() : ''}
+
   <div style="display:flex;flex-wrap:wrap;gap:4px">${diseaseTagsHtml}</div>`;
 };
 
