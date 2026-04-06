@@ -47,17 +47,17 @@ App.prototype.render_login = function() {
       <!-- Features -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
         <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="font-size:24px;margin-bottom:4px">📝</div>
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#6C63FF,#8B85FF);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#9998;</div>
           <div style="font-size:11px;font-weight:600;color:var(--text-primary)">毎日記録</div>
           <div style="font-size:10px;color:var(--text-muted)">体調を書くだけ</div>
         </div>
         <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="font-size:24px;margin-bottom:4px">🔍</div>
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6584,#FF8FA3);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#9733;</div>
           <div style="font-size:11px;font-weight:600;color:var(--text-primary)">自動分析</div>
           <div style="font-size:10px;color:var(--text-muted)">パターンを発見</div>
         </div>
         <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="font-size:24px;margin-bottom:4px">💡</div>
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#10b981,#34d399);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#10003;</div>
           <div style="font-size:11px;font-weight:600;color:var(--text-primary)">個別提案</div>
           <div style="font-size:10px;color:var(--text-muted)">あなた専用</div>
         </div>
