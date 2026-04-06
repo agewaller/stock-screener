@@ -1552,6 +1552,30 @@ ${text.substring(0, 8000)}
     if (/お腹|下痢|便秘|吐き気|胃|腸/.test(lower)) detected.push('消化器');
     if (/会話|文字起こし|plaud|transcript|先生.*言|診察.*記録|ミーティング|電話/.test(lower)) detected.push('会話データ');
     if (/めまい|ふらつき|立ちくらみ/.test(lower)) detected.push('めまい');
+    // Extended detection
+    if (/体重|kg|キロ|太|痩|ダイエット|体脂肪|BMI/.test(lower)) detected.push('体重');
+    if (/心拍|HR|HRV|脈|bpm|血圧|mmHg/.test(lower)) detected.push('バイタル');
+    if (/体温|熱|°C|度|発熱/.test(lower)) detected.push('体温');
+    if (/SpO2|酸素|息苦し|呼吸/.test(lower)) detected.push('呼吸');
+    if (/肌|皮膚|かゆ|湿疹|蕁麻疹|アトピー|ニキビ/.test(lower)) detected.push('皮膚');
+    if (/尿|頻尿|排尿|腎臓|クレアチニン/.test(lower)) detected.push('泌尿器');
+    if (/目|視力|ドライアイ|眼/.test(lower)) detected.push('眼');
+    if (/耳|聴力|耳鳴り|難聴/.test(lower)) detected.push('耳');
+    if (/歯|口|口内炎|歯茎/.test(lower)) detected.push('口腔');
+    if (/髪|脱毛|薄毛|抜け毛/.test(lower)) detected.push('毛髪');
+    if (/酒|アルコール|飲酒|ビール|ワイン/.test(lower)) detected.push('飲酒');
+    if (/コーヒー|カフェイン|お茶|紅茶/.test(lower)) detected.push('カフェイン');
+    if (/水|水分|脱水|飲む量/.test(lower)) detected.push('水分');
+    if (/旅行|出張|飛行機|移動|時差/.test(lower)) detected.push('移動');
+    if (/仕事|プロジェクト|締切|ミーティング|作業/.test(lower)) detected.push('仕事');
+    if (/お金|費用|医療費|保険|経済|金銭/.test(lower)) detected.push('経済');
+    if (/家族|妻|夫|子供|親|母|父|兄弟|姉妹/.test(lower)) detected.push('家族');
+    if (/友人|友達|恋人|彼女|彼氏|パートナー/.test(lower)) detected.push('人間関係');
+    if (/遺伝子|SNP|HLA|ゲノム|DNA/.test(lower)) detected.push('遺伝子');
+    if (/MRI|CT|X線|レントゲン|超音波|エコー/.test(lower)) detected.push('画像診断');
+    if (/鍼|灸|マッサージ|整体|カイロ/.test(lower)) detected.push('代替療法');
+    if (/漢方|ツムラ|クラシエ|五苓散|補中益気/.test(lower)) detected.push('漢方');
+    if (/ラーメン|寿司|焼肉|パスタ|カレー|弁当|コンビニ|外食/.test(lower)) detected.push('外食');
     if (detected.length === 0) detected.push('日常記録');
 
     // 2. Status Assessment
@@ -1614,6 +1638,23 @@ ${text.substring(0, 8000)}
         findings += 'テキストで補足（「○○先生から△△の処方が追加された」等）を入力すると、より正確な追跡ができます。\n\n';
       }
     }
+
+    // Extended findings
+    if (detected.includes('体重')) findings += '【体重管理】体重の変動を追跡中。急激な増減（1週間で2kg以上）は医師に報告を。BMIだけでなく体組成（筋肉量/体脂肪率）も重要です。\n\n';
+    if (detected.includes('バイタル')) findings += '【バイタルサイン】心拍数・血圧データを記録中。安静時心拍+30bpmを超える活動は要注意（PEM予防）。起立時に20bpm以上の増加があればPOTSの可能性。\n\n';
+    if (detected.includes('体温')) findings += '【体温】体温変動を追跡。37.5°C以上が続く場合は感染症や炎症の兆候。基礎体温の記録はホルモンバランスの評価に有用です。\n\n';
+    if (detected.includes('皮膚')) findings += '【皮膚症状】腸内環境・食物アレルギー・ストレスとの関連を分析中。IgG食物アレルギー検査で隠れたトリガーが見つかる場合があります。\n\n';
+    if (detected.includes('飲酒')) findings += '【飲酒記録】アルコールは免疫機能低下、睡眠の質悪化、薬との相互作用のリスクあり。慢性疾患患者は特に少量でも影響が大きいため注意。\n\n';
+    if (detected.includes('カフェイン')) findings += '【カフェイン】カフェインは自律神経に影響。POTSやME/CFSでは過敏になることも。午後2時以降は控えると睡眠改善に。\n\n';
+    if (detected.includes('水分')) findings += '【水分摂取】1日1.5-2Lが目安。POTS患者は2-3L+塩分補給が推奨。脱水は倦怠感・頭痛・めまいを悪化させます。\n\n';
+    if (detected.includes('仕事')) findings += '【仕事・活動量】業務負荷とPEM/ストレスの相関を分析中。50分作業→10分休憩のポモドーロ法で過負荷を防止。重要な会議前後は休息時間を確保。\n\n';
+    if (detected.includes('経済')) findings += '【経済・医療費】高額療養費制度、難病医療費助成、障害年金、自立支援医療制度が利用可能な場合があります。お住まいの自治体の窓口に相談を。\n\n';
+    if (detected.includes('家族') || detected.includes('人間関係')) findings += '【人間関係】社会的つながりは回復の重要な要素。慢性疾患の理解者を持つことがストレス軽減に。患者会やオンラインコミュニティの活用も検討を。\n\n';
+    if (detected.includes('遺伝子')) findings += '【遺伝子データ】薬剤代謝（CYP2D6等）、メチレーション（MTHFR）、疾患リスクの個別化分析が可能。具体的なSNPデータを入力すると精密な提案ができます。\n\n';
+    if (detected.includes('画像診断')) findings += '【画像診断】所見テキストを入力すると、専門用語の解説と経過観察のポイントを整理します。前回の結果との比較も可能です。\n\n';
+    if (detected.includes('代替療法') || detected.includes('漢方')) findings += '【代替療法/漢方】エビデンスのある代替療法を評価中。漢方は証（しょう）に基づく処方が重要。西洋薬との併用注意も確認します。\n\n';
+    if (detected.includes('外食')) findings += '【外食記録】外食は塩分・脂質・糖質が高くなりがち。抗炎症の観点から、野菜追加・スープ残し・食後の運動を推奨。食後の体調変化も記録してください。\n\n';
+    if (detected.includes('移動')) findings += '【移動・旅行】環境変化はストレス要因。長距離移動後はPEM予防で1-2日の回復期間を。時差がある場合はメラトニンで概日リズム調整を。\n\n';
 
     if (findings) sections.push({ title: '詳細所見', icon: '🔍', content: findings });
 
