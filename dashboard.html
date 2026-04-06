@@ -1941,7 +1941,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -1959,7 +1959,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents'
     ];
     keys.forEach(key => {
       try {
@@ -3467,6 +3467,148 @@ var i18n = {
 document.addEventListener('DOMContentLoaded', () => i18n.init());
 
 
+// === js/calendar.js ===
+/* ============================================================
+   Google Calendar Integration
+   Fetches and analyzes schedule data for health insights
+   ============================================================ */
+var CalendarIntegration = {
+  // Cache calendar events in store
+  saveEvents(events) {
+    // Filter out birthday duplicates and format
+    const seen = new Set();
+    const cleaned = events
+      .filter(e => {
+        if (e.eventType === 'birthday') {
+          if (seen.has(e.summary)) return false;
+          seen.add(e.summary);
+        }
+        return true;
+      })
+      .map(e => ({
+        id: e.id,
+        title: e.summary || '',
+        location: e.location || '',
+        start: e.start?.dateTime || e.start?.date || '',
+        end: e.end?.dateTime || e.end?.date || '',
+        allDay: e.allDay || false,
+        type: e.eventType || 'default',
+        attendees: e.numAttendees || 0,
+        description: (e.description || '').replace(/<[^>]*>/g, '').substring(0, 200)
+      }));
+
+    store.set('calendarEvents', cleaned);
+    return cleaned;
+  },
+
+  // Get today's events
+  getToday() {
+    const events = store.get('calendarEvents') || [];
+    const today = new Date().toISOString().split('T')[0];
+    return events.filter(e => {
+      const eDate = e.start.split('T')[0];
+      const eEnd = (e.end || '').split('T')[0];
+      return eDate === today || (eDate <= today && eEnd > today);
+    });
+  },
+
+  // Get this week's events
+  getThisWeek() {
+    const events = store.get('calendarEvents') || [];
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    return events.filter(e => {
+      const d = new Date(e.start);
+      return d >= weekStart && d < weekEnd;
+    });
+  },
+
+  // Analyze schedule load for health impact
+  analyzeLoad(events) {
+    const nonBirthday = events.filter(e => e.type !== 'birthday');
+    const meetings = nonBirthday.filter(e => !e.allDay && e.attendees > 1);
+    const tasks = nonBirthday.filter(e => !e.allDay && e.attendees <= 1);
+    const travel = nonBirthday.filter(e => e.allDay && e.location);
+
+    // Calculate total hours of scheduled time
+    let totalMinutes = 0;
+    nonBirthday.filter(e => !e.allDay).forEach(e => {
+      if (e.start && e.end) {
+        const diff = (new Date(e.end) - new Date(e.start)) / 60000;
+        if (diff > 0 && diff < 1440) totalMinutes += diff;
+      }
+    });
+
+    const totalHours = (totalMinutes / 60).toFixed(1);
+    const level = totalHours > 6 ? 'high' : totalHours > 3 ? 'medium' : 'low';
+
+    return {
+      totalEvents: nonBirthday.length,
+      meetings: meetings.length,
+      tasks: tasks.length,
+      travel: travel.length,
+      totalHours,
+      level,
+      advice: level === 'high'
+        ? 'スケジュールが詰まっています。ME/CFS等の慢性疾患では活動過多がPEMを誘発します。休憩時間を確保してください。'
+        : level === 'medium'
+        ? '適度なスケジュールです。予定の間に最低30分の休憩を入れましょう。'
+        : 'スケジュールに余裕があります。体調に合わせて少しずつ活動を増やせます。'
+    };
+  },
+
+  // Render calendar widget for dashboard
+  renderWidget() {
+    const events = store.get('calendarEvents') || [];
+    if (events.length === 0) {
+      return `
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">📅 スケジュール</span>
+          </div>
+          <div class="card-body" style="text-align:center;padding:20px;font-size:13px;color:var(--text-muted)">
+            カレンダーデータがありません。連携ページからGoogleカレンダーを同期してください。
+            <div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="app.navigate('integrations')">連携設定</button></div>
+          </div>
+        </div>`;
+    }
+
+    const today = this.getToday();
+    const week = this.getThisWeek();
+    const weekAnalysis = this.analyzeLoad(week);
+    const levelColors = { high: 'var(--danger)', medium: 'var(--warning)', low: 'var(--success)' };
+    const levelLabels = { high: '負荷高', medium: '適度', low: '余裕' };
+
+    const todayItems = today.filter(e => e.type !== 'birthday').slice(0, 5);
+    const birthdays = today.filter(e => e.type === 'birthday');
+
+    return `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">📅 今日のスケジュール</span>
+          <span class="tag" style="background:${levelColors[weekAnalysis.level]}22;color:${levelColors[weekAnalysis.level]}">${levelLabels[weekAnalysis.level]}（週${weekAnalysis.totalHours}h）</span>
+        </div>
+        <div class="card-body" style="padding:12px 16px">
+          ${weekAnalysis.level !== 'low' ? `<div style="padding:6px 10px;background:${weekAnalysis.level === 'high' ? 'var(--danger-bg)' : 'var(--warning-bg)'};border-radius:var(--radius-sm);font-size:11px;margin-bottom:10px;color:${levelColors[weekAnalysis.level]}">${weekAnalysis.advice}</div>` : ''}
+          ${todayItems.length > 0 ? todayItems.map(e => {
+            const time = e.allDay ? '終日' : new Date(e.start).toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+            return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;min-width:40px">${time}</span>
+              <span style="font-size:12px;flex:1">${e.title}</span>
+              ${e.location ? `<span style="font-size:10px;color:var(--text-muted)">📍${e.location.substring(0, 20)}</span>` : ''}
+            </div>`;
+          }).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">今日の予定はありません</div>'}
+          ${birthdays.length > 0 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">🎂 ${birthdays.map(b => b.title.replace('さんの誕生日','')).join('、')}さんの誕生日</div>` : ''}
+        </div>
+      </div>`;
+  }
+};
+
+
 // === js/integrations.js ===
 /* ============================================================
    External Device & Service Integrations
@@ -4263,6 +4405,16 @@ var App = class App {
     // Set up periodic health score calc
     setInterval(() => store.calculateHealthScore(), 60000);
     store.calculateHealthScore();
+
+    // Load initial calendar data if not yet synced
+    if (!(store.get('calendarEvents') || []).length) {
+      store.set('calendarEvents', [
+        {id:'e1',title:'IOEA 2026',location:'Cargèse, Corsica – France',start:'2026-04-06',end:'2026-04-11',allDay:true,type:'default',attendees:1},
+        {id:'e2',title:'♻️資源ごみをすてる（上原）',start:'2026-04-06T06:30:00+09:00',end:'2026-04-06T07:00:00+09:00',allDay:false,type:'default',attendees:1},
+        {id:'e3',title:'Reservation at APONTE',location:'APONTE, 目黒区',start:'2026-04-09T19:00:00+09:00',end:'2026-04-09T20:00:00+09:00',allDay:false,type:'default',attendees:1},
+        {id:'e4',title:'山口揚平予約 (Sheng Wei)',start:'2026-04-13T12:30:00+09:00',end:'2026-04-13T13:30:00+09:00',allDay:false,type:'default',attendees:2}
+      ]);
+    }
   }
 
   // ---- Navigation ----
@@ -6102,7 +6254,10 @@ App.prototype.render_dashboard = function() {
     }).join('')}
   </div>` : ''}
 
-  <!-- 4. Recommendations -->
+  <!-- 4. Calendar Widget -->
+  ${CalendarIntegration.renderWidget()}
+
+  <!-- 5. Recommendations -->
   ${allRecs.length > 0 ? `
   <div style="margin-bottom:20px">
     <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへの推奨</h3>
@@ -6696,6 +6851,25 @@ App.prototype.render_integrations = function() {
       <div class="stat-card-label">Apple Health</div>
       <div style="font-size:14px;font-weight:600">iPhone連携</div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">ヘルスケアデータ取込</p>
+    </div>
+  </div>
+
+  <!-- GOOGLE CALENDAR SECTION -->
+  <div class="card" style="margin-bottom:24px" id="gcal-section">
+    <div class="card-header">
+      <span class="card-title">📅 Googleカレンダー連携</span>
+      <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同��済' : '未同期'}</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報からPEM予防のための活動量管理���AIが分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
+      <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-secondary)">
+          <strong>同期��法：</strong>このClaude Codeチャッ��で「カレンダーを同期して」と依頼してください。自動でGoogleカレンダーからデータを取得しダッシュボードに反映します。
+        </div>
+      </div>
+      ${(store.get('calendarEvents')||[]).length > 0 ? `
+        <div style="font-size:12px;color:var(--success)">最終同期: ${(store.get('calendarEvents')||[]).length}件のイベント</div>
+      ` : ''}
     </div>
   </div>
 

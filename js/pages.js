@@ -246,7 +246,10 @@ App.prototype.render_dashboard = function() {
     }).join('')}
   </div>` : ''}
 
-  <!-- 4. Recommendations -->
+  <!-- 4. Calendar Widget -->
+  ${CalendarIntegration.renderWidget()}
+
+  <!-- 5. Recommendations -->
   ${allRecs.length > 0 ? `
   <div style="margin-bottom:20px">
     <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">あなたへの推奨</h3>
@@ -840,6 +843,25 @@ App.prototype.render_integrations = function() {
       <div class="stat-card-label">Apple Health</div>
       <div style="font-size:14px;font-weight:600">iPhone連携</div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">ヘルスケアデータ取込</p>
+    </div>
+  </div>
+
+  <!-- GOOGLE CALENDAR SECTION -->
+  <div class="card" style="margin-bottom:24px" id="gcal-section">
+    <div class="card-header">
+      <span class="card-title">📅 Googleカレンダー連携</span>
+      <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同��済' : '未同期'}</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報からPEM予防のための活動量管理���AIが分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
+      <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-secondary)">
+          <strong>同期��法：</strong>このClaude Codeチャッ��で「カレンダーを同期して」と依頼してください。自動でGoogleカレンダーからデータを取得しダッシュボードに反映します。
+        </div>
+      </div>
+      ${(store.get('calendarEvents')||[]).length > 0 ? `
+        <div style="font-size:12px;color:var(--success)">最終同期: ${(store.get('calendarEvents')||[]).length}件のイベント</div>
+      ` : ''}
     </div>
   </div>
 
