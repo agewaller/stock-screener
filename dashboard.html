@@ -6076,18 +6076,30 @@ App.prototype.render_dashboard = function() {
       <h3 style="font-size:15px;font-weight:600">あなたの記録</h3>
       <button class="btn btn-outline btn-sm" onclick="app.navigate('timeline')">すべて見る（${totalEntries}件）</button>
     </div>
-    ${enrichedEntries.map(e => `
-      <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
-        <div class="card-body" style="padding:12px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:600">${e.title || new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
-            <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
+    ${enrichedEntries.map((e, i) => {
+      const content = e.content || '';
+      const isLong = content.length > 100;
+      const preview = content.substring(0, 100).replace(/\n/g, ' ');
+      const eid = 'rec-' + (e.id || i);
+      return `
+      <div class="card" style="margin-bottom:8px;border-left:3px solid var(--accent)">
+        <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+          onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:600">${e.title || new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
+              <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${isLong ? '...' : ''}</div>
           </div>
-          <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap;margin-bottom:${e._insight ? '8px' : '0'}">${(e.content || '').substring(0, 300)}${(e.content || '').length > 300 ? '...' : ''}</div>
-          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>AI:</strong> ${e._insight}</div>` : ''}
+          <span class="arrow" style="font-size:12px;color:var(--text-muted);margin-left:8px;flex-shrink:0">▸</span>
         </div>
-      </div>
-    `).join('')}
+        <div id="${eid}" style="display:none;padding:0 16px 12px">
+          <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
+          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>AI:</strong> ${e._insight}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
   </div>` : ''}
 
   <!-- 4. Recommendations -->
