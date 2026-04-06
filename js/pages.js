@@ -22,7 +22,7 @@ App.prototype.render_login = function() {
           <label style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:${selected.includes(d.id)?'var(--accent-bg)':'var(--bg-tertiary)'};border:1px solid ${selected.includes(d.id)?'var(--accent-border)':'transparent'};border-radius:20px;cursor:pointer;font-size:12px;color:${selected.includes(d.id)?'var(--accent)':'var(--text-secondary)'};transition:all 0.15s">
             <input type="checkbox" class="disease-checkbox" value="${d.id}" data-name="${d.name}"
               ${selected.includes(d.id) ? 'checked' : ''}
-              onchange="app.toggleDiseaseSelection(this)"
+              onchange="app.toggleDiseaseSelection(this);var l=this.closest('label');if(this.checked){l.style.background='var(--accent-bg)';l.style.border='1px solid var(--accent-border)';l.style.color='var(--accent)'}else{l.style.background='var(--bg-tertiary)';l.style.border='1px solid transparent';l.style.color='var(--text-secondary)'}"
               style="display:none">
             ${d.name}
           </label>
@@ -1392,7 +1392,8 @@ App.prototype.render_settings = function() {
         ${cat.diseases.map(d => `
           <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:${selected.includes(d.id)?'var(--accent-bg)':'var(--bg-tertiary)'};border:1px solid ${selected.includes(d.id)?'var(--accent-border)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:11px">
             <input type="checkbox" class="settings-disease-cb" value="${d.id}" ${selected.includes(d.id)?'checked':''}
-              style="width:12px;height:12px;accent-color:var(--accent)">
+              style="width:12px;height:12px;accent-color:var(--accent)"
+              onchange="var l=this.closest('label');if(this.checked){l.style.background='var(--accent-bg)';l.style.borderColor='var(--accent-border)'}else{l.style.background='var(--bg-tertiary)';l.style.borderColor='var(--border)'}">
             ${d.name}
           </label>
         `).join('')}
