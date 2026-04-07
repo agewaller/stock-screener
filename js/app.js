@@ -1833,13 +1833,37 @@ ${text.substring(0, 8000)}
       </div>`;
     }
 
+    // New approach (fresh suggestion user hasn't tried)
+    if (result.new_approach) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg, rgba(99,102,241,0.03), rgba(168,85,247,0.03))">
+        <div style="font-size:11px;font-weight:600;color:#6366f1;margin-bottom:4px">✨ 新しい打ち手</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.new_approach)}</div>
+      </div>`;
+    }
+
+    // Trend analysis
+    if (result.trend) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📈 経過の変化</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.trend)}</div>
+      </div>`;
+    }
+
     // Products
     if (result.products && result.products.length > 0) {
-      html += `<div style="padding:10px 16px">
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">おすすめ</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           ${result.products.map(p => `<a href="${p.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${p.name}</a>`).join('')}
         </div>
+      </div>`;
+    }
+
+    // Next check / tracking reminder
+    if (result.next_check) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📋 次にやること</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${Components.formatMarkdown(result.next_check)}</div>
       </div>`;
     }
 
@@ -2250,6 +2274,10 @@ ${recentEntries.substring(0, 3000)}
             imgOpts
           ).then(result => {
             store.set('latestFeedback', result);
+            // Save AI comment linked to file entry
+            const fileEntries = store.get('textEntries') || [];
+            const lastFileEntry = fileEntries.filter(e => e.type === 'file_upload').pop();
+            if (lastFileEntry) this.saveAIComment(lastFileEntry.id, result);
             const el = document.getElementById('dash-ai-feedback');
             if (el) el.innerHTML = this.renderAnalysisCard(result);
           });

@@ -1493,12 +1493,45 @@ var PROMPT_HEADER = `【未病ダイアリーの使命と安全基準】
 6. エビデンスレベルを必ず明記し、不確実な情報には「研究段階」「症例報告レベル」等を付記する
 7. 危険な兆候（自殺念慮、急性症状等）を検出した場合は、直ちに医療機関・相談窓口を案内する
 
-【姿勢】
-・患者の苦しみを軽視しない。「つらいですね」で終わらせない。
-・安易な「医師に相談してください」で逃げない。具体的に何を、どの医師に、どう相談するかまで示す。
-・「科学的エビデンスがない」で門前払いにしない。エビデンスレベルを明記した上で、可能性のある治療法も提示する。
+【姿勢 — 希望を届ける情報提供】
+・患者は常に「自分がまだ知らない、実際に試せる新しい打ち手」を探している。その希望に応える。
+・「つらいですね」で終わらせない。「こういう選択肢がまだあります」と具体的な道を示す。
+・安易な「医師に相談してください」で逃げない。何を、どの医師に、どう伝えるかまで示す。
+・「エビデンスがない」で門前払いにしない。レベルを明記した上で、可能性を示す。
 ・患者が一般に触れることのない最先端の研究・治療法・臨床試験・デバイス・薬剤を積極的に紹介する。
-・毎回新しい視点、新しい選択肢を提示し、同じ提案の繰り返しを避ける。
+・**毎回必ず、ユーザーがまだ試していない新しい打ち手を最低1つ提示する。**
+・同じ提案の繰り返しを避け、毎回異なる視点・アプローチ・論文・商品・施設を紹介する。
+
+【新しい打ち手を探索する7つの軸】
+毎回の応答で、以下の軸から少なくとも2つの新しい提案を含めること：
+1. 新しい治療法・薬剤（臨床試験中のものも含む）
+2. 新しいサプリメント・栄養素（最新の研究に基づく）
+3. 新しい食事法・食品（抗炎症、腸活、ファスティング等）
+4. 新しい身体的アプローチ（デバイス、運動法、呼吸法、入浴法）
+5. 新しい精神的アプローチ（瞑想法、認知行動療法、アート療法等）
+6. 新しいコミュニティ・ワークショップ・イベント
+7. 新しい検査・モニタリング（まだ受けていない検査の提案）
+
+【トラッキングと改善の可視化】
+ユーザーの過去の記録と現在の入力を比較し、以下を提示すること：
+・前回と比べての変化（改善/悪化/安定）を具体的に指摘
+・改善が見られる場合：「何が効いているか」の仮説を提示
+・悪化が見られる場合：考えられる原因と新たなアプローチを提案
+・継続的なトラッキングの重要性を伝え、次に記録すべきことを案内
+
+例：「先週と比較して疼痛の頻度が減っています。エプソムソルト入浴を始めた時期と一致しており、
+マグネシウム経皮吸収の効果の可能性があります。効果を確認するため、来週も同じプロトコルを
+続けながら痛みの強度（1-10）を記録することをお勧めします。」
+
+【定期検査のリマインド】
+以下の検査を定期的に提案すること（前回の検査からの経過を考慮）：
+・血液検査（3-6ヶ月ごと）：CRP, フェリチン, ビタミンD, TSH, CBC
+・腸内フローラ検査（6-12ヶ月ごと）
+・ホルモンパネル（6-12ヶ月ごと）
+・HRV/自律神経評価（継続的）
+・精神状態のセルフスクリーニング（月1回：PHQ-9, GAD-7）
+
+ユーザーに「そろそろ○○の検査の時期です」「前回の血液検査から3ヶ月が経ちました」等と案内。
 
 【最先端医療の知見を必ず含めること】
 以下の分野の最新研究（2024-2026年）を踏まえた提案を行うこと：
@@ -2268,6 +2301,9 @@ var INLINE_PROMPTS = {
   text_analysis: `${PROMPT_HEADER}
 ユーザーが以下のテキストを入力しました。内容を深く分析し、即座に役立つフィードバックを返してください。
 
+【最重要】ユーザーがまだ知らない、実際に行動に移せる新しい打ち手を必ず1つ以上含めること。
+過去の記録と比較して改善・悪化の傾向があれば具体的に指摘すること。
+
 【ユーザー入力】
 {{INPUT}}
 
@@ -2290,7 +2326,10 @@ var INLINE_PROMPTS = {
   "urgency": "urgent/attention/normal",
   "summary": "1行の要約",
   "findings": "詳細な所見（改行区切りで3-5項目。食事の場合はカロリー・PFC・BMR比較を含む）",
-  "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
+  "actions": ["具体的アクション1", "具体的アクション2", "まだ試していない新しい打ち手"],
+  "new_approach": "ユーザーがまだ知らない・試していない新しいアプローチ（治療法/サプリ/食事法/運動法/デバイス/イベント等）の具体的な提案。エビデンスレベルとURL付き。",
+  "trend": "過去の記録と比較した変化の分析（改善/悪化/安定とその理由の仮説）",
+  "next_check": "次に記録・検査すべきこと（定期検査のリマインド含む）",
   "deeper_prompt": "さらに精度を上げるためにユーザーに聞きたいこと",
   "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}],
   "nutrition": {"calories":0,"protein_g":0,"fat_g":0,"carb_g":0,"fiber_g":0,"salt_g":0,"anti_inflammatory_score":0,"bmr":0,"daily_budget":0}
@@ -6798,13 +6837,37 @@ ${text.substring(0, 8000)}
       </div>`;
     }
 
+    // New approach (fresh suggestion user hasn't tried)
+    if (result.new_approach) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg, rgba(99,102,241,0.03), rgba(168,85,247,0.03))">
+        <div style="font-size:11px;font-weight:600;color:#6366f1;margin-bottom:4px">✨ 新しい打ち手</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.new_approach)}</div>
+      </div>`;
+    }
+
+    // Trend analysis
+    if (result.trend) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📈 経過の変化</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.trend)}</div>
+      </div>`;
+    }
+
     // Products
     if (result.products && result.products.length > 0) {
-      html += `<div style="padding:10px 16px">
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">おすすめ</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           ${result.products.map(p => `<a href="${p.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${p.name}</a>`).join('')}
         </div>
+      </div>`;
+    }
+
+    // Next check / tracking reminder
+    if (result.next_check) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📋 次にやること</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${Components.formatMarkdown(result.next_check)}</div>
       </div>`;
     }
 
@@ -7215,6 +7278,10 @@ ${recentEntries.substring(0, 3000)}
             imgOpts
           ).then(result => {
             store.set('latestFeedback', result);
+            // Save AI comment linked to file entry
+            const fileEntries = store.get('textEntries') || [];
+            const lastFileEntry = fileEntries.filter(e => e.type === 'file_upload').pop();
+            if (lastFileEntry) this.saveAIComment(lastFileEntry.id, result);
             const el = document.getElementById('dash-ai-feedback');
             if (el) el.innerHTML = this.renderAnalysisCard(result);
           });
