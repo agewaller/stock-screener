@@ -283,18 +283,9 @@ App.prototype.render_dashboard = function() {
   <div id="dash-ai-feedback" style="margin-bottom:16px">
     ${(() => {
       const fb = store.get('latestFeedback');
-      if (!fb || !fb.sections) return '';
-      const urgencyColors = { urgent: 'var(--danger)', attention: 'var(--warning)', normal: 'var(--accent)' };
-      const urgencyBg = { urgent: 'var(--danger-bg)', attention: 'var(--warning-bg)', normal: 'var(--accent-bg)' };
-      return `<div class="card" style="border-left:4px solid ${urgencyColors[fb.urgency] || 'var(--accent)'};margin-bottom:8px">
-        ${fb.sections.map(s => `
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${s.icon} ${s.title}</div>
-            <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div>
-          </div>
-        `).join('')}
-        <div style="padding:8px 16px;font-size:10px;color:var(--text-muted)">分析: ${new Date(fb.timestamp).toLocaleString('ja-JP')}</div>
-      </div>`;
+      if (!fb) return '';
+      // Use unified renderAnalysisCard
+      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
     })()}
   </div>
 
