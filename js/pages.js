@@ -33,94 +33,124 @@ App.prototype.render_login = function() {
 
   return `
   <div class="login-page" style="align-items:flex-start;padding:0;background:#fff;min-height:100vh">
-    <div style="width:100%;max-width:480px;margin:0 auto;padding:0 20px">
+    <div style="width:100%;max-width:520px;margin:0 auto;padding:0 20px">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:48px 0 32px">
-        <div style="width:56px;height:56px;margin:0 auto 20px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7 8 7 13a5 5 0 0010 0c0-5-5-10-5-10z"/><path d="M10 16l2 2 4-4" stroke-width="1.5"/></svg>
+      <div style="text-align:center;padding:40px 0 24px">
+        <div style="width:48px;height:48px;margin:0 auto 16px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7 8 7 13a5 5 0 0010 0c0-5-5-10-5-10z"/></svg>
         </div>
-        <h1 style="font-size:28px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:8px">未病ダイアリー</h1>
-        <p style="font-size:15px;color:#64748b;line-height:1.6">慢性疾患の寛解をサポート</p>
+        <h1 style="font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:6px">未病ダイアリー</h1>
+        <p style="font-size:14px;color:#64748b;line-height:1.5">慢性疾患の方のための体調記録・情報整理ツール</p>
+      </div>
+
+      <!-- What is this -->
+      <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">このサービスでできること</div>
+        <div style="font-size:12px;color:#475569;line-height:1.8">
+          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📝</span><span><strong>体調を記録</strong> — テキスト・写真・ファイルで日々の症状、服薬、食事、気分を記録</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📊</span><span><strong>経過を可視化</strong> — 記録データの時系列表示と傾向の整理</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — PubMedの最新論文を疾患別に自動取得（参考情報）</span></div>
+          <div style="display:flex;gap:8px"><span style="flex-shrink:0">💡</span><span><strong>情報の整理補助</strong> — 入力内容に基づく参考情報の提示（医療行為ではありません）</span></div>
+        </div>
+      </div>
+
+      <!-- Important Notice -->
+      <div style="margin-bottom:24px;padding:14px 16px;background:#fef2f2;border-radius:14px;border:1px solid #fecaca">
+        <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:6px">⚠ 重要なお知らせ</div>
+        <div style="font-size:11px;color:#7f1d1d;line-height:1.7">
+          本サービスは<strong>医療機器ではなく、医療行為を行うものではありません</strong>。
+          提示される情報は参考情報であり、診断・治療・処方の代替にはなりません。
+          健康上の判断は必ず医師・医療専門家にご相談ください。
+          本サービスの情報に基づく行動はすべてご自身の責任となります。
+        </div>
       </div>
 
       <!-- Google Login -->
-      <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:15px;font-size:15px;margin-bottom:12px;border:1.5px solid #e2e8f0;background:#fff">
+      <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:15px;font-size:15px;margin-bottom:10px;border:1.5px solid #e2e8f0;background:#fff">
         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Googleではじめる
+        Googleではじめる（無料）
       </button>
-
-      <!-- Email Login (collapsed) -->
-      <div style="text-align:center;margin-bottom:24px">
-        <span style="font-size:12px;color:#94a3b8;cursor:pointer;border-bottom:1px dashed #cbd5e1"
+      <div style="text-align:center;margin-bottom:20px">
+        <span style="font-size:11px;color:#94a3b8;cursor:pointer;border-bottom:1px dashed #cbd5e1"
           onclick="var f=document.getElementById('email-form');f.style.display=f.style.display==='none'?'block':'none'">メールアドレスでログイン</span>
-        <form id="email-form" style="display:none;margin-top:12px" onsubmit="app.loginWithEmail(event)">
+        <form id="email-form" style="display:none;margin-top:10px" onsubmit="app.loginWithEmail(event)">
           <input type="email" name="email" class="form-input" placeholder="メールアドレス" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
           <input type="password" name="password" class="form-input" placeholder="パスワード" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
           <button type="submit" class="btn btn-primary" style="width:100%;border-radius:12px;padding:12px">ログイン</button>
         </form>
       </div>
 
-      <!-- Value Props -->
-      <div style="margin-bottom:32px">
-        <div style="display:flex;align-items:start;gap:14px;margin-bottom:20px">
-          <div style="width:40px;height:40px;border-radius:12px;background:#f0f0ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">📝</div>
-          <div>
-            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">書くだけで分析</div>
-            <div style="font-size:12px;color:#64748b;line-height:1.5">体調や気づきをテキストで記録。写真もOK。自動で分析してアドバイスを返します</div>
-          </div>
+      <!-- How it works -->
+      <div style="margin-bottom:24px">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:12px">はじめ方（3ステップ）</div>
+        <div style="display:flex;gap:12px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:50%;background:#6366f1;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">1</div>
+          <div style="font-size:12px;color:#475569;line-height:1.6"><strong>Googleでログイン</strong> — アカウント作成は不要。Googleアカウントでそのまま開始</div>
         </div>
-        <div style="display:flex;align-items:start;gap:14px;margin-bottom:20px">
-          <div style="width:40px;height:40px;border-radius:12px;background:#fdf2f8;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">🔬</div>
-          <div>
-            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">最先端の研究を毎日</div>
-            <div style="font-size:12px;color:#64748b;line-height:1.5">あなたの疾患に関連するPubMedの最新論文を自動で取得。日本語翻訳付き</div>
-          </div>
+        <div style="display:flex;gap:12px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:50%;background:#6366f1;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">2</div>
+          <div style="font-size:12px;color:#475569;line-height:1.6"><strong>今日の体調を書く</strong> — テキストでも写真でもOK。1行でもかまいません</div>
         </div>
-        <div style="display:flex;align-items:start;gap:14px">
-          <div style="width:40px;height:40px;border-radius:12px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">💊</div>
-          <div>
-            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">寛解への道筋</div>
-            <div style="font-size:12px;color:#64748b;line-height:1.5">サプリ・クリニック・イベント・食事法。あなたの状態に合わせた具体的な提案</div>
-          </div>
+        <div style="display:flex;gap:12px">
+          <div style="width:28px;height:28px;border-radius:50%;background:#6366f1;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">3</div>
+          <div style="font-size:12px;color:#475569;line-height:1.6"><strong>参考情報を確認</strong> — 入力内容に基づく情報整理と関連研究が表示されます</div>
         </div>
       </div>
 
       <!-- Disease Selection -->
-      <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:16px">
+      <div style="margin-bottom:20px;padding:14px;background:#f8fafc;border-radius:14px">
         <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
-          <div style="font-size:13px;font-weight:600;color:#1e293b">疾患を選択（任意）<span style="font-weight:400;color:#94a3b8;margin-left:6px">${selectedCount > 0 ? selectedCount + '件選択中' : ''}</span></div>
-          <span class="arrow" style="font-size:18px;color:#94a3b8;font-weight:300">+</span>
+          <div style="font-size:12px;font-weight:600;color:#1e293b">対象疾患を選択（任意・後から変更可）<span style="font-weight:400;color:#94a3b8;margin-left:4px">${selectedCount > 0 ? selectedCount + '件' : ''}</span></div>
+          <span class="arrow" style="font-size:16px;color:#94a3b8">+</span>
         </div>
-        <div id="disease-picker" style="display:none;margin-top:12px">
-          <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:10px 12px;margin-bottom:12px;border:1.5px solid #e2e8f0;font-size:13px"
+        <div id="disease-picker" style="display:none;margin-top:10px">
+          <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
             oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
           ${categoryHtml}
         </div>
       </div>
 
       <!-- Testimonial -->
-      <div style="margin-bottom:32px;padding:20px;border-left:3px solid #6366f1;background:#fafaff;border-radius:0 12px 12px 0">
-        <div style="font-size:13px;color:#475569;line-height:1.8;margin-bottom:12px;font-style:italic">
-          「2年間のME/CFS闘病の中で、毎日の記録が寛解への最大の武器になりました。この経験を、同じ苦しみの中にいるすべての人に届けたい。」
+      <div style="margin-bottom:24px;padding:16px;border-left:3px solid #6366f1;background:#fafaff;border-radius:0 12px 12px 0">
+        <div style="font-size:12px;color:#475569;line-height:1.8;font-style:italic;margin-bottom:8px">
+          「2年間のME/CFS闘病の中で、毎日の記録が最大の武器になりました」
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:28px;height:28px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span style="color:white;font-size:12px;font-family:Georgia,serif;font-style:italic">Y</span>
-            </div>
-            <div style="font-size:11px;color:#64748b">山口揚平 <span style="color:#94a3b8">/ 開発者</span></div>
-          </div>
-          <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener"
-            style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600">闘病記を読む →</a>
+          <span style="font-size:11px;color:#64748b">山口揚平 / 開発者</span>
+          <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener" style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600">闘病記 →</a>
         </div>
       </div>
 
+      <!-- Data Handling & Privacy -->
+      <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">データの取り扱い</div>
+        <div style="font-size:11px;color:#475569;line-height:1.8">
+          <div style="margin-bottom:4px">🔒 <strong>暗号化保存</strong> — データはGoogle Firebase上に暗号化して保存されます</div>
+          <div style="margin-bottom:4px">👤 <strong>本人のみアクセス</strong> — ログインしたユーザー本人のみが自分のデータにアクセスできます</div>
+          <div style="margin-bottom:4px">🚫 <strong>第三者提供なし</strong> — ユーザーの健康データを第三者に提供・販売することはありません</div>
+          <div style="margin-bottom:4px">🗑️ <strong>削除可能</strong> — 設定画面からすべてのデータを削除できます。退会も自由です</div>
+          <div>📋 <strong>要配慮個人情報</strong> — 健康情報は要配慮個人情報として、個人情報保護法に基づき適切に管理します</div>
+        </div>
+      </div>
+
+      <!-- Legal Links -->
+      <div style="margin-bottom:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="#" onclick="app.showLegalPage('privacy');return false" style="font-size:11px;color:#6366f1;text-decoration:none">プライバシーポリシー</a>
+        <span style="color:#cbd5e1">|</span>
+        <a href="#" onclick="app.showLegalPage('terms');return false" style="font-size:11px;color:#6366f1;text-decoration:none">利用規約</a>
+        <span style="color:#cbd5e1">|</span>
+        <a href="#" onclick="app.showLegalPage('disclaimer');return false" style="font-size:11px;color:#6366f1;text-decoration:none">免責事項</a>
+        <span style="color:#cbd5e1">|</span>
+        <a href="mailto:support@advisers.jp" style="font-size:11px;color:#6366f1;text-decoration:none">お問い合わせ</a>
+      </div>
+
       <!-- Footer -->
-      <div style="text-align:center;padding:0 0 40px;color:#94a3b8;font-size:10px;line-height:2">
-        <div>🇯🇵 Made in Japan &nbsp;·&nbsp; 暗号化保存 &nbsp;·&nbsp; 無料</div>
-        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc.</div>
+      <div style="text-align:center;padding:0 0 32px;color:#94a3b8;font-size:10px;line-height:2">
+        <div>運営: シェアーズ株式会社 &nbsp;·&nbsp; 🇯🇵 Made in Japan</div>
+        <div>本サービスは医療機器ではありません &nbsp;·&nbsp; 無料</div>
+        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc. All rights reserved.</div>
       </div>
 
     </div>
