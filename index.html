@@ -6492,40 +6492,21 @@ URL/連絡先：（あれば）`;
 
     Components.showToast(`会話記録を取り込みました（${parsed.entries.length}発言, ${parsed.wordCount}語）`, 'success');
 
-    // Generate deep analysis including conversation patterns
-    const analysis = this.generateDeepAnalysis('[会話データ] ' + title + '\n' + text);
-    store.set('latestFeedback', analysis);
-
-    // Navigate to dashboard to show analysis
+    // Navigate to dashboard and run API analysis
     this.navigate('dashboard');
 
-    // Run API analysis for deeper insights
-    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-    if (apiKey) {
-      const diseases = store.get('selectedDiseases') || [];
-      const profile = store.get('userProfile') || {};
-      const prompt = `以下はPlaud（音声文字起こしデバイス）から取得した会話の文字起こしです。
-この会話を分析し、ユーザーの健康状態とストレスレベルを評価してください。
-
-【会話タイトル】${title}
-【ユーザー情報】疾患: ${diseases.join(', ') || '未設定'}、居住地: ${profile.location || '日本'}
-
-【会話内容】
-${text.substring(0, 8000)}
-
-【分析してください】
-1. 会話の要約（3行以内）
-2. 検出された体調・症状の言及
-3. ストレスレベルの評価（1-10）と根拠
-4. 精神状態の評価（気分、不安、エネルギー）
-5. 医師との会話の場合：診断内容・処方変更・指示事項の抽出
-6. 具体的なアクション提案（3-5項目）
-7. 養生の視点からのアドバイス`;
-
-      setTimeout(() => {
-        this.runBackgroundAnalysis(prompt, document.getElementById('dash-ai-feedback'));
-      }, 500);
-    }
+    // ALL analysis via API
+    setTimeout(() => {
+      this.analyzeViaAPI('[会話データ] ' + title + '\n' + text, 'conversation_analysis').then(result => {
+        store.set('latestFeedback', result);
+        // Save AI comment for the Plaud entry
+        const plaudEntries = (store.get('textEntries') || []).filter(e => e.type === 'plaud_transcript');
+        const lastPlaud = plaudEntries[plaudEntries.length - 1];
+        if (lastPlaud) this.saveAIComment(lastPlaud.id, result);
+        const el = document.getElementById('dash-ai-feedback');
+        if (el) el.innerHTML = this.renderAnalysisCard(result);
+      });
+    }, 500);
   }
 
   connectFitbit() {
@@ -6901,7 +6882,26 @@ ${text.substring(0, 8000)}
     if (!url || url.includes('translate.google')) return url;
     const profile = store.get('userProfile') || {};
     const lang = profile.language || 'ja';
-    if (lang === 'en') return url; // English pages don't need translation
+
+    // Detect site language from URL domain
+    const siteLangMap = {
+      'ja': ['.co.jp', '.jp', 'peatix.com', 'byoinnavi.jp', 'caloo.jp', 'nanbyou.or.jp', 'note.com', 'connpass.com', 'stoacka.jp'],
+      'en': ['.com', '.org', '.io', '.dev', 'pubmed.ncbi', 'clinicaltrials.gov', 'iherb.com', 'eventbrite.com', 'meetup.com', 'reddit.com', 'github.com'],
+      'ko': ['.co.kr', '.kr', 'naver.com'],
+      'zh': ['.cn', '.tw', 'baidu.com'],
+      'de': ['.de', 'jameda.de'],
+      'fr': ['.fr', 'doctolib.fr'],
+    };
+
+    // Check if site matches user's language
+    const lowerUrl = url.toLowerCase();
+    const userDomains = siteLangMap[lang] || [];
+    if (userDomains.some(d => lowerUrl.includes(d))) return url; // Same language, no translation
+
+    // Check if site is English (many international sites)
+    if (lang === 'en') return url;
+
+    // For other combinations, translate
     return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
   }
 
@@ -7504,44 +7504,66 @@ G) その他
   dataPageFileUpload(files) {
     if (!files || !files.length) return;
     const resultEl = document.getElementById('data-file-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('ファイルを処理中...');
+    if (resultEl) resultEl.innerHTML = Components.loading('ファイルを分析中...');
 
     Array.from(files).forEach(async (file) => {
-      const textForAnalysis = [];
+      const isImage = file.type.startsWith('image/');
 
-      if (!file.type.startsWith('image/')) {
+      // Try auto-import for non-image files
+      if (!isImage) {
         try {
           const count = await Integrations.importFile(file);
-          if (count > 0) textForAnalysis.push(`[ファイル取込] ${file.name}: ${count}件のデータ`);
+          if (count > 0) Components.showToast(`${file.name}: ${count}件のデータを取り込みました`, 'success');
         } catch(e) { /* fall through */ }
       }
 
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
+        // Save file reference
         store.addHealthData('photos', {
           filename: file.name, type: file.type, size: file.size,
-          dataUrl: file.type.startsWith('image/') ? ev.target.result.substring(0, 500) : '',
-          category: 'general'
+          dataUrl: isImage ? ev.target.result.substring(0, 500) : '',
+          category: isImage ? '写真' : 'ファイル'
         });
 
-        textForAnalysis.push(`[ファイル] ${file.name} (${file.type}, ${(file.size/1024).toFixed(0)}KB)`);
+        // Save to text entries for timeline
+        const entryId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        const textEntries = store.get('textEntries') || [];
+        textEntries.push({
+          id: entryId,
+          timestamp: new Date().toISOString(),
+          category: isImage ? '写真' : 'ファイル',
+          type: 'file_upload',
+          title: `📎 ${file.name}`,
+          content: `${isImage ? '写真' : 'ファイル'}をアップロード（${(file.size/1024).toFixed(0)}KB）`
+        });
+        store.set('textEntries', textEntries);
 
+        // Add to conversation history
         const history = store.get('conversationHistory') || [];
-        history.push({ role: 'user', content: textForAnalysis.join('\n'), timestamp: new Date().toISOString(), type: 'file_upload' });
+        history.push({ role: 'user', content: `[ファイル: ${file.name}]`, timestamp: new Date().toISOString(), type: 'file_upload' });
         store.set('conversationHistory', history);
 
-        const isImage = file.type.startsWith('image/');
-        const category = isImage ? '写真' : '検査結果';
-        const analysis = this.generateFileAnalysis(file.name, file.type, category);
-        store.set('latestFeedback', analysis);
+        Components.showToast(`${file.name} を分析中...`, 'info');
 
-        Components.showToast(`${file.name} を保存しました`, 'success');
+        // Run API analysis
+        const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        const result = await this.analyzeViaAPI(
+          `[ファイル: ${file.name}] ${isImage ? '写真' : 'ファイル'}`,
+          isImage ? 'image_analysis' : 'text_analysis',
+          imgOpts
+        );
 
+        // Save AI comment
+        this.saveAIComment(entryId, result);
+        store.set('latestFeedback', result);
+
+        // Show result on the page
         if (resultEl) {
-          resultEl.innerHTML = `<div class="card" style="border-left:4px solid var(--accent)">
-            ${analysis.sections.map(s => `<div style="padding:10px 14px;border-bottom:1px solid var(--border)"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${s.icon} ${s.title}</div><div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div></div>`).join('')}
-          </div>`;
+          resultEl.innerHTML = this.renderAnalysisCard(result);
         }
+
+        Components.showToast(`${file.name} の分析が完了しました`, 'success');
       };
       reader.readAsDataURL(file);
     });
