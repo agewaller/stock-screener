@@ -5140,10 +5140,12 @@ var App = class App {
   }
 
   loadApiKeyFields() {
-    // Load proxy URL
+    // Load proxy URL (show default if not custom-set)
     const proxyEl = document.getElementById('input-proxy-url');
-    const proxyStored = localStorage.getItem('anthropic_proxy_url');
-    if (proxyEl && proxyStored) proxyEl.value = proxyStored;
+    if (proxyEl) {
+      const proxyStored = localStorage.getItem('anthropic_proxy_url');
+      proxyEl.value = proxyStored || 'https://stock-screener.agewaller.workers.dev';
+    }
 
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
