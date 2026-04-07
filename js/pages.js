@@ -36,7 +36,26 @@ App.prototype.render_login = function() {
     <div style="width:100%;max-width:520px;margin:0 auto;padding:0 20px">
 
       <!-- Hero -->
-      <div style="text-align:center;padding:40px 0 24px">
+      <!-- Language Selector -->
+      <div style="text-align:right;padding:12px 0 0">
+        <select style="font-size:11px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;cursor:pointer"
+          onchange="i18n.setLang(this.value);location.reload()">
+          <option value="ja" ${(store.get('userProfile')?.language || 'ja') === 'ja' ? 'selected' : ''}>日本語</option>
+          <option value="en" ${(store.get('userProfile')?.language) === 'en' ? 'selected' : ''}>English</option>
+          <option value="zh" ${(store.get('userProfile')?.language) === 'zh' ? 'selected' : ''}>中文</option>
+          <option value="ko" ${(store.get('userProfile')?.language) === 'ko' ? 'selected' : ''}>한국어</option>
+          <option value="es" ${(store.get('userProfile')?.language) === 'es' ? 'selected' : ''}>Español</option>
+          <option value="fr" ${(store.get('userProfile')?.language) === 'fr' ? 'selected' : ''}>Français</option>
+          <option value="de" ${(store.get('userProfile')?.language) === 'de' ? 'selected' : ''}>Deutsch</option>
+          <option value="pt" ${(store.get('userProfile')?.language) === 'pt' ? 'selected' : ''}>Português</option>
+          <option value="th" ${(store.get('userProfile')?.language) === 'th' ? 'selected' : ''}>ไทย</option>
+          <option value="vi" ${(store.get('userProfile')?.language) === 'vi' ? 'selected' : ''}>Tiếng Việt</option>
+          <option value="ar" ${(store.get('userProfile')?.language) === 'ar' ? 'selected' : ''}>العربية</option>
+          <option value="hi" ${(store.get('userProfile')?.language) === 'hi' ? 'selected' : ''}>हिन्दी</option>
+        </select>
+      </div>
+
+      <div style="text-align:center;padding:24px 0 24px">
         <div style="width:48px;height:48px;margin:0 auto 16px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7 8 7 13a5 5 0 0010 0c0-5-5-10-5-10z"/></svg>
         </div>
@@ -312,7 +331,17 @@ App.prototype.render_dashboard = function() {
         </div>
         <div id="${eid}" style="display:none;padding:0 16px 12px">
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
-          ${e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : ''}
+          ${(() => {
+            const comment = app.getAIComment(e.id);
+            if (!comment) return e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : '';
+            const r = comment.result;
+            const text = r._raw || r.findings || r.summary || '';
+            return `<div style="margin-top:8px;padding:10px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
+              <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">分析結果（${new Date(comment.timestamp).toLocaleString('ja-JP')}）</div>
+              <div style="font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(typeof text === 'string' ? text.substring(0, 500) : JSON.stringify(text).substring(0, 500))}</div>
+              ${r.actions?.length ? '<div style="margin-top:6px;font-size:11px">' + r.actions.slice(0,3).map(a => '<div style="color:var(--accent)">→ ' + a + '</div>').join('') + '</div>' : ''}
+            </div>`;
+          })()}
         </div>
       </div>`;
     }).join('')}

@@ -321,10 +321,16 @@ var Components = {
   formatMarkdown(text) {
     if (!text) return '';
     return text
-      // Markdown links [text](url)
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">$1</a>')
-      // Plain URLs (not already in href)
-      .replace(/(?<![="'])(https?:\/\/[^\s<\)]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">$1</a>')
+      // Markdown links [text](url) - auto translate
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (m, text, url) => {
+        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(url) : url;
+        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${text}</a>`;
+      })
+      // Plain URLs (not already in href) - auto translate
+      .replace(/(?<![="'])(https?:\/\/[^\s<\)]+)/g, (m, url) => {
+        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(url) : url;
+        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${url.length > 50 ? url.substring(0, 50) + '...' : url}</a>`;
+      })
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:12px">$1</code>')

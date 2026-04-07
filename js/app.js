@@ -767,6 +767,7 @@ var App = class App {
     setTimeout(() => {
       this.analyzeViaAPI(inputWithContext, promptType).then(result => {
         store.set('latestFeedback', result);
+        this.saveAIComment(entry.id, result);
         const el = document.getElementById('dash-ai-feedback');
         if (el) el.innerHTML = this.renderAnalysisCard(result);
       });
@@ -1849,6 +1850,31 @@ ${text.substring(0, 8000)}
     return html;
   }
 
+  // Save AI analysis comment linked to a text entry
+  saveAIComment(entryId, result) {
+    const comments = store.get('aiComments') || {};
+    comments[entryId] = {
+      timestamp: new Date().toISOString(),
+      result: result
+    };
+    store.set('aiComments', comments);
+  }
+
+  // Get AI comment for a specific entry
+  getAIComment(entryId) {
+    const comments = store.get('aiComments') || {};
+    return comments[entryId] || null;
+  }
+
+  // Wrap URL with Google Translate for user's language
+  translateUrl(url) {
+    if (!url || url.includes('translate.google')) return url;
+    const profile = store.get('userProfile') || {};
+    const lang = profile.language || 'ja';
+    if (lang === 'en') return url; // English pages don't need translation
+    return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     const input = document.getElementById('dash-quick-input');
@@ -1881,9 +1907,12 @@ ${text.substring(0, 8000)}
     const feedback = document.getElementById('dash-ai-feedback');
     if (feedback) feedback.innerHTML = Components.loading('分析中...');
 
-    // ALL analysis via API prompt - no hardcoded JS advice
+    // ALL analysis via API prompt - save result with the entry
+    const entryId = entry.id;
     this.analyzeViaAPI(content, 'text_analysis').then(result => {
       store.set('latestFeedback', result);
+      // Save AI comment with the entry
+      this.saveAIComment(entryId, result);
       const el = document.getElementById('dash-ai-feedback');
       if (el) el.innerHTML = this.renderAnalysisCard(result);
     });
