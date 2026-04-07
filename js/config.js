@@ -1093,3 +1093,111 @@ ME/CFSとの重複症状にも注意して分析してください。
 
 // Build DEFAULT_PROMPTS by merging universal + disease-specific
 var DEFAULT_PROMPTS = { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS };
+
+// ============================================================
+// Inline Analysis Prompt Templates (used for real-time feedback)
+// Program calls API with these templates. No hardcoded advice in JS.
+// ============================================================
+var INLINE_PROMPTS = {
+  // Text input analysis
+  text_analysis: `${PROMPT_HEADER}
+ユーザーが以下のテキストを入力しました。内容を深く分析し、即座に役立つフィードバックを返してください。
+
+【ユーザー入力】
+{{INPUT}}
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "category": "検出されたカテゴリ（症状/服薬/食事/検査/精神/運動/睡眠等）",
+  "urgency": "urgent/attention/normal",
+  "summary": "1行の要約",
+  "findings": "詳細な所見（改行区切りで3-5項目）",
+  "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
+  "deeper_prompt": "さらに精度を上げるためにユーザーに聞きたいこと",
+  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}]
+}`,
+
+  // Image analysis (sent with image via Vision API)
+  image_analysis: `${PROMPT_HEADER}
+この画像を詳しく分析してください。
+
+【最重要指示】
+画像に写っている文字・数値・食品・物体をすべて丁寧に読み取ってください。
+不鮮明でも読み取れる範囲で最大限の情報を抽出してください。
+
+画像の種類を判断し、該当する分析を行ってください：
+
+■ 食事写真：料理名、推定カロリー(kcal)、三大栄養素(g)、抗炎症スコア(1-10)、改善提案
+■ 血液検査：全項目と数値を読み取り、基準値比較、異常値の意義、推奨サプリ
+■ 処方箋/薬：全薬剤名・用量、相互作用、副作用、服薬最適化
+■ 医療文書：内容の要約、専門用語の解説
+■ デバイス画面：数値の読み取りと分析
+■ 体の状態：症状の描写、考えられる原因、受診の目安
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "image_type": "food/blood_test/prescription/medical_doc/device/body/other",
+  "summary": "画像から読み取れた内容の要約",
+  "details": "詳細な分析結果（改行区切り）",
+  "findings": "重要な所見・異常値",
+  "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
+  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}]
+}`,
+
+  // Conversation/Plaud transcript analysis
+  conversation_analysis: `${PROMPT_HEADER}
+以下はユーザーの会話の文字起こしです。健康状態とストレスを分析してください。
+
+【会話データ】
+{{INPUT}}
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "summary": "会話の要約（2-3行）",
+  "stress_score": 1-10の数値,
+  "mood": "検出された気分状態",
+  "health_mentions": ["言及された症状や体調"],
+  "doctor_notes": "医師との会話の場合：診断/処方/指示の抽出",
+  "findings": "詳細な所見",
+  "actions": ["具体的アクション1", "具体的アクション2"],
+  "concern_level": "low/medium/high"
+}`,
+
+  // Product recommendations
+  product_recommendations: `${PROMPT_HEADER}
+ユーザーの疾患と最近の記録に基づいて、今最も役立つサプリメント・デバイス・食品を6つ推奨してください。
+
+【最近の記録】
+{{INPUT}}
+
+毎回異なる商品を提案し、新しい選択肢を提示してください。
+ランダムシード: {{SEED}}
+
+【出力形式】以下のJSON配列で返してください：
+[
+  {"icon":"絵文字","name":"商品名","desc":"一言説明","store":"iherb or amazon","url":"検索URL","reason":"推奨理由（エビデンス付き）"}
+]`,
+
+  // Clinic/event/selfcare recommendations
+  action_recommendations: `${PROMPT_HEADER}
+ユーザーに今日おすすめのアクションを提案してください。毎回異なる視点で。
+
+【最近の記録】
+{{INPUT}}
+
+ランダムシード: {{SEED}}
+
+以下の5カテゴリから各1-2件：
+1. クリニック・医療機関（居住地の医療検索サイトで探す、URL付き）
+2. ワークショップ・セミナー（地域のイベントプラットフォームで探す、URL付き）
+3. 患者会・コミュニティ
+4. 今日のセルフケア（季節・曜日・体調に合わせた養生法）
+5. 新しい治療アプローチ（最新の研究・臨床試験）
+
+【出力形式】マークダウンで各カテゴリの見出しとアクションを記載`,
+
+  // Timeline insight for a single entry
+  timeline_insight: `ユーザーの以下の記録に対して、1行の健康アドバイスを返してください（50文字以内）。
+記録: {{INPUT}}
+1行のアドバイス：`
+};

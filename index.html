@@ -2250,6 +2250,114 @@ ME/CFSとの重複症状にも注意して分析してください。
 // Build DEFAULT_PROMPTS by merging universal + disease-specific
 var DEFAULT_PROMPTS = { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS };
 
+// ============================================================
+// Inline Analysis Prompt Templates (used for real-time feedback)
+// Program calls API with these templates. No hardcoded advice in JS.
+// ============================================================
+var INLINE_PROMPTS = {
+  // Text input analysis
+  text_analysis: `${PROMPT_HEADER}
+ユーザーが以下のテキストを入力しました。内容を深く分析し、即座に役立つフィードバックを返してください。
+
+【ユーザー入力】
+{{INPUT}}
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "category": "検出されたカテゴリ（症状/服薬/食事/検査/精神/運動/睡眠等）",
+  "urgency": "urgent/attention/normal",
+  "summary": "1行の要約",
+  "findings": "詳細な所見（改行区切りで3-5項目）",
+  "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
+  "deeper_prompt": "さらに精度を上げるためにユーザーに聞きたいこと",
+  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}]
+}`,
+
+  // Image analysis (sent with image via Vision API)
+  image_analysis: `${PROMPT_HEADER}
+この画像を詳しく分析してください。
+
+【最重要指示】
+画像に写っている文字・数値・食品・物体をすべて丁寧に読み取ってください。
+不鮮明でも読み取れる範囲で最大限の情報を抽出してください。
+
+画像の種類を判断し、該当する分析を行ってください：
+
+■ 食事写真：料理名、推定カロリー(kcal)、三大栄養素(g)、抗炎症スコア(1-10)、改善提案
+■ 血液検査：全項目と数値を読み取り、基準値比較、異常値の意義、推奨サプリ
+■ 処方箋/薬：全薬剤名・用量、相互作用、副作用、服薬最適化
+■ 医療文書：内容の要約、専門用語の解説
+■ デバイス画面：数値の読み取りと分析
+■ 体の状態：症状の描写、考えられる原因、受診の目安
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "image_type": "food/blood_test/prescription/medical_doc/device/body/other",
+  "summary": "画像から読み取れた内容の要約",
+  "details": "詳細な分析結果（改行区切り）",
+  "findings": "重要な所見・異常値",
+  "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
+  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}]
+}`,
+
+  // Conversation/Plaud transcript analysis
+  conversation_analysis: `${PROMPT_HEADER}
+以下はユーザーの会話の文字起こしです。健康状態とストレスを分析してください。
+
+【会話データ】
+{{INPUT}}
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "summary": "会話の要約（2-3行）",
+  "stress_score": 1-10の数値,
+  "mood": "検出された気分状態",
+  "health_mentions": ["言及された症状や体調"],
+  "doctor_notes": "医師との会話の場合：診断/処方/指示の抽出",
+  "findings": "詳細な所見",
+  "actions": ["具体的アクション1", "具体的アクション2"],
+  "concern_level": "low/medium/high"
+}`,
+
+  // Product recommendations
+  product_recommendations: `${PROMPT_HEADER}
+ユーザーの疾患と最近の記録に基づいて、今最も役立つサプリメント・デバイス・食品を6つ推奨してください。
+
+【最近の記録】
+{{INPUT}}
+
+毎回異なる商品を提案し、新しい選択肢を提示してください。
+ランダムシード: {{SEED}}
+
+【出力形式】以下のJSON配列で返してください：
+[
+  {"icon":"絵文字","name":"商品名","desc":"一言説明","store":"iherb or amazon","url":"検索URL","reason":"推奨理由（エビデンス付き）"}
+]`,
+
+  // Clinic/event/selfcare recommendations
+  action_recommendations: `${PROMPT_HEADER}
+ユーザーに今日おすすめのアクションを提案してください。毎回異なる視点で。
+
+【最近の記録】
+{{INPUT}}
+
+ランダムシード: {{SEED}}
+
+以下の5カテゴリから各1-2件：
+1. クリニック・医療機関（居住地の医療検索サイトで探す、URL付き）
+2. ワークショップ・セミナー（地域のイベントプラットフォームで探す、URL付き）
+3. 患者会・コミュニティ
+4. 今日のセルフケア（季節・曜日・体調に合わせた養生法）
+5. 新しい治療アプローチ（最新の研究・臨床試験）
+
+【出力形式】マークダウンで各カテゴリの見出しとアクションを記載`,
+
+  // Timeline insight for a single entry
+  timeline_insight: `ユーザーの以下の記録に対して、1行の健康アドバイスを返してください（50文字以内）。
+記録: {{INPUT}}
+1行のアドバイス：`
+};
+
 
 // === js/store.js ===
 /* ============================================================
@@ -5569,20 +5677,20 @@ var App = class App {
     document.getElementById('text-input-content').value = '';
     document.getElementById('text-input-title').value = '';
 
-    // Generate deep analysis and save
-    const analysis = this.generateDeepAnalysis(content);
-    store.set('latestFeedback', analysis);
-
-    // Navigate to dashboard to show analysis
+    // Navigate to dashboard and run API analysis
     this.navigate('dashboard');
-
-    // Run API analysis in background if available
-    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-    if (apiKey) {
-      setTimeout(() => this.runBackgroundAnalysis(content, document.getElementById('dash-ai-feedback')), 500);
-    }
-
     Components.showToast('保存しました', 'success');
+
+    // ALL analysis via API prompt
+    const inputWithContext = `[${category}] ${title ? title + ': ' : ''}${content}`;
+    const promptType = category === 'conversation' ? 'conversation_analysis' : 'text_analysis';
+    setTimeout(() => {
+      this.analyzeViaAPI(inputWithContext, promptType).then(result => {
+        store.set('latestFeedback', result);
+        const el = document.getElementById('dash-ai-feedback');
+        if (el) el.innerHTML = this.renderAnalysisCard(result);
+      });
+    }, 500);
   }
 
   showInstantAdvice(newText, category) {
@@ -6250,24 +6358,14 @@ URL/連絡先：（あれば）`;
       const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
       let responseText;
 
-      if (apiKey) {
-        // Use real API
-        const disease = store.get('selectedDisease');
-        const systemPrompt = `あなたは${disease?.fullName || '慢性疾患'}の専門家です。患者に寄り添い、最新のエビデンスに基づいたアドバイスを提供してください。`;
-        const userData = aiEngine.collectCurrentUserData();
-        const response = await aiEngine.callModel(
-          store.get('selectedModel'),
-          `${systemPrompt}\n\nユーザーの健康データ: ${JSON.stringify(userData.current)}\n\nユーザーの質問: ${msg}`,
-          { maxTokens: 2048 }
-        );
-        responseText = typeof response === 'string' ? response : (response.summary || JSON.stringify(response));
+      // ALL responses via API prompt
+      const result = await this.analyzeViaAPI(msg, 'text_analysis');
+      if (result._raw) {
+        responseText = result._raw;
+      } else if (result.findings) {
+        responseText = (result.summary ? result.summary + '\n\n' : '') + result.findings;
+        if (result.actions?.length) responseText += '\n\n推奨アクション:\n' + result.actions.map(a => '→ ' + a).join('\n');
       } else {
-        // Local keyword-based response (no API key needed)
-        const advice = this.generateInstantAdvice(msg, 'chat');
-        responseText = advice.text;
-        if (advice.alerts.length > 0) {
-          responseText = advice.alerts.map(a => '⚠️ ' + a.message).join('\n') + '\n\n' + responseText;
-        }
         if (advice.actions.length > 0) {
           responseText += '\n\n📋 推奨アクション:\n' + advice.actions.map(a => '→ ' + a).join('\n');
         }
@@ -6535,6 +6633,142 @@ ${text.substring(0, 8000)}
     return '';
   }
 
+  // ============================================================
+  // Unified API Analysis - ALL advice comes from prompts, not JS
+  // ============================================================
+
+  // Main entry point: analyze any user input via API
+  async analyzeViaAPI(input, type, options = {}) {
+    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+
+    // Select prompt template
+    let promptTemplate = INLINE_PROMPTS[type] || INLINE_PROMPTS.text_analysis;
+    let prompt = promptTemplate
+      .replace(/\{\{INPUT\}\}/g, (input || '').substring(0, 8000))
+      .replace(/\{\{SEED\}\}/g, Math.floor(Date.now() / 86400000).toString());
+
+    // Interpolate standard variables
+    prompt = aiEngine.interpolatePrompt(prompt, aiEngine.collectCurrentUserData());
+
+    if (!apiKey) {
+      // No API key - return minimal feedback
+      return {
+        summary: '記録を保存しました。',
+        findings: 'APIキーを設定すると、詳細な分析結果が表示されます。\n管理パネル → APIキータブで設定してください。',
+        actions: ['管理者にAPIキーの設定を依頼する'],
+        products: [],
+        _fromAPI: false
+      };
+    }
+
+    try {
+      const modelOptions = { maxTokens: 2048 };
+      if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
+      if (type === 'image_analysis') {
+        modelOptions.systemPrompt = '画像を詳細に分析し、慢性疾患患者の健康管理に役立つ情報を日本語で提供してください。必ずJSON形式で返してください。';
+      }
+
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, modelOptions);
+
+      // Try to parse JSON response
+      try {
+        // Extract JSON from response (may be wrapped in markdown code block)
+        const jsonMatch = (response || '').match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          parsed._fromAPI = true;
+          parsed._raw = response;
+          return parsed;
+        }
+      } catch (e) {
+        // Not JSON - return as text
+      }
+
+      // Return raw text response
+      return {
+        summary: '',
+        findings: response,
+        actions: [],
+        products: [],
+        _fromAPI: true,
+        _raw: response
+      };
+    } catch (err) {
+      console.warn('[API Analysis] Failed:', err.message);
+      return {
+        summary: '記録を保存しました。',
+        findings: '分析を実行できませんでした。しばらくしてからもう一度お試しください。',
+        actions: [],
+        products: [],
+        _fromAPI: false
+      };
+    }
+  }
+
+  // Render API analysis result as HTML card
+  renderAnalysisCard(result) {
+    if (!result) return '';
+
+    // If raw text (not JSON), render as formatted text
+    if (result._raw && !result.summary && result.findings === result._raw) {
+      return `
+        <div class="card" style="border-left:4px solid var(--success);margin-bottom:12px">
+          <div class="card-body" style="padding:14px 16px">
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result._raw)}</div>
+          </div>
+        </div>`;
+    }
+
+    const urgencyColor = result.urgency === 'urgent' ? 'var(--danger)' : result.urgency === 'attention' ? 'var(--warning)' : 'var(--accent)';
+
+    let html = `<div class="card" style="border-left:4px solid ${urgencyColor};margin-bottom:12px">`;
+
+    // Summary
+    if (result.summary) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${result.summary}</div>`;
+    }
+
+    // Findings
+    if (result.findings) {
+      html += `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result.findings)}</div>
+      </div>`;
+    }
+
+    // Details (for image analysis)
+    if (result.details) {
+      html += `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result.details)}</div>
+      </div>`;
+    }
+
+    // Actions
+    if (result.actions && result.actions.length > 0) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">推奨アクション</div>
+        ${result.actions.map(a => `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}
+      </div>`;
+    }
+
+    // Products
+    if (result.products && result.products.length > 0) {
+      html += `<div style="padding:10px 16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">おすすめ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${result.products.map(p => `<a href="${p.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${p.name}</a>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    // Deeper prompt
+    if (result.deeper_prompt) {
+      html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${result.deeper_prompt}</div>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     const input = document.getElementById('dash-quick-input');
@@ -6563,18 +6797,19 @@ ${text.substring(0, 8000)}
 
     input.value = '';
 
-    // Generate deep structured analysis and save to store
-    const analysis = this.generateDeepAnalysis(content);
-    store.set('latestFeedback', analysis);
+    // Show loading state
+    const feedback = document.getElementById('dash-ai-feedback');
+    if (feedback) feedback.innerHTML = Components.loading('分析中...');
 
-    // Re-render dashboard with feedback
+    // ALL analysis via API prompt - no hardcoded JS advice
+    this.analyzeViaAPI(content, 'text_analysis').then(result => {
+      store.set('latestFeedback', result);
+      const el = document.getElementById('dash-ai-feedback');
+      if (el) el.innerHTML = this.renderAnalysisCard(result);
+    });
+
+    // Re-render dashboard (keeps loading state visible)
     this.navigate('dashboard');
-
-    // Run API analysis in background if available
-    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-    if (apiKey) {
-      this.runBackgroundAnalysis(content, document.getElementById('dash-ai-feedback'));
-    }
   }
 
   // Deep structured analysis of any user input
@@ -6892,20 +7127,22 @@ ${recentEntries.substring(0, 3000)}
         });
         store.set('conversationHistory', history);
 
-        // Generate analysis specific to file type
-        const analysis = this.generateFileAnalysis(file.name, file.type, category);
-        store.set('latestFeedback', analysis);
-
         Components.showToast(`${file.name} を分析中...`, 'info');
         this.navigate('dashboard');
 
-        // Run Vision API analysis with image (delayed to ensure DOM is ready)
-        const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-        if (apiKey && isImage) {
-          setTimeout(() => this.runImageAnalysis(ev.target.result, file.name, category, document.getElementById('dash-ai-feedback')), 500);
-        } else if (apiKey) {
-          setTimeout(() => this.runBackgroundAnalysis(analysisPrompt, document.getElementById('dash-ai-feedback')), 500);
-        }
+        // ALL analysis via API prompt
+        const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        setTimeout(() => {
+          this.analyzeViaAPI(
+            `[ファイル: ${file.name}] ${category}`,
+            isImage ? 'image_analysis' : 'text_analysis',
+            imgOpts
+          ).then(result => {
+            store.set('latestFeedback', result);
+            const el = document.getElementById('dash-ai-feedback');
+            if (el) el.innerHTML = this.renderAnalysisCard(result);
+          });
+        }, 500);
       };
       reader.readAsDataURL(file);
     });
@@ -7771,18 +8008,9 @@ App.prototype.render_dashboard = function() {
   <div id="dash-ai-feedback" style="margin-bottom:16px">
     ${(() => {
       const fb = store.get('latestFeedback');
-      if (!fb || !fb.sections) return '';
-      const urgencyColors = { urgent: 'var(--danger)', attention: 'var(--warning)', normal: 'var(--accent)' };
-      const urgencyBg = { urgent: 'var(--danger-bg)', attention: 'var(--warning-bg)', normal: 'var(--accent-bg)' };
-      return `<div class="card" style="border-left:4px solid ${urgencyColors[fb.urgency] || 'var(--accent)'};margin-bottom:8px">
-        ${fb.sections.map(s => `
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">${s.icon} ${s.title}</div>
-            <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${s.content}</div>
-          </div>
-        `).join('')}
-        <div style="padding:8px 16px;font-size:10px;color:var(--text-muted)">分析: ${new Date(fb.timestamp).toLocaleString('ja-JP')}</div>
-      </div>`;
+      if (!fb) return '';
+      // Use unified renderAnalysisCard
+      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
     })()}
   </div>
 
