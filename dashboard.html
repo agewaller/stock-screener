@@ -4829,10 +4829,15 @@ var FirebaseBackend = {
       if (profileDoc.exists) {
         const profile = profileDoc.data();
         if (profile.settings?.selectedDisease) store.set('selectedDisease', profile.settings.selectedDisease);
+        if (profile.settings?.selectedDiseases) store.set('selectedDiseases', profile.settings.selectedDiseases);
         if (profile.settings?.selectedModel) store.set('selectedModel', profile.settings.selectedModel);
         if (profile.settings?.customPrompts) store.set('customPrompts', profile.settings.customPrompts);
         if (profile.settings?.affiliateConfig) store.set('affiliateConfig', profile.settings.affiliateConfig);
         if (profile.settings?.dashboardLayout) store.set('dashboardLayout', profile.settings.dashboardLayout);
+        if (profile.userProfile) store.set('userProfile', profile.userProfile);
+        if (profile.adminEmails) {
+          try { app.ADMIN_EMAILS = [...new Set(['agewaller@gmail.com', ...profile.adminEmails])]; } catch(e) {}
+        }
       }
 
       // Load collections in parallel
@@ -4911,11 +4916,17 @@ var FirebaseBackend = {
     });
 
     // Watch for settings changes
-    ['selectedDisease', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
+    ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
       store.on(key, (value) => {
         if (!this.userId) return;
         this.saveProfile({ settings: { [key]: value } });
       });
+    });
+
+    // Watch for user profile changes
+    store.on('userProfile', (value) => {
+      if (!this.userId) return;
+      this.saveProfile({ userProfile: value });
     });
 
     // Watch for analysis history
