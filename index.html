@@ -2746,21 +2746,15 @@ var AIEngine = class AIEngine {
   // Anthropic Claude API (via proxy or direct)
   async callAnthropic(modelId, prompt, apiKey, options) {
     const apiModelId = 'claude-3-5-sonnet-20241022';
-    const proxyUrl = localStorage.getItem('anthropic_proxy_url');
-    const endpoint = proxyUrl || 'https://api.anthropic.com/v1/messages';
+    const proxyUrl = localStorage.getItem('anthropic_proxy_url') || 'https://stock-screener.agewaller.workers.dev';
+    const endpoint = proxyUrl;
 
-    console.log('[Anthropic] Model:', apiModelId, 'via:', proxyUrl ? 'proxy' : 'direct');
+    console.log('[Anthropic] Model:', apiModelId, 'via proxy:', proxyUrl);
 
     const headers = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
     };
-
-    // Only add these headers for direct API access (not through proxy)
-    if (!proxyUrl) {
-      headers['anthropic-version'] = '2023-06-01';
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    }
 
     const body = {
       model: apiModelId,
