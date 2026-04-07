@@ -64,8 +64,11 @@ var FirebaseBackend = {
           }
         } else {
           this.userId = null;
-          store.update({ user: null, isAuthenticated: false });
-          app.navigate('login');
+          // Only force login if not already authenticated via localStorage
+          if (!store.get('isAuthenticated')) {
+            store.update({ user: null, isAuthenticated: false });
+            app.navigate('login');
+          }
         }
       });
 

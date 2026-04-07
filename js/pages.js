@@ -1100,7 +1100,14 @@ App.prototype.render_integrations = function() {
   <div class="card" style="margin-bottom:24px" id="plaud-section">
     <div class="card-header">
       <span class="card-title">🎙️ Plaud 会話記録連携</span>
-      <span class="tag tag-info">メール転送 or ペースト</span>
+      ${(() => {
+        const plaudEntries = (store.get('textEntries') || []).filter(e => e.type === 'plaud_transcript' || (e.category === 'conversation' && e.title?.includes('Plaud')));
+        if (plaudEntries.length > 0) {
+          const last = plaudEntries[plaudEntries.length - 1];
+          return '<span class="tag tag-success" style="font-size:9px">' + plaudEntries.length + '件取込済（最終: ' + new Date(last.timestamp).toLocaleDateString('ja-JP') + '）</span>';
+        }
+        return '<span class="tag tag-warning" style="font-size:9px">未取込</span>';
+      })()}
     </div>
     <div class="card-body">
       <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">

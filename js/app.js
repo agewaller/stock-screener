@@ -25,19 +25,20 @@ var App = class App {
     localStorage.removeItem('cc_theme');
     store.on('currentPage', (p) => this.navigate(p));
 
-    // Initialize Firebase if configured
+    // Show immediate content from localStorage while Firebase loads
+    const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
+    if (hasLocalAuth) {
+      // Show dashboard immediately from cached data
+      this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+    } else {
+      this.navigate('login');
+    }
+
+    // Initialize Firebase (will update navigation when auth resolves)
     if (FirebaseBackend.isConfigured()) {
       const config = FirebaseBackend.getConfig();
       FirebaseBackend.init(config);
       FirebaseBackend.enableAutoSync();
-      // Firebase auth will handle navigation via onAuthStateChanged
-    } else {
-      // No Firebase - use localStorage mode
-      if (store.get('isAuthenticated') && store.get('user')) {
-        this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
-      } else {
-        this.navigate('login');
-      }
     }
 
     // Set up periodic health score calc
@@ -1574,7 +1575,7 @@ ${text.substring(0, 8000)}
     const items = [
       { id: 'coq10', icon: '💊', name: 'CoQ10（ユビキノール）', desc: 'ミトコンドリアサポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE',
         relevance: (allText.includes('倦怠') || allText.includes('疲') || diseases.includes('mecfs') ? 10 : 3) },
-      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=マグネシウム+グリシネート&tag=chroniccare-22',
+      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=%E3%83%9E%E3%82%B0%E3%83%8D%E3%82%B7%E3%82%A6%E3%83%A0+%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%8D%E3%83%BC%E3%83%88&tag=chroniccare-22',
         relevance: (allText.includes('痛') || allText.includes('眠') || allText.includes('筋肉') ? 10 : 4) },
       { id: 'vitd', icon: '☀️', name: 'ビタミンD3+K2', desc: '免疫・骨代謝', store: 'iherb', url: 'https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE',
         relevance: (diseases.some(d => ['sle','ra','hashimoto','osteoporosis'].includes(d)) ? 10 : allText.includes('免疫') ? 8 : 3) },
@@ -1611,15 +1612,15 @@ ${text.substring(0, 8000)}
       // Japanese products
       { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=chroniccare-22',
         relevance: (allText.match(/倦怠|疲|だるい|食欲/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
-      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=��苓散+ツムラ&tag=chroniccare-22',
+      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=五苓散+ツムラ&tag=chroniccare-22',
         relevance: (allText.match(/気圧|天候|頭痛|むくみ/) ? 10 : 2) },
-      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味���遙散+クラシエ&tag=chroniccare-22',
+      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味逍遙散+クラシエ&tag=chroniccare-22',
         relevance: (allText.match(/更年期|イライラ|のぼせ|不眠/) ? 9 : profile.gender === 'female' ? 4 : 1) },
       { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=chroniccare-22',
-        relevance: (allText.match(/ミ���コンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+        relevance: (allText.match(/ミトコンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
       { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=chroniccare-22',
-        relevance: (allText.match(/水素|酸化|抗���化/) ? 8 : 1) },
-      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オ��ロン+血圧計&tag=chroniccare-22',
+        relevance: (allText.match(/水素|酸化|抗酸化/) ? 8 : 1) },
+      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オムロン+血圧計&tag=chroniccare-22',
         relevance: (allText.match(/血圧|高血圧/) ? 9 : diseases.includes('hypertension') ? 7 : 1) },
       { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=chroniccare-22',
         relevance: (allText.match(/体重|体脂肪|肥満|ダイエット/) ? 8 : diseases.includes('metabolic_syndrome') ? 6 : 1) },
@@ -1627,9 +1628,9 @@ ${text.substring(0, 8000)}
         relevance: (allText.match(/腸|発酵|免疫|食事/) ? 7 : 2) },
       { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=chroniccare-22',
         relevance: (allText.match(/栄養|疲労|発酵|甘酒/) ? 7 : 2) },
-      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプ��ムソルト+国産&tag=chroniccare-22',
+      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト+国産&tag=chroniccare-22',
         relevance: (allText.match(/風呂|入浴|エプソム|マグネシウム/) ? 9 : 3) },
-      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森���浴+ガイド&tag=chroniccare-22',
+      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森林浴+ガイド&tag=chroniccare-22',
         relevance: (allText.match(/自然|森|散歩|リラックス/) ? 6 : 1) },
       { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
         relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
