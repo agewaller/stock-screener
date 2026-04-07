@@ -289,23 +289,6 @@ var Components = {
     `;
   },
 
-  // Photo Upload Component
-  photoUpload(category) {
-    return `
-      <div class="upload-area" onclick="document.getElementById('photo-input-${category}').click()"
-           ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-           ondragleave="this.style.borderColor='var(--border)'"
-           ondrop="app.handlePhotoDrop(event, '${category}')">
-        <div class="upload-area-icon">📸</div>
-        <div class="upload-area-text">クリックまたはドラッグ&ドロップ</div>
-        <div class="upload-area-hint">写真・画像・PDF・CSV・JSON・XML・テキスト</div>
-        <input type="file" id="photo-input-${category}" hidden multiple
-          accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.handlePhotoUpload(event, '${category}')">
-      </div>
-      <div id="photo-preview-${category}" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px"></div>
-    `;
-  },
-
   // Chat Message
   chatMessage(msg) {
     const isUser = msg.role === 'user';
