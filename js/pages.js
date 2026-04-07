@@ -32,131 +32,95 @@ App.prototype.render_login = function() {
   `).join('');
 
   return `
-  <div class="login-page" style="align-items:flex-start;padding:0;background:linear-gradient(180deg, #f8f9fc 0%, #eef0f8 100%)">
-    <div style="width:100%;max-width:520px;margin:0 auto;padding:20px 16px">
+  <div class="login-page" style="align-items:flex-start;padding:0;background:#fff;min-height:100vh">
+    <div style="width:100%;max-width:480px;margin:0 auto;padding:0 20px">
 
       <!-- Hero -->
-      <div style="text-align:center;margin-bottom:28px;padding-top:24px">
-        <div style="width:88px;height:88px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center">
-          <svg width="80" height="80" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="url(#lgGr)"/>
-            <path d="M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z" fill="white" fill-opacity="0.25"/>
-            <path d="M16 11L16 20M12 15.5L16 20L20 15.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <defs><linearGradient id="lgGr" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
-          </svg>
+      <div style="text-align:center;padding:48px 0 32px">
+        <div style="width:56px;height:56px;margin:0 auto 20px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7 8 7 13a5 5 0 0010 0c0-5-5-10-5-10z"/><path d="M10 16l2 2 4-4" stroke-width="1.5"/></svg>
         </div>
-        <h1 style="font-size:26px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px">未病ダイアリー</h1>
-        <p style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.7">養生の智慧とテクノロジーの融合<br><span style="font-size:12px">毎日の記録が、寛解への道筋になる</span></p>
+        <h1 style="font-size:28px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:8px">未病ダイアリー</h1>
+        <p style="font-size:15px;color:#64748b;line-height:1.6">慢性疾患の寛解をサポート</p>
       </div>
 
-      <!-- Features -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
-        <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="width:36px;height:36px;background:linear-gradient(135deg,#6C63FF,#8B85FF);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#9998;</div>
-          <div style="font-size:11px;font-weight:600;color:var(--text-primary)">毎日記録</div>
-          <div style="font-size:10px;color:var(--text-muted)">体調を書くだけ</div>
-        </div>
-        <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="width:36px;height:36px;background:linear-gradient(135deg,#FF6584,#FF8FA3);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#9733;</div>
-          <div style="font-size:11px;font-weight:600;color:var(--text-primary)">自動分析</div>
-          <div style="font-size:10px;color:var(--text-muted)">パターンを発見</div>
-        </div>
-        <div style="text-align:center;padding:14px 8px;background:white;border-radius:16px;box-shadow:var(--shadow)">
-          <div style="width:36px;height:36px;background:linear-gradient(135deg,#10b981,#34d399);border-radius:10px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:white;font-size:16px">&#10003;</div>
-          <div style="font-size:11px;font-weight:600;color:var(--text-primary)">個別提案</div>
-          <div style="font-size:10px;color:var(--text-muted)">あなた専用</div>
-        </div>
-      </div>
+      <!-- Google Login -->
+      <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:15px;font-size:15px;margin-bottom:12px;border:1.5px solid #e2e8f0;background:#fff">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Googleではじめる
+      </button>
 
-      <!-- Login Card -->
-      <div class="card" style="margin-bottom:20px;border-radius:20px;overflow:visible;box-shadow:0 4px 20px rgba(0,0,0,0.06)">
-        <div style="padding:24px 20px">
-          <button class="google-btn" onclick="app.loginWithGoogle()" style="border-radius:12px;padding:14px;font-size:15px">
-            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Googleではじめる
-          </button>
-          <div class="login-divider" style="margin:16px 0">または</div>
-          <form onsubmit="app.loginWithEmail(event)">
-            <div class="form-group">
-              <input type="email" name="email" class="form-input" placeholder="メールアドレス" style="border-radius:10px;padding:12px 14px">
-          </div>
-          <div class="form-group">
-            <input type="password" name="password" class="form-input" placeholder="パスワード" style="border-radius:10px;padding:12px 14px">
-          </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:4px;border-radius:10px;padding:12px">ログイン</button>
+      <!-- Email Login (collapsed) -->
+      <div style="text-align:center;margin-bottom:24px">
+        <span style="font-size:12px;color:#94a3b8;cursor:pointer;border-bottom:1px dashed #cbd5e1"
+          onclick="var f=document.getElementById('email-form');f.style.display=f.style.display==='none'?'block':'none'">メールアドレスでログイン</span>
+        <form id="email-form" style="display:none;margin-top:12px" onsubmit="app.loginWithEmail(event)">
+          <input type="email" name="email" class="form-input" placeholder="メールアドレス" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
+          <input type="password" name="password" class="form-input" placeholder="パスワード" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
+          <button type="submit" class="btn btn-primary" style="width:100%;border-radius:12px;padding:12px">ログイン</button>
         </form>
+      </div>
+
+      <!-- Value Props -->
+      <div style="margin-bottom:32px">
+        <div style="display:flex;align-items:start;gap:14px;margin-bottom:20px">
+          <div style="width:40px;height:40px;border-radius:12px;background:#f0f0ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">📝</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">書くだけで分析</div>
+            <div style="font-size:12px;color:#64748b;line-height:1.5">体調や気づきをテキストで記録。写真もOK。自動で分析してアドバイスを返します</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:start;gap:14px;margin-bottom:20px">
+          <div style="width:40px;height:40px;border-radius:12px;background:#fdf2f8;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">🔬</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">最先端の研究を毎日</div>
+            <div style="font-size:12px;color:#64748b;line-height:1.5">あなたの疾患に関連するPubMedの最新論文を自動で取得。日本語翻訳付き</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:start;gap:14px">
+          <div style="width:40px;height:40px;border-radius:12px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">💊</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#1e293b;margin-bottom:2px">寛解への道筋</div>
+            <div style="font-size:12px;color:#64748b;line-height:1.5">サプリ・クリニック・イベント・食事法。あなたの状態に合わせた具体的な提案</div>
+          </div>
         </div>
       </div>
 
-      <!-- Disease Selection (collapsible) -->
-      <div class="card" style="margin-bottom:20px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.06)">
-        <div style="padding:16px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
-          onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'-'">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">あなたの疾患を教えてください</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">ログイン後でも設定から変更できます</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="tag tag-accent" id="disease-count" style="font-size:10px">${selectedCount > 0 ? selectedCount + '件' : '未選択'}</span>
-            <span class="arrow" style="font-size:16px;color:var(--text-muted);font-weight:700">+</span>
-          </div>
+      <!-- Disease Selection -->
+      <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:16px">
+        <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+          onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
+          <div style="font-size:13px;font-weight:600;color:#1e293b">疾患を選択（任意）<span style="font-weight:400;color:#94a3b8;margin-left:6px">${selectedCount > 0 ? selectedCount + '件選択中' : ''}</span></div>
+          <span class="arrow" style="font-size:18px;color:#94a3b8;font-weight:300">+</span>
         </div>
-        <div id="disease-picker" style="display:none;padding:0 20px 20px">
-          <input type="text" class="form-input" placeholder="疾患名で検索..." style="margin-bottom:14px;border-radius:10px;padding:10px 14px"
+        <div id="disease-picker" style="display:none;margin-top:12px">
+          <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:10px 12px;margin-bottom:12px;border:1.5px solid #e2e8f0;font-size:13px"
             oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
           ${categoryHtml}
-          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-            <label style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg-tertiary);border-radius:20px;cursor:pointer;font-size:12px">
-              <input type="checkbox" class="disease-checkbox" value="custom" data-name="その他"
-                ${selected.includes('custom') ? 'checked' : ''}
-                onchange="app.toggleDiseaseSelection(this)" style="display:none">
-              + その他
-            </label>
-            <input type="text" class="form-input" id="custom-disease-name" placeholder="疾患名を入力..." style="margin-top:8px;border-radius:10px;display:${selected.includes('custom') ? 'block' : 'none'}">
-          </div>
         </div>
       </div>
 
       <!-- Testimonial -->
-      <div class="card" style="margin-bottom:20px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.06);overflow:hidden">
-        <div style="padding:20px">
-          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px">開発者の闘病記</div>
-          <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;margin-bottom:14px">
-            「2024年春から2年間、ME/CFS（慢性疲労症候群）と向き合ってきました。<br>
-            毎日の症状、薬、医師との会話、絶望と希望を記録し続けた日々。<br>
-            この経験から生まれたのが「未病ダイアリー」です。<br><br>
-            免疫・神経・内分泌の複雑な絡み合い、<br>
-            わずかな活動で24-48時間後に全身が動かなくなるPEM。<br>
-            現代医学でもまだ解明しきれないこの病と<br>
-            どう共存し、寛解に向かうか ──<br>
-            その道筋を、テクノロジーと養生の智慧で照らしたい。」
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-            <div style="width:36px;height:36px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span style="color:white;font-size:16px;font-family:Georgia,serif;font-style:italic">Y</span>
+      <div style="margin-bottom:32px;padding:20px;border-left:3px solid #6366f1;background:#fafaff;border-radius:0 12px 12px 0">
+        <div style="font-size:13px;color:#475569;line-height:1.8;margin-bottom:12px;font-style:italic">
+          「2年間のME/CFS闘病の中で、毎日の記録が寛解への最大の武器になりました。この経験を、同じ苦しみの中にいるすべての人に届けたい。」
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="color:white;font-size:12px;font-family:Georgia,serif;font-style:italic">Y</span>
             </div>
-            <div>
-              <div style="font-size:12px;font-weight:600;color:var(--text-primary)">山口揚平</div>
-              <div style="font-size:10px;color:var(--text-muted)">思想家・事業家 / ME/CFS患者</div>
-            </div>
+            <div style="font-size:11px;color:#64748b">山口揚平 <span style="color:#94a3b8">/ 開発者</span></div>
           </div>
           <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener"
-            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#6C63FF,#8B85FF);color:white;border-radius:10px;font-size:12px;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(108,99,255,0.25)">
-            闘病記を読む →
-          </a>
+            style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600">闘病記を読む →</a>
         </div>
       </div>
 
-      <!-- Trust -->
-      <div style="text-align:center;padding:16px 0 32px;color:var(--text-muted);font-size:11px;line-height:1.8">
-        <div style="margin-bottom:8px">
-          <span style="margin:0 6px">🇯🇵 Made in Japan</span>
-          <span style="margin:0 6px">🔒 暗号化保存</span>
-          <span style="margin:0 6px">🏥 WHO準拠</span>
-        </div>
-        <div style="margin-bottom:4px">養生 × テクノロジー × エビデンス</div>
-        <div>無料で利用できます</div>
-        <div style="margin-top:12px;font-size:9px;color:#b0b8c8">&copy; 2025 Shares Inc. All rights reserved.</div>
+      <!-- Footer -->
+      <div style="text-align:center;padding:0 0 40px;color:#94a3b8;font-size:10px;line-height:2">
+        <div>🇯🇵 Made in Japan &nbsp;·&nbsp; 暗号化保存 &nbsp;·&nbsp; 無料</div>
+        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc.</div>
       </div>
 
     </div>
