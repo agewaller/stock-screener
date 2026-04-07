@@ -2271,15 +2271,29 @@ var INLINE_PROMPTS = {
 【ユーザー入力】
 {{INPUT}}
 
+【食事に関する入力の場合は必ず以下を計算すること】
+ユーザーのプロフィール情報（年齢・性別・身長・体重）から基礎代謝量(BMR)を
+ハリス-ベネディクト式で計算し、以下を算出：
+・基礎代謝量（BMR）: kcal/日
+・推定1日消費カロリー（BMR × 活動係数1.3〜1.5）
+・この食事の推定カロリー
+・1日の残りカロリー予算
+・PFCバランス（タンパク質/脂質/炭水化物のg数と比率）
+  理想比率: P:F:C = 20-30% : 20-30% : 40-60%
+・抗炎症スコア（1-10）
+・不足栄養素の指摘
+・慢性疾患患者としての食事評価
+
 【出力形式】以下のJSON形式で返してください：
 {
   "category": "検出されたカテゴリ（症状/服薬/食事/検査/精神/運動/睡眠等）",
   "urgency": "urgent/attention/normal",
   "summary": "1行の要約",
-  "findings": "詳細な所見（改行区切りで3-5項目）",
+  "findings": "詳細な所見（改行区切りで3-5項目。食事の場合はカロリー・PFC・BMR比較を含む）",
   "actions": ["具体的アクション1", "具体的アクション2", "具体的アクション3"],
   "deeper_prompt": "さらに精度を上げるためにユーザーに聞きたいこと",
-  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}]
+  "products": [{"name":"商品名","reason":"推奨理由","url":"検索URL"}],
+  "nutrition": {"calories":0,"protein_g":0,"fat_g":0,"carb_g":0,"fiber_g":0,"salt_g":0,"anti_inflammatory_score":0,"bmr":0,"daily_budget":0}
 }`,
 
   // Image analysis (sent with image via Vision API)
@@ -2292,7 +2306,7 @@ var INLINE_PROMPTS = {
 
 画像の種類を判断し、該当する分析を行ってください：
 
-■ 食事写真：料理名、推定カロリー(kcal)、三大栄養素(g)、抗炎症スコア(1-10)、改善提案
+■ 食事写真：料理名特定、推定カロリー(kcal)、PFCバランス(タンパク質/脂質/炭水化物g)、食物繊維(g)、塩分(g)、抗炎症スコア(1-10)、ユーザーのBMRに対する摂取割合、改善提案
 ■ 血液検査：全項目と数値を読み取り、基準値比較、異常値の意義、推奨サプリ
 ■ 処方箋/薬：全薬剤名・用量、相互作用、副作用、服薬最適化
 ■ 医療文書：内容の要約、専門用語の解説
@@ -3787,9 +3801,16 @@ var Components = {
   formatMarkdown(text) {
     if (!text) return '';
     return text
+      // Markdown links [text](url)
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">$1</a>')
+      // Plain URLs (not already in href)
+      .replace(/(?<![="'])(https?:\/\/[^\s<\)]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">$1</a>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:12px">$1</code>')
+      // Headers
+      .replace(/^### (.+)$/gm, '<div style="font-size:14px;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</div>')
+      .replace(/^## (.+)$/gm, '<div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</div>')
       .replace(/\n/g, '<br>');
   },
 
@@ -4664,8 +4685,11 @@ var FirebaseBackend = {
           }
         } else {
           this.userId = null;
-          store.update({ user: null, isAuthenticated: false });
-          app.navigate('login');
+          // Only force login if not already authenticated via localStorage
+          if (!store.get('isAuthenticated')) {
+            store.update({ user: null, isAuthenticated: false });
+            app.navigate('login');
+          }
         }
       });
 
@@ -4955,19 +4979,20 @@ var App = class App {
     localStorage.removeItem('cc_theme');
     store.on('currentPage', (p) => this.navigate(p));
 
-    // Initialize Firebase if configured
+    // Show immediate content from localStorage while Firebase loads
+    const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
+    if (hasLocalAuth) {
+      // Show dashboard immediately from cached data
+      this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
+    } else {
+      this.navigate('login');
+    }
+
+    // Initialize Firebase (will update navigation when auth resolves)
     if (FirebaseBackend.isConfigured()) {
       const config = FirebaseBackend.getConfig();
       FirebaseBackend.init(config);
       FirebaseBackend.enableAutoSync();
-      // Firebase auth will handle navigation via onAuthStateChanged
-    } else {
-      // No Firebase - use localStorage mode
-      if (store.get('isAuthenticated') && store.get('user')) {
-        this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
-      } else {
-        this.navigate('login');
-      }
     }
 
     // Set up periodic health score calc
@@ -6504,7 +6529,7 @@ ${text.substring(0, 8000)}
     const items = [
       { id: 'coq10', icon: '💊', name: 'CoQ10（ユビキノール）', desc: 'ミトコンドリアサポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE',
         relevance: (allText.includes('倦怠') || allText.includes('疲') || diseases.includes('mecfs') ? 10 : 3) },
-      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=マグネシウム+グリシネート&tag=chroniccare-22',
+      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=%E3%83%9E%E3%82%B0%E3%83%8D%E3%82%B7%E3%82%A6%E3%83%A0+%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%8D%E3%83%BC%E3%83%88&tag=chroniccare-22',
         relevance: (allText.includes('痛') || allText.includes('眠') || allText.includes('筋肉') ? 10 : 4) },
       { id: 'vitd', icon: '☀️', name: 'ビタミンD3+K2', desc: '免疫・骨代謝', store: 'iherb', url: 'https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE',
         relevance: (diseases.some(d => ['sle','ra','hashimoto','osteoporosis'].includes(d)) ? 10 : allText.includes('免疫') ? 8 : 3) },
@@ -6541,15 +6566,15 @@ ${text.substring(0, 8000)}
       // Japanese products
       { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=chroniccare-22',
         relevance: (allText.match(/倦怠|疲|だるい|食欲/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
-      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=��苓散+ツムラ&tag=chroniccare-22',
+      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=五苓散+ツムラ&tag=chroniccare-22',
         relevance: (allText.match(/気圧|天候|頭痛|むくみ/) ? 10 : 2) },
-      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味���遙散+クラシエ&tag=chroniccare-22',
+      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味逍遙散+クラシエ&tag=chroniccare-22',
         relevance: (allText.match(/更年期|イライラ|のぼせ|不眠/) ? 9 : profile.gender === 'female' ? 4 : 1) },
       { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=chroniccare-22',
-        relevance: (allText.match(/ミ���コンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
+        relevance: (allText.match(/ミトコンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
       { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=chroniccare-22',
-        relevance: (allText.match(/水素|酸化|抗���化/) ? 8 : 1) },
-      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オ��ロン+血圧計&tag=chroniccare-22',
+        relevance: (allText.match(/水素|酸化|抗酸化/) ? 8 : 1) },
+      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オムロン+血圧計&tag=chroniccare-22',
         relevance: (allText.match(/血圧|高血圧/) ? 9 : diseases.includes('hypertension') ? 7 : 1) },
       { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=chroniccare-22',
         relevance: (allText.match(/体重|体脂肪|肥満|ダイエット/) ? 8 : diseases.includes('metabolic_syndrome') ? 6 : 1) },
@@ -6557,9 +6582,9 @@ ${text.substring(0, 8000)}
         relevance: (allText.match(/腸|発酵|免疫|食事/) ? 7 : 2) },
       { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=chroniccare-22',
         relevance: (allText.match(/栄養|疲労|発酵|甘酒/) ? 7 : 2) },
-      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプ��ムソルト+国産&tag=chroniccare-22',
+      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト+国産&tag=chroniccare-22',
         relevance: (allText.match(/風呂|入浴|エプソム|マグネシウム/) ? 9 : 3) },
-      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森���浴+ガイド&tag=chroniccare-22',
+      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森林浴+ガイド&tag=chroniccare-22',
         relevance: (allText.match(/自然|森|散歩|リラックス/) ? 6 : 1) },
       { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
         relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
@@ -8939,7 +8964,14 @@ App.prototype.render_integrations = function() {
   <div class="card" style="margin-bottom:24px" id="plaud-section">
     <div class="card-header">
       <span class="card-title">🎙️ Plaud 会話記録連携</span>
-      <span class="tag tag-info">メール転送 or ペースト</span>
+      ${(() => {
+        const plaudEntries = (store.get('textEntries') || []).filter(e => e.type === 'plaud_transcript' || (e.category === 'conversation' && e.title?.includes('Plaud')));
+        if (plaudEntries.length > 0) {
+          const last = plaudEntries[plaudEntries.length - 1];
+          return '<span class="tag tag-success" style="font-size:9px">' + plaudEntries.length + '件取込済（最終: ' + new Date(last.timestamp).toLocaleDateString('ja-JP') + '）</span>';
+        }
+        return '<span class="tag tag-warning" style="font-size:9px">未取込</span>';
+      })()}
     </div>
     <div class="card-body">
       <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">

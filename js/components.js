@@ -321,9 +321,16 @@ var Components = {
   formatMarkdown(text) {
     if (!text) return '';
     return text
+      // Markdown links [text](url)
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">$1</a>')
+      // Plain URLs (not already in href)
+      .replace(/(?<![="'])(https?:\/\/[^\s<\)]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">$1</a>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:12px">$1</code>')
+      // Headers
+      .replace(/^### (.+)$/gm, '<div style="font-size:14px;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</div>')
+      .replace(/^## (.+)$/gm, '<div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</div>')
       .replace(/\n/g, '<br>');
   },
 
