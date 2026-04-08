@@ -837,7 +837,7 @@ URL/連絡先：（あれば）`;
           ${searchLinks.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:11px">${l.label}</a>`).join('')}
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted)">管理者がAPIキーを設定すると、あなたの疾患・地域に特化したクリニックやイベントの提案が自動生成されます。</div>`;
+      ${this.isAdmin() ? '<div style="font-size:11px;color:var(--text-muted)">管理パネル → APIキータブで共通APIキーを保存すると、疾患・地域に特化した提案が自動生成されます。</div>' : ''}`;
   }
 
   async loadDashResearch() {
@@ -1333,11 +1333,16 @@ URL/連絡先：（あれば）`;
     prompt = aiEngine.interpolatePrompt(prompt, aiEngine.collectCurrentUserData());
 
     if (!apiKey) {
-      // No API key - return minimal feedback
+      // No API key available — return minimal neutral feedback.
+      // For admin this signals a setup issue; for regular users we avoid
+      // exposing any system/API terminology.
+      const adminHint = this.isAdmin()
+        ? '管理パネル → APIキータブで共通APIキーを保存してください。保存後、全ユーザーに自動反映されます。'
+        : 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
       return {
         summary: '記録を保存しました。',
-        findings: 'APIキーを設定すると、詳細な分析結果が表示されます。\n管理パネル → APIキータブで設定してください。',
-        actions: ['管理者にAPIキーの設定を依頼する'],
+        findings: adminHint,
+        actions: [],
         products: [],
         _fromAPI: false
       };

@@ -324,20 +324,47 @@ var FirebaseBackend = {
       // This takes precedence over any per-user legacy keys so that admin
       // changes propagate to everyone automatically.
       const globalConfig = await this.loadGlobalConfig();
-      if (globalConfig.apiKeys) {
+      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
+
+      if (hasGlobalKeys) {
         if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
         if (globalConfig.apiKeys.openai) localStorage.setItem('apikey_openai', globalConfig.apiKeys.openai);
         if (globalConfig.apiKeys.google) localStorage.setItem('apikey_google', globalConfig.apiKeys.google);
+        console.log('[Firebase] Loaded global API keys');
       }
       if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
       if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
 
-      // Legacy fallback: load user's own keys only if global config had none
-      if (!globalConfig.apiKeys) {
-        const apiKeys = await this.loadApiKeys();
-        if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
-        if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
-        if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      // Legacy per-user keys (backward compatibility)
+      const legacyKeys = await this.loadApiKeys();
+      const hasLegacyKeys = legacyKeys && Object.values(legacyKeys).some(v => v);
+
+      if (!hasGlobalKeys && hasLegacyKeys) {
+        // Populate localStorage from legacy keys for this user's own session
+        if (legacyKeys.anthropic) localStorage.setItem('apikey_anthropic', legacyKeys.anthropic);
+        if (legacyKeys.openai) localStorage.setItem('apikey_openai', legacyKeys.openai);
+        if (legacyKeys.google) localStorage.setItem('apikey_google', legacyKeys.google);
+
+        // AUTO-MIGRATION: if current user is admin and global config is empty,
+        // promote their legacy per-user keys to global so all other users inherit them.
+        const userEmail = this.auth.currentUser?.email;
+        const adminList = (typeof app !== 'undefined' && app.ADMIN_EMAILS) || ['agewaller@gmail.com'];
+        const isAdmin = userEmail && adminList.includes(userEmail);
+        if (isAdmin) {
+          console.log('[Firebase] Admin detected with legacy keys — migrating to global config');
+          const migrationConfig = { apiKeys: {} };
+          if (legacyKeys.anthropic) migrationConfig.apiKeys.anthropic = legacyKeys.anthropic;
+          if (legacyKeys.openai) migrationConfig.apiKeys.openai = legacyKeys.openai;
+          if (legacyKeys.google) migrationConfig.apiKeys.google = legacyKeys.google;
+          const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+          if (proxyUrl) migrationConfig.proxyUrl = proxyUrl;
+          try {
+            await firebase.firestore().collection('admin').doc('config').set(migrationConfig, { merge: true });
+            console.log('[Firebase] Migration complete — all users will now inherit these keys on next login');
+          } catch (err) {
+            console.warn('[Firebase] Migration failed:', err.message);
+          }
+        }
       }
 
       store.calculateHealthScore();
