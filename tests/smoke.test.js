@@ -534,6 +534,95 @@ test('Firebase offers deduplicateAll() cleanup utility', () => {
     'FirebaseBackend.deduplicateAll() must exist for manual cleanup');
 });
 
+// ─── Model response contract ───
+// Incident: callModel() used to return generateDemoAnalysis() — a JS
+// object — when the API was unavailable. analyzeViaAPI expected a string
+// and called .match() on the object, threw silently, then stored the
+// entire object in result._raw. The dashboard renderer used _raw first
+// and JSON.stringify'd the object, dumping raw JSON to the user as their
+// "AI analysis result". Two contracts must hold to prevent this:
+// 1. callModel() must return a string or throw — never an object.
+// 2. Renderers must coerce text fields to strings and never call
+//    JSON.stringify on a stored result for display.
+
+section('Model Response Contract');
+
+test('callModel throws on no API key (no demo fallback)', () => {
+  const body = extractFunction(js('js/ai-engine.js'), 'callModel');
+  assert(body, 'callModel not found');
+  // Must throw or reject when apiKey is missing — not return an object.
+  assert(/throw\s+new\s+Error\s*\(\s*['"]NO_API_KEY['"]/.test(body),
+    'callModel must throw NO_API_KEY when getApiKey() returns empty');
+});
+
+test('callModel does not call generateDemoAnalysis (orphaned function)', () => {
+  const src = js('js/ai-engine.js');
+  // The orphaned generateDemoAnalysis used to be the failure fallback.
+  // It's now deleted, but make sure no caller resurrects it.
+  assert(!/this\.generateDemoAnalysis\s*\(/.test(src),
+    'callModel must not call generateDemoAnalysis() — it returns an ' +
+    'object that leaks as raw JSON to the user UI');
+});
+
+test('analyzeViaAPI coerces response to string before parsing', () => {
+  const body = extractFunction(js('js/app.js'), 'analyzeViaAPI');
+  assert(body, 'analyzeViaAPI not found');
+  assert(/typeof\s+response\s*===?\s*['"]string['"]/.test(body),
+    'analyzeViaAPI must guard with typeof response === "string" so a ' +
+    'non-string return from callModel cannot leak through');
+});
+
+test('analyzeViaAPI does not store non-string in _raw', () => {
+  const body = extractFunction(js('js/app.js'), 'analyzeViaAPI');
+  // The "Plain-text response" branch must not assign _raw at all (the
+  // earlier guarded path is the only place _raw is set, and only for
+  // strings via responseText).
+  // Heuristic: every "_raw" assignment in analyzeViaAPI must be near a
+  // responseText reference.
+  const rawAssignments = body.match(/_raw\s*[:=]\s*\w+/g) || [];
+  for (const assign of rawAssignments) {
+    const value = assign.split(/[:=]\s*/)[1].trim();
+    assert(value === 'responseText',
+      `_raw must only be assigned from responseText (the string-coerced ` +
+      `version), not from "${value}"`);
+  }
+});
+
+test('renderAnalysisCard coerces all text fields with asText helper', () => {
+  const body = extractFunction(js('js/app.js'), 'renderAnalysisCard');
+  assert(body, 'renderAnalysisCard not found');
+  // Must define an asText (or similar) coercion helper
+  assert(/asText\s*=\s*\(/.test(body),
+    'renderAnalysisCard must define an asText() coercion helper');
+  // Must NOT call formatMarkdown directly on result.summary/findings/etc
+  // (those could be objects from legacy bad records). Use the local
+  // string-coerced variables instead.
+  const badPattern = /formatMarkdown\s*\(\s*result\.(summary|findings|details|new_approach|trend|next_check)\s*\)/;
+  const m = body.match(badPattern);
+  assert(!m, `renderAnalysisCard must not pass result.* directly to ` +
+    `formatMarkdown — coerce via asText() first. Found: ${m?.[0]}`);
+});
+
+test('formatMarkdown returns empty string for non-string input', () => {
+  const body = extractFunction(js('js/components.js'), 'formatMarkdown');
+  assert(body, 'formatMarkdown not found');
+  assert(/typeof\s+text\s*!==?\s*['"]string['"]/.test(body),
+    'formatMarkdown must guard against non-string input to avoid crashes');
+});
+
+test('Dashboard AI comment renderer never JSON.stringifies result', () => {
+  // The render_dashboard inline AI comment block must not call
+  // JSON.stringify on the result — that's how raw JSON leaked to users.
+  const body = extractFunction(js('js/pages.js'), 'render_dashboard');
+  assert(body, 'render_dashboard not found');
+  // Search only the inline comment-rendering arrow function. Cheap check:
+  // there must be no JSON.stringify call referencing "text" or the
+  // comment result inside the function body.
+  assert(!/JSON\.stringify\s*\(\s*(text|comment\.result|r\._raw|r\.findings|r\.summary)/.test(body),
+    'render_dashboard must not JSON.stringify the AI comment result — ' +
+    'use string-coerced fields and a friendly fallback message instead');
+});
+
 // ─── AI terminology hiding ───
 // Incident: we explicitly hid "AI" from the user-facing UI, but
 // hardcoded strings kept creeping back in. Ensure renderers never use

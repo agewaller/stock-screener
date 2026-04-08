@@ -1341,34 +1341,50 @@ URL/連絡先：（あれば）`;
 
       const response = await aiEngine.callModel(store.get('selectedModel'), prompt, modelOptions);
 
+      // Defensive: callModel must return a string, but coerce in case a
+      // future change ever returns an object. Never store a non-string in
+      // _raw — the dashboard renderer would JSON.stringify it and leak the
+      // entire object as raw JSON to the user.
+      const responseText = typeof response === 'string'
+        ? response
+        : (response == null ? '' : JSON.stringify(response));
+
       // Try to parse JSON response
       try {
-        // Extract JSON from response (may be wrapped in markdown code block)
-        const jsonMatch = (response || '').match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        const jsonMatch = responseText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           parsed._fromAPI = true;
-          parsed._raw = response;
+          // Only stash _raw if the model wrapped JSON in markdown / extra
+          // text — otherwise it would just duplicate the parsed fields.
+          if (responseText.trim() !== jsonMatch[0].trim()) {
+            parsed._raw = responseText;
+          }
           return parsed;
         }
       } catch (e) {
-        // Not JSON - return as text
+        console.warn('[analyzeViaAPI] JSON parse failed:', e.message);
       }
 
-      // Return raw text response
+      // Plain-text response (no JSON detected)
       return {
         summary: '',
-        findings: response,
+        findings: responseText,
         actions: [],
         products: [],
-        _fromAPI: true,
-        _raw: response
+        _fromAPI: true
       };
     } catch (err) {
       console.warn('[API Analysis] Failed:', err.message);
+      const isNoKey = err.message === 'NO_API_KEY';
+      const adminHint = this.isAdmin()
+        ? (isNoKey
+            ? '管理パネル → APIキータブで共通APIキーを保存してください。'
+            : `分析の呼び出しに失敗しました: ${err.message}`)
+        : 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
       return {
         summary: '記録を保存しました。',
-        findings: '分析を実行できませんでした。しばらくしてからもう一度お試しください。',
+        findings: adminHint,
         actions: [],
         products: [],
         _fromAPI: false
@@ -1380,12 +1396,26 @@ URL/連絡先：（あれば）`;
   renderAnalysisCard(result) {
     if (!result) return '';
 
-    // If raw text (not JSON), render as formatted text
-    if (result._raw && !result.summary && result.findings === result._raw) {
+    // Defensive coercion: every text-like field must be a string before
+    // it reaches the markdown formatter. Legacy records may contain
+    // objects in summary/findings/_raw from when callModel() used to
+    // return a fake-result object on API failure; rendering those would
+    // either crash formatMarkdown or dump raw JSON to the user.
+    const asText = (v) => (typeof v === 'string' && v.trim() ? v : '');
+    const summary = asText(result.summary);
+    const findings = asText(result.findings);
+    const details = asText(result.details);
+    const newApproach = asText(result.new_approach);
+    const trend = asText(result.trend);
+    const nextCheck = asText(result.next_check);
+    const rawText = asText(result._raw);
+
+    // If only raw text (no parsed structure), render it plain.
+    if (rawText && !summary && !findings) {
       return `
         <div class="card" style="border-left:4px solid var(--success);margin-bottom:12px">
           <div class="card-body" style="padding:14px 16px">
-            <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result._raw)}</div>
+            <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(rawText)}</div>
           </div>
         </div>`;
     }
@@ -1395,45 +1425,46 @@ URL/連絡先：（あれば）`;
     let html = `<div class="card" style="border-left:4px solid ${urgencyColor};margin-bottom:12px">`;
 
     // Summary
-    if (result.summary) {
-      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${result.summary}</div>`;
+    if (summary) {
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${summary}</div>`;
     }
 
     // Findings
-    if (result.findings) {
+    if (findings) {
       html += `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result.findings)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(findings)}</div>
       </div>`;
     }
 
     // Details (for image analysis)
-    if (result.details) {
+    if (details) {
       html += `<div style="padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(result.details)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap">${Components.formatMarkdown(details)}</div>
       </div>`;
     }
 
-    // Actions
-    if (result.actions && result.actions.length > 0) {
+    // Actions (skip non-string entries from legacy bad records)
+    const stringActions = Array.isArray(result.actions) ? result.actions.filter(a => typeof a === 'string') : [];
+    if (stringActions.length > 0) {
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">推奨アクション</div>
-        ${result.actions.map(a => `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}
+        ${stringActions.map(a => `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}
       </div>`;
     }
 
     // New approach (fresh suggestion user hasn't tried)
-    if (result.new_approach) {
+    if (newApproach) {
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg, rgba(99,102,241,0.03), rgba(168,85,247,0.03))">
         <div style="font-size:11px;font-weight:600;color:#6366f1;margin-bottom:4px">✨ 新しい打ち手</div>
-        <div style="font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.new_approach)}</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(newApproach)}</div>
       </div>`;
     }
 
     // Trend analysis
-    if (result.trend) {
+    if (trend) {
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📈 経過の変化</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(result.trend)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(trend)}</div>
       </div>`;
     }
 
@@ -1448,10 +1479,10 @@ URL/連絡先：（あれば）`;
     }
 
     // Next check / tracking reminder
-    if (result.next_check) {
+    if (nextCheck) {
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">📋 次にやること</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${Components.formatMarkdown(result.next_check)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${Components.formatMarkdown(nextCheck)}</div>
       </div>`;
     }
 

@@ -303,6 +303,8 @@ var Components = {
   // Simple markdown formatter
   formatMarkdown(text) {
     if (!text) return '';
+    // Defensive: callers must pass strings, but never crash on objects.
+    if (typeof text !== 'string') return '';
     return text
       // Markdown links [text](url) - auto translate
       .replace(/\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g, (m, text, url) => {
