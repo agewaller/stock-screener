@@ -2225,6 +2225,30 @@ URL/連絡先：（あれば）`;
     }
   }
 
+  // ---- Deduplicate existing records in Firestore ----
+  // One-shot cleanup for users who accumulated duplicates before the
+  // autosync-on-load bug was fixed.
+  async deduplicateRecords() {
+    if (!FirebaseBackend.initialized) {
+      Components.showToast('Firebaseに接続されていません', 'error');
+      return;
+    }
+    Components.showToast('重複レコードを確認中...', 'info');
+    try {
+      const result = await FirebaseBackend.deduplicateAll();
+      const total = (result.textEntries || 0) + (result.symptoms || 0) + (result.vitals || 0);
+      if (total === 0) {
+        Components.showToast('重複はありませんでした', 'success');
+      } else {
+        Components.showToast(`${total}件の重複を削除しました。再読み込みします...`, 'success');
+        setTimeout(() => location.reload(), 1500);
+      }
+    } catch (err) {
+      console.error('Deduplicate error:', err);
+      Components.showToast('重複削除に失敗しました', 'error');
+    }
+  }
+
   // ---- Generate Demo Data ----
   generateDemoData() {
     const now = new Date();
