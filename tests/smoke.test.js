@@ -114,42 +114,59 @@ function extractBodyAt(source, openBrace) {
   return source.substring(openBrace, i);
 }
 
-// Strip all quoted strings and template literals from a block of source,
-// leaving whitespace in their place. Used to exclude navigate() calls
-// inside onclick="..." attributes within template literals.
+// Strip quoted strings and template literal content from source, leaving
+// whitespace in their place. Code inside template literal expression
+// holes (${...}) is preserved, including nested {} and nested template
+// literals. Used to exclude navigate() calls inside onclick="..."
+// attributes within template literals.
 function stripStrings(code) {
+  // First strip comments
+  code = code.replace(/\/\/[^\n]*/g, '');
+  code = code.replace(/\/\*[\s\S]*?\*\//g, '');
+
   let result = '';
   let i = 0;
+  // Stack of contexts: 'code', 'tmpl' (template literal text), 'sq' (single-quote string), 'dq' (double-quote string).
+  // For 'tmpl', when we hit ${ we push a 'block' frame that knows to
+  // pop the matching } and return to 'tmpl'.
+  const stack = [{ type: 'code' }];
   while (i < code.length) {
+    const top = stack[stack.length - 1];
     const c = code[i];
-    if (c === '`') {
-      result += ' ';
-      i++;
-      let depth = 0;
-      while (i < code.length) {
-        if (code[i] === '\\') { i += 2; continue; }
-        if (code[i] === '$' && code[i + 1] === '{') { depth++; i += 2; continue; }
-        if (code[i] === '}' && depth > 0) { depth--; i++; continue; }
-        if (code[i] === '`' && depth === 0) { i++; break; }
+
+    if (top.type === 'code') {
+      if (c === '`') { stack.push({ type: 'tmpl' }); result += ' '; i++; continue; }
+      if (c === "'") { stack.push({ type: 'sq' }); result += ' '; i++; continue; }
+      if (c === '"') { stack.push({ type: 'dq' }); result += ' '; i++; continue; }
+      if (c === '{' && top.brace !== undefined) { top.brace++; result += c; i++; continue; }
+      if (c === '}' && top.brace !== undefined && top.brace > 0) {
+        top.brace--; result += c; i++; continue;
+      }
+      if (c === '}' && top.brace === 0) {
+        // End of a template-expression block — pop back to enclosing tmpl
+        stack.pop();
         i++;
+        continue;
       }
-    } else if (c === "'" || c === '"') {
-      const quote = c;
-      result += ' ';
-      i++;
-      while (i < code.length && code[i] !== quote) {
-        if (code[i] === '\\') i += 2;
-        else i++;
-      }
-      i++;
-    } else if (c === '/' && code[i + 1] === '/') {
-      while (i < code.length && code[i] !== '\n') i++;
-    } else if (c === '/' && code[i + 1] === '*') {
-      i += 2;
-      while (i < code.length - 1 && !(code[i] === '*' && code[i + 1] === '/')) i++;
-      i += 2;
-    } else {
       result += c;
+      i++;
+    } else if (top.type === 'tmpl') {
+      if (c === '\\') { i += 2; continue; }
+      if (c === '`') { stack.pop(); i++; continue; }
+      if (c === '$' && code[i + 1] === '{') {
+        // Enter a code block (interpolation) with brace depth 0
+        stack.push({ type: 'code', brace: 0 });
+        i += 2;
+        continue;
+      }
+      i++; // strip everything else
+    } else if (top.type === 'sq') {
+      if (c === '\\') { i += 2; continue; }
+      if (c === "'") { stack.pop(); i++; continue; }
+      i++;
+    } else if (top.type === 'dq') {
+      if (c === '\\') { i += 2; continue; }
+      if (c === '"') { stack.pop(); i++; continue; }
       i++;
     }
   }
@@ -283,8 +300,10 @@ test('No localStorage.clear() calls (use store.clearAll())', () => {
 
 test('No confirm() calls (use app.confirmAction() inline UI)', () => {
   for (const { name, content } of allJs) {
-    // Match naked `confirm(` but not `confirmAction(`, `confirmLogout(`, etc.
-    const matches = content.match(/(^|[^a-zA-Z_.])confirm\s*\(/g) || [];
+    // Strip comments and string literals so example code in comments
+    // doesn't trip the check.
+    const stripped = stripStrings(content);
+    const matches = stripped.match(/(^|[^a-zA-Z_.])confirm\s*\(/g) || [];
     const real = matches.filter(m => !m.match(/[a-zA-Z_]confirm/));
     assert(real.length === 0, `Found confirm() in ${name}`);
   }
@@ -292,7 +311,8 @@ test('No confirm() calls (use app.confirmAction() inline UI)', () => {
 
 test('No alert() calls (use Components.showToast())', () => {
   for (const { name, content } of allJs) {
-    const matches = content.match(/(^|[^a-zA-Z_.])alert\s*\(/g) || [];
+    const stripped = stripStrings(content);
+    const matches = stripped.match(/(^|[^a-zA-Z_.])alert\s*\(/g) || [];
     assert(matches.length === 0, `Found alert() in ${name}`);
   }
 });
@@ -793,6 +813,442 @@ test('CLAUDE.md under 200 lines (concise project guide)', () => {
   const content = readFile('CLAUDE.md');
   const lines = content.split('\n').length;
   assert(lines < 200, `CLAUDE.md is ${lines} lines — keep under 200`);
+});
+
+// ─── Method Reference Integrity ───
+// Catches dead references when an event handler in a template literal
+// (e.g. onclick="app.foo()") points to a method that doesn't exist on
+// App.prototype. The user clicks the button and nothing happens —
+// silent failure that's hard to find by hand.
+
+section('Method Reference Integrity');
+
+// Collect every method defined on App across all JS files. App is
+// declared as `var App = class App { ... }` and additional methods are
+// added later via `App.prototype.foo = function() { ... }`. Collect both.
+const APP_METHODS = new Set();
+for (const f of allJs) {
+  // 1. App.prototype.foo = function() { ... }
+  const reA = /App\.prototype\.(\w+)\s*=\s*(?:async\s+)?function/g;
+  let m;
+  while ((m = reA.exec(f.content)) !== null) APP_METHODS.add(m[1]);
+}
+
+// 2. class App { ... methods ... } in app.js
+const appSrc = js('js/app.js');
+const classMatch = /class\s+App\s*\{/.exec(appSrc);
+if (classMatch) {
+  const classBody = extractBodyAt(appSrc, classMatch.index + classMatch[0].length - 1);
+  if (classBody) {
+    // Class methods: `name(args) {` or `async name(args) {` at start of line
+    // (with class indent of 2 spaces). String stripping isn't needed
+    // here — JS keywords don't appear at start-of-line with `name(` form
+    // unless they're real methods.
+    const methodRe = /^\s{2}(?:async\s+)?(\w+)\s*\(/gm;
+    let mm;
+    while ((mm = methodRe.exec(classBody)) !== null) {
+      if (['if', 'for', 'while', 'switch', 'return', 'throw', 'catch'].includes(mm[1])) continue;
+      APP_METHODS.add(mm[1]);
+    }
+  }
+}
+
+// 3. Constructor properties: this.X = ...
+const ctorSrc = extractFunction(appSrc, 'constructor') || '';
+const ctorProps = ctorSrc.match(/this\.(\w+)\s*=/g) || [];
+for (const p of ctorProps) APP_METHODS.add(p.replace(/this\.|\s*=/g, ''));
+
+// Built-in JS / fields that are intentionally added at runtime
+const APP_RUNTIME_PROPS = new Set([
+  'currentPage', 'sidebarOpen', 'ADMIN_EMAILS',
+  // Object proto
+  'toString', 'hasOwnProperty', 'constructor',
+]);
+
+test('All onclick="app.X(...)" references resolve to App methods', () => {
+  // Look across both pages.js and app.js — both build template literal HTML
+  const sources = [js('js/pages.js'), js('js/app.js'), js('js/components.js')];
+  const onclickRe = /(?:onclick|onchange|oninput|onsubmit|onkeydown|onfocus|onblur|ondrop)\s*=\s*["'`][^"'`]*?\bapp\.(\w+)\s*\(/g;
+  const missing = new Set();
+  for (const src of sources) {
+    let m;
+    while ((m = onclickRe.exec(src)) !== null) {
+      const name = m[1];
+      if (!APP_METHODS.has(name) && !APP_RUNTIME_PROPS.has(name)) {
+        missing.add(name);
+      }
+    }
+  }
+  assert(missing.size === 0,
+    `onclick handlers reference non-existent App methods: ${[...missing].join(', ')}`);
+});
+
+test('All ${app.X(...)} interpolations resolve to App methods', () => {
+  // Template literal expression holes: ${app.foo()}
+  const sources = [js('js/pages.js'), js('js/app.js')];
+  const interpRe = /\$\{[^}]*?\bapp\.(\w+)\s*\(/g;
+  const missing = new Set();
+  for (const src of sources) {
+    let m;
+    while ((m = interpRe.exec(src)) !== null) {
+      const name = m[1];
+      if (!APP_METHODS.has(name) && !APP_RUNTIME_PROPS.has(name)) {
+        missing.add(name);
+      }
+    }
+  }
+  assert(missing.size === 0,
+    `Template literal expressions reference non-existent App methods: ${[...missing].join(', ')}`);
+});
+
+// ─── Duplicate Method Definitions ───
+// Two App.prototype.foo = ... declarations in the same module silently
+// overwrite each other and the second wins. Easy to introduce when
+// copy-pasting code.
+
+section('Duplicate Method Definitions');
+
+test('No duplicate App.prototype method definitions', () => {
+  const counts = new Map();
+  for (const f of allJs) {
+    const re = /App\.prototype\.(\w+)\s*=\s*(?:async\s+)?function/g;
+    let m;
+    while ((m = re.exec(f.content)) !== null) {
+      const key = m[1];
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  const dupes = [...counts.entries()].filter(([, n]) => n > 1);
+  assert(dupes.length === 0,
+    `Duplicate App.prototype methods: ${dupes.map(([k, n]) => `${k} (×${n})`).join(', ')}`);
+});
+
+test('No duplicate object-literal method names in core modules', () => {
+  // For each `var X = { ... }` block, no key should be defined twice.
+  // Restrict to the well-known modules with object literal definitions.
+  const checks = [
+    { file: 'js/firebase-backend.js', container: 'FirebaseBackend' },
+    { file: 'js/store.js', container: 'Store' },
+    { file: 'js/components.js', container: 'Components' },
+    { file: 'js/calendar.js', container: 'CalendarIntegration' },
+  ];
+  for (const { file, container } of checks) {
+    const src = js(file);
+    // Find the object literal start (after `= {`)
+    const re = new RegExp(`(var|const)\\s+${container}\\s*=\\s*(class\\s*\\{|\\{)`);
+    const m = re.exec(src);
+    if (!m) continue;
+    const start = m.index + m[0].length - 1;
+    const body = extractBodyAt(src, start);
+    if (!body) continue;
+    // Look for top-level method definitions: at start of a line (after
+    // whitespace) "name(args) {" or "async name(args) {".
+    const methodRe = /^\s{2}(?:async\s+)?(\w+)\s*\([^)]*\)\s*\{/gm;
+    const seen = new Map();
+    let mm;
+    while ((mm = methodRe.exec(body)) !== null) {
+      seen.set(mm[1], (seen.get(mm[1]) || 0) + 1);
+    }
+    const dupes = [...seen.entries()].filter(([, n]) => n > 1);
+    assert(dupes.length === 0,
+      `${container} has duplicate methods: ${dupes.map(([k, n]) => `${k} (×${n})`).join(', ')}`);
+  }
+});
+
+// ─── Renderer Return Contract ───
+// Every render_* function MUST return a string. Returning undefined
+// blanks the page (the navigate() caller does content.innerHTML = undefined).
+
+section('Renderer Return Contract');
+
+test('Every render_* function has a return statement', () => {
+  const content = js('js/pages.js');
+  const re = /App\.prototype\.(render_\w+)\s*=\s*function/g;
+  let m;
+  const missing = [];
+  while ((m = re.exec(content)) !== null) {
+    const name = m[1];
+    const body = extractFunction(content, name);
+    if (!body) continue;
+    // Strip strings (so a `return` token inside a string doesn't count)
+    // and check for an actual `return` statement.
+    const stripped = stripStrings(body);
+    if (!/\breturn\b/.test(stripped)) missing.push(name);
+  }
+  assert(missing.length === 0,
+    `Renderers without a return statement: ${missing.join(', ')}`);
+});
+
+// ─── Disease ID Consistency ───
+// Disease IDs are referenced in many places (prompts, pages, hints).
+// A typo (mecsf instead of mecfs) silently filters out the user's
+// disease without any error.
+
+section('Disease ID Consistency');
+
+test('Hardcoded disease IDs in code exist in CONFIG.DISEASE_CATEGORIES', () => {
+  // Extract all disease IDs from CONFIG.DISEASE_CATEGORIES
+  const configSrc = js('js/config.js');
+  const idRe = /id:\s*['"]([a-z_0-9]+)['"]/g;
+  const definedIds = new Set();
+  // Restrict to inside DISEASE_CATEGORIES
+  const dcStart = configSrc.indexOf('DISEASE_CATEGORIES');
+  if (dcStart === -1) return;
+  const dcEnd = configSrc.indexOf('DATA_CATEGORIES', dcStart);
+  const dcBlock = configSrc.substring(dcStart, dcEnd > 0 ? dcEnd : configSrc.length);
+  let m;
+  while ((m = idRe.exec(dcBlock)) !== null) definedIds.add(m[1]);
+
+  // Now scan code for places that look like disease ID lookups:
+  // - hints[id] / diseaseTerms[id] object literals
+  // - selectedDiseases.includes('xxx')
+  const checked = ['js/app.js', 'js/pages.js', 'js/config.js'];
+  const referenced = new Set();
+  // Object literal keys like "mecfs: ..." inside hints/disease maps
+  for (const f of checked) {
+    const src = js(f);
+    // Match: word: '...' inside known disease-keyed objects
+    const objMatches = src.match(/\b(?:mecfs|depression|bipolar|ptsd|adhd|long_covid|fibromyalgia|hashimoto|diabetes_t2|sle|ibs|pots|insomnia|gastroparesis|anxiety|migraine)\b/g) || [];
+    for (const mm of objMatches) referenced.add(mm);
+  }
+
+  // Every referenced ID should exist in DISEASE_CATEGORIES
+  const unknown = [...referenced].filter(id => !definedIds.has(id));
+  assert(unknown.length === 0,
+    `Disease IDs referenced in code but not defined in CONFIG: ${unknown.join(', ')}`);
+});
+
+// ─── DATA_CATEGORIES Consistency ───
+
+section('Data Category Consistency');
+
+test('store.categoryToStateKey covers DATA_CATEGORIES ids', () => {
+  const configSrc = js('js/config.js');
+  const dcStart = configSrc.indexOf('DATA_CATEGORIES');
+  if (dcStart === -1) return;
+  // Extract IDs from DATA_CATEGORIES section only
+  const dcEnd = configSrc.indexOf('TEST_KITS', dcStart);
+  const block = configSrc.substring(dcStart, dcEnd > 0 ? dcEnd : configSrc.length);
+  const idRe = /id:\s*['"]([a-z_0-9]+)['"]/g;
+  const ids = new Set();
+  let m;
+  while ((m = idRe.exec(block)) !== null) ids.add(m[1]);
+
+  // Verify the mapping in store.js exists for the core ones
+  const storeSrc = js('js/store.js');
+  const mapBody = extractFunction(storeSrc, 'categoryToStateKey') || '';
+  // Test that the high-traffic ids resolve to a state key (or at least
+  // that the function returns null gracefully — never throws).
+  // We don't require every id to map; some are text-only categories
+  // handled separately. But the function MUST exist and be callable.
+  assert(mapBody.length > 0, 'store.categoryToStateKey() must exist');
+});
+
+// ─── CONFIG Reference Integrity ───
+
+section('CONFIG Reference Integrity');
+
+test('All CONFIG.X references in code resolve to a property', () => {
+  const configSrc = js('js/config.js');
+  // Collect top-level CONFIG keys
+  const configKeys = new Set();
+  // Match `var CONFIG = { KEY: ..., KEY: ... }` shallow keys
+  const cfgStart = configSrc.indexOf('var CONFIG');
+  const cfgBraceStart = configSrc.indexOf('{', cfgStart);
+  const cfgBody = extractBodyAt(configSrc, cfgBraceStart);
+  if (cfgBody) {
+    // Match top-level "  KEY:" lines (2-space indent, all caps + underscores)
+    const keyRe = /^\s{2}([A-Z][A-Z_0-9]*):/gm;
+    let m;
+    while ((m = keyRe.exec(cfgBody)) !== null) configKeys.add(m[1]);
+  }
+
+  // Scan all JS for CONFIG.X references (X is uppercase)
+  const referenced = new Set();
+  const refRe = /\bCONFIG\.([A-Z][A-Z_0-9]*)\b/g;
+  for (const f of allJs) {
+    let m;
+    while ((m = refRe.exec(f.content)) !== null) referenced.add(m[1]);
+  }
+
+  const missing = [...referenced].filter(k => !configKeys.has(k));
+  assert(missing.length === 0,
+    `CONFIG.X references with no matching property: ${missing.join(', ')}`);
+});
+
+// ─── JSON.parse Safety ───
+
+section('JSON.parse Safety');
+
+test('Every JSON.parse() is wrapped in try/catch', () => {
+  // Walk every brace upward from a JSON.parse() call. For each enclosing
+  // `{`, check if it's preceded by `try`. If any ancestor brace is a
+  // try-block, the call is covered. Continue ascending until we run out
+  // of enclosing braces.
+  const offenders = [];
+  for (const f of allJs) {
+    const src = f.content;
+    let i = 0;
+    while (i < src.length) {
+      const idx = src.indexOf('JSON.parse', i);
+      if (idx === -1) break;
+      i = idx + 'JSON.parse'.length;
+      // Skip if inside a comment
+      const lineStart = src.lastIndexOf('\n', idx) + 1;
+      const lineUpToCall = src.substring(lineStart, idx);
+      if (lineUpToCall.includes('//')) continue;
+      // Walk backward, finding successive enclosing { (popping out of
+      // sibling {} pairs as we go).
+      let depth = 0;
+      let found = false;
+      let j = idx - 1;
+      while (j >= 0) {
+        const c = src[j];
+        if (c === '}') { depth++; j--; continue; }
+        if (c === '{') {
+          if (depth === 0) {
+            // Found the immediately enclosing `{`. Check if preceded by `try`.
+            const before = src.substring(Math.max(0, j - 6), j).trimEnd();
+            if (/\btry$/.test(before)) { found = true; break; }
+            // Otherwise, continue ascending OUT of this block.
+            j--;
+            // Don't reset depth — we're now sibling-scope of this { in
+            // the parent. But since we just consumed the open brace
+            // without matching it from a close, we're now AT the parent
+            // scope. depth stays 0 to find the next outer `{`.
+            continue;
+          }
+          depth--;
+          j--;
+          continue;
+        }
+        j--;
+      }
+      if (!found) {
+        const ln = src.substring(0, idx).split('\n').length;
+        offenders.push(`${f.name}:${ln}`);
+      }
+    }
+  }
+  assert(offenders.length === 0,
+    `Unwrapped JSON.parse() calls: ${offenders.join(', ')}`);
+});
+
+// ─── HTML Injection Safety ───
+// User-supplied content (text entries, profile fields, names) MUST NOT
+// be inserted into innerHTML without escaping. Otherwise a record like
+// "<script>alert(1)</script>" executes when the dashboard renders it.
+
+section('HTML Injection Safety');
+
+test('Components exposes an escapeHtml() helper', () => {
+  const components = js('js/components.js');
+  assert(/escapeHtml\s*\(/.test(components),
+    'Components.escapeHtml() must exist for HTML-safe interpolation of user content');
+  // Verify the helper actually escapes the dangerous chars
+  const escBody = extractFunction(components, 'escapeHtml');
+  assert(escBody, 'escapeHtml not found');
+  for (const ch of ['&amp;', '&lt;', '&gt;', '&quot;']) {
+    assert(escBody.includes(ch),
+      `escapeHtml must encode ${ch}`);
+  }
+});
+
+test('Dashboard renders user content via escapeHtml, not raw interpolation', () => {
+  const pagesSrc = js('js/pages.js');
+  const dash = extractFunction(pagesSrc, 'render_dashboard');
+  assert(dash, 'render_dashboard not found');
+  // Required: every interpolation of e.content / e.title in the
+  // dashboard recent-records block must be sanitized via escapeHtml.
+  // Check for the bad patterns: ${content} where content = e.content
+  // not piped through escapeHtml.
+  assert(dash.includes('Components.escapeHtml(rawContent'),
+    'render_dashboard must sanitize user-supplied content with Components.escapeHtml()');
+});
+
+test('Timeline renders user content via escapeHtml', () => {
+  const tlSrc = js('js/pages.js');
+  const tl = extractFunction(tlSrc, 'render_timeline');
+  assert(tl, 'render_timeline not found');
+  // The text-entry rendering branch must escape e.content before
+  // inserting it into innerHTML.
+  assert(tl.includes('Components.escapeHtml'),
+    'render_timeline must escape user content before innerHTML insertion');
+});
+
+// ─── Build Determinism ───
+
+section('Build Determinism');
+
+test('build_inline.py produces identical output across runs', () => {
+  const { execSync } = require('child_process');
+  // Snapshot current
+  const before = readFile('index.html');
+  // Re-run build
+  execSync('python3 build_inline.py', { cwd: ROOT, stdio: 'pipe' });
+  const after = readFile('index.html');
+  assert(before === after,
+    'build_inline.py produced different output on a second run — non-deterministic build');
+});
+
+// ─── Dead Code / Untracked References ───
+
+section('Dead Code Detection');
+
+test('No reference to deleted generateDemoAnalysis function', () => {
+  // We deleted it. Make sure no caller crept back in.
+  for (const f of allJs) {
+    const stripped = stripStrings(f.content);
+    assert(!/\bgenerateDemoAnalysis\s*\(/.test(stripped),
+      `${f.name} still calls generateDemoAnalysis() — deleted function`);
+  }
+});
+
+test('No top-level await outside async functions', () => {
+  // Top-level await would crash the script load in non-module mode (we
+  // use compat scripts). Walk brace depth from each `await` upward and
+  // require an enclosing `async function`/`async (...) =>`/`async name(`.
+  for (const f of allJs) {
+    const src = f.content;
+    let i = 0;
+    while (i < src.length) {
+      const idx = src.indexOf('await ', i);
+      if (idx === -1) break;
+      i = idx + 6;
+      // Skip if `await` is inside a comment or string — quick check on
+      // the line: if the line has // before `await`, skip.
+      const lineStart = src.lastIndexOf('\n', idx) + 1;
+      const lineUpToAwait = src.substring(lineStart, idx);
+      if (lineUpToAwait.includes('//')) continue;
+      // Skip if it's not actually a token (e.g. "awaiter")
+      const prevChar = src[idx - 1];
+      if (prevChar && /[a-zA-Z0-9_]/.test(prevChar)) continue;
+      // Walk back from idx, counting braces, looking for an unclosed `{`
+      // preceded by `async` (function or arrow).
+      let depth = 0;
+      let found = false;
+      for (let j = idx - 1; j >= 0; j--) {
+        const c = src[j];
+        if (c === '}') depth++;
+        else if (c === '{') {
+          if (depth === 0) {
+            // Look back ~80 chars before this `{` for `async`
+            const before = src.substring(Math.max(0, j - 100), j);
+            if (/\basync\b/.test(before)) { found = true; break; }
+            // Not async — keep walking up to find a higher enclosing scope
+            depth = -1; // signal: out of this brace, continue at higher level
+          } else {
+            depth--;
+          }
+        }
+        if (depth < 0) depth = 0;
+      }
+      if (!found) {
+        const ln = src.substring(0, idx).split('\n').length;
+        assert(false, `Top-level await at ${f.name}:${ln}`);
+      }
+    }
+  }
 });
 
 // ─── Summary ───

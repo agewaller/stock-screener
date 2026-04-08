@@ -379,9 +379,13 @@ App.prototype.render_dashboard = function() {
       <button class="btn btn-outline btn-sm" onclick="app.navigate('timeline')">すべて見る（${totalEntries}件）</button>
     </div>
     ${enrichedEntries.map((e, i) => {
-      const content = e.content || '';
-      const isLong = content.length > 100;
-      const preview = content.substring(0, 100).replace(/\n/g, ' ');
+      // Escape user-supplied text BEFORE inserting into innerHTML —
+      // otherwise malicious HTML/JS in a record could execute on render.
+      const rawContent = e.content || '';
+      const content = Components.escapeHtml(rawContent);
+      const isLong = rawContent.length > 100;
+      const preview = Components.escapeHtml(rawContent.substring(0, 100).replace(/\n/g, ' '));
+      const safeTitle = Components.escapeHtml(e.title || new Date(e.timestamp).toLocaleDateString('ja-JP'));
       const eid = 'rec-' + (e.id || i);
       return `
       <div class="card" style="margin-bottom:8px;border-left:3px solid var(--accent)">
@@ -389,7 +393,7 @@ App.prototype.render_dashboard = function() {
           onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-              <span style="font-size:12px;font-weight:600">${e.title || new Date(e.timestamp).toLocaleDateString('ja-JP')}</span>
+              <span style="font-size:12px;font-weight:600">${safeTitle}</span>
               <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
             </div>
             <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${isLong ? '...' : ''}</div>
@@ -536,15 +540,16 @@ App.prototype.render_dashboard = function() {
           <div style="margin-bottom:12px">
             <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px">${dk}（${byDate[dk].length}件）</div>
             ${byDate[dk].map(e => {
-              const content = e.content || '';
-              const preview = content.substring(0, 80).replace(/\n/g, ' ');
+              const rawContent = e.content || '';
+              const content = Components.escapeHtml(rawContent);
+              const preview = Components.escapeHtml(rawContent.substring(0, 80).replace(/\n/g, ' '));
               const eid = 'tl-' + (e.id || Math.random().toString(36).substr(2));
               return `
               <div style="margin-bottom:4px;border-left:2px solid var(--border);padding-left:10px">
                 <div style="cursor:pointer;display:flex;align-items:center;gap:6px"
                   onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none'">
                   <span style="font-size:10px;color:var(--text-muted)">${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}) : ''}</span>
-                  <span style="font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview}${content.length > 80 ? '...' : ''}</span>
+                  <span style="font-size:11px;color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview}${rawContent.length > 80 ? '...' : ''}</span>
                 </div>
                 <div id="${eid}" style="display:none;padding:6px 0;font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
               </div>`;
@@ -589,16 +594,22 @@ App.prototype.render_data_input = function() {
   const recentHtml = recentTexts.length > 0 ? `
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
       <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録（${textEntries.length}件）</h4>
-      ${recentTexts.map(e => `
+      ${recentTexts.map(e => {
+        const rawContent = e.content || '';
+        const safeContent = Components.escapeHtml(rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent);
+        const safeTitle = e.title ? Components.escapeHtml(e.title) : '';
+        const safeCategory = Components.escapeHtml(categoryLabels[e.category] || e.category || '');
+        return `
         <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span class="tag tag-accent" style="font-size:10px">${categoryLabels[e.category] || e.category}</span>
+            <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
             <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
           </div>
-          ${e.title ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${e.title}</div>` : ''}
-          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${(e.content || '').length > 300 ? e.content.substring(0, 300) + '...' : e.content}</div>
+          ${safeTitle ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${safeTitle}</div>` : ''}
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${safeContent}</div>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
     </div>` : '';
 
   return `
@@ -1027,16 +1038,19 @@ App.prototype.render_timeline = function() {
 
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
-      const content = e.content || e.text_note || '';
-      const aiInsight = app.generateQuickInsight(content);
+      const rawContent = e.content || e.text_note || '';
+      const content = Components.escapeHtml(rawContent);
+      const aiInsight = Components.escapeHtml(app.generateQuickInsight(rawContent) || '');
+      const safeLabel = Components.escapeHtml(e._label || '');
+      const safeCategory = e._category ? Components.escapeHtml(e._category) : '';
       return `
         <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
                 <span>${e._icon}</span>
-                <span style="font-size:12px;font-weight:600">${e._label}</span>
-                ${e._category ? `<span class="tag tag-accent" style="font-size:9px">${e._category}</span>` : ''}
+                <span style="font-size:12px;font-weight:600">${safeLabel}</span>
+                ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
               <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
             </div>
