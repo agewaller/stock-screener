@@ -401,12 +401,22 @@ App.prototype.render_dashboard = function() {
           ${(() => {
             const comment = app.getAIComment(e.id);
             if (!comment) return e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : '';
-            const r = comment.result;
-            const text = r._raw || r.findings || r.summary || '';
+            const r = comment.result || {};
+            // Prefer parsed structured fields. _raw is only used if it's
+            // a real string AND no parsed fields exist (defensive against
+            // legacy records that stored an object as _raw).
+            const pickString = (v) => (typeof v === 'string' && v.trim() ? v : '');
+            let text = pickString(r.summary) || pickString(r.findings) || pickString(r._raw);
+            // If everything is non-string (legacy bad data), regenerate a
+            // friendly placeholder rather than dumping raw JSON to the user.
+            if (!text) text = '分析結果を取得できませんでした。再度記録を送信してください。';
+            // Cap at 500 chars; never JSON.stringify an object here.
+            const display = text.substring(0, 500);
+            const actions = Array.isArray(r.actions) ? r.actions.filter(a => typeof a === 'string').slice(0, 3) : [];
             return `<div style="margin-top:8px;padding:10px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
               <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">分析結果（${new Date(comment.timestamp).toLocaleString('ja-JP')}）</div>
-              <div style="font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(typeof text === 'string' ? text.substring(0, 500) : JSON.stringify(text).substring(0, 500))}</div>
-              ${r.actions?.length ? '<div style="margin-top:6px;font-size:11px">' + r.actions.slice(0,3).map(a => '<div style="color:var(--accent)">→ ' + a + '</div>').join('') + '</div>' : ''}
+              <div style="font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(display)}</div>
+              ${actions.length ? '<div style="margin-top:6px;font-size:11px">' + actions.map(a => '<div style="color:var(--accent)">→ ' + a + '</div>').join('') + '</div>' : ''}
             </div>`;
           })()}
         </div>
