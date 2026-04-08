@@ -301,6 +301,22 @@ var AIEngine = class AIEngine {
         }
 
         const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
+        // Build Google Translate URL using the modern translate.goog
+        // subdomain format. The old translate.google.com/translate?u=
+        // endpoint was deprecated in 2019 and now shows a landing page
+        // that doesn't redirect — users were stuck on a "translation not
+        // available" screen.
+        // Format: https://{host-with-dashes}.translate.goog{path}?_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja
+        const toGoogTranslate = (srcUrl) => {
+          try {
+            const u = new URL(srcUrl);
+            const host = u.hostname.replace(/\./g, '-');
+            const sep = u.search ? u.search + '&' : '?';
+            return `https://${host}.translate.goog${u.pathname}${sep}_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja`;
+          } catch (e) {
+            return srcUrl;
+          }
+        };
 
         return {
           pmid: id,
@@ -310,10 +326,9 @@ var AIEngine = class AIEngine {
           date: article.pubdate || article.sortpubdate || '',
           doi: doi,
           url: pubmedUrl,
-          // Google Translate URL for the PubMed page (translate to Japanese)
-          translateUrl: `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(pubmedUrl)}`,
+          translateUrl: toGoogTranslate(pubmedUrl),
           doiUrl: doi ? `https://doi.org/${doi}` : '',
-          doiTranslateUrl: doi ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent('https://doi.org/' + doi)}` : '',
+          doiTranslateUrl: doi ? toGoogTranslate('https://doi.org/' + doi) : '',
           summary: article.title
         };
       }).filter(Boolean);
