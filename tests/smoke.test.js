@@ -567,12 +567,29 @@ test('Firebase offers deduplicateAll() cleanup utility', () => {
 
 section('Model Response Contract');
 
-test('callModel throws on no API key (no demo fallback)', () => {
+test('callModel throws (no demo fallback) when all providers fail', () => {
   const body = extractFunction(js('js/ai-engine.js'), 'callModel');
   assert(body, 'callModel not found');
-  // Must throw or reject when apiKey is missing — not return an object.
-  assert(/throw\s+new\s+Error\s*\(\s*['"]NO_API_KEY['"]/.test(body),
-    'callModel must throw NO_API_KEY when getApiKey() returns empty');
+  // Must throw when all providers fail — not return an object. Accept
+  // either the old NO_API_KEY signal or the new ALL_PROVIDERS_FAILED
+  // aggregate.
+  assert(
+    /throw\s+new\s+Error\s*\(\s*['"](?:NO_API_KEY|ALL_PROVIDERS_FAILED)/.test(body) ||
+    /throw\s+new\s+Error\s*\(\s*['"`]ALL_PROVIDERS_FAILED/.test(body),
+    'callModel must throw when all providers fail (not silently return demo data)'
+  );
+});
+
+test('callModel implements provider fallback', () => {
+  const src = js('js/ai-engine.js');
+  // Must have a helper that lists providers to try
+  assert(/buildProviderFallbackList/.test(src),
+    'ai-engine.js must expose a provider fallback list builder');
+  const body = extractFunction(src, 'callModel');
+  // Must iterate over providers and collect errors
+  assert(/errors?\.push|errors\s*\[|errors\s*=/.test(body) &&
+         /for\s*\(.*of\s+providers/.test(body),
+    'callModel must iterate providers and aggregate errors before throwing');
 });
 
 test('callModel does not call generateDemoAnalysis (orphaned function)', () => {

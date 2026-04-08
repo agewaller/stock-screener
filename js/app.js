@@ -1376,12 +1376,22 @@ URL/連絡先：（あれば）`;
       };
     } catch (err) {
       console.warn('[API Analysis] Failed:', err.message);
-      const isNoKey = err.message === 'NO_API_KEY';
-      const adminHint = this.isAdmin()
-        ? (isNoKey
-            ? '管理パネル → APIキータブで共通APIキーを保存してください。'
-            : `分析の呼び出しに失敗しました: ${err.message}`)
-        : 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
+      const isNoKey = err.message === 'NO_API_KEY' || err.message?.startsWith('ALL_PROVIDERS_FAILED: ') && err.message.includes('no API key');
+      const isAllFailed = err.message?.startsWith('ALL_PROVIDERS_FAILED:');
+      let adminHint;
+      if (this.isAdmin()) {
+        if (isNoKey) {
+          adminHint = '管理パネル → APIキータブで共通APIキーを保存してください。少なくとも1つのプロバイダー（OpenAI/Anthropic/Google）のキーが必要です。';
+        } else if (isAllFailed) {
+          // Show what each provider said
+          const details = err.message.replace('ALL_PROVIDERS_FAILED: ', '');
+          adminHint = `すべてのプロバイダーで失敗しました:\n${details}\n\n考えられる原因: プロキシURL誤り / キー無効 / ネットワーク障害 / レート制限`;
+        } else {
+          adminHint = `分析の呼び出しに失敗しました: ${err.message}`;
+        }
+      } else {
+        adminHint = 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
+      }
       return {
         summary: '記録を保存しました。',
         findings: adminHint,

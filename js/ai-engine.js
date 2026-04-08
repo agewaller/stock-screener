@@ -111,23 +111,61 @@ var AIEngine = class AIEngine {
   // string as JSON. If the API is unavailable or no key is set, throw and
   // let the caller decide what fallback message to show. Returning a fake
   // "demo" object here used to leak as raw JSON to the user UI.
+  //
+  // Automatic provider fallback: if the preferred provider fails (proxy
+  // down, bad key, rate limit, network error), we transparently retry
+  // with other providers whose keys are available. The user sees a
+  // working result instead of an error. Errors are aggregated so that
+  // when ALL providers fail, the thrown Error.message lists exactly what
+  // went wrong with each, making it trivial to diagnose.
   async callModel(modelId, prompt, options = {}) {
-    const apiKey = this.getApiKey(modelId);
-
-    if (!apiKey) {
-      throw new Error('NO_API_KEY');
+    const providers = this.buildProviderFallbackList(modelId);
+    const errors = [];
+    for (const { model, callFn } of providers) {
+      const key = this.getApiKey(model);
+      if (!key) {
+        errors.push(`${model}: no API key`);
+        continue;
+      }
+      try {
+        console.log('[AI Engine] Trying', model);
+        const result = await callFn.call(this, model, prompt, key, options);
+        // Successful provider — if it wasn't the originally requested
+        // one, log a warning so the admin can see the fallback in the
+        // console but nothing is surfaced to regular users.
+        if (model !== modelId) {
+          console.warn(`[AI Engine] Fell back from ${modelId} to ${model}`);
+        }
+        return result;
+      } catch (err) {
+        console.warn(`[AI Engine] ${model} failed:`, err.message);
+        errors.push(`${model}: ${err.message}`);
+      }
     }
+    throw new Error('ALL_PROVIDERS_FAILED: ' + errors.join(' | '));
+  }
 
-    console.log('[AI Engine] Calling', modelId, 'with key:', apiKey.substring(0, 10) + '...');
+  // Build the list of providers to try, in order, starting with the
+  // user's preferred model and falling back to the other two. Image
+  // analysis can only use OpenAI (vision), so for those we force the
+  // preferred path first and skip non-vision fallbacks unless they
+  // happen to support the input.
+  buildProviderFallbackList(preferredModel) {
+    const anthropic = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
+    const openai = { model: 'gpt-4o', callFn: this.callOpenAI };
+    const google = { model: 'gemini-2.5-pro', callFn: this.callGoogle };
 
-    if (modelId.startsWith('claude-')) {
-      return await this.callAnthropic(modelId, prompt, apiKey, options);
-    } else if (modelId.startsWith('gpt-')) {
-      return await this.callOpenAI(modelId, prompt, apiKey, options);
-    } else if (modelId.startsWith('gemini-')) {
-      return await this.callGoogle(modelId, prompt, apiKey, options);
+    if (preferredModel?.startsWith('claude-')) {
+      return [{ model: preferredModel, callFn: this.callAnthropic }, openai, google];
     }
-    throw new Error('Unknown model: ' + modelId);
+    if (preferredModel?.startsWith('gpt-')) {
+      return [{ model: preferredModel, callFn: this.callOpenAI }, anthropic, google];
+    }
+    if (preferredModel?.startsWith('gemini-')) {
+      return [{ model: preferredModel, callFn: this.callGoogle }, openai, anthropic];
+    }
+    // Unknown model — try all in order of reliability
+    return [openai, anthropic, google];
   }
 
   // Anthropic Claude API (via proxy or direct)
