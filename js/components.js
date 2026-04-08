@@ -305,14 +305,19 @@ var Components = {
     if (!text) return '';
     return text
       // Markdown links [text](url) - auto translate
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (m, text, url) => {
-        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(url) : url;
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g, (m, text, url) => {
+        const cleanUrl = url.replace(/[^\x20-\x7E]/g, '').replace(/[.,;:!?）」』】]+$/, '');
+        if (cleanUrl.length < 10) return text;
+        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(cleanUrl) : cleanUrl;
         return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${text}</a>`;
       })
-      // Plain URLs (not already in href) - auto translate
-      .replace(/(?<![="'])(https?:\/\/[^\s<\)]+)/g, (m, url) => {
-        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(url) : url;
-        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${url.length > 50 ? url.substring(0, 50) + '...' : url}</a>`;
+      // Plain URLs - strict: only ASCII chars in URL, stop at Japanese/whitespace/brackets
+      .replace(/(?<![="'])(https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+)/g, (m, url) => {
+        const cleanUrl = url.replace(/[.,;:!?）」』】]+$/, '');
+        if (cleanUrl.length < 10) return m;
+        const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(cleanUrl) : cleanUrl;
+        const display = cleanUrl.length > 60 ? cleanUrl.substring(0, 60) + '...' : cleanUrl;
+        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);word-break:break-all">${display}</a>`;
       })
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
