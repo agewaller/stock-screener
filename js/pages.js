@@ -292,6 +292,32 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
+  <!-- Daily tracking hint (disease-specific, minimal) -->
+  ${(() => {
+    const diseases = store.get('selectedDiseases') || [];
+    const hints = {
+      mecfs: ['体調(1-10)', '睡眠時間', 'PEMの有無'],
+      depression: ['気分(1-10)', '睡眠', '外出したか'],
+      fibromyalgia: ['痛み(1-10)', '睡眠', 'こわばり'],
+      long_covid: ['疲労(1-10)', '呼吸', '活動量'],
+      pots: ['水分量', '立ちくらみ', '心拍数'],
+      diabetes_t2: ['食事内容', '運動', '体重'],
+      hashimoto: ['体調', '体重', '冷え'],
+      ibs: ['お腹の調子', '食事内容', 'ストレス'],
+      insomnia: ['就寝/起床時刻', '睡眠の質', '日中の眠気'],
+      bipolar: ['気分(1-10)', '睡眠時間', '活動量'],
+      ptsd: ['気分', '睡眠', 'フラッシュバック'],
+      adhd: ['集中力', '睡眠', 'タスク達成'],
+    };
+    const items = new Set();
+    diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
+    if (items.size === 0) ['体調(1-10)', '睡眠', '食事'].forEach(h => items.add(h));
+    const uniqueItems = [...items].slice(0, 4);
+    return `<div style="padding:0 4px 8px;font-size:11px;color:var(--text-muted)">
+      今日の記録: ${uniqueItems.map(h => `<span style="display:inline-block;padding:2px 8px;background:var(--bg-tertiary);border-radius:10px;margin:2px;cursor:pointer" onclick="document.getElementById('dash-quick-input').value+=' ${h}：';document.getElementById('dash-quick-input').focus()">${h}</span>`).join('')}
+    </div>`;
+  })()}
+
   <!-- 2. AI Instant Feedback (appears after input) -->
   <div id="dash-ai-feedback" style="margin-bottom:16px">
     ${(() => {
