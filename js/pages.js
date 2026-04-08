@@ -63,7 +63,40 @@ App.prototype.render_login = function() {
         <p style="font-size:14px;color:#64748b;line-height:1.5">慢性疾患の方のための体調記録・情報整理ツール</p>
       </div>
 
-      <!-- What is this -->
+      <!-- Guest Try Area (no registration required) -->
+      <div style="margin-bottom:20px;padding:18px;background:#fff;border-radius:16px;border:2px solid #6366f1;box-shadow:0 2px 12px rgba(99,102,241,0.08)">
+        <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px">まずはお試しください（登録不要）</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px">今の体調や気になること、お薬の写真などを入れてみてください</div>
+        <div style="display:flex;gap:8px;align-items:start">
+          <div style="flex:1">
+            <textarea id="guest-input" rows="2"
+              style="width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 14px;font-size:14px;resize:none;font-family:inherit;outline:none"
+              placeholder="例：最近だるくて眠れない、頭痛がする..."></textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button onclick="app.guestAnalyze()" style="padding:12px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap">聞いてみる</button>
+            <label style="padding:8px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;font-size:12px;color:#64748b;cursor:pointer;text-align:center">
+              📎 写真
+              <input type="file" hidden accept="image/*,.pdf" onchange="app.guestFileAnalyze(event)">
+            </label>
+          </div>
+        </div>
+
+        <!-- Disease hint (gentle) -->
+        <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:11px;color:#64748b;line-height:1.6">
+          お持ちの症状を選ぶと、より的確な情報をお伝えできます（任意）
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            ${['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺'].map(item => {
+              const [id, label] = item.split(':');
+              return `<span class="guest-disease-tag" data-id="${id}" style="padding:3px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;cursor:pointer;font-size:11px;transition:all 0.15s"
+                onclick="this.classList.toggle('selected');if(this.classList.contains('selected')){this.style.background='#ede9fe';this.style.borderColor='#6366f1';this.style.color='#6366f1'}else{this.style.background='#fff';this.style.borderColor='#e2e8f0';this.style.color='#64748b'}">${label}</span>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Guest result area -->
+        <div id="guest-result" style="margin-top:12px"></div>
+      </div>
       <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
         <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">このサービスでできること</div>
         <div style="font-size:12px;color:#475569;line-height:1.8">
@@ -86,6 +119,7 @@ App.prototype.render_login = function() {
       </div>
 
       <!-- Login Options -->
+      <div id="login-section"></div>
       <div style="margin-bottom:24px">
         <!-- Email Registration/Login (primary for older users) -->
         <form onsubmit="app.loginWithEmail(event)" style="margin-bottom:14px">

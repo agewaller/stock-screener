@@ -1459,6 +1459,67 @@ URL/連絡先：（あれば）`;
     }
   }
 
+  // ---- Guest Mode (no registration) ----
+  async guestAnalyze() {
+    const input = document.getElementById('guest-input');
+    if (!input || !input.value.trim()) {
+      Components.showToast('体調や気になることを書いてみてください', 'info');
+      return;
+    }
+    const text = input.value.trim();
+    const resultEl = document.getElementById('guest-result');
+    if (resultEl) resultEl.innerHTML = Components.loading('分析しています...');
+
+    // Collect selected diseases from guest tags
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const diseases = Array.from(selectedTags).map(t => t.dataset.id);
+
+    // Temporarily set diseases for prompt interpolation
+    const prevDiseases = store.get('selectedDiseases');
+    if (diseases.length > 0) store.set('selectedDiseases', diseases);
+
+    const result = await this.analyzeViaAPI(text, 'text_analysis');
+
+    // Restore
+    if (prevDiseases) store.set('selectedDiseases', prevDiseases);
+
+    if (resultEl) {
+      resultEl.innerHTML = this.renderAnalysisCard(result) +
+        `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+          <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
+          <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
+          <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+        </div>`;
+    }
+  }
+
+  async guestFileAnalyze(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const resultEl = document.getElementById('guest-result');
+    if (resultEl) resultEl.innerHTML = Components.loading('写真を分析しています...');
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const isImage = file.type.startsWith('image/');
+      const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+      const result = await this.analyzeViaAPI(
+        `[写真: ${file.name}]`,
+        isImage ? 'image_analysis' : 'text_analysis',
+        imgOpts
+      );
+
+      if (resultEl) {
+        resultEl.innerHTML = this.renderAnalysisCard(result) +
+          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">この分析を保存して続けませんか？</div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          </div>`;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     const input = document.getElementById('dash-quick-input');
