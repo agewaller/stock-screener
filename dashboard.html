@@ -1595,8 +1595,20 @@ var MECFS_DEFAULT_PROMPT = `あなたは慢性疲労症候群/筋痛性脳脊髄
 
 // Common header injected into all prompts
 var PROMPT_HEADER = `【未病ダイアリーの使命と安全基準】
-あなたの前にいるのは、慢性疾患と毎日向き合い、情報を求めている方です。
-あなたは健康情報の整理・提示を行うアシスタントとして、寄り添い、具体的な参考情報を示してください。
+あなたの前にいるのは、慢性疾患と毎日向き合い、情報を求めている一般の方（平均65歳の女性）です。
+医療の専門家ではありません。
+
+【表現の絶対ルール】
+1. 専門用語は使わない。使う場合は必ず平易な日本語で説明を添える
+   例：「CRP」→「CRP（体の炎症を示す数値）」
+   例：「PEM」→「活動後に体調が悪化すること」
+   例：「HRV」→「心拍のゆらぎ（自律神経の状態を示す）」
+2. 短い文で書く。1文は40文字以内を目安に
+3. やさしく温かい口調で。命令形は使わない
+4. 「〜してみてはいかがでしょうか」「〜という方法があります」
+5. 箇条書きを多用し、読みやすくする
+6. アクション提案は「今日できること」として具体的に1つずつ
+7. 論文番号（PMID, DOI等）はユーザーには表示しない（内部参照のみ）
 
 【法的・臨床安全の遵守事項（すべての出力に適用）】
 1. 本サービスは医療機器（SaMD）ではなく、医療行為を行わない
@@ -5416,6 +5428,9 @@ var App = class App {
     if (page === 'actions') {
       setTimeout(() => this.loadActionRecommendations(), 300);
     }
+    if (page === 'research') {
+      setTimeout(() => this.autoLoadResearchPage(), 300);
+    }
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
     if (page === 'settings') this.loadProfileFields();
@@ -6134,6 +6149,29 @@ URL/連絡先：（あれば）`;
         </div>
       </div>
     `).join('') + `<div style="padding:8px 0"><button class="btn btn-outline btn-sm" onclick="app.navigate('research')" style="font-size:11px">もっと見る</button></div>`;
+  }
+
+  async autoLoadResearchPage() {
+    const resultsArea = document.getElementById('pubmed-results');
+    if (!resultsArea) return;
+    // Auto-search with user's diseases
+    const diseases = store.get('selectedDiseases') || [];
+    const diseaseTerms = {
+      mecfs: 'ME/CFS OR chronic fatigue syndrome',
+      depression: 'major depressive disorder',
+      fibromyalgia: 'fibromyalgia',
+      long_covid: 'long COVID OR post-COVID',
+      pots: 'postural orthostatic tachycardia',
+      diabetes_t2: 'type 2 diabetes',
+      hashimoto: 'Hashimoto thyroiditis',
+      ibs: 'irritable bowel syndrome',
+      insomnia: 'insomnia treatment',
+    };
+    const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
+    const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
+    const queryEl = document.getElementById('pubmed-search-query');
+    if (queryEl) queryEl.value = query;
+    this.searchPubMedLive();
   }
 
   async searchPubMedLive() {
@@ -7556,7 +7594,7 @@ App.prototype.render_login = function() {
         <div style="font-size:12px;color:#475569;line-height:1.8">
           <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📝</span><span><strong>体調を記録</strong> — テキスト・写真・ファイルで日々の症状、服薬、食事、気分を記録</span></div>
           <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📊</span><span><strong>経過を可視化</strong> — 記録データの時系列表示と傾向の整理</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — PubMedの最新論文を疾患別に自動取得（参考情報）</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — 最新の研究情報を疾患別に自動取得（参考情報）</span></div>
           <div style="display:flex;gap:8px"><span style="flex-shrink:0">💡</span><span><strong>情報の整理補助</strong> — 入力内容に基づく参考情報の提示（医療行為ではありません）</span></div>
         </div>
       </div>
@@ -7752,21 +7790,10 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users
+  // Welcome message for new users (minimal)
   const welcomeHtml = !hasData ? `
-    <div class="card" style="margin-bottom:20px;border:none;background:linear-gradient(135deg, rgba(108,99,255,0.06), rgba(255,101,132,0.06));border-radius:20px">
-      <div class="card-body" style="text-align:center;padding:28px 20px">
-        <div style="font-size:28px;margin-bottom:8px;letter-spacing:2px">一期一会</div>
-        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">今日という日を大切に</h3>
-        <p style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto 16px;line-height:1.7">
-          今の体調をひとこと書いてみてください。<br>
-          小さな記録の積み重ねが、寛解への道になります。
-        </p>
-        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>
-          <button class="btn btn-secondary btn-sm" onclick="app.navigate('data-input')">詳しく記録する</button>
-        </div>
-      </div>
+    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
+      上の入力欄に体調を書いてみてください
     </div>` : '';
 
   return `
@@ -7924,7 +7951,7 @@ App.prototype.render_dashboard = function() {
     <div id="dash-actions-live" style="display:block"></div>
   </div>
 
-  <!-- 7. Latest Research (auto-loaded from PubMed) -->
+  <!-- 7. Latest Research (auto-loaded research) -->
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
       onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
@@ -8332,11 +8359,11 @@ App.prototype.render_research = function() {
   return `
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
     <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究アップデート</h2>
-      <p style="font-size:13px;color:var(--text-secondary)">PubMedからME/CFSの最新論文をリアルタイム検索</p>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究</h2>
+      <p style="font-size:13px;color:var(--text-secondary)">あなたの疾患に関連する最新の研究論文</p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">PubMed検索</button>
+      <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">論文を検索</button>
       <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
     </div>
   </div>
@@ -8361,7 +8388,7 @@ App.prototype.render_research = function() {
   <div id="pubmed-results">
     ${updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', 'PubMed検索を実行してください', '上の「PubMed検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
+      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
   </div>`;
 };
 
