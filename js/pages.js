@@ -223,9 +223,16 @@ App.prototype.render_login = function() {
 
 // Disease Selection (for changing diseases later, from settings)
 App.prototype.render_disease_select = function() {
-  // Redirect to login which now includes disease selection
-  app.navigate('login');
-  return '';
+  // Disease selection is now part of the login page and also available
+  // in settings. For authed users landing here (e.g. first login without
+  // a cached disease) we fall through to the dashboard. For unauth users
+  // we render the login page HTML directly — never call navigate() from a
+  // renderer, which blanks the page via a race with the caller's
+  // innerHTML assignment.
+  if (store.get('isAuthenticated')) {
+    return this.render_dashboard();
+  }
+  return this.render_login();
 };
 
 // Dashboard Page
