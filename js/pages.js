@@ -542,7 +542,7 @@ App.prototype.render_dashboard = function() {
   <div style="display:flex;flex-wrap:wrap;gap:4px">${diseaseTagsHtml}</div>`;
   } catch(err) {
     console.error('Dashboard render error:', err);
-    return `<div style="padding:20px"><p>読み込みエラーが発生しました。</p><p style="font-size:12px;color:var(--text-muted)">${err.message}</p><button class="btn btn-primary" onclick="localStorage.clear();location.reload()">データをリセットして再読み込み</button></div>`;
+    return `<div style="padding:20px"><p>読み込みエラーが発生しました。</p><p style="font-size:12px;color:var(--text-muted)">${err.message}</p><button class="btn btn-primary" onclick="store.clearAll();location.reload()">データをリセットして再読み込み</button></div>`;
   }
 };
 
@@ -1373,7 +1373,7 @@ App.prototype.render_admin = function() {
                 <option value="manual" ${p.schedule==='manual'?'selected':''}>手動</option>
               </select>
               <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${p.key}')" style="padding:5px 12px">保存</button>
-              <button class="btn btn-danger btn-sm" onclick="if(confirm('削除しますか？'))app.deletePrompt('${p.key}')" style="padding:5px 10px">×</button>
+              <button class="btn btn-danger btn-sm" onclick="app.confirmAction(this,'削除',()=>app.deletePrompt('${p.key}'))" style="padding:5px 10px">×</button>
             </div>
           </div>
           <div class="card-body" style="padding:0">
@@ -1449,7 +1449,7 @@ App.prototype.render_admin = function() {
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
               <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();app.savePrompt('${key}')" style="padding:3px 10px;font-size:11px">保存</button>
-              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();if(confirm('「${p.name}」を削除しますか？'))app.deletePrompt('${key}')" style="padding:3px 8px;font-size:11px">×</button>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deletePrompt('${key}'))" style="padding:3px 8px;font-size:11px">×</button>
             </div>
           </div>
           <div class="card-body" id="prompt-edit-${key}" style="padding:0;display:none">
@@ -1595,7 +1595,7 @@ App.prototype.render_admin = function() {
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="app.generateDemoData()">デモデータ生成</button>
       <button class="btn btn-secondary" onclick="app.exportData()">データエクスポート</button>
-      <button class="btn btn-danger" onclick="if(confirm('すべてのデータを削除しますか？')){store.clearAll();location.reload()}">データ全削除</button>
+      <button class="btn btn-danger" onclick="app.confirmAction(this,'データ全削除',()=>{store.clearAll();location.reload()})">データ全削除</button>
     </div>
   </div>
   </div>`;
