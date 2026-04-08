@@ -46,14 +46,16 @@ var App = class App {
     store.calculateHealthScore();
 
     // Load initial calendar data if not yet synced
-    if (!(store.get('calendarEvents') || []).length) {
-      store.set('calendarEvents', [
-        {id:'e1',title:'IOEA 2026',location:'Cargèse, Corsica – France',start:'2026-04-06',end:'2026-04-11',allDay:true,type:'default',attendees:1},
-        {id:'e2',title:'♻️資源ごみをすてる（上原）',start:'2026-04-06T06:30:00+09:00',end:'2026-04-06T07:00:00+09:00',allDay:false,type:'default',attendees:1},
-        {id:'e3',title:'Reservation at APONTE',location:'APONTE, 目黒区',start:'2026-04-09T19:00:00+09:00',end:'2026-04-09T20:00:00+09:00',allDay:false,type:'default',attendees:1},
-        {id:'e4',title:'山口揚平予約 (Sheng Wei)',start:'2026-04-13T12:30:00+09:00',end:'2026-04-13T13:30:00+09:00',allDay:false,type:'default',attendees:2}
-      ]);
-    }
+    // Always update calendar with latest data
+    store.set('calendarEvents', [
+      {id:'e1',title:'IOEA 2026',location:'Cargèse, Corsica',start:'2026-04-06',end:'2026-04-11',allDay:true,type:'default',attendees:1},
+      {id:'e3',title:'Reservation at APONTE',location:'APONTE, 目黒区',start:'2026-04-09T19:00:00+09:00',end:'2026-04-09T20:00:00+09:00',allDay:false,type:'default',attendees:1},
+      {id:'e5',title:'山口揚平予約 (Yoshitaka Wakamoto)',start:'2026-04-13T11:30:00+09:00',end:'2026-04-13T12:30:00+09:00',allDay:false,type:'default',attendees:2},
+      {id:'e6',title:'山口揚平予約 (Sheng Wei)',start:'2026-04-13T12:30:00+09:00',end:'2026-04-13T13:30:00+09:00',allDay:false,type:'default',attendees:2},
+      {id:'e7',title:'山口揚平予約 (佐藤優一)',start:'2026-04-13T13:30:00+09:00',end:'2026-04-13T14:30:00+09:00',allDay:false,type:'default',attendees:2},
+      {id:'e8',title:'BMP定例',start:'2026-04-14T15:00:00+09:00',end:'2026-04-14T16:00:00+09:00',allDay:false,type:'default',attendees:8},
+      {id:'e9',title:'BMP定例',start:'2026-04-21T15:00:00+09:00',end:'2026-04-21T16:00:00+09:00',allDay:false,type:'default',attendees:8},
+    ]);
   }
 
   // ---- Navigation ----
