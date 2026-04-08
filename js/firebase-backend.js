@@ -66,10 +66,11 @@ var FirebaseBackend = {
           // Load user data from Firestore
           this.loadAllData();
 
-          // Navigate to appropriate page
+          // Navigate to dashboard on successful login. Users without a
+          // selected disease can pick one later from settings; the
+          // dashboard handles the empty-disease state.
           if (app.currentPage === 'login') {
-            const disease = store.get('selectedDisease');
-            app.navigate(disease ? 'dashboard' : 'disease-select');
+            app.navigate('dashboard');
           }
         } else {
           this.userId = null;
@@ -373,10 +374,31 @@ var FirebaseBackend = {
         }
       }
 
+      // Load calendar events (per-user, private)
+      try {
+        const calDoc = await this.userDoc().collection('private').doc('calendar').get();
+        if (calDoc.exists && Array.isArray(calDoc.data().events)) {
+          store.set('calendarEvents', calDoc.data().events);
+        }
+      } catch (err) {
+        console.warn('Load calendar:', err.message);
+      }
+
       store.calculateHealthScore();
       console.log('All user data loaded from Firestore');
     } catch (err) {
       console.error('Load all data error:', err);
+    }
+  },
+
+  // Save calendar events per-user (never commit to source code)
+  async saveCalendarEvents(events) {
+    if (!this.userId) return;
+    try {
+      await this.userDoc().collection('private').doc('calendar')
+        .set({ events: events || [], updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    } catch (err) {
+      console.error('Save calendar error:', err);
     }
   },
 
