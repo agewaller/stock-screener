@@ -234,13 +234,19 @@ var App = class App {
   }
 
   async saveApiKeys() {
+    if (!this.isAdmin()) {
+      Components.showToast('APIキー設定は管理者専用です', 'error');
+      return;
+    }
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
     let saved = 0;
+    let proxyUrl = '';
     // Save proxy URL
     const proxyEl = document.getElementById('input-proxy-url');
     if (proxyEl && proxyEl.value.trim()) {
-      localStorage.setItem('anthropic_proxy_url', proxyEl.value.trim());
+      proxyUrl = proxyEl.value.trim();
+      localStorage.setItem('anthropic_proxy_url', proxyUrl);
       saved++;
     }
 
@@ -253,9 +259,11 @@ var App = class App {
       }
     });
     if (saved > 0) {
-      // Also save to Firestore if available
+      // Save to global admin config so all users inherit these settings
       if (FirebaseBackend.initialized) {
-        await FirebaseBackend.saveApiKeys(keyData);
+        const globalConfig = { apiKeys: keyData };
+        if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
+        await FirebaseBackend.saveGlobalConfig(globalConfig);
       } else {
         Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
       }
@@ -286,13 +294,17 @@ var App = class App {
   }
 
   async clearApiKeys() {
+    if (!this.isAdmin()) {
+      Components.showToast('APIキー設定は管理者専用です', 'error');
+      return;
+    }
     ['anthropic', 'openai', 'google'].forEach(k => {
       localStorage.removeItem('apikey_' + k);
       const el = document.getElementById('input-apikey-' + k);
       if (el) el.value = '';
     });
     if (FirebaseBackend.initialized) {
-      await FirebaseBackend.saveApiKeys({});
+      await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
     }
     Components.showToast('すべてのAPIキーを削除しました', 'info');
     this.loadApiKeyFields();
@@ -2124,12 +2136,16 @@ URL/連絡先：（あれば）`;
   }
 
   setModel(modelId) {
-    store.set('selectedModel', modelId);
-    // Persist to Firestore so it survives reload
-    if (FirebaseBackend.initialized) {
-      FirebaseBackend.saveProfile({ settings: { selectedModel: modelId } });
+    if (!this.isAdmin()) {
+      Components.showToast('モデル選択は管理者専用です', 'error');
+      return;
     }
-    Components.showToast(`モデルを ${modelId} に変更しました`, 'success');
+    store.set('selectedModel', modelId);
+    // Save to global admin config so all users use the same model
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveGlobalConfig({ selectedModel: modelId });
+    }
+    Components.showToast(`モデルを ${modelId} に変更しました（全ユーザー共通）`, 'success');
   }
 
   saveAffiliateConfig(e) {

@@ -244,6 +244,31 @@ var FirebaseBackend = {
     }
   },
 
+  // ---- Global admin-managed config (shared by all users) ----
+  // Stored at admin/config. Writable only by admin (per firestore.rules),
+  // readable by any authenticated user.
+  async saveGlobalConfig(config) {
+    try {
+      await firebase.firestore().collection('admin').doc('config').set(config, { merge: true });
+      Components.showToast('全ユーザー共通設定を保存しました', 'success');
+      return true;
+    } catch (err) {
+      console.error('Save global config error:', err);
+      Components.showToast('共通設定の保存に失敗しました（管理者権限が必要）', 'error');
+      return false;
+    }
+  },
+
+  async loadGlobalConfig() {
+    try {
+      const doc = await firebase.firestore().collection('admin').doc('config').get();
+      return doc.exists ? doc.data() : {};
+    } catch (err) {
+      console.warn('Load global config:', err.message);
+      return {};
+    }
+  },
+
   // ---- Batch Load All User Data ----
   async loadAllData() {
     if (!this.userId) return;
@@ -295,11 +320,25 @@ var FirebaseBackend = {
 
       await Promise.all(loadPromises);
 
-      // Load API keys
-      const apiKeys = await this.loadApiKeys();
-      if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
-      if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
-      if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      // Load global admin-managed config (shared by all users)
+      // This takes precedence over any per-user legacy keys so that admin
+      // changes propagate to everyone automatically.
+      const globalConfig = await this.loadGlobalConfig();
+      if (globalConfig.apiKeys) {
+        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
+        if (globalConfig.apiKeys.openai) localStorage.setItem('apikey_openai', globalConfig.apiKeys.openai);
+        if (globalConfig.apiKeys.google) localStorage.setItem('apikey_google', globalConfig.apiKeys.google);
+      }
+      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
+      if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
+
+      // Legacy fallback: load user's own keys only if global config had none
+      if (!globalConfig.apiKeys) {
+        const apiKeys = await this.loadApiKeys();
+        if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
+        if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
+        if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      }
 
       store.calculateHealthScore();
       console.log('All user data loaded from Firestore');
