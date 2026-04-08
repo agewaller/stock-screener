@@ -48,13 +48,31 @@ var App = class App {
     // Load initial calendar data if not yet synced
     // Always update calendar with latest data
     store.set('calendarEvents', [
-      {id:'e1',title:'IOEA 2026',location:'Cargèse, Corsica',start:'2026-04-06',end:'2026-04-11',allDay:true,type:'default',attendees:1},
+      {id:'e1',title:'IOEA 2026',location:'Cargese, Corsica',start:'2026-04-06',end:'2026-04-11',allDay:true,type:'default',attendees:1},
+      {id:'b1',title:'小島一郎さんの誕生日',start:'2026-04-08',end:'2026-04-09',allDay:true,type:'birthday'},
       {id:'e3',title:'Reservation at APONTE',location:'APONTE, 目黒区',start:'2026-04-09T19:00:00+09:00',end:'2026-04-09T20:00:00+09:00',allDay:false,type:'default',attendees:1},
+      {id:'b2',title:'Yuzuki Matsushitaさんの誕生日',start:'2026-04-10',end:'2026-04-11',allDay:true,type:'birthday'},
+      {id:'b3',title:'石川俊祐さんの誕生日',start:'2026-04-12',end:'2026-04-13',allDay:true,type:'birthday'},
+      {id:'r1',title:'♻️資源ごみをすてる（上原）',start:'2026-04-13T06:30:00+09:00',end:'2026-04-13T07:00:00+09:00',allDay:false,type:'default'},
+      {id:'b4',title:'鶴岡信介さんの誕生日',start:'2026-04-13',end:'2026-04-14',allDay:true,type:'birthday'},
       {id:'e5',title:'山口揚平予約 (Yoshitaka Wakamoto)',start:'2026-04-13T11:30:00+09:00',end:'2026-04-13T12:30:00+09:00',allDay:false,type:'default',attendees:2},
       {id:'e6',title:'山口揚平予約 (Sheng Wei)',start:'2026-04-13T12:30:00+09:00',end:'2026-04-13T13:30:00+09:00',allDay:false,type:'default',attendees:2},
       {id:'e7',title:'山口揚平予約 (佐藤優一)',start:'2026-04-13T13:30:00+09:00',end:'2026-04-13T14:30:00+09:00',allDay:false,type:'default',attendees:2},
+      {id:'b5',title:'藤井宏一郎さんの誕生日',start:'2026-04-14',end:'2026-04-15',allDay:true,type:'birthday'},
+      {id:'t1',title:'🗑️不燃ゴミ（上原）',start:'2026-04-14T06:30:00+09:00',end:'2026-04-14T07:00:00+09:00',allDay:false,type:'default'},
       {id:'e8',title:'BMP定例',start:'2026-04-14T15:00:00+09:00',end:'2026-04-14T16:00:00+09:00',allDay:false,type:'default',attendees:8},
+      {id:'b6',title:'山田崇裕さんの誕生日',start:'2026-04-18',end:'2026-04-19',allDay:true,type:'birthday'},
+      {id:'b7',title:'Kazz Watabeさんの誕生日',start:'2026-04-19',end:'2026-04-20',allDay:true,type:'birthday'},
+      {id:'r2',title:'♻️資源ごみをすてる（上原）',start:'2026-04-20T06:30:00+09:00',end:'2026-04-20T07:00:00+09:00',allDay:false,type:'default'},
       {id:'e9',title:'BMP定例',start:'2026-04-21T15:00:00+09:00',end:'2026-04-21T16:00:00+09:00',allDay:false,type:'default',attendees:8},
+      {id:'b8',title:'長尾吉彦さんの誕生日',start:'2026-04-23',end:'2026-04-24',allDay:true,type:'birthday'},
+      {id:'b9',title:'御代川由尚さんの誕生日',start:'2026-04-23',end:'2026-04-24',allDay:true,type:'birthday'},
+      {id:'b10',title:'下田典子さんの誕生日',start:'2026-04-25',end:'2026-04-26',allDay:true,type:'birthday'},
+      {id:'b11',title:'加藤隆哉さんの誕生日',start:'2026-04-26',end:'2026-04-27',allDay:true,type:'birthday'},
+      {id:'b12',title:'石渡翔さんの誕生日',start:'2026-04-26',end:'2026-04-27',allDay:true,type:'birthday'},
+      {id:'b13',title:'安田雅樹さんの誕生日',start:'2026-04-26',end:'2026-04-27',allDay:true,type:'birthday'},
+      {id:'r3',title:'♻️資源ごみをすてる（上原）',start:'2026-04-27T06:30:00+09:00',end:'2026-04-27T07:00:00+09:00',allDay:false,type:'default'},
+      {id:'e10',title:'BMP定例',start:'2026-04-28T15:00:00+09:00',end:'2026-04-28T16:00:00+09:00',allDay:false,type:'default',attendees:8},
     ]);
   }
 
