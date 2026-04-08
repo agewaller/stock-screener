@@ -359,6 +359,19 @@ var App = class App {
     }
   }
 
+  confirmLogout() {
+    const btn = document.getElementById('logout-btn');
+    if (!btn) return;
+    btn.outerHTML = `
+      <div style="text-align:center;padding:12px;background:var(--danger-bg);border-radius:12px">
+        <div style="font-size:13px;color:var(--danger);margin-bottom:10px">ログアウトしますか？</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-danger" style="padding:10px 24px;font-size:14px" onclick="app.logout()">はい</button>
+          <button class="btn btn-secondary" style="padding:10px 24px;font-size:14px" onclick="app.navigate('settings')">いいえ</button>
+        </div>
+      </div>`;
+  }
+
   async logout() {
     try {
       if (FirebaseBackend.initialized) {
