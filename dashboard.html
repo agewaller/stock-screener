@@ -6631,32 +6631,10 @@ URL/連絡先：（あれば）`;
     return comments[entryId] || null;
   }
 
-  // Wrap URL with Google Translate for user's language
+  // Return URL as-is. Browser's built-in translation handles language.
+  // Google Translate proxy breaks many modern sites (SPA, auth, etc.)
   translateUrl(url) {
-    if (!url || url.includes('translate.google')) return url;
-    const profile = store.get('userProfile') || {};
-    const lang = profile.language || 'ja';
-
-    // Detect site language from URL domain
-    const siteLangMap = {
-      'ja': ['.co.jp', '.jp', 'peatix.com', 'byoinnavi.jp', 'caloo.jp', 'nanbyou.or.jp', 'note.com', 'connpass.com', 'stoacka.jp'],
-      'en': ['.com', '.org', '.io', '.dev', 'pubmed.ncbi', 'clinicaltrials.gov', 'iherb.com', 'eventbrite.com', 'meetup.com', 'reddit.com', 'github.com'],
-      'ko': ['.co.kr', '.kr', 'naver.com'],
-      'zh': ['.cn', '.tw', 'baidu.com'],
-      'de': ['.de', 'jameda.de'],
-      'fr': ['.fr', 'doctolib.fr'],
-    };
-
-    // Check if site matches user's language
-    const lowerUrl = url.toLowerCase();
-    const userDomains = siteLangMap[lang] || [];
-    if (userDomains.some(d => lowerUrl.includes(d))) return url; // Same language, no translation
-
-    // Check if site is English (many international sites)
-    if (lang === 'en') return url;
-
-    // For other combinations, translate
-    return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
+    return url || '#';
   }
 
   // ---- Dashboard Quick Input ----
