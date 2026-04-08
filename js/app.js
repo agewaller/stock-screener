@@ -1370,6 +1370,27 @@ URL/連絡先：（あれば）`;
       </div>`;
     }
 
+    // Monitoring metrics
+    if (result.monitoring?.items?.length) {
+      const statusIcons = { improving: '📈', stable: '➡️', declining: '📉', unknown: '❓' };
+      const statusColors = { improving: 'var(--success)', stable: 'var(--text-muted)', declining: 'var(--danger)', unknown: 'var(--text-muted)' };
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted)">📊 定点観測</div>
+          ${result.monitoring.overall_trend ? `<span style="font-size:10px;color:${result.monitoring.overall_trend.includes('改善') ? 'var(--success)' : result.monitoring.overall_trend.includes('注意') ? 'var(--danger)' : 'var(--text-muted)'}">${result.monitoring.overall_trend}</span>` : ''}
+        </div>
+        ${result.monitoring.items.slice(0, 6).map(m => `
+          <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px">
+            <span>${statusIcons[m.status] || '❓'}</span>
+            <span style="flex:1;color:var(--text-secondary)">${m.metric}</span>
+            <span style="font-weight:600;color:${statusColors[m.status] || 'var(--text-muted)'}">${m.current || '-'}</span>
+            <span style="color:var(--text-muted);font-size:10px">目標:${m.target || '-'}</span>
+          </div>
+        `).join('')}
+        ${result.monitoring.next_milestone ? `<div style="font-size:10px;color:var(--accent);margin-top:6px">🎯 ${result.monitoring.next_milestone}</div>` : ''}
+      </div>`;
+    }
+
     // Deeper prompt
     if (result.deeper_prompt) {
       html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${result.deeper_prompt}</div>`;
