@@ -1438,37 +1438,33 @@ URL/連絡先：（あれば）`;
   translateUrl(url) {
     if (!url || url.length < 10) return url || '#';
 
+    // Clean URL: remove non-ASCII chars that may have been appended
+    let cleanUrl = url.replace(/[^\x20-\x7E]/g, '').trim().replace(/[.,;:!?]+$/, '');
+    if (cleanUrl.length < 10) return url;
+
+    // Don't translate if already translated or internal
+    if (cleanUrl.includes('translate.goog') || cleanUrl.includes('translate.google')) return cleanUrl;
+    if (cleanUrl.includes('cares.advisers.jp')) return cleanUrl;
+
     const profile = store.get('userProfile') || {};
     const lang = profile.language || 'ja';
 
-    // Don't translate if already translated, or internal links
-    if (url.includes('translate.goog') || url.includes('translate.google')) return url;
-    if (url.includes('cares.advisers.jp')) return url;
-
-    // Don't translate URLs that are already in user's language
-    const lowerUrl = url.toLowerCase();
-    const sameLangPatterns = {
+    // Same-language sites: direct link
+    const lowerUrl = cleanUrl.toLowerCase();
+    const sameLang = {
       'ja': ['.co.jp', '.jp/', '.jp?', 'peatix.com', 'note.com', 'amazon.co.jp'],
-      'en': ['.com', '.org', '.io', 'pubmed', 'clinicaltrials.gov', 'iherb.com'],
-      'ko': ['.co.kr', '.kr/', 'naver.com'],
-      'zh': ['.cn/', '.tw/', 'baidu.com'],
-      'de': ['.de/'],
-      'fr': ['.fr/'],
+      'en': ['.com/', '.com?', '.org/', '.io/', 'pubmed', 'clinicaltrials.gov', 'iherb.com'],
+      'ko': ['.co.kr', 'naver.com'],
+      'zh': ['.cn/', '.tw/'],
     };
+    if ((sameLang[lang] || []).some(p => lowerUrl.includes(p))) return cleanUrl;
 
-    // If site is in user's language, direct link
-    const patterns = sameLangPatterns[lang] || [];
-    if (patterns.some(p => lowerUrl.includes(p))) return url;
-
-    // For other languages, use translate.goog format
-    // This format: https://DOMAIN-xx-translate-goog.translate.goog/path?_x_tr_sl=auto&_x_tr_tl=ja
+    // Translate using translate.goog
     try {
-      const parsed = new URL(url);
-      const translated = `https://${parsed.hostname.replace(/\./g, '-')}.translate.goog${parsed.pathname}${parsed.search}${parsed.search ? '&' : '?'}_x_tr_sl=auto&_x_tr_tl=${lang}&_x_tr_hl=${lang}`;
-      return translated;
+      const parsed = new URL(cleanUrl);
+      return `https://${parsed.hostname.replace(/\./g, '-')}.translate.goog${parsed.pathname}${parsed.search ? parsed.search + '&' : '?'}_x_tr_sl=auto&_x_tr_tl=${lang}&_x_tr_hl=${lang}`;
     } catch(e) {
-      // If URL parsing fails, use old format as fallback
-      return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
+      return cleanUrl;
     }
   }
 
