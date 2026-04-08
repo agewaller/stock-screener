@@ -5233,20 +5233,47 @@ var FirebaseBackend = {
       // This takes precedence over any per-user legacy keys so that admin
       // changes propagate to everyone automatically.
       const globalConfig = await this.loadGlobalConfig();
-      if (globalConfig.apiKeys) {
+      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
+
+      if (hasGlobalKeys) {
         if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
         if (globalConfig.apiKeys.openai) localStorage.setItem('apikey_openai', globalConfig.apiKeys.openai);
         if (globalConfig.apiKeys.google) localStorage.setItem('apikey_google', globalConfig.apiKeys.google);
+        console.log('[Firebase] Loaded global API keys');
       }
       if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
       if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
 
-      // Legacy fallback: load user's own keys only if global config had none
-      if (!globalConfig.apiKeys) {
-        const apiKeys = await this.loadApiKeys();
-        if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
-        if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
-        if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      // Legacy per-user keys (backward compatibility)
+      const legacyKeys = await this.loadApiKeys();
+      const hasLegacyKeys = legacyKeys && Object.values(legacyKeys).some(v => v);
+
+      if (!hasGlobalKeys && hasLegacyKeys) {
+        // Populate localStorage from legacy keys for this user's own session
+        if (legacyKeys.anthropic) localStorage.setItem('apikey_anthropic', legacyKeys.anthropic);
+        if (legacyKeys.openai) localStorage.setItem('apikey_openai', legacyKeys.openai);
+        if (legacyKeys.google) localStorage.setItem('apikey_google', legacyKeys.google);
+
+        // AUTO-MIGRATION: if current user is admin and global config is empty,
+        // promote their legacy per-user keys to global so all other users inherit them.
+        const userEmail = this.auth.currentUser?.email;
+        const adminList = (typeof app !== 'undefined' && app.ADMIN_EMAILS) || ['agewaller@gmail.com'];
+        const isAdmin = userEmail && adminList.includes(userEmail);
+        if (isAdmin) {
+          console.log('[Firebase] Admin detected with legacy keys — migrating to global config');
+          const migrationConfig = { apiKeys: {} };
+          if (legacyKeys.anthropic) migrationConfig.apiKeys.anthropic = legacyKeys.anthropic;
+          if (legacyKeys.openai) migrationConfig.apiKeys.openai = legacyKeys.openai;
+          if (legacyKeys.google) migrationConfig.apiKeys.google = legacyKeys.google;
+          const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+          if (proxyUrl) migrationConfig.proxyUrl = proxyUrl;
+          try {
+            await firebase.firestore().collection('admin').doc('config').set(migrationConfig, { merge: true });
+            console.log('[Firebase] Migration complete — all users will now inherit these keys on next login');
+          } catch (err) {
+            console.warn('[Firebase] Migration failed:', err.message);
+          }
+        }
       }
 
       store.calculateHealthScore();
@@ -6175,7 +6202,7 @@ URL/連絡先：（あれば）`;
           ${searchLinks.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:11px">${l.label}</a>`).join('')}
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text-muted)">管理者がAPIキーを設定すると、あなたの疾患・地域に特化したクリニックやイベントの提案が自動生成されます。</div>`;
+      ${this.isAdmin() ? '<div style="font-size:11px;color:var(--text-muted)">管理パネル → APIキータブで共通APIキーを保存すると、疾患・地域に特化した提案が自動生成されます。</div>' : ''}`;
   }
 
   async loadDashResearch() {
@@ -6671,11 +6698,16 @@ URL/連絡先：（あれば）`;
     prompt = aiEngine.interpolatePrompt(prompt, aiEngine.collectCurrentUserData());
 
     if (!apiKey) {
-      // No API key - return minimal feedback
+      // No API key available — return minimal neutral feedback.
+      // For admin this signals a setup issue; for regular users we avoid
+      // exposing any system/API terminology.
+      const adminHint = this.isAdmin()
+        ? '管理パネル → APIキータブで共通APIキーを保存してください。保存後、全ユーザーに自動反映されます。'
+        : 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
       return {
         summary: '記録を保存しました。',
-        findings: 'APIキーを設定すると、詳細な分析結果が表示されます。\n管理パネル → APIキータブで設定してください。',
-        actions: ['管理者にAPIキーの設定を依頼する'],
+        findings: adminHint,
+        actions: [],
         products: [],
         _fromAPI: false
       };
