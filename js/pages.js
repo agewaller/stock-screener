@@ -883,11 +883,11 @@ App.prototype.render_research = function() {
         <input type="text" class="form-input" id="pubmed-search-query" value="ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome" placeholder="検索キーワード..." style="flex:1">
         <select class="form-select" id="pubmed-search-days" style="width:120px">
           <option value="7">過去7日</option>
-          <option value="30" selected>過去30日</option>
-          <option value="90">過去90日</option>
+          <option value="30">過去30日</option>
+          <option value="90" selected>過去90日</option>
           <option value="365">過去1年</option>
         </select>
-        <button class="btn btn-primary" onclick="app.searchPubMedLive()">検索</button>
+        <button class="btn btn-primary" onclick="app.searchPubMedLive()">論文を検索</button>
       </div>
     </div>
   </div>
