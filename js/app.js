@@ -1416,10 +1416,43 @@ URL/連絡先：（あれば）`;
     return comments[entryId] || null;
   }
 
-  // Return URL as-is. Browser's built-in translation handles language.
-  // Google Translate proxy breaks many modern sites (SPA, auth, etc.)
+  // Auto-translate URLs for non-tech-savvy users (avg age 65)
+  // Uses translate.goog format which works better than translate.google.com/translate
   translateUrl(url) {
-    return url || '#';
+    if (!url || url.length < 10) return url || '#';
+
+    const profile = store.get('userProfile') || {};
+    const lang = profile.language || 'ja';
+
+    // Don't translate if already translated, or internal links
+    if (url.includes('translate.goog') || url.includes('translate.google')) return url;
+    if (url.includes('cares.advisers.jp')) return url;
+
+    // Don't translate URLs that are already in user's language
+    const lowerUrl = url.toLowerCase();
+    const sameLangPatterns = {
+      'ja': ['.co.jp', '.jp/', '.jp?', 'peatix.com', 'note.com', 'amazon.co.jp'],
+      'en': ['.com', '.org', '.io', 'pubmed', 'clinicaltrials.gov', 'iherb.com'],
+      'ko': ['.co.kr', '.kr/', 'naver.com'],
+      'zh': ['.cn/', '.tw/', 'baidu.com'],
+      'de': ['.de/'],
+      'fr': ['.fr/'],
+    };
+
+    // If site is in user's language, direct link
+    const patterns = sameLangPatterns[lang] || [];
+    if (patterns.some(p => lowerUrl.includes(p))) return url;
+
+    // For other languages, use translate.goog format
+    // This format: https://DOMAIN-xx-translate-goog.translate.goog/path?_x_tr_sl=auto&_x_tr_tl=ja
+    try {
+      const parsed = new URL(url);
+      const translated = `https://${parsed.hostname.replace(/\./g, '-')}.translate.goog${parsed.pathname}${parsed.search}${parsed.search ? '&' : '?'}_x_tr_sl=auto&_x_tr_tl=${lang}&_x_tr_hl=${lang}`;
+      return translated;
+    } catch(e) {
+      // If URL parsing fails, use old format as fallback
+      return `https://translate.google.com/translate?sl=auto&tl=${lang}&u=${encodeURIComponent(url)}`;
+    }
   }
 
   // ---- Dashboard Quick Input ----
