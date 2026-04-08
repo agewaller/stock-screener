@@ -418,6 +418,122 @@ test('interpolatePrompt handles SELECTED_DISEASES from store', () => {
     'interpolatePrompt must read selectedDiseases live from store');
 });
 
+// ─── Autosync duplication contract ───
+// Incident: loadAllData() called store.set() to populate entries from
+// Firestore, which fired enableAutoSync() listeners that re-wrote the
+// latest loaded entry as a fresh Firestore doc via .add(). Every page
+// reload duplicated the newest textEntries/symptoms/vitals record. The
+// fix: a _loading flag on FirebaseBackend that autosync listeners check
+// before writing, plus marking loaded entries with _synced=true.
+
+section('Autosync Duplication Contract');
+
+test('FirebaseBackend declares a _loading flag', () => {
+  const src = js('js/firebase-backend.js');
+  assert(/_loading\s*:\s*false/.test(src),
+    'FirebaseBackend must declare _loading: false (autosync guard)');
+});
+
+test('loadAllData sets _loading true before store.set', () => {
+  const rawBody = extractFunction(js('js/firebase-backend.js'), 'loadAllData');
+  assert(rawBody, 'loadAllData not found');
+  // Strip comments/strings so comments mentioning "store.set" don't
+  // match the indexOf search below.
+  const body = stripStrings(rawBody);
+  const loadingIdx = body.indexOf('this._loading = true');
+  const firstSetIdx = body.search(/store\.set\s*\(/);
+  assert(loadingIdx >= 0, 'loadAllData must set this._loading = true');
+  assert(firstSetIdx < 0 || loadingIdx < firstSetIdx,
+    'this._loading = true must come before the first store.set() call');
+});
+
+test('loadAllData resets _loading in finally', () => {
+  const body = extractFunction(js('js/firebase-backend.js'), 'loadAllData');
+  assert(/finally\s*\{[^}]*this\._loading\s*=\s*false/.test(body),
+    'loadAllData must reset this._loading = false in a finally block');
+});
+
+test('Loaded entries are marked _synced=true', () => {
+  const body = extractFunction(js('js/firebase-backend.js'), 'loadAllData');
+  assert(/_synced\s*:\s*true/.test(body),
+    'Entries loaded from Firestore must carry _synced:true so subsequent ' +
+    'store.set() calls don\'t try to re-upload them');
+});
+
+test('enableAutoSync listeners check _loading flag', () => {
+  const body = extractFunction(js('js/firebase-backend.js'), 'enableAutoSync');
+  assert(body, 'enableAutoSync not found');
+  assert(body.includes('_loading'),
+    'enableAutoSync body has no _loading references at all');
+
+  // Collect names of local helpers that are themselves _loading-guarded.
+  // Any store.on() call that delegates to one of these is safe. For each
+  // `const NAME = ...` declaration, extract its body via brace matching
+  // and check whether _loading appears inside.
+  const guardedHelpers = new Set();
+  const declRe = /const\s+(\w+)\s*=/g;
+  let dm;
+  while ((dm = declRe.exec(body)) !== null) {
+    const name = dm[1];
+    // Find the first `{` after the `=` and extract its body.
+    const braceIdx = body.indexOf('{', dm.index + dm[0].length);
+    if (braceIdx === -1) continue;
+    // Make sure the brace belongs to THIS declaration and not a later one:
+    // there must be no `;` between `=` and `{` (allow whitespace, arrows, parens).
+    const between = body.substring(dm.index + dm[0].length, braceIdx);
+    if (between.includes(';')) continue;
+    const helperBody = extractBodyAt(body, braceIdx);
+    if (helperBody && helperBody.includes('_loading')) {
+      guardedHelpers.add(name);
+    }
+  }
+
+  // Walk all store.on(...) calls and verify each handler is guarded.
+  const onCalls = [];
+  let searchFrom = 0;
+  while (searchFrom < body.length) {
+    const idx = body.indexOf('store.on(', searchFrom);
+    if (idx === -1) break;
+    // Find the matching closing paren.
+    let depth = 1;
+    let i = idx + 'store.on('.length;
+    while (i < body.length && depth > 0) {
+      const c = body[i];
+      if (c === '(') depth++;
+      else if (c === ')') { depth--; if (depth === 0) break; }
+      i++;
+    }
+    onCalls.push(body.substring(idx, i + 1));
+    searchFrom = i + 1;
+  }
+
+  assert(onCalls.length > 0, 'no store.on() calls found in enableAutoSync');
+
+  for (const call of onCalls) {
+    if (call.includes('_loading')) continue; // inline guard
+    let delegated = false;
+    for (const helper of guardedHelpers) {
+      if (new RegExp(`\\b${helper}\\s*\\(`).test(call)) { delegated = true; break; }
+    }
+    assert(delegated,
+      `store.on listener missing _loading guard and not using a guarded helper: ${call.substring(0, 80).replace(/\n/g, ' ')}`);
+  }
+});
+
+test('saveHealthEntry uses .add() (so loaded docs must be guarded)', () => {
+  // Sanity check: if saveHealthEntry ever switched to .set(id) the
+  // duplication bug would not recur, but the _loading contract is still
+  // required for other reasons (correctness of analyses writes etc).
+  const body = extractFunction(js('js/firebase-backend.js'), 'saveHealthEntry');
+  assert(body && body.includes('.add('),
+    'saveHealthEntry currently uses .add(); update tests if that changes');
+});
+
+test('Firebase offers deduplicateAll() cleanup utility', () => {
+  assert(/deduplicateAll\s*\(/.test(js('js/firebase-backend.js')),
+    'FirebaseBackend.deduplicateAll() must exist for manual cleanup');
+});
+
 // ─── AI terminology hiding ───
 // Incident: we explicitly hid "AI" from the user-facing UI, but
 // hardcoded strings kept creeping back in. Ensure renderers never use

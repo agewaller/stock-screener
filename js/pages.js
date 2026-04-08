@@ -1608,8 +1608,10 @@ App.prototype.render_admin = function() {
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="app.generateDemoData()">デモデータ生成</button>
       <button class="btn btn-secondary" onclick="app.exportData()">データエクスポート</button>
+      <button class="btn btn-warning" onclick="app.deduplicateRecords()">重複レコード削除</button>
       <button class="btn btn-danger" onclick="app.confirmAction(this,'データ全削除',()=>{store.clearAll();location.reload()})">データ全削除</button>
     </div>
+    <div style="padding:8px 16px 0;font-size:11px;color:var(--text-muted)">「重複レコード削除」は、同じ内容のレコードを1つに統合します（一度だけ実行すれば十分です）。</div>
   </div>
   </div>`;
 };
