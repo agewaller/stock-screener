@@ -5152,6 +5152,31 @@ var FirebaseBackend = {
     }
   },
 
+  // ---- Global admin-managed config (shared by all users) ----
+  // Stored at admin/config. Writable only by admin (per firestore.rules),
+  // readable by any authenticated user.
+  async saveGlobalConfig(config) {
+    try {
+      await firebase.firestore().collection('admin').doc('config').set(config, { merge: true });
+      Components.showToast('全ユーザー共通設定を保存しました', 'success');
+      return true;
+    } catch (err) {
+      console.error('Save global config error:', err);
+      Components.showToast('共通設定の保存に失敗しました（管理者権限が必要）', 'error');
+      return false;
+    }
+  },
+
+  async loadGlobalConfig() {
+    try {
+      const doc = await firebase.firestore().collection('admin').doc('config').get();
+      return doc.exists ? doc.data() : {};
+    } catch (err) {
+      console.warn('Load global config:', err.message);
+      return {};
+    }
+  },
+
   // ---- Batch Load All User Data ----
   async loadAllData() {
     if (!this.userId) return;
@@ -5203,11 +5228,25 @@ var FirebaseBackend = {
 
       await Promise.all(loadPromises);
 
-      // Load API keys
-      const apiKeys = await this.loadApiKeys();
-      if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
-      if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
-      if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      // Load global admin-managed config (shared by all users)
+      // This takes precedence over any per-user legacy keys so that admin
+      // changes propagate to everyone automatically.
+      const globalConfig = await this.loadGlobalConfig();
+      if (globalConfig.apiKeys) {
+        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
+        if (globalConfig.apiKeys.openai) localStorage.setItem('apikey_openai', globalConfig.apiKeys.openai);
+        if (globalConfig.apiKeys.google) localStorage.setItem('apikey_google', globalConfig.apiKeys.google);
+      }
+      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
+      if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
+
+      // Legacy fallback: load user's own keys only if global config had none
+      if (!globalConfig.apiKeys) {
+        const apiKeys = await this.loadApiKeys();
+        if (apiKeys.anthropic) localStorage.setItem('apikey_anthropic', apiKeys.anthropic);
+        if (apiKeys.openai) localStorage.setItem('apikey_openai', apiKeys.openai);
+        if (apiKeys.google) localStorage.setItem('apikey_google', apiKeys.google);
+      }
 
       store.calculateHealthScore();
       console.log('All user data loaded from Firestore');
@@ -5532,13 +5571,19 @@ var App = class App {
   }
 
   async saveApiKeys() {
+    if (!this.isAdmin()) {
+      Components.showToast('APIキー設定は管理者専用です', 'error');
+      return;
+    }
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
     let saved = 0;
+    let proxyUrl = '';
     // Save proxy URL
     const proxyEl = document.getElementById('input-proxy-url');
     if (proxyEl && proxyEl.value.trim()) {
-      localStorage.setItem('anthropic_proxy_url', proxyEl.value.trim());
+      proxyUrl = proxyEl.value.trim();
+      localStorage.setItem('anthropic_proxy_url', proxyUrl);
       saved++;
     }
 
@@ -5551,9 +5596,11 @@ var App = class App {
       }
     });
     if (saved > 0) {
-      // Also save to Firestore if available
+      // Save to global admin config so all users inherit these settings
       if (FirebaseBackend.initialized) {
-        await FirebaseBackend.saveApiKeys(keyData);
+        const globalConfig = { apiKeys: keyData };
+        if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
+        await FirebaseBackend.saveGlobalConfig(globalConfig);
       } else {
         Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
       }
@@ -5584,13 +5631,17 @@ var App = class App {
   }
 
   async clearApiKeys() {
+    if (!this.isAdmin()) {
+      Components.showToast('APIキー設定は管理者専用です', 'error');
+      return;
+    }
     ['anthropic', 'openai', 'google'].forEach(k => {
       localStorage.removeItem('apikey_' + k);
       const el = document.getElementById('input-apikey-' + k);
       if (el) el.value = '';
     });
     if (FirebaseBackend.initialized) {
-      await FirebaseBackend.saveApiKeys({});
+      await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
     }
     Components.showToast('すべてのAPIキーを削除しました', 'info');
     this.loadApiKeyFields();
@@ -7422,12 +7473,16 @@ URL/連絡先：（あれば）`;
   }
 
   setModel(modelId) {
-    store.set('selectedModel', modelId);
-    // Persist to Firestore so it survives reload
-    if (FirebaseBackend.initialized) {
-      FirebaseBackend.saveProfile({ settings: { selectedModel: modelId } });
+    if (!this.isAdmin()) {
+      Components.showToast('モデル選択は管理者専用です', 'error');
+      return;
     }
-    Components.showToast(`モデルを ${modelId} に変更しました`, 'success');
+    store.set('selectedModel', modelId);
+    // Save to global admin config so all users use the same model
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveGlobalConfig({ selectedModel: modelId });
+    }
+    Components.showToast(`モデルを ${modelId} に変更しました（全ユーザー共通）`, 'success');
   }
 
   saveAffiliateConfig(e) {
@@ -9031,7 +9086,10 @@ App.prototype.render_admin = function() {
 
   <!-- TAB: Models -->
   <div class="admin-tab-content" id="admin-tab-models" style="display:none">
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AIモデル選択</h3>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">AIモデル選択</h3>
+    <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:12px">
+      <b>全ユーザー共通設定:</b> ここで選んだモデルは、サインインしているすべての利用者に共通で適用されます。
+    </div>
     <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
       ${modelCards}
     </div>
@@ -9045,7 +9103,10 @@ App.prototype.render_admin = function() {
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
+      <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:16px">
+        <b>全ユーザー共通設定:</b> ここで保存したAPIキー・プロキシURLは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
+      </div>
       <div class="form-group">
         <label class="form-label">APIプロキシURL（必須）</label>
         <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">

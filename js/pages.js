@@ -1489,7 +1489,10 @@ App.prototype.render_admin = function() {
 
   <!-- TAB: Models -->
   <div class="admin-tab-content" id="admin-tab-models" style="display:none">
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">AIモデル選択</h3>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">AIモデル選択</h3>
+    <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:12px">
+      <b>全ユーザー共通設定:</b> ここで選んだモデルは、サインインしているすべての利用者に共通で適用されます。
+    </div>
     <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
       ${modelCards}
     </div>
@@ -1503,7 +1506,10 @@ App.prototype.render_admin = function() {
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
+      <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:16px">
+        <b>全ユーザー共通設定:</b> ここで保存したAPIキー・プロキシURLは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
+      </div>
       <div class="form-group">
         <label class="form-label">APIプロキシURL（必須）</label>
         <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
