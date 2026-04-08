@@ -138,7 +138,7 @@ var App = class App {
         this.afterRender(page);
       } catch(err) {
         console.error('Page render error:', page, err);
-        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="localStorage.clear();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
       }
     }
   }
@@ -380,6 +380,26 @@ var App = class App {
       Components.showToast('ログインしました（ローカルモード）', 'success');
       this.navigate('disease-select');
     }
+  }
+
+  // Generic inline double-tap to proceed (mobile-safe, no modal dialogs)
+  confirmAction(btn, label, callback) {
+    if (!btn) return;
+    if (btn.dataset.confirmed) { callback(); return; }
+    const orig = btn.textContent;
+    const origBg = btn.style.background;
+    btn.dataset.confirmed = '1';
+    btn.textContent = `${label}？もう一度押して確定`;
+    btn.style.background = 'var(--danger)';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+      if (btn.dataset.confirmed) {
+        btn.textContent = orig;
+        btn.style.background = origBg;
+        btn.style.color = '';
+        delete btn.dataset.confirmed;
+      }
+    }, 4000);
   }
 
   confirmLogout() {
@@ -2033,8 +2053,15 @@ URL/連絡先：（あれば）`;
   }
 
   resetPromptsToDefault() {
-    if (!confirm('すべてのプロンプトをデフォルトに戻しますか？カスタム変更は失われます。')) return;
-    store.set('customPrompts', {});  // Clear overrides so DEFAULT_PROMPTS shines through
+    const btn = document.querySelector('[onclick*="resetPromptsToDefault"]');
+    if (btn && !btn.dataset.confirmed) {
+      btn.dataset.confirmed = 'pending';
+      btn.textContent = '本当にリセットしますか？もう一度押して確定';
+      btn.style.background = 'var(--danger)';
+      setTimeout(() => { btn.textContent = 'すべてデフォルトに戻す'; btn.style.background = ''; delete btn.dataset.confirmed; }, 4000);
+      return;
+    }
+    store.set('customPrompts', {});
     Components.showToast(`プロンプトをデフォルトに戻しました（${Object.keys(DEFAULT_PROMPTS).length}件）`, 'success');
     this.navigate('admin');
   }
