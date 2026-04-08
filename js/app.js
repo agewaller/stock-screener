@@ -360,11 +360,15 @@ var App = class App {
   }
 
   async logout() {
-    if (FirebaseBackend.initialized) {
-      await FirebaseBackend.signOut();
-    } else {
-      store.update({ user: null, isAuthenticated: false, currentPage: 'login' });
+    try {
+      if (FirebaseBackend.initialized) {
+        await FirebaseBackend.signOut();
+      }
+    } catch(e) {
+      console.warn('Logout error:', e);
     }
+    // Always clear auth state and go to login
+    store.update({ user: null, isAuthenticated: false });
     this.navigate('login');
   }
 
