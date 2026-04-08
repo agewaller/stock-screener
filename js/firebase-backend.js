@@ -91,29 +91,35 @@ var FirebaseBackend = {
 
   // ---- Authentication ----
   async signInWithGoogle() {
+    // NOTE: we use signInWithPopup on ALL devices (including mobile).
+    //
+    // Why: Firebase's signInWithRedirect is broken on iOS Safari and other
+    // browsers with ITP (Intelligent Tracking Prevention) whenever the site
+    // domain (cares.advisers.jp) differs from the Firebase authDomain
+    // (care-14c31.firebaseapp.com). On redirect return, Firebase cannot read
+    // the auth state that was set on the third-party authDomain, so login
+    // silently fails. signInWithPopup avoids this by communicating via
+    // postMessage, which ITP does not block. This is Firebase's current
+    // recommendation since SDK 10+ when not hosting on the authDomain.
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      // Use redirect on mobile (popup often blocked), popup on desktop
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        await this.auth.signInWithRedirect(provider);
-        // Page will redirect and come back; onAuthStateChanged handles the rest
-        return null;
-      } else {
-        const result = await this.auth.signInWithPopup(provider);
-        Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
-        return result.user;
-      }
+      const result = await this.auth.signInWithPopup(provider);
+      Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+      return result.user;
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') return null;
-      if (err.code === 'auth/popup-blocked') {
-        // Fallback to redirect
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await this.auth.signInWithRedirect(provider);
+      // User closed the popup — silent, no toast
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         return null;
       }
+      // Popup blocked by browser — guide user to email auth instead of
+      // falling back to signInWithRedirect (which is broken on iOS/ITP).
+      if (err.code === 'auth/popup-blocked') {
+        Components.showToast('ポップアップがブロックされました。メールアドレスでの登録をお試しください。', 'error');
+        return null;
+      }
+      console.error('[Firebase] Google sign-in error:', err);
       Components.showToast('Googleログインがうまくいきませんでした。メールアドレスでの登録もお試しください。', 'error');
       throw err;
     }
