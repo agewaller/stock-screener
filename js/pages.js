@@ -102,7 +102,7 @@ App.prototype.render_login = function() {
         <div style="font-size:12px;color:#475569;line-height:1.8">
           <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📝</span><span><strong>体調を記録</strong> — テキスト・写真・ファイルで日々の症状、服薬、食事、気分を記録</span></div>
           <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📊</span><span><strong>経過を可視化</strong> — 記録データの時系列表示と傾向の整理</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — PubMedの最新論文を疾患別に自動取得（参考情報）</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — 最新の研究情報を疾患別に自動取得（参考情報）</span></div>
           <div style="display:flex;gap:8px"><span style="flex-shrink:0">💡</span><span><strong>情報の整理補助</strong> — 入力内容に基づく参考情報の提示（医療行為ではありません）</span></div>
         </div>
       </div>
@@ -298,21 +298,10 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users
+  // Welcome message for new users (minimal)
   const welcomeHtml = !hasData ? `
-    <div class="card" style="margin-bottom:20px;border:none;background:linear-gradient(135deg, rgba(108,99,255,0.06), rgba(255,101,132,0.06));border-radius:20px">
-      <div class="card-body" style="text-align:center;padding:28px 20px">
-        <div style="font-size:28px;margin-bottom:8px;letter-spacing:2px">一期一会</div>
-        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">今日という日を大切に</h3>
-        <p style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto 16px;line-height:1.7">
-          今の体調をひとこと書いてみてください。<br>
-          小さな記録の積み重ねが、寛解への道になります。
-        </p>
-        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('dash-quick-input').focus()">体調を書く</button>
-          <button class="btn btn-secondary btn-sm" onclick="app.navigate('data-input')">詳しく記録する</button>
-        </div>
-      </div>
+    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
+      上の入力欄に体調を書いてみてください
     </div>` : '';
 
   return `
@@ -470,7 +459,7 @@ App.prototype.render_dashboard = function() {
     <div id="dash-actions-live" style="display:block"></div>
   </div>
 
-  <!-- 7. Latest Research (auto-loaded from PubMed) -->
+  <!-- 7. Latest Research (auto-loaded research) -->
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
       onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
@@ -878,11 +867,11 @@ App.prototype.render_research = function() {
   return `
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
     <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究アップデート</h2>
-      <p style="font-size:13px;color:var(--text-secondary)">PubMedからME/CFSの最新論文をリアルタイム検索</p>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">最新研究</h2>
+      <p style="font-size:13px;color:var(--text-secondary)">あなたの疾患に関連する最新の研究論文</p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">PubMed検索</button>
+      <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">論文を検索</button>
       <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
     </div>
   </div>
@@ -907,7 +896,7 @@ App.prototype.render_research = function() {
   <div id="pubmed-results">
     ${updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', 'PubMed検索を実行してください', '上の「PubMed検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
+      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
   </div>`;
 };
 

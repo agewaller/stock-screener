@@ -132,6 +132,9 @@ var App = class App {
     if (page === 'actions') {
       setTimeout(() => this.loadActionRecommendations(), 300);
     }
+    if (page === 'research') {
+      setTimeout(() => this.autoLoadResearchPage(), 300);
+    }
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
     if (page === 'settings') this.loadProfileFields();
@@ -850,6 +853,29 @@ URL/連絡先：（あれば）`;
         </div>
       </div>
     `).join('') + `<div style="padding:8px 0"><button class="btn btn-outline btn-sm" onclick="app.navigate('research')" style="font-size:11px">もっと見る</button></div>`;
+  }
+
+  async autoLoadResearchPage() {
+    const resultsArea = document.getElementById('pubmed-results');
+    if (!resultsArea) return;
+    // Auto-search with user's diseases
+    const diseases = store.get('selectedDiseases') || [];
+    const diseaseTerms = {
+      mecfs: 'ME/CFS OR chronic fatigue syndrome',
+      depression: 'major depressive disorder',
+      fibromyalgia: 'fibromyalgia',
+      long_covid: 'long COVID OR post-COVID',
+      pots: 'postural orthostatic tachycardia',
+      diabetes_t2: 'type 2 diabetes',
+      hashimoto: 'Hashimoto thyroiditis',
+      ibs: 'irritable bowel syndrome',
+      insomnia: 'insomnia treatment',
+    };
+    const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
+    const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
+    const queryEl = document.getElementById('pubmed-search-query');
+    if (queryEl) queryEl.value = query;
+    this.searchPubMedLive();
   }
 
   async searchPubMedLive() {
