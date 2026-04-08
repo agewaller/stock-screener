@@ -208,9 +208,26 @@ var Store = class Store {
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
   }
 
-  // Clear all data
+  // Clear user data (preserve system config like Firebase settings)
   clearAll() {
+    // Save system config before clearing
+    const firebaseConfig = localStorage.getItem('firebase_config');
+    const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+    const adminEmails = localStorage.getItem('admin_emails');
+    const apiKeys = {
+      anthropic: localStorage.getItem('apikey_anthropic'),
+      openai: localStorage.getItem('apikey_openai'),
+      google: localStorage.getItem('apikey_google'),
+    };
+
     localStorage.clear();
+
+    // Restore system config
+    if (firebaseConfig) localStorage.setItem('firebase_config', firebaseConfig);
+    if (proxyUrl) localStorage.setItem('anthropic_proxy_url', proxyUrl);
+    if (adminEmails) localStorage.setItem('admin_emails', adminEmails);
+    Object.entries(apiKeys).forEach(([k, v]) => { if (v) localStorage.setItem('apikey_' + k, v); });
+
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
@@ -218,6 +235,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
+    this.state.selectedModel = 'gpt-4o';
   }
 };
 
