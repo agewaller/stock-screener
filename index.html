@@ -6182,40 +6182,41 @@ URL/連絡先：（あれば）`;
 
   async searchPubMedLive() {
     const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
-    const days = parseInt(document.getElementById('pubmed-search-days')?.value || '30');
+    const days = parseInt(document.getElementById('pubmed-search-days')?.value || '90');
     const resultsArea = document.getElementById('pubmed-results');
     if (!resultsArea) return;
 
-    resultsArea.innerHTML = Components.loading('PubMedを検索中...');
-
-    // Add date filter
-    const dateFilter = `AND ("last ${days} days"[dp])`;
-    const fullQuery = query + dateFilter;
+    resultsArea.innerHTML = Components.loading('最新の研究論文を検索しています...');
 
     try {
-      const articles = await aiEngine.searchPubMed(fullQuery, 20);
+      // Try with date filter first, then broaden
+      let articles = await aiEngine.searchPubMed(query + ` AND ("last ${days} days"[dp])`, 20);
+      if (articles.length === 0) {
+        articles = await aiEngine.searchPubMed(query + ' AND ("last 365 days"[dp])', 20);
+      }
+      if (articles.length === 0) {
+        articles = await aiEngine.searchPubMed(query, 20);
+      }
 
       if (articles.length === 0) {
-        resultsArea.innerHTML = Components.emptyState('🔬', '該当する論文が見つかりませんでした', '検索期間を広げるか、キーワードを変更してみてください。');
+        resultsArea.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">現在、関連する論文が見つかりませんでした。<br>設定から疾患を選択すると、より適切な研究が見つかります。</div>';
         return;
       }
 
       resultsArea.innerHTML = `
-        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">PubMed検索結果（${articles.length}件）</h3>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${articles.length}件の研究論文</div>
         ${articles.map(a => `
           <div class="card" style="margin-bottom:12px">
-            <div class="card-body" style="padding:16px 20px">
-              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                <span class="tag tag-info">PMID: ${a.pmid}</span>
-                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${a.date}</span>
+            <div class="card-body" style="padding:14px 16px">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+                <span style="font-size:10px;color:var(--text-muted)">${a.journal}</span>
+                <span style="font-size:10px;color:var(--text-muted)">${a.date}</span>
               </div>
               <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${a.authors.substring(0, 100)}${a.authors.length > 100 ? '...' : ''} — ${a.journal}</p>
+              <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${(a.authors || '').substring(0, 80)}${(a.authors || '').length > 80 ? '...' : ''}</p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <a href="${a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMed（英語）</a>
-                <a href="${a.translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>
-                ${a.doiUrl ? `<a href="${a.doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
-                ${a.doiTranslateUrl ? `<a href="${a.doiTranslateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
+                <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="font-size:12px">この研究を読む</a>
+                ${a.doiUrl ? `<a href="${a.doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:12px">論文全文</a>` : ''}
               </div>
             </div>
           </div>
@@ -8381,11 +8382,11 @@ App.prototype.render_research = function() {
         <input type="text" class="form-input" id="pubmed-search-query" value="ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome" placeholder="検索キーワード..." style="flex:1">
         <select class="form-select" id="pubmed-search-days" style="width:120px">
           <option value="7">過去7日</option>
-          <option value="30" selected>過去30日</option>
-          <option value="90">過去90日</option>
+          <option value="30">過去30日</option>
+          <option value="90" selected>過去90日</option>
           <option value="365">過去1年</option>
         </select>
-        <button class="btn btn-primary" onclick="app.searchPubMedLive()">検索</button>
+        <button class="btn btn-primary" onclick="app.searchPubMedLive()">論文を検索</button>
       </div>
     </div>
   </div>
