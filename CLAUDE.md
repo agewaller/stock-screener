@@ -20,10 +20,23 @@ config → store → ai-engine → affiliate → components → i18n → calenda
 ## 検証
 
 ```bash
-node tests/smoke.test.js         # 構文チェック + 基本検証
+node tests/smoke.test.js         # 69個の回帰テスト
 ```
 
-テストが通らない変更はコミットしない。
+テストが通らない変更はコミットしない。テストは以下をカバーする:
+
+- **JS構文**: 全ファイルの構文エラー検出
+- **ビルド出力**: index.html と dashboard.html の整合性、全モジュール同梱
+- **セキュリティ**: APIキー/電話番号/メール/個人名のハードコード検出
+- **モバイル互換**: `confirm()`/`alert()`/`localStorage.clear()`/`signInWithRedirect` 禁止
+- **レンダラー契約**: `render_*` 関数からの `navigate()` 呼び出し禁止
+- **キャッシュ無効化**: 疾患変更時の `cachedResearch`/`cachedActions`/`latestFeedback` クリア
+- **プロンプト整合性**: `{{PLACEHOLDER}}` と `interpolatePrompt` の対応
+- **AI表記隠し**: ユーザー向けレンダラーに「AI」リテラル禁止
+- **管理者権限**: `saveApiKeys`/`clearApiKeys` の `isAdmin()` チェック、global config 書き込み
+- **永続化契約**: `persistKeys` への必須キー登録、`clearAll()` の Firebase 設定保護
+
+新しいバグを踏んだら、再発防止のため対応するテストを追加すること。
 
 ## ファイル構造
 
