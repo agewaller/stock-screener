@@ -434,6 +434,11 @@ var App = class App {
 
     store.set('selectedDiseases', selected);
 
+    // Invalidate disease-dependent caches (research/actions/feedback)
+    store.set('cachedResearch', null);
+    store.set('cachedActions', null);
+    store.set('latestFeedback', null);
+
     // Update count badge
     const countEl = document.getElementById('disease-count');
     if (countEl) countEl.textContent = selected.length + '件選択中';
@@ -1825,13 +1830,25 @@ URL/連絡先：（あれば）`;
       }
     }
 
+    // Invalidate disease-dependent caches so the dashboard reflects the
+    // new disease list immediately. Without this, users see stale
+    // research/actions/feedback computed against the old diseases and
+    // think the prompts aren't reading their settings.
+    store.set('cachedResearch', null);
+    store.set('cachedActions', null);
+    store.set('latestFeedback', null);
+
     if (FirebaseBackend.initialized) {
       FirebaseBackend.saveProfile({ settings: { selectedDiseases: selected, selectedDisease: store.get('selectedDisease') } });
     }
 
     const countEl = document.getElementById('settings-disease-count');
     if (countEl) countEl.textContent = selected.length + '件選択';
-    Components.showToast(`${selected.length}件の疾患を保存しました`, 'success');
+    Components.showToast(`${selected.length}件の疾患を保存しました。関連情報を更新します。`, 'success');
+
+    // Navigate back to dashboard so the user sees fresh content
+    // (research + actions will auto-reload via afterRender).
+    setTimeout(() => this.navigate('dashboard'), 600);
   }
 
   saveProfile() {
