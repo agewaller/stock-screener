@@ -1310,8 +1310,8 @@ URL/連絡先：（あれば）`;
     if (/食[べ事]|ご飯|料理/.test(lower)) return '食事記録。栄養バランスと体調の相関を分析中。';
 
     // Generic insight based on text length
-    if (text.length > 200) return '詳細な記録です。AI分析でより深い洞察を得られます。';
-    if (text.length > 50) return '記録を継続中。パターン分析の精度が向上しています。';
+    if (text.length > 200) return '詳しい記録ありがとうございます。蓄積データから傾向を整理しています。';
+    if (text.length > 50) return '記録を継続中。パターンの把握精度が向上しています。';
     return '';
   }
 
