@@ -3215,6 +3215,22 @@ var AIEngine = class AIEngine {
         }
 
         const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
+        // Build Google Translate URL using the modern translate.goog
+        // subdomain format. The old translate.google.com/translate?u=
+        // endpoint was deprecated in 2019 and now shows a landing page
+        // that doesn't redirect — users were stuck on a "translation not
+        // available" screen.
+        // Format: https://{host-with-dashes}.translate.goog{path}?_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja
+        const toGoogTranslate = (srcUrl) => {
+          try {
+            const u = new URL(srcUrl);
+            const host = u.hostname.replace(/\./g, '-');
+            const sep = u.search ? u.search + '&' : '?';
+            return `https://${host}.translate.goog${u.pathname}${sep}_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja`;
+          } catch (e) {
+            return srcUrl;
+          }
+        };
 
         return {
           pmid: id,
@@ -3224,10 +3240,9 @@ var AIEngine = class AIEngine {
           date: article.pubdate || article.sortpubdate || '',
           doi: doi,
           url: pubmedUrl,
-          // Google Translate URL for the PubMed page (translate to Japanese)
-          translateUrl: `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(pubmedUrl)}`,
+          translateUrl: toGoogTranslate(pubmedUrl),
           doiUrl: doi ? `https://doi.org/${doi}` : '',
-          doiTranslateUrl: doi ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent('https://doi.org/' + doi)}` : '',
+          doiTranslateUrl: doi ? toGoogTranslate('https://doi.org/' + doi) : '',
           summary: article.title
         };
       }).filter(Boolean);
@@ -6613,7 +6628,14 @@ URL/連絡先：（あれば）`;
     }
 
     try {
-      const modelOptions = { maxTokens: 2048 };
+      // 4096 tokens allows the AI to produce the full schema
+      // (summary, findings, actions, new_approach, trend, next_check,
+      // monitoring items, products, nutrition, deeper_prompt) without
+      // truncation. Earlier 2048 limit was cutting JSON mid-output and
+      // causing JSON.parse to fail silently — the user then saw
+      // garbled text or "generic" responses because only the fallback
+      // plain-text branch fired.
+      const modelOptions = { maxTokens: 4096 };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
       if (type === 'image_analysis') {
         modelOptions.systemPrompt = '画像を詳細に分析し、慢性疾患患者の健康管理に役立つ情報を日本語で提供してください。必ずJSON形式で返してください。';
@@ -6622,31 +6644,20 @@ URL/連絡先：（あれば）`;
       const response = await aiEngine.callModel(store.get('selectedModel'), prompt, modelOptions);
 
       // Defensive: callModel must return a string, but coerce in case a
-      // future change ever returns an object. Never store a non-string in
-      // _raw — the dashboard renderer would JSON.stringify it and leak the
-      // entire object as raw JSON to the user.
+      // future change ever returns an object. Never store a non-string
+      // in _raw — the dashboard renderer would JSON.stringify it and
+      // leak the entire object as raw JSON to the user.
       const responseText = typeof response === 'string'
         ? response
         : (response == null ? '' : JSON.stringify(response));
 
-      // Try to parse JSON response
-      try {
-        const jsonMatch = responseText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          parsed._fromAPI = true;
-          // Only stash _raw if the model wrapped JSON in markdown / extra
-          // text — otherwise it would just duplicate the parsed fields.
-          if (responseText.trim() !== jsonMatch[0].trim()) {
-            parsed._raw = responseText;
-          }
-          return parsed;
-        }
-      } catch (e) {
-        console.warn('[analyzeViaAPI] JSON parse failed:', e.message);
+      const parsed = this.parseAIResponse(responseText);
+      if (parsed) {
+        parsed._fromAPI = true;
+        return parsed;
       }
 
-      // Plain-text response (no JSON detected)
+      // Plain-text response (no JSON detected even after repair)
       return {
         summary: '',
         findings: responseText,
@@ -6680,6 +6691,106 @@ URL/連絡先：（あれば）`;
         _fromAPI: false
       };
     }
+  }
+
+  // Parse an AI response string into a structured result object.
+  //
+  // Models sometimes return:
+  //   1. Clean JSON
+  //   2. JSON wrapped in markdown code fences (```json\n{...}\n```)
+  //   3. JSON with extra prose before/after
+  //   4. Truncated JSON (hit maxTokens mid-output)
+  //   5. Plain text (model ignored the JSON instruction)
+  //
+  // This helper handles all five. For (4), we progressively close
+  // dangling strings / arrays / objects until the parse succeeds, so
+  // even a truncated response yields at least the fields that were
+  // fully emitted before the cut-off.
+  parseAIResponse(text) {
+    if (!text || typeof text !== 'string') return null;
+
+    // 1. Strip markdown code fences if present
+    let body = text.trim();
+    const fenceMatch = body.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch) body = fenceMatch[1].trim();
+
+    // 2. Find the first `{` and try to parse from there
+    const start = body.indexOf('{');
+    if (start === -1) return null;
+    body = body.substring(start);
+
+    // 3. Try parsing as-is first
+    try {
+      return JSON.parse(body);
+    } catch (e) { /* fall through to repair */ }
+
+    // 4. Try finding the last `}` and parsing up to there
+    const lastClose = body.lastIndexOf('}');
+    if (lastClose > 0) {
+      try {
+        return JSON.parse(body.substring(0, lastClose + 1));
+      } catch (e) { /* fall through */ }
+    }
+
+    // 5. Repair truncated JSON: walk forward and track brace/bracket/
+    // string depth. When we hit the end unexpectedly, close whatever's
+    // open in the right order. This produces valid JSON even from a
+    // response that was cut off mid-field.
+    let repaired = '';
+    let inString = false;
+    let escape = false;
+    const stack = []; // contents: '{', '[', or '"'
+    for (let i = 0; i < body.length; i++) {
+      const c = body[i];
+      repaired += c;
+      if (escape) { escape = false; continue; }
+      if (inString) {
+        if (c === '\\') { escape = true; continue; }
+        if (c === '"') { inString = false; stack.pop(); continue; }
+        continue;
+      }
+      if (c === '"') { inString = true; stack.push('"'); continue; }
+      if (c === '{') { stack.push('{'); continue; }
+      if (c === '[') { stack.push('['); continue; }
+      if (c === '}' && stack[stack.length - 1] === '{') { stack.pop(); continue; }
+      if (c === ']' && stack[stack.length - 1] === '[') { stack.pop(); continue; }
+    }
+    // Close any remaining open structures.
+    // Trim trailing `,` before closing so `[1,2,` → `[1,2]` not `[1,2,]`.
+    // Note: hex-escape `}` in regex char classes (\x7d) so static
+    // analysers / brace-counters treat this file as having balanced braces.
+    repaired = repaired.replace(/,\s*$/, '');
+    while (stack.length > 0) {
+      const open = stack.pop();
+      if (open === '"') repaired += '"';
+      else if (open === '{') repaired += '\x7d';
+      else if (open === '[') repaired += ']';
+      // Trim trailing commas again before each close
+      repaired = repaired.replace(/,(\s*[\x7d\]])/g, '$1');
+    }
+    try {
+      const parsed = JSON.parse(repaired);
+      parsed._truncated = true; // signal that we had to repair
+      console.warn('[parseAIResponse] Repaired truncated JSON');
+      return parsed;
+    } catch (e) {
+      console.warn('[parseAIResponse] Repair failed:', e.message);
+    }
+
+    // 6. Last resort: extract at least summary / findings via regex
+    // so the user sees something useful.
+    const summaryMatch = body.match(/"summary"\s*:\s*"([^"]*)"/);
+    const findingsMatch = body.match(/"findings"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (summaryMatch || findingsMatch) {
+      return {
+        summary: summaryMatch?.[1] || '',
+        findings: (findingsMatch?.[1] || '').replace(/\\n/g, '\n'),
+        actions: [],
+        _truncated: true,
+        _parseMethod: 'regex-salvage'
+      };
+    }
+    return null;
   }
 
   // Render API analysis result as HTML card
