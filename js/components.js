@@ -293,8 +293,8 @@ var Components = {
   chatMessage(msg) {
     const isUser = msg.role === 'user';
     return `
-      <div class="chat-message ${isUser ? 'user' : 'ai'}">
-        ${!isUser ? '<div class="user-avatar" style="width:28px;height:28px;font-size:12px">AI</div>' : ''}
+      <div class="chat-message ${isUser ? 'user' : 'assistant'}">
+        ${!isUser ? '<div class="user-avatar" style="width:28px;height:28px;font-size:14px">💬</div>' : ''}
         <div class="chat-bubble">${this.formatMarkdown(msg.content)}</div>
       </div>
     `;

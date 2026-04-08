@@ -775,7 +775,8 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   line-height: 1.6;
 }
 
-.chat-message.ai .chat-bubble {
+.chat-message.ai .chat-bubble,
+.chat-message.assistant .chat-bubble {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-top-left-radius: 4px;
