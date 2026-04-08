@@ -1170,13 +1170,13 @@ App.prototype.render_integrations = function() {
   <div class="card" style="margin-bottom:24px" id="gcal-section">
     <div class="card-header">
       <span class="card-title">📅 Googleカレンダー連携</span>
-      <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同��済' : '未同期'}</span>
+      <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同期済' : '未同期'}</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報から活動量を自動分析します。現在はClaude Codeセッ���ョンから手��同期です。</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報から活動量を自動分析します。現在はGoogleカレンダーと連携しています。</p>
       <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
         <div style="font-size:12px;color:var(--text-secondary)">
-          <strong>同期��法：</strong>このClaude Codeチャッ��で「カレンダーを同期して」と依頼してください。自動でGoogleカレンダーからデータを取得しダッシュボードに反映します。
+          <strong>Googleカレンダーのデータを自動で取得して、ダッシュボードに表示します。
         </div>
       </div>
       ${(store.get('calendarEvents')||[]).length > 0 ? `
@@ -1668,16 +1668,10 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
-  <!-- Data Migration & Export -->
+  <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
-      <div style="background:var(--warning-bg);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--text-primary)">
-        <strong>旧ドメインからのデータ移行</strong><br>
-        agewaller.github.io で入力したデータがある場合、以下の手順で移行できます：<br>
-        1. <a href="https://agewaller.github.io/stock-screener/dashboard.html" target="_blank" style="color:var(--accent)">旧サイト</a>を開く → 設定 →「すべてのデータをエクスポート」<br>
-        2. 下の「データインポート」でそのJSONファイルを選択
-      </div>
       <div>
         <label class="form-label">データインポート（JSONファイル）</label>
         <input type="file" class="form-input" accept=".json" onchange="app.importDataFile(this.files[0])">
