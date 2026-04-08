@@ -4,6 +4,20 @@
    ============================================================ */
 
 var Components = {
+  // HTML escape — apply to ANY user-supplied text before inserting it
+  // into innerHTML. Without this, malicious HTML/JS in a record could
+  // execute when the dashboard renders it.
+  escapeHtml(text) {
+    if (text == null) return '';
+    if (typeof text !== 'string') text = String(text);
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
   // Health Score Gauge
   healthGauge(score, size = 180) {
     const r = (size - 20) / 2;
@@ -300,20 +314,35 @@ var Components = {
     `;
   },
 
-  // Simple markdown formatter
+  // Simple markdown formatter.
+  //
+  // SECURITY: input is HTML-escaped first, THEN markdown patterns are
+  // applied to produce trusted HTML tags. Without the initial escape,
+  // chat messages and AI text containing "<script>..." would execute.
+  // The markdown regexes (URLs, **bold**, etc.) operate on ASCII chars
+  // that survive escaping unchanged, so they still work on the escaped
+  // text. The only HTML tags in the output are the ones we generate.
   formatMarkdown(text) {
     if (!text) return '';
     // Defensive: callers must pass strings, but never crash on objects.
     if (typeof text !== 'string') return '';
-    return text
-      // Markdown links [text](url) - auto translate
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g, (m, text, url) => {
+
+    // 1. Escape HTML first
+    let safe = this.escapeHtml(text);
+
+    // 2. Apply markdown patterns to the escaped text
+    return safe
+      // Markdown links [text](url) - auto translate.
+      // Note: after escaping, the visible text part may contain
+      // &amp; / &lt; etc., which is fine — it's still safe.
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\)\s]+)\)/g, (m, linkText, url) => {
         const cleanUrl = url.replace(/[^\x20-\x7E]/g, '').replace(/[.,;:!?）」』】]+$/, '');
-        if (cleanUrl.length < 10) return text;
+        if (cleanUrl.length < 10) return linkText;
         const tUrl = (typeof app !== 'undefined' && app.translateUrl) ? app.translateUrl(cleanUrl) : cleanUrl;
-        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${text}</a>`;
+        // tUrl is built from cleanUrl which is already ASCII; safe in href.
+        return `<a href="${tUrl}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">${linkText}</a>`;
       })
-      // Plain URLs - strict: only ASCII chars in URL, stop at Japanese/whitespace/brackets
+      // Plain URLs - strict: only ASCII chars in URL, stop at non-ASCII
       .replace(/(?<![="'])(https?:\/\/[a-zA-Z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+)/g, (m, url) => {
         const cleanUrl = url.replace(/[.,;:!?）」』】]+$/, '');
         if (cleanUrl.length < 10) return m;
