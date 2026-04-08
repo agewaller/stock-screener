@@ -85,19 +85,30 @@ App.prototype.render_login = function() {
         </div>
       </div>
 
-      <!-- Google Login -->
-      <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:15px;font-size:15px;margin-bottom:10px;border:1.5px solid #e2e8f0;background:#fff">
-        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Googleではじめる（無料）
-      </button>
-      <div style="text-align:center;margin-bottom:20px">
-        <span style="font-size:11px;color:#94a3b8;cursor:pointer;border-bottom:1px dashed #cbd5e1"
-          onclick="var f=document.getElementById('email-form');f.style.display=f.style.display==='none'?'block':'none'">メールアドレスでログイン</span>
-        <form id="email-form" style="display:none;margin-top:10px" onsubmit="app.loginWithEmail(event)">
-          <input type="email" name="email" class="form-input" placeholder="メールアドレス" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
-          <input type="password" name="password" class="form-input" placeholder="パスワード" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1.5px solid #e2e8f0">
-          <button type="submit" class="btn btn-primary" style="width:100%;border-radius:12px;padding:12px">ログイン</button>
+      <!-- Login Options -->
+      <div style="margin-bottom:24px">
+        <!-- Email Registration/Login (primary for older users) -->
+        <form onsubmit="app.loginWithEmail(event)" style="margin-bottom:14px">
+          <input type="email" name="email" class="form-input" placeholder="メールアドレス"
+            style="border-radius:14px;padding:14px 16px;margin-bottom:8px;border:1.5px solid #e2e8f0;font-size:15px">
+          <input type="password" name="password" class="form-input" placeholder="パスワード（6文字以上）"
+            style="border-radius:14px;padding:14px 16px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:15px">
+          <button type="submit" class="btn btn-primary" style="width:100%;border-radius:14px;padding:14px;font-size:15px">メールアドレスではじめる（無料）</button>
+          <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px">初回は自動で登録されます。2回目以降は同じメール・パスワードでログイン。</div>
         </form>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+          <span style="font-size:12px;color:#94a3b8">または</span>
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+        </div>
+
+        <!-- Google Login -->
+        <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:14px;font-size:14px;border:1.5px solid #e2e8f0;background:#fff">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Googleアカウントではじめる
+        </button>
       </div>
 
       <!-- How it works -->

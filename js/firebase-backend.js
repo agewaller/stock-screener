@@ -100,18 +100,40 @@ var FirebaseBackend = {
       // Try sign in first, if fails try create account
       try {
         const result = await this.auth.signInWithEmailAndPassword(email, password);
-        Components.showToast('ログインしました', 'success');
+        Components.showToast('おかえりなさい。ログインしました', 'success');
         return result.user;
       } catch (err) {
-        if (err.code === 'auth/user-not-found') {
-          const result = await this.auth.createUserWithEmailAndPassword(email, password);
-          Components.showToast('アカウントを作成しました', 'success');
-          return result.user;
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          // New user - create account
+          try {
+            const result = await this.auth.createUserWithEmailAndPassword(email, password);
+            Components.showToast('アカウントを作成しました。ようこそ！', 'success');
+            return result.user;
+          } catch (createErr) {
+            if (createErr.code === 'auth/email-already-in-use') {
+              Components.showToast('このメールアドレスは登録済みです。パスワードをご確認ください', 'error');
+            } else if (createErr.code === 'auth/weak-password') {
+              Components.showToast('パスワードは6文字以上で設定してください', 'error');
+            } else if (createErr.code === 'auth/invalid-email') {
+              Components.showToast('メールアドレスの形式が正しくありません', 'error');
+            } else {
+              Components.showToast('登録できませんでした。もう一度お試しください', 'error');
+            }
+            throw createErr;
+          }
+        }
+        if (err.code === 'auth/wrong-password') {
+          Components.showToast('パスワードが違います。もう一度お試しください', 'error');
+        } else if (err.code === 'auth/too-many-requests') {
+          Components.showToast('しばらく時間をおいてからお試しください', 'error');
+        } else if (err.code === 'auth/invalid-email') {
+          Components.showToast('メールアドレスの形式が正しくありません', 'error');
+        } else {
+          Components.showToast('ログインできませんでした。もう一度お試しください', 'error');
         }
         throw err;
       }
     } catch (err) {
-      Components.showToast('ログインエラー: ' + err.message, 'error');
       throw err;
     }
   },
