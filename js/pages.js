@@ -1694,7 +1694,9 @@ App.prototype.render_settings = function() {
         <input type="file" class="form-input" accept=".json" onchange="app.importDataFile(this.files[0])">
       </div>
       <button class="btn btn-secondary" onclick="app.exportData()">すべてのデータをエクスポート (JSON)</button>
-      <button class="btn btn-danger" onclick="if(confirm('本当にログアウトしますか？')){app.logout()}">ログアウト</button>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px" id="logout-btn" onclick="app.confirmLogout()">ログアウト</button>
+      </div>
     </div>
   </div>`;
 };
