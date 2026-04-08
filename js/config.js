@@ -184,6 +184,121 @@ var CONFIG = {
     }
   ],
 
+  // Disease-specific monitoring metrics (定点観測項目)
+  // Used by AI prompts to track progress over time
+  DISEASE_METRICS: {
+    mecfs: {
+      name: 'ME/CFS',
+      metrics: [
+        { id: 'pem_frequency', name: 'PEM発生頻度', unit: '回/週', target: '0', importance: 'critical' },
+        { id: 'activity_hours', name: '1日の活動可能時間', unit: '時間', target: '増加傾向', importance: 'critical' },
+        { id: 'fatigue_level', name: '疲労度', unit: '1-10', target: '3以下', importance: 'high' },
+        { id: 'sleep_quality', name: '睡眠の質', unit: '1-10', target: '7以上', importance: 'high' },
+        { id: 'brain_fog', name: 'ブレインフォグ', unit: '1-10', target: '3以下', importance: 'high' },
+        { id: 'pain_level', name: '疼痛レベル', unit: '1-10', target: '3以下', importance: 'medium' },
+        { id: 'hrv', name: 'HRV（心拍変動）', unit: 'ms', target: '上昇傾向', importance: 'medium' },
+        { id: 'nk_cell', name: 'NK細胞活性', unit: '%', target: '正常範囲', importance: 'medium', frequency: '3-6ヶ月' },
+        { id: 'crp', name: 'CRP（炎症マーカー）', unit: 'mg/dL', target: '0.3未満', importance: 'medium', frequency: '3-6ヶ月' },
+      ]
+    },
+    depression: {
+      name: 'うつ病',
+      metrics: [
+        { id: 'phq9', name: 'PHQ-9スコア', unit: '0-27', target: '5未満（寛解）', importance: 'critical' },
+        { id: 'mood', name: '気分', unit: '1-10', target: '6以上', importance: 'critical' },
+        { id: 'sleep_hours', name: '睡眠時間', unit: '時間', target: '7-8時間', importance: 'high' },
+        { id: 'activity_count', name: '外出・活動回数', unit: '回/週', target: '増加傾向', importance: 'high' },
+        { id: 'social_contact', name: '人との接触', unit: '回/週', target: '3回以上', importance: 'high' },
+        { id: 'appetite', name: '食欲', unit: '1-10', target: '安定', importance: 'medium' },
+        { id: 'concentration', name: '集中力', unit: '1-10', target: '改善傾向', importance: 'medium' },
+      ]
+    },
+    fibromyalgia: {
+      name: '線維筋痛症',
+      metrics: [
+        { id: 'pain_sites', name: '疼痛部位数', unit: '箇所', target: '減少傾向', importance: 'critical' },
+        { id: 'pain_intensity', name: '疼痛強度', unit: '1-10', target: '4以下', importance: 'critical' },
+        { id: 'sleep_quality', name: '睡眠の質', unit: '1-10', target: '6以上', importance: 'high' },
+        { id: 'fatigue', name: '疲労度', unit: '1-10', target: '4以下', importance: 'high' },
+        { id: 'stiffness', name: '朝のこわばり', unit: '分', target: '30分未満', importance: 'medium' },
+      ]
+    },
+    long_covid: {
+      name: 'Long COVID',
+      metrics: [
+        { id: 'pem_frequency', name: 'PEM発生頻度', unit: '回/週', target: '0', importance: 'critical' },
+        { id: 'fatigue', name: '疲労度', unit: '1-10', target: '減少傾向', importance: 'critical' },
+        { id: 'brain_fog', name: 'ブレインフォグ', unit: '1-10', target: '減少傾向', importance: 'high' },
+        { id: 'breathing', name: '呼吸困難度', unit: '1-10', target: '2以下', importance: 'high' },
+        { id: 'heart_rate', name: '安静時心拍数', unit: 'bpm', target: '60-80', importance: 'medium' },
+        { id: 'spo2', name: 'SpO2', unit: '%', target: '96以上', importance: 'medium' },
+        { id: 'd_dimer', name: 'D-ダイマー', unit: 'ng/mL', target: '正常範囲', importance: 'medium', frequency: '3ヶ月' },
+      ]
+    },
+    pots: {
+      name: 'POTS',
+      metrics: [
+        { id: 'hr_supine', name: '臥位心拍数', unit: 'bpm', target: '60-80', importance: 'critical' },
+        { id: 'hr_standing', name: '立位心拍数', unit: 'bpm', target: '臥位+30未満', importance: 'critical' },
+        { id: 'bp_systolic', name: '収縮期血圧', unit: 'mmHg', target: '90-120', importance: 'high' },
+        { id: 'water_intake', name: '水分摂取量', unit: 'L/日', target: '2-3L', importance: 'high' },
+        { id: 'salt_intake', name: '塩分摂取', unit: 'g/日', target: '8-10g', importance: 'high' },
+        { id: 'syncope', name: '失神・ふらつき', unit: '回/週', target: '0', importance: 'critical' },
+      ]
+    },
+    diabetes_t2: {
+      name: '2型糖尿病',
+      metrics: [
+        { id: 'hba1c', name: 'HbA1c', unit: '%', target: '7.0未満', importance: 'critical', frequency: '3ヶ月' },
+        { id: 'fasting_glucose', name: '空腹時血糖', unit: 'mg/dL', target: '130未満', importance: 'critical' },
+        { id: 'weight', name: '体重', unit: 'kg', target: '減少傾向', importance: 'high' },
+        { id: 'exercise_min', name: '運動時間', unit: '分/週', target: '150分以上', importance: 'high' },
+        { id: 'bp', name: '血圧', unit: 'mmHg', target: '130/80未満', importance: 'medium' },
+      ]
+    },
+    hashimoto: {
+      name: '甲状腺疾患',
+      metrics: [
+        { id: 'tsh', name: 'TSH', unit: 'μIU/mL', target: '0.5-2.5', importance: 'critical', frequency: '3-6ヶ月' },
+        { id: 'ft4', name: 'FT4', unit: 'ng/dL', target: '正常範囲', importance: 'high', frequency: '3-6ヶ月' },
+        { id: 'ft3', name: 'FT3', unit: 'pg/mL', target: '正常範囲', importance: 'high', frequency: '6ヶ月' },
+        { id: 'fatigue', name: '疲労度', unit: '1-10', target: '改善傾向', importance: 'high' },
+        { id: 'weight', name: '体重', unit: 'kg', target: '安定', importance: 'medium' },
+        { id: 'tpo_ab', name: '抗TPO抗体', unit: 'IU/mL', target: '減少傾向', importance: 'medium', frequency: '6-12ヶ月' },
+      ]
+    },
+    ibs: {
+      name: 'IBS',
+      metrics: [
+        { id: 'abdominal_pain', name: '腹痛頻度', unit: '回/週', target: '減少傾向', importance: 'critical' },
+        { id: 'bowel_type', name: '便の形状(Bristol)', unit: '1-7', target: '3-5', importance: 'high' },
+        { id: 'bloating', name: '膨満感', unit: '1-10', target: '3以下', importance: 'high' },
+        { id: 'food_triggers', name: '食事トリガー', unit: '特定済み数', target: '把握', importance: 'medium' },
+        { id: 'stress', name: 'ストレスレベル', unit: '1-10', target: '4以下', importance: 'medium' },
+      ]
+    },
+    insomnia: {
+      name: '不眠症',
+      metrics: [
+        { id: 'sleep_latency', name: '入眠潜時', unit: '分', target: '30分未満', importance: 'critical' },
+        { id: 'sleep_hours', name: '総睡眠時間', unit: '時間', target: '6-8時間', importance: 'critical' },
+        { id: 'wake_count', name: '中途覚醒回数', unit: '回', target: '1回以下', importance: 'high' },
+        { id: 'sleep_efficiency', name: '睡眠効率', unit: '%', target: '85%以上', importance: 'high' },
+        { id: 'daytime_sleepiness', name: '日中の眠気', unit: '1-10', target: '3以下', importance: 'medium' },
+      ]
+    },
+    _universal: {
+      name: '共通',
+      metrics: [
+        { id: 'overall_condition', name: '体調（総合）', unit: '1-10', target: '改善傾向', importance: 'critical' },
+        { id: 'energy', name: 'エネルギーレベル', unit: '1-10', target: '6以上', importance: 'high' },
+        { id: 'stress', name: 'ストレスレベル', unit: '1-10', target: '4以下', importance: 'high' },
+        { id: 'sleep', name: '睡眠の質', unit: '1-10', target: '6以上', importance: 'high' },
+        { id: 'mood', name: '気分', unit: '1-10', target: '6以上', importance: 'medium' },
+      ]
+    }
+  },
+
   // Test kits and lab recommendations
   TEST_KITS: [
     { id: 'blood_basic', name: '基本血液検査キット', description: '血算・肝機能・腎機能・CRP・甲状腺', price: '¥5,000〜¥10,000', where: 'クリニック', url: '' },
@@ -1150,6 +1265,32 @@ var INLINE_PROMPTS = {
 
 【ユーザー入力】
 {{INPUT}}
+
+【定点観測項目の評価（毎回必ず行うこと）】
+ユーザーの選択疾患（{{SELECTED_DISEASES}}）に基づき、以下の定点観測項目について
+今回の入力から読み取れる情報を評価してください。
+直接の数値が記載されていなくても、テキストの内容から推定してください。
+
+各疾患の定点観測項目：
+・ME/CFS: PEM頻度(回/週→目標0), 活動可能時間(時間→増加), 疲労度(1-10→3以下), 睡眠の質(1-10→7以上), ブレインフォグ(1-10→3以下), HRV(ms→上昇), NK細胞活性(3-6ヶ月), CRP(3-6ヶ月)
+・うつ病: PHQ-9(0-27→5未満), 気分(1-10→6以上), 睡眠時間(→7-8h), 活動回数(回/週→増加), 人との接触(回/週→3以上)
+・線維筋痛症: 疼痛部位数(→減少), 疼痛強度(1-10→4以下), 睡眠の質(→6以上), 朝のこわばり(分→30未満)
+・Long COVID: PEM頻度, 疲労度, ブレインフォグ, 呼吸困難度, 安静時心拍, SpO2(→96以上)
+・POTS: 臥位心拍, 立位心拍(→臥位+30未満), 血圧, 水分摂取(→2-3L), 失神回数(→0)
+・糖尿病: HbA1c(→7未満,3ヶ月), 空腹時血糖(→130未満), 体重(→減少), 運動(→150分/週)
+・甲状腺: TSH(→0.5-2.5,3-6ヶ月), FT4, FT3, 疲労度, 体重
+・IBS: 腹痛頻度(→減少), 便形状Bristol(→3-5), 膨満感(→3以下), 食事トリガー
+・不眠症: 入眠潜時(→30分未満), 総睡眠時間(→6-8h), 中途覚醒(→1回以下), 睡眠効率(→85%以上)
+・共通: 体調総合(1-10→改善), エネルギー(→6以上), ストレス(→4以下), 睡眠(→6以上), 気分(→6以上)
+
+出力のJSONに以下のフィールドを含めること：
+"monitoring": {
+  "items": [
+    {"metric": "項目名", "current": "今回の推定値", "target": "目標", "status": "improving/stable/declining/unknown", "note": "コメント"}
+  ],
+  "overall_trend": "全体の傾向（改善中/安定/注意必要）",
+  "next_milestone": "次の目標マイルストーン"
+}
 
 【食事に関する入力の場合は必ず以下を計算すること】
 ユーザーのプロフィール情報（年齢・性別・身長・体重）から基礎代謝量(BMR)を
