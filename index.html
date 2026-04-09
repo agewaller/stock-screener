@@ -4401,6 +4401,122 @@ var CalendarIntegration = {
     return cleaned;
   },
 
+  // ─── ICS URL import (Google Calendar / Outlook / any RFC5545 feed) ───
+  //
+  // Google Calendar settings → "カレンダーの統合" → "iCal 形式の秘密アドレス"
+  // をコピーして貼り付けるだけで取り込める。OAuth flow 不要。
+  // CORS: Google/Apple の ICS エンドポイントはブラウザから直接 fetch 可能。
+  // もしブロックされる場合は、AllOrigins の公開プロキシを経由する。
+  async importFromIcsUrl(icsUrl) {
+    if (!icsUrl || !/^https?:\/\//.test(icsUrl)) {
+      throw new Error('有効なICS URLを入力してください');
+    }
+    let icsText;
+    try {
+      // Try direct fetch first
+      const res = await fetch(icsUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      icsText = await res.text();
+    } catch (directErr) {
+      console.warn('[ICS] direct fetch failed, trying CORS proxy:', directErr.message);
+      try {
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(icsUrl);
+        const res = await fetch(proxyUrl);
+        if (!res.ok) throw new Error('Proxy HTTP ' + res.status);
+        icsText = await res.text();
+      } catch (proxyErr) {
+        throw new Error('カレンダーの取得に失敗しました: ' + (directErr.message || proxyErr.message));
+      }
+    }
+
+    const events = this.parseIcs(icsText);
+    if (events.length === 0) throw new Error('ICSからイベントを抽出できませんでした');
+
+    // Filter to upcoming events only (past -7 days to future +90 days)
+    const now = Date.now();
+    const past = now - 7 * 86400000;
+    const future = now + 90 * 86400000;
+    const upcoming = events.filter(e => {
+      const t = new Date(e.start).getTime();
+      return !isNaN(t) && t >= past && t <= future;
+    });
+
+    store.set('calendarEvents', upcoming);
+    localStorage.setItem('ics_calendar_url', icsUrl);
+    // Track last sync for the integration status widget
+    const syncs = store.get('integrationSyncs') || {};
+    syncs.google_calendar = new Date().toISOString();
+    store.set('integrationSyncs', syncs);
+
+    return upcoming;
+  },
+
+  // RFC 5545 minimal parser — handles the events Google/Outlook send.
+  // Not a full implementation (RRULE, VTIMEZONE etc. are ignored) but
+  // sufficient for showing a daily schedule.
+  parseIcs(icsText) {
+    if (!icsText || typeof icsText !== 'string') return [];
+    // Unfold continuation lines (RFC5545: lines starting with space/tab continue the previous)
+    const unfolded = icsText.replace(/\r?\n[ \t]/g, '');
+    const lines = unfolded.split(/\r?\n/);
+
+    const events = [];
+    let current = null;
+    const parseIcsDate = (v) => {
+      // Formats: 20260409T100000Z, 20260409T100000, 20260409 (all-day)
+      const m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?/);
+      if (!m) return v;
+      const [, y, mo, d, h, mi, s, z] = m;
+      if (!h) return `${y}-${mo}-${d}`;
+      const iso = `${y}-${mo}-${d}T${h}:${mi}:${s || '00'}${z || ''}`;
+      return iso;
+    };
+    const unescape = (s) => (s || '').replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+
+    for (const line of lines) {
+      if (line === 'BEGIN:VEVENT') { current = {}; continue; }
+      if (line === 'END:VEVENT') {
+        if (current && (current.start || current.startDate)) {
+          events.push({
+            id: current.uid || ('ics_' + events.length),
+            title: unescape(current.summary || ''),
+            location: unescape(current.location || ''),
+            start: current.start || current.startDate || '',
+            end: current.end || current.endDate || '',
+            allDay: !!current.startDate && !current.start,
+            type: 'default',
+            attendees: current.attendees || 0,
+            description: unescape(current.description || '').substring(0, 200)
+          });
+        }
+        current = null;
+        continue;
+      }
+      if (!current) continue;
+      const colon = line.indexOf(':');
+      if (colon === -1) continue;
+      const keyPart = line.substring(0, colon);
+      const value = line.substring(colon + 1);
+      const key = keyPart.split(';')[0].toUpperCase();
+      switch (key) {
+        case 'UID':     current.uid = value; break;
+        case 'SUMMARY': current.summary = value; break;
+        case 'LOCATION': current.location = value; break;
+        case 'DESCRIPTION': current.description = value; break;
+        case 'DTSTART':
+          if (keyPart.includes('VALUE=DATE')) current.startDate = parseIcsDate(value);
+          else current.start = parseIcsDate(value);
+          break;
+        case 'DTEND':
+          if (keyPart.includes('VALUE=DATE')) current.endDate = parseIcsDate(value);
+          else current.end = parseIcsDate(value);
+          break;
+        case 'ATTENDEE': current.attendees = (current.attendees || 0) + 1; break;
+      }
+    }
+    return events;
+  },
+
   // Get today's events
   getToday() {
     const events = store.get('calendarEvents') || [];
@@ -4547,25 +4663,81 @@ var Integrations = {
   // Build a one-glance summary string from a parsed health export.
   _buildHealthSummary(parsed, sourceName) {
     const parts = [];
-    if (parsed.vitals?.length) {
-      const hrEntries = parsed.vitals.filter(v => v.heart_rate);
-      const stepEntries = parsed.activity?.filter(a => a.steps) || [];
-      const sleepEntries = parsed.sleep || [];
-      const spo2Entries = parsed.vitals.filter(v => v.spo2);
-      if (hrEntries.length) {
-        const avg = hrEntries.reduce((s, v) => s + v.heart_rate, 0) / hrEntries.length;
-        parts.push(`心拍数: 平均 ${Math.round(avg)} bpm (${hrEntries.length}件)`);
-      }
-      if (spo2Entries.length) {
-        const avg = spo2Entries.reduce((s, v) => s + v.spo2, 0) / spo2Entries.length;
-        parts.push(`SpO2: 平均 ${avg.toFixed(1)}%`);
-      }
-      if (stepEntries.length) {
-        const total = stepEntries.reduce((s, v) => s + v.steps, 0);
-        parts.push(`歩数: ${total.toLocaleString()} 歩`);
-      }
-      if (sleepEntries.length) parts.push(`睡眠: ${sleepEntries.length} 件`);
+    const avg = (arr, field) => arr.reduce((s, v) => s + v[field], 0) / arr.length;
+    const vitals = parsed.vitals || [];
+    const activity = parsed.activity || [];
+    const sleep = parsed.sleep || [];
+    const mindfulness = parsed.mindfulness || [];
+
+    // Heart rate family — Apple Watch provides the richest data
+    const hr = vitals.filter(v => v.heart_rate);
+    const rhr = vitals.filter(v => v.resting_heart_rate);
+    const hrv = vitals.filter(v => v.hrv);
+    const whr = vitals.filter(v => v.walking_hr);
+    if (hr.length) parts.push(`💓 心拍数: 平均 ${Math.round(avg(hr, 'heart_rate'))} bpm (${hr.length}件)`);
+    if (rhr.length) parts.push(`💤 安静時心拍: 平均 ${Math.round(avg(rhr, 'resting_heart_rate'))} bpm`);
+    if (hrv.length) parts.push(`📊 HRV (自律神経): 平均 ${avg(hrv, 'hrv').toFixed(1)} ms`);
+    if (whr.length) parts.push(`🚶 歩行時心拍: 平均 ${Math.round(avg(whr, 'walking_hr'))} bpm`);
+
+    // Respiratory / oxygen
+    const spo2 = vitals.filter(v => v.spo2);
+    const resp = vitals.filter(v => v.respiratory_rate);
+    if (spo2.length) parts.push(`🫁 SpO2: 平均 ${avg(spo2, 'spo2').toFixed(1)}%`);
+    if (resp.length) parts.push(`🌬️ 呼吸数: 平均 ${avg(resp, 'respiratory_rate').toFixed(1)} 回/分`);
+
+    // Body
+    const weight = vitals.filter(v => v.weight);
+    const temp = vitals.filter(v => v.temperature);
+    const vo2 = vitals.filter(v => v.vo2max);
+    if (weight.length) parts.push(`⚖️ 体重: ${avg(weight, 'weight').toFixed(1)} kg`);
+    if (temp.length) parts.push(`🌡️ 体温: 平均 ${avg(temp, 'temperature').toFixed(1)}°C`);
+    if (vo2.length) parts.push(`🏃 VO2Max: ${avg(vo2, 'vo2max').toFixed(1)} mL/kg/min`);
+
+    // Blood pressure
+    const sys = vitals.filter(v => v.bp_systolic);
+    const dia = vitals.filter(v => v.bp_diastolic);
+    if (sys.length && dia.length) {
+      parts.push(`🩸 血圧: ${Math.round(avg(sys, 'bp_systolic'))}/${Math.round(avg(dia, 'bp_diastolic'))} mmHg`);
     }
+
+    // Activity
+    const steps = activity.filter(a => a.steps);
+    const cal = activity.filter(a => a.calories);
+    const dist = activity.filter(a => a.distance_m);
+    const exercise = activity.filter(a => a.exercise_min);
+    const stand = activity.filter(a => a.stand_min);
+    if (steps.length) {
+      const total = steps.reduce((s, v) => s + v.steps, 0);
+      parts.push(`👟 歩数: ${total.toLocaleString()} 歩 (${steps.length}件)`);
+    }
+    if (cal.length) {
+      const total = cal.reduce((s, v) => s + v.calories, 0);
+      parts.push(`🔥 アクティブ消費: ${Math.round(total).toLocaleString()} kcal`);
+    }
+    if (dist.length) {
+      const totalKm = dist.reduce((s, v) => s + v.distance_m, 0) / 1000;
+      parts.push(`📏 歩行距離: ${totalKm.toFixed(1)} km`);
+    }
+    if (exercise.length) {
+      const total = exercise.reduce((s, v) => s + v.exercise_min, 0);
+      parts.push(`⏱️ エクササイズ: ${Math.round(total)} 分`);
+    }
+    if (stand.length) {
+      const total = stand.reduce((s, v) => s + v.stand_min, 0);
+      parts.push(`🧍 スタンド: ${Math.round(total)} 分`);
+    }
+
+    // Sleep & mindfulness
+    if (sleep.length) {
+      const totalMin = sleep.reduce((s, v) => s + (v.duration_min || 0), 0);
+      const hours = (totalMin / 60).toFixed(1);
+      parts.push(`😴 睡眠: ${sleep.length}件 / 合計 ${hours}h`);
+    }
+    if (mindfulness.length) {
+      const total = mindfulness.reduce((s, v) => s + (v.duration_min || 0), 0);
+      parts.push(`🧘 マインドフルネス: ${Math.round(total)} 分 (${mindfulness.length}件)`);
+    }
+
     if (parts.length === 0) return `${sourceName} からデータを取り込みました`;
     return parts.join('\n');
   },
@@ -4860,52 +5032,112 @@ var Integrations = {
 
   // ======== APPLE HEALTH / iPhone ========
   appleHealth: {
-    // Parse Apple Health XML export
+    // Parse Apple Health XML export. Handles metrics from iPhone AND
+    // Apple Watch — both write to the same HealthKit store, so the
+    // export XML contains both. Source attribution lets us tag which
+    // device produced each reading (Apple Watch, iPhone, Polar, etc.).
     parseExport(xmlText) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(xmlText, 'text/xml');
       const records = doc.querySelectorAll('Record');
-      const data = { vitals: [], activity: [], sleep: [], nutrition: [] };
+      const data = { vitals: [], activity: [], sleep: [], nutrition: [], mindfulness: [] };
 
       records.forEach(r => {
         const type = r.getAttribute('type');
-        const value = parseFloat(r.getAttribute('value'));
+        const rawValue = r.getAttribute('value');
+        const value = parseFloat(rawValue);
         const date = r.getAttribute('startDate');
-        const source = r.getAttribute('sourceName');
-
-        if (isNaN(value)) return;
+        const endDate = r.getAttribute('endDate');
+        const source = r.getAttribute('sourceName') || '';
+        // Apple Watch / iPhone attribution: the sourceName typically
+        // contains "Watch" for Apple Watch readings.
+        const isAppleWatch = /watch/i.test(source);
+        const device = isAppleWatch ? 'apple_watch' : 'iphone';
 
         switch (type) {
+          // ─── Heart metrics (most are Apple Watch only) ───
           case 'HKQuantityTypeIdentifierHeartRate':
-            data.vitals.push({ timestamp: date, heart_rate: value, source });
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, heart_rate: value, source, device });
             break;
-          case 'HKQuantityTypeIdentifierBloodPressureSystolic':
-            data.vitals.push({ timestamp: date, bp_systolic: value, source });
+          case 'HKQuantityTypeIdentifierRestingHeartRate':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, resting_heart_rate: value, source, device });
             break;
-          case 'HKQuantityTypeIdentifierBloodPressureDiastolic':
-            data.vitals.push({ timestamp: date, bp_diastolic: value, source });
-            break;
-          case 'HKQuantityTypeIdentifierBodyTemperature':
-            data.vitals.push({ timestamp: date, temperature: value, source });
-            break;
-          case 'HKQuantityTypeIdentifierOxygenSaturation':
-            data.vitals.push({ timestamp: date, spo2: value * 100, source });
-            break;
-          case 'HKQuantityTypeIdentifierStepCount':
-            data.activity.push({ timestamp: date, steps: value, source });
-            break;
-          case 'HKQuantityTypeIdentifierActiveEnergyBurned':
-            data.activity.push({ timestamp: date, calories: value, source });
+          case 'HKQuantityTypeIdentifierWalkingHeartRateAverage':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, walking_hr: value, source, device });
             break;
           case 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN':
-            data.vitals.push({ timestamp: date, hrv: value, source });
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, hrv: value, source, device });
             break;
-          case 'HKQuantityTypeIdentifierBodyMass':
-            data.vitals.push({ timestamp: date, weight: value, source });
+          case 'HKQuantityTypeIdentifierVO2Max':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, vo2max: value, source, device });
+            break;
+          // ─── Blood pressure (iPhone manual entry or BP cuff) ───
+          case 'HKQuantityTypeIdentifierBloodPressureSystolic':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, bp_systolic: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierBloodPressureDiastolic':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, bp_diastolic: value, source, device });
+            break;
+          // ─── Respiratory / temperature / oxygen ───
+          case 'HKQuantityTypeIdentifierBodyTemperature':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, temperature: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierOxygenSaturation':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, spo2: value * 100, source, device });
             break;
           case 'HKQuantityTypeIdentifierRespiratoryRate':
-            data.vitals.push({ timestamp: date, respiratory_rate: value, source });
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, respiratory_rate: value, source, device });
             break;
+          // ─── Activity (mix of iPhone pedometer & Apple Watch rings) ───
+          case 'HKQuantityTypeIdentifierStepCount':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, steps: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierActiveEnergyBurned':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, calories: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierBasalEnergyBurned':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, basal_calories: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierDistanceWalkingRunning':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, distance_m: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierFlightsClimbed':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, flights: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierAppleExerciseTime':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, exercise_min: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierAppleStandTime':
+            if (!isNaN(value)) data.activity.push({ timestamp: date, stand_min: value, source, device });
+            break;
+          // ─── Body composition ───
+          case 'HKQuantityTypeIdentifierBodyMass':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, weight: value, source, device });
+            break;
+          case 'HKQuantityTypeIdentifierBodyFatPercentage':
+            if (!isNaN(value)) data.vitals.push({ timestamp: date, body_fat: value * 100, source, device });
+            break;
+          // ─── Sleep (Apple Watch automatic + iPhone bedtime) ───
+          case 'HKCategoryTypeIdentifierSleepAnalysis': {
+            // Sleep is a duration, not a value. Compute minutes from
+            // startDate→endDate. rawValue is a category like
+            // "HKCategoryValueSleepAnalysisInBed" / "AsleepCore" etc.
+            if (date && endDate) {
+              const minutes = (new Date(endDate) - new Date(date)) / 60000;
+              if (minutes > 0 && minutes < 720) { // sanity cap at 12h
+                data.sleep.push({ timestamp: date, duration_min: minutes, stage: rawValue, source, device });
+              }
+            }
+            break;
+          }
+          // ─── Mindfulness (Apple Watch Breathe app) ───
+          case 'HKCategoryTypeIdentifierMindfulSession': {
+            if (date && endDate) {
+              const minutes = (new Date(endDate) - new Date(date)) / 60000;
+              if (minutes > 0) data.mindfulness.push({ timestamp: date, duration_min: minutes, source, device });
+            }
+            break;
+          }
         }
       });
 
@@ -4915,25 +5147,36 @@ var Integrations = {
     // Import parsed Apple Health data
     importData(parsed) {
       let count = 0;
-      ['vitals', 'activity', 'sleep', 'nutrition'].forEach(cat => {
+      const catKeys = ['vitals', 'activity', 'sleep', 'nutrition', 'mindfulness'];
+      catKeys.forEach(cat => {
         if (parsed[cat]) {
           parsed[cat].forEach(d => {
-            store.addHealthData(cat === 'vitals' ? 'vitals' : cat, { ...d, source: 'apple_health' });
+            const targetKey = cat === 'mindfulness' ? 'activityData' : cat;
+            store.addHealthData(targetKey === 'activityData' ? 'activity' : cat, { ...d, source: 'apple_health' });
             count++;
           });
         }
       });
 
-      // Also create a user-visible summary entry in textEntries so the
-      // imported data shows up on the home dashboard's "あなたの記録"
-      // feed. Without this, Apple Health data only lands in the vitals/
-      // activity/sleep collections which the dashboard doesn't render.
+      // Apple Watch attribution: count records that came from a Watch
+      // source so we can show it in the summary.
+      const watchCount = catKeys.reduce((sum, cat) => {
+        const arr = parsed[cat] || [];
+        return sum + arr.filter(x => x.device === 'apple_watch').length;
+      }, 0);
+      const hasAppleWatch = watchCount > 0;
+
+      // Create a user-visible summary entry so the import shows up in
+      // the dashboard feed and 記録 page integration history.
       if (count > 0) {
         const summary = Integrations._buildHealthSummary(parsed, 'Apple Health');
+        const title = hasAppleWatch
+          ? `iPhone & Apple Watch 同期 (${count}件, うち⌚${watchCount}件)`
+          : `Apple Health 同期 (${count}件)`;
         Integrations._addImportEntry({
           source: 'apple_health',
-          icon: '🍎',
-          title: `Apple Health 同期 (${count}件)`,
+          icon: hasAppleWatch ? '⌚' : '🍎',
+          title,
           summary
         });
       }
@@ -5059,7 +5302,124 @@ var Integrations = {
 // Check for Fitbit OAuth callback on page load
 document.addEventListener('DOMContentLoaded', () => {
   Integrations.fitbit.checkCallback();
+  // Also check for URL-based imports (iOS Shortcut push mechanism)
+  Integrations.urlImport.checkUrlForData();
 });
+
+// ─── URL-BASED IMPORT (iOS Shortcut → app) ───
+//
+// The iOS "Shortcuts" app can "Open URL" as an action. We use this to
+// let a user-configured shortcut push health data into the app
+// *without* a backend. The shortcut builds a URL like
+//   https://cares.advisers.jp/#import=<base64-json>
+// and opens it; on page load, checkUrlForData() decodes the payload
+// and routes it through the normal import helpers.
+//
+// Payload schema (UTF-8 JSON, then base64-encoded):
+//   {
+//     "source": "apple_watch" | "apple_health" | "iphone",
+//     "items": [
+//       { "type": "heart_rate",         "value": 72, "timestamp": "2026-04-09T10:00:00Z" },
+//       { "type": "resting_heart_rate", "value": 58, "timestamp": "..." },
+//       { "type": "hrv",                "value": 45, "timestamp": "..." },
+//       { "type": "steps",              "value": 8500, "timestamp": "..." },
+//       { "type": "sleep_min",          "value": 432, "timestamp": "..." },
+//       { "type": "spo2",               "value": 97, "timestamp": "..." }
+//     ]
+//   }
+//
+// This works on iPhone, Apple Watch (via iPhone), Android (via Tasker
+// or similar), and any system that can construct a URL.
+Integrations.urlImport = {
+  checkUrlForData() {
+    try {
+      const hash = window.location.hash || '';
+      // Support both `#import=<base64>` and `?import=<base64>` forms
+      let raw = null;
+      const hashMatch = hash.match(/[#&?]import=([^&]+)/);
+      if (hashMatch) raw = decodeURIComponent(hashMatch[1]);
+      if (!raw) {
+        const search = window.location.search || '';
+        const searchMatch = search.match(/[?&]import=([^&]+)/);
+        if (searchMatch) raw = decodeURIComponent(searchMatch[1]);
+      }
+      if (!raw) return;
+
+      // Decode base64 → JSON
+      let payload;
+      try {
+        // Handle UTF-8 multibyte correctly via TextDecoder
+        const bin = atob(raw);
+        const bytes = new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+        payload = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      } catch (e) {
+        // Fallback: plain JSON (no base64) or URL-encoded JSON
+        try { payload = JSON.parse(raw); } catch (e2) {
+          console.warn('[urlImport] could not decode payload:', e.message);
+          return;
+        }
+      }
+
+      if (!payload || !Array.isArray(payload.items)) {
+        console.warn('[urlImport] invalid payload shape');
+        return;
+      }
+
+      const source = payload.source || 'apple_health';
+      this.ingestItems(source, payload.items);
+
+      // Clean the URL so reloads don't re-import the same payload
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } catch (err) {
+      console.error('[urlImport] error:', err);
+    }
+  },
+
+  ingestItems(source, items) {
+    if (!items.length) return;
+    // Normalise items into the same parsed shape appleHealth.importData expects
+    const parsed = { vitals: [], activity: [], sleep: [], nutrition: [], mindfulness: [] };
+    const now = new Date().toISOString();
+    const isWatch = /watch/i.test(source);
+    const device = isWatch ? 'apple_watch' : (source === 'iphone' ? 'iphone' : 'other');
+
+    for (const it of items) {
+      if (!it || typeof it !== 'object') continue;
+      const ts = it.timestamp || now;
+      const v = typeof it.value === 'number' ? it.value : parseFloat(it.value);
+      if (isNaN(v)) continue;
+      switch (it.type) {
+        case 'heart_rate':         parsed.vitals.push({ timestamp: ts, heart_rate: v, device }); break;
+        case 'resting_heart_rate': parsed.vitals.push({ timestamp: ts, resting_heart_rate: v, device }); break;
+        case 'hrv':                parsed.vitals.push({ timestamp: ts, hrv: v, device }); break;
+        case 'spo2':               parsed.vitals.push({ timestamp: ts, spo2: v, device }); break;
+        case 'respiratory_rate':   parsed.vitals.push({ timestamp: ts, respiratory_rate: v, device }); break;
+        case 'temperature':        parsed.vitals.push({ timestamp: ts, temperature: v, device }); break;
+        case 'weight':             parsed.vitals.push({ timestamp: ts, weight: v, device }); break;
+        case 'steps':              parsed.activity.push({ timestamp: ts, steps: v, device }); break;
+        case 'calories':           parsed.activity.push({ timestamp: ts, calories: v, device }); break;
+        case 'distance_m':         parsed.activity.push({ timestamp: ts, distance_m: v, device }); break;
+        case 'exercise_min':       parsed.activity.push({ timestamp: ts, exercise_min: v, device }); break;
+        case 'stand_min':          parsed.activity.push({ timestamp: ts, stand_min: v, device }); break;
+        case 'sleep_min':          parsed.sleep.push({ timestamp: ts, duration_min: v, device }); break;
+        case 'mindful_min':        parsed.mindfulness.push({ timestamp: ts, duration_min: v, device }); break;
+      }
+    }
+    // Reuse the apple_health importer so all downstream logic
+    // (summary, dashboard reflection, store update) stays identical.
+    Integrations.appleHealth.importData(parsed);
+  },
+
+  // Build an iOS Shortcut-friendly test URL for the admin/docs.
+  buildSampleUrl(items, origin) {
+    const payload = { source: 'apple_watch', items };
+    const json = JSON.stringify(payload);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    return `${origin || window.location.origin}${window.location.pathname}#import=${encodeURIComponent(b64)}`;
+  }
+};
 
 
 // === js/firebase-backend.js ===
@@ -6917,13 +7277,70 @@ ${titles}`;
   async importAppleHealthFile(file) {
     if (!file) return;
     const status = document.getElementById('apple-import-status');
-    if (status) status.innerHTML = Components.loading('Apple Healthデータを解析中...');
+    if (status) status.innerHTML = Components.loading('Apple Health / Apple Watch データを解析中...');
     try {
       const count = await Integrations.importFile(file);
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">${count}件のデータを取り込みました</div>`;
     } catch (err) {
       if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
     }
+  }
+
+  // Connect a Google Calendar (or any ICS feed) by pasting the
+  // iCal secret URL. No OAuth flow required — Google Calendar
+  // settings → "カレンダーの統合" → "iCal 形式の秘密アドレス".
+  async connectGoogleCalendar() {
+    const input = document.getElementById('gcal-ics-url');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) {
+      Components.showToast('ICS URLを入力してください', 'error');
+      return;
+    }
+    const status = document.getElementById('gcal-import-status');
+    if (status) status.innerHTML = Components.loading('カレンダーを取得中...');
+    try {
+      const events = await CalendarIntegration.importFromIcsUrl(url);
+      if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ ${events.length}件のイベントを取り込みました</div>`;
+      Components.showToast(`カレンダーから${events.length}件取り込みました`, 'success');
+    } catch (err) {
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      Components.showToast(err.message, 'error');
+    }
+  }
+
+  // Copy the user-specific iOS Shortcut URL prefix so they can
+  // paste it into a Shortcut "Open URL" action. The shortcut
+  // appends its own #import=<base64> payload at runtime.
+  copyShortcutUrlPrefix() {
+    const prefix = window.location.origin + window.location.pathname + '#import=';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(prefix).then(() => {
+        Components.showToast('URLプレフィックスをコピーしました', 'success');
+      }).catch(() => {
+        Components.showToast(prefix, 'info');
+      });
+    } else {
+      Components.showToast(prefix, 'info');
+    }
+  }
+
+  // Build a sample #import URL with current demo data, copy to
+  // clipboard. Useful for testing the URL-based import flow.
+  buildSampleShortcutUrl() {
+    const sample = Integrations.urlImport.buildSampleUrl([
+      { type: 'heart_rate',         value: 72, timestamp: new Date().toISOString() },
+      { type: 'resting_heart_rate', value: 58, timestamp: new Date().toISOString() },
+      { type: 'hrv',                value: 45, timestamp: new Date().toISOString() },
+      { type: 'steps',              value: 8500, timestamp: new Date().toISOString() },
+      { type: 'sleep_min',          value: 420, timestamp: new Date().toISOString() },
+    ]);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(sample).then(() => {
+        Components.showToast('サンプルURLをコピーしました。新しいタブで開いてテストできます', 'success');
+      });
+    }
+    return sample;
   }
 
   // ---- Theme ----
@@ -9866,207 +10283,252 @@ App.prototype.render_timeline = function() {
   </div>`;
 };
 
-// Integrations Page
+// Integrations Page — simple, glanceable connection status dashboard
+// plus per-device cards with one-screen setup instructions.
 App.prototype.render_integrations = function() {
-  const userEmail = Integrations.generateUserEmail();
+  const textEntries = store.get('textEntries') || [];
+  const syncs = store.get('integrationSyncs') || {};
+  const calendarEvents = store.get('calendarEvents') || [];
   const fitbitConnected = Integrations.fitbit.connected;
-  const shortcutInfo = Integrations.appleHealth.getShortcutInstructions();
+  const now = Date.now();
+
+  const countSource = (s) => textEntries.filter(e => e.source === s).length;
+  const formatRel = (ts) => {
+    if (!ts) return '';
+    const diff = now - new Date(ts).getTime();
+    if (isNaN(diff)) return '';
+    if (diff < 60000) return 'たった今';
+    if (diff < 3600000) return Math.floor(diff / 60000) + '分前';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + '時間前';
+    return Math.floor(diff / 86400000) + '日前';
+  };
+
+  // Connection status per integration
+  const statuses = [
+    { key: 'apple_watch',      icon: '⌚', name: 'iPhone & Apple Watch', color: '#ef4444', count: countSource('apple_health'), lastSync: syncs.apple_health, anchor: 'apple-section' },
+    { key: 'plaud',            icon: '🎙️', name: 'Plaud (会話録音)',     color: '#8b5cf6', count: countSource('plaud'),        lastSync: syncs.plaud,        anchor: 'plaud-section' },
+    { key: 'fitbit',           icon: '🏃', name: 'Fitbit',              color: '#22c55e', count: countSource('fitbit'),       lastSync: syncs.fitbit,       anchor: 'fitbit-section' },
+    { key: 'google_calendar',  icon: '📅', name: 'Googleカレンダー',     color: '#3b82f6', count: calendarEvents.length,       lastSync: syncs.google_calendar, anchor: 'gcal-section' },
+  ];
 
   return `
   <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">デバイス・サービス連携</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">外部デバイスやサービスからデータを自動取り込み</p>
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">連携設定</h2>
+    <p style="font-size:13px;color:var(--text-secondary)">お持ちのデバイスやサービスからデータを取り込みます。取り込んだデータは「記録」と「ホーム」で確認できます。</p>
   </div>
 
-  <!-- Your Data Ingestion Email -->
-  <div class="card" style="margin-bottom:24px;border-color:var(--accent-border)">
-    <div class="card-header" style="background:var(--accent-bg)">
-      <span class="card-title">📧 あなた専用のデータ受信メールアドレス</span>
-    </div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">以下のメールアドレスにデータを送信すると自動で取り込まれます。Plaudの転送先やiOSショートカットの送信先に設定してください。</p>
-      <div style="display:flex;align-items:center;gap:10px;padding:14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border:1px solid var(--border)">
-        <code style="font-size:15px;font-weight:600;color:var(--accent);flex:1;font-family:'JetBrains Mono',monospace">${userEmail}</code>
-        <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${userEmail}');Components.showToast('コピーしました','success')">コピー</button>
-      </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">※ メール受信にはバックエンドサーバーの設定が必要です（Cloudflare Email Workers等）。手動の場合は下の各セクションからペースト/アップロードできます。</p>
-    </div>
-  </div>
-
-  <div class="grid grid-3" style="margin-bottom:24px">
-    <!-- Plaud Card -->
-    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('plaud-section').scrollIntoView({behavior:'smooth'})">
-      <div style="font-size:32px;margin-bottom:8px">🎙️</div>
-      <div class="stat-card-label">Plaud</div>
-      <div style="font-size:14px;font-weight:600">会話記録</div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">音声→テキスト→自動分析</p>
-    </div>
-
-    <!-- Fitbit Card -->
-    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('fitbit-section').scrollIntoView({behavior:'smooth'})">
-      <div style="font-size:32px;margin-bottom:8px">⌚</div>
-      <div class="stat-card-label">Fitbit</div>
-      <div style="font-size:14px;font-weight:600">${fitbitConnected ? '<span style="color:var(--success)">接続中</span>' : '未接続'}</div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">心拍・睡眠・活動量</p>
-    </div>
-
-    <!-- Apple Health Card -->
-    <div class="stat-card" style="text-align:center;cursor:pointer" onclick="document.getElementById('apple-section').scrollIntoView({behavior:'smooth'})">
-      <div style="font-size:32px;margin-bottom:8px">🍎</div>
-      <div class="stat-card-label">Apple Health</div>
-      <div style="font-size:14px;font-weight:600">iPhone連携</div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">ヘルスケアデータ取込</p>
-    </div>
-  </div>
-
-  <!-- GOOGLE CALENDAR SECTION -->
-  <div class="card" style="margin-bottom:24px" id="gcal-section">
-    <div class="card-header">
-      <span class="card-title">📅 Googleカレンダー連携</span>
-      <span class="tag ${(store.get('calendarEvents')||[]).length > 0 ? 'tag-success' : 'tag-warning'}">${(store.get('calendarEvents')||[]).length > 0 ? (store.get('calendarEvents')||[]).length + '件同期済' : '未同期'}</span>
-    </div>
-    <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">スケジュール情報から活動量を自動分析します。現在はGoogleカレンダーと連携しています。</p>
-      <div style="background:var(--bg-tertiary);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="font-size:12px;color:var(--text-secondary)">
-          <strong>Googleカレンダーのデータを自動で取得して、ダッシュボードに表示します。
+  <!-- Connection status grid — glanceable overview -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px">
+    ${statuses.map(s => {
+      const connected = s.count > 0 || (s.key === 'fitbit' && fitbitConnected);
+      return `
+      <a onclick="document.getElementById('${s.anchor}').scrollIntoView({behavior:'smooth',block:'start'})"
+         style="display:block;padding:14px 12px;background:var(--bg-primary);border:1.5px solid ${connected ? s.color : 'var(--border)'};border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;color:inherit;transition:all 0.15s">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:20px">${s.icon}</span>
+          <span style="font-size:12px;font-weight:600">${s.name}</span>
         </div>
-      </div>
-      ${(store.get('calendarEvents')||[]).length > 0 ? `
-        <div style="font-size:12px;color:var(--success)">最終同期: ${(store.get('calendarEvents')||[]).length}件のイベント</div>
-      ` : ''}
-    </div>
+        <div style="font-size:11px;color:${connected ? s.color : 'var(--text-muted)'};font-weight:600">
+          ${connected ? '✓ 接続済' : '未設定'}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px">
+          ${s.count > 0 ? s.count + '件' : ''}${s.count > 0 && s.lastSync ? ' · ' : ''}${s.lastSync ? formatRel(s.lastSync) : ''}
+        </div>
+      </a>`;
+    }).join('')}
   </div>
 
-  <!-- PLAUD SECTION -->
-  <div class="card" style="margin-bottom:24px" id="plaud-section">
+  <!-- ═══ iPhone & Apple Watch ═══ -->
+  <div class="card" style="margin-bottom:20px" id="apple-section">
     <div class="card-header">
-      <span class="card-title">🎙️ Plaud 会話記録連携</span>
-      ${(() => {
-        const plaudEntries = (store.get('textEntries') || []).filter(e => e.type === 'plaud_transcript' || (e.category === 'conversation' && e.title?.includes('Plaud')));
-        if (plaudEntries.length > 0) {
-          const last = plaudEntries[plaudEntries.length - 1];
-          return '<span class="tag tag-success" style="font-size:9px">' + plaudEntries.length + '件取込済（最終: ' + new Date(last.timestamp).toLocaleDateString('ja-JP') + '）</span>';
-        }
-        return '<span class="tag tag-warning" style="font-size:9px">未取込</span>';
-      })()}
+      <span class="card-title">⌚🍎 iPhone & Apple Watch</span>
+      <span class="tag ${countSource('apple_health') > 0 ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
+        ${countSource('apple_health') > 0 ? countSource('apple_health') + '件取込済' : '未接続'}
+      </span>
     </div>
     <div class="card-body">
-      <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
-        <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">自動連携の設定方法</h4>
-        <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
-          <li>Plaudアプリを開く</li>
-          <li>設定 → 共有 → メール転送先を追加</li>
-          <li>転送先に <strong>${userEmail}</strong> を入力</li>
-          <li>以降、録音→文字起こし完了時に自動転送されます</li>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        <strong>取り込めるデータ:</strong> 心拍数・安静時心拍・HRV (自律神経)・血中酸素・歩数・活動時間・睡眠・マインドフルネス・体温・体重・血圧・VO2Max。
+        <br><span style="color:var(--accent)">💡 Apple Watchのデータも自動で取り込まれます（同じヘルスケアアプリに保存されるため）。</span>
+      </p>
+
+      <!-- Method 1: iOS Shortcut (recommended for daily sync) -->
+      <div style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:18px">⚡</span>
+          <span style="font-size:13px;font-weight:700;color:#92400e">方法1: iOSショートカット（推奨・毎日自動）</span>
+        </div>
+        <ol style="font-size:12px;color:#78350f;line-height:1.9;padding-left:20px;margin-bottom:10px">
+          <li>iPhoneで「ショートカット」アプリを開く</li>
+          <li>「+」で新規ショートカット作成</li>
+          <li>アクション「<strong>ヘルスケアサンプルを検索</strong>」を追加<br>
+            →「心拍数」「歩数」「睡眠分析」などを選択</li>
+          <li>アクション「<strong>テキスト</strong>」で以下を貼り付け：<br>
+            <code style="display:block;background:#fff7ed;padding:6px 8px;border-radius:4px;font-size:10px;margin-top:4px;color:#9a3412;word-break:break-all">{"source":"apple_watch","items":[{"type":"heart_rate","value":[検索結果]}]}</code></li>
+          <li>アクション「<strong>Base64エンコード</strong>」を追加</li>
+          <li>アクション「<strong>URLを開く</strong>」を追加 → URLに以下を入力：<br>
+            <code id="shortcut-url-prefix" style="display:block;background:#fff7ed;padding:6px 8px;border-radius:4px;font-size:10px;margin-top:4px;color:#9a3412;word-break:break-all">${window.location.origin}${window.location.pathname}#import=</code>
+            <span style="font-size:10px">（上のURL末尾に Base64エンコードの結果を連結）</span>
+          </li>
+          <li>「オートメーション」タブで毎日21:00などに自動実行を設定</li>
         </ol>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="app.copyShortcutUrlPrefix()" style="font-size:11px">URLをコピー</button>
+          <button class="btn btn-sm btn-secondary" onclick="var u=app.buildSampleShortcutUrl();Components.showToast('サンプルURLをコピー。新しいタブで開くとデモデータが取り込まれます','info')" style="font-size:11px">サンプルURLをテスト</button>
+        </div>
       </div>
 
-      <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">手動ペースト</h4>
-      <div class="form-group">
-        <label class="form-label">会話の日付</label>
-        <input type="date" class="form-input" id="plaud-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px">
+      <!-- Method 2: XML file upload (for bulk / historical data) -->
+      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:18px">📂</span>
+          <span style="font-size:13px;font-weight:700">方法2: ファイルアップロード（過去データを一括取込）</span>
+        </div>
+        <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
+          <li>iPhoneの「ヘルスケア」アプリ → 右上プロフィール → 「すべてのヘルスケアデータを書き出す」</li>
+          <li>生成されたZIPを解凍し、中の<code>export.xml</code>を取り出す</li>
+          <li>下のエリアにドラッグ＆ドロップ</li>
+        </ol>
+        <div class="upload-area" style="padding:20px;background:var(--bg-primary);border:2px dashed var(--border);border-radius:var(--radius-sm);text-align:center;cursor:pointer"
+          onclick="document.getElementById('apple-health-file').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='var(--accent-bg)'"
+          ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--bg-primary)'"
+          ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='var(--bg-primary)';app.importAppleHealthFile(event.dataTransfer.files[0])">
+          <div style="font-size:28px;margin-bottom:6px">📄</div>
+          <div style="font-size:13px;font-weight:600">export.xml をドロップ</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">またはクリックして選択</div>
+          <input type="file" id="apple-health-file" hidden accept=".xml" onchange="app.importAppleHealthFile(this.files[0])">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">タイトル（例：山村先生診察、友人との会話）</label>
-        <input type="text" class="form-input" id="plaud-title" placeholder="会話のタイトル...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">文字起こしテキスト</label>
-        <textarea class="form-textarea" id="plaud-transcript" rows="8" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..."></textarea>
-      </div>
-      <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆分析</button>
+
+      <div id="apple-import-status" style="margin-top:10px"></div>
     </div>
   </div>
 
-  <!-- FITBIT SECTION -->
-  <div class="card" style="margin-bottom:24px" id="fitbit-section">
+  <!-- ═══ Plaud ═══ -->
+  <div class="card" style="margin-bottom:20px" id="plaud-section">
     <div class="card-header">
-      <span class="card-title">⌚ Fitbit連携</span>
-      <span class="tag ${fitbitConnected ? 'tag-success' : 'tag-warning'}">${fitbitConnected ? '接続中' : '未接続'}</span>
+      <span class="card-title">🎙️ Plaud (会話録音 → 文字起こし)</span>
+      <span class="tag ${countSource('plaud') > 0 ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
+        ${countSource('plaud') > 0 ? countSource('plaud') + '件取込済' : '未接続'}
+      </span>
     </div>
     <div class="card-body">
-      ${fitbitConnected ? `
-        <p style="font-size:13px;color:var(--success);margin-bottom:16px">Fitbitに接続されています。データを取り込めます。</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn btn-primary" onclick="app.importFitbitToday()">今日のデータを取得</button>
-          <button class="btn btn-secondary" onclick="app.importFitbitHistory()">過去7日分を取得</button>
-          <button class="btn btn-outline btn-danger" onclick="Integrations.fitbit.disconnect();app.navigate('integrations')">接続解除</button>
-        </div>
-        <div id="fitbit-import-status"></div>
-      ` : `
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">FitbitアカウントをOAuth2で接続すると、心拍数・睡眠・歩数・活動量を自動取得できます。</p>
-        <div style="background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px">
-          <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">接続手順</h4>
-          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
-            <li><a href="https://dev.fitbit.com/apps/new" target="_blank" rel="noopener" style="color:var(--accent)">Fitbit開発者ポータル</a>でアプリを登録（OAuth 2.0 Application Type: Personal）</li>
-            <li>Redirect URLに <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px">${window.location.origin + window.location.pathname}</code> を設定</li>
-            <li>取得したClient IDを下に入力</li>
-            <li>「Fitbitに接続」ボタンをクリック</li>
-          </ol>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        <strong>取り込めるデータ:</strong> 医師との診察会話、家族との会話、独り言、音声メモ。録音した内容が文字起こしとして取り込まれ、体調の変化や心理状態を自動分析します。
+      </p>
+      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 手動ペースト（最もシンプル）</div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:11px">会話の日付</label>
+          <input type="date" class="form-input" id="plaud-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px;padding:8px 10px">
         </div>
         <div class="form-group">
-          <label class="form-label">Fitbit OAuth2 Client ID</label>
-          <input type="text" class="form-input" id="fitbit-client-id" value="${localStorage.getItem('fitbit_client_id') || ''}" placeholder="23XXXX">
+          <label class="form-label" style="font-size:11px">タイトル（例: 山村先生診察, 妻との会話）</label>
+          <input type="text" class="form-input" id="plaud-title" placeholder="会話のタイトル..." style="padding:8px 10px">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:11px">文字起こしテキスト</label>
+          <textarea class="form-textarea" id="plaud-transcript" rows="6" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..." style="padding:8px 10px"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆分析</button>
+      </div>
+      <details style="font-size:11px;color:var(--text-muted)">
+        <summary style="cursor:pointer">メール自動転送設定（上級者向け）</summary>
+        <div style="padding:10px 0;line-height:1.7">
+          Plaudアプリ → 設定 → 共有 → メール転送先に以下を追加することで、将来的にバックエンドを経由した自動取込も可能になります（現時点ではバックエンド未実装）。
+          <div style="margin-top:6px;padding:8px;background:var(--bg-tertiary);border-radius:4px;font-family:monospace;font-size:10px">${Integrations.generateUserEmail() || '未ログイン'}</div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ═══ Fitbit ═══ -->
+  <div class="card" style="margin-bottom:20px" id="fitbit-section">
+    <div class="card-header">
+      <span class="card-title">🏃 Fitbit</span>
+      <span class="tag ${fitbitConnected ? 'tag-success' : 'tag-warning'}" style="font-size:10px">${fitbitConnected ? '✓ 接続中' : '未接続'}</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        <strong>取り込めるデータ:</strong> 心拍数・安静時心拍・歩数・活動時間・消費カロリー・睡眠時間・睡眠ステージ。
+      </p>
+      ${fitbitConnected ? `
+        <div style="padding:12px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius-sm);margin-bottom:12px">
+          <div style="font-size:13px;color:#166534;font-weight:600;margin-bottom:8px">✓ Fitbitに接続されています</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="app.importFitbitToday()">今日のデータを取得</button>
+            <button class="btn btn-secondary btn-sm" onclick="app.importFitbitHistory()">過去7日分を取得</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger)" onclick="Integrations.fitbit.disconnect();app.navigate('integrations')">接続解除</button>
+          </div>
+          <div id="fitbit-import-status" style="margin-top:10px"></div>
+        </div>
+      ` : `
+        <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.9">
+            <strong>接続手順 (5分):</strong>
+            <ol style="padding-left:20px;margin-top:6px">
+              <li><a href="https://dev.fitbit.com/apps/new" target="_blank" rel="noopener" style="color:var(--accent)">Fitbit開発者ポータル</a> で「Personal」アプリを登録</li>
+              <li>Redirect URL に <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:10px">${window.location.origin + window.location.pathname}</code> を設定</li>
+              <li>取得した Client ID を下に入力 →「Fitbitに接続」</li>
+            </ol>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-size:11px">Fitbit OAuth2 Client ID</label>
+          <input type="text" class="form-input" id="fitbit-client-id" value="${localStorage.getItem('fitbit_client_id') || ''}" placeholder="23XXXX" style="padding:8px 10px">
         </div>
         <button class="btn btn-primary" onclick="app.connectFitbit()">Fitbitに接続</button>
       `}
     </div>
   </div>
 
-  <!-- APPLE HEALTH SECTION -->
-  <div class="card" style="margin-bottom:24px" id="apple-section">
+  <!-- ═══ Google Calendar ═══ -->
+  <div class="card" style="margin-bottom:20px" id="gcal-section">
     <div class="card-header">
-      <span class="card-title">🍎 Apple Health / iPhone連携</span>
-      <span class="tag tag-info">エクスポート & ショートカット</span>
+      <span class="card-title">📅 Googleカレンダー</span>
+      <span class="tag ${calendarEvents.length > 0 ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
+        ${calendarEvents.length > 0 ? '✓ ' + calendarEvents.length + '件同期済' : '未接続'}
+      </span>
     </div>
     <div class="card-body">
-      <div class="grid grid-2" style="gap:20px">
-        <!-- Method 1: XML Export -->
-        <div>
-          <h4 style="font-size:13px;font-weight:600;margin-bottom:10px">方法1: XMLエクスポート（一括取込）</h4>
-          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px;margin-bottom:16px">
-            <li>iPhoneの「ヘルスケア」アプリを開く</li>
-            <li>右上のプロフィールアイコンをタップ</li>
-            <li>「すべてのヘルスケアデータを書き出す」</li>
-            <li>書き出したZIPを解凍し、<code>export.xml</code>を下にドロップ</li>
-          </ol>
-          <div class="upload-area" style="padding:24px"
-            onclick="document.getElementById('apple-health-file').click()"
-            ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-            ondragleave="this.style.borderColor='var(--border)'"
-            ondrop="event.preventDefault();app.importAppleHealthFile(event.dataTransfer.files[0])">
-            <div style="font-size:24px;margin-bottom:8px">📄</div>
-            <div style="font-size:13px">export.xml をドロップ</div>
-            <input type="file" id="apple-health-file" hidden accept=".xml" onchange="app.importAppleHealthFile(this.files[0])">
-          </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        <strong>取り込めるデータ:</strong> 予定・会議・通院。ダッシュボードで今日のスケジュールを自動表示し、活動負荷を可視化します。
+      </p>
+      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（最もシンプル）</div>
+        <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
+          <li>Googleカレンダーを開く → 右上の⚙️ → 「設定」</li>
+          <li>左側メニューで同期したいカレンダーを選択</li>
+          <li>「カレンダーの統合」セクション → 「<strong>iCal 形式の秘密アドレス</strong>」をコピー<br>
+            <span style="font-size:10px;color:var(--text-muted)">（URLは <code>https://calendar.google.com/calendar/ical/.../basic.ics</code> の形式）</span></li>
+          <li>下に貼り付け →「取り込む」</li>
+        </ol>
+        <div class="form-group">
+          <input type="text" class="form-input" id="gcal-ics-url" value="${Components.escapeHtml(localStorage.getItem('ics_calendar_url') || '')}" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="padding:8px 10px;font-size:11px">
         </div>
-
-        <!-- Method 2: iOS Shortcut -->
-        <div>
-          <h4 style="font-size:13px;font-weight:600;margin-bottom:10px">方法2: iOSショートカット（毎日自動）</h4>
-          <ol style="font-size:12px;color:var(--text-secondary);line-height:2;padding-left:20px">
-            ${shortcutInfo.steps.map(s => s ? `<li>${s}</li>` : '').join('')}
-          </ol>
-        </div>
+        <button class="btn btn-primary" onclick="app.connectGoogleCalendar()">📅 カレンダーを取り込む</button>
+        <div id="gcal-import-status" style="margin-top:10px"></div>
       </div>
-      <div id="apple-import-status" style="margin-top:16px"></div>
+      <div style="font-size:10px;color:var(--text-muted);line-height:1.7">
+        ※ 「iCal 形式の秘密アドレス」は読み取り専用の公開URLです。Googleアカウントのパスワードは一切送信されません。カレンダーを頻繁に更新する場合は、このページを再度開くと最新情報が取得されます。
+      </div>
     </div>
   </div>
 
-  <!-- Generic File Import -->
+  <!-- Generic file fallback -->
   <div class="card">
-    <div class="card-header"><span class="card-title">📁 汎用ファイルインポート</span></div>
+    <div class="card-header"><span class="card-title">📁 その他のファイル取込</span></div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">CSV, JSON, XML, テキストファイルを自動判別して取り込みます</p>
-      <div class="upload-area" style="padding:24px"
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">CSV, JSON, XML, テキストファイルを自動判別して取り込みます。</p>
+      <div class="upload-area" style="padding:20px;border:2px dashed var(--border);border-radius:var(--radius-sm);text-align:center;cursor:pointer"
         onclick="document.getElementById('generic-import-file').click()"
         ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
         ondragleave="this.style.borderColor='var(--border)'"
-        ondrop="event.preventDefault();Array.from(event.dataTransfer.files).forEach(f=>Integrations.importFile(f))">
-        <div style="font-size:24px;margin-bottom:8px">📁</div>
+        ondrop="event.preventDefault();this.style.borderColor='var(--border)';Array.from(event.dataTransfer.files).forEach(f=>Integrations.importFile(f))">
+        <div style="font-size:24px;margin-bottom:6px">📁</div>
         <div style="font-size:13px">ファイルをドロップまたはクリック</div>
-        <div style="font-size:11px;color:var(--text-muted)">対応形式: XML (Apple Health), CSV, JSON, TXT (Plaud)</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">対応: XML (Apple Health) · CSV · JSON · TXT (Plaud形式)</div>
         <input type="file" id="generic-import-file" hidden multiple accept=".xml,.csv,.json,.txt" onchange="Array.from(this.files).forEach(f=>Integrations.importFile(f))">
       </div>
     </div>
