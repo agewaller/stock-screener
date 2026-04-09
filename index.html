@@ -6454,10 +6454,14 @@ URL/連絡先：（あれば）`;
     const container = document.getElementById('dash-research');
     if (!container) return;
 
-    // Check cache: only fetch once per day
+    // Check cache: only fetch once per day. Invalidate if the user
+    // switched languages since last fetch — cached translations would
+    // be in the wrong language.
+    const currentLang = (store.get('userProfile') || {}).language || 'ja';
     const cached = store.get('cachedResearch');
     const now = Date.now();
-    if (cached && cached.articles && (now - cached.fetchedAt) < 24 * 60 * 60 * 1000) {
+    if (cached && cached.articles && (now - cached.fetchedAt) < 24 * 60 * 60 * 1000
+        && cached.lang === currentLang) {
       this.renderDashResearch(container, cached.articles);
       return;
     }
@@ -6496,25 +6500,88 @@ URL/連絡先：（あれば）`;
         container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);padding:10px">該当する最新論文が見つかりませんでした。</p>';
         return;
       }
-      // Cache results
-      store.set('cachedResearch', { articles, fetchedAt: Date.now() });
+
+      // Pre-translate titles into the user's language so the list is
+      // readable at a glance without clicking "日本語で読む". One batch
+      // AI call per fetch (not per article) keeps cost minimal. Results
+      // are cached alongside the articles so reloads don't re-translate.
+      const lang = (store.get('userProfile') || {}).language || 'ja';
+      if (lang !== 'en') {
+        try {
+          articles = await this.translateArticlesList(articles, lang);
+        } catch (err) {
+          console.warn('[loadDashResearch] translation failed, showing originals:', err.message);
+        }
+      }
+
+      // Cache results (with translations if any)
+      store.set('cachedResearch', { articles, fetchedAt: Date.now(), lang });
       this.renderDashResearch(container, articles);
     } catch (err) {
       container.innerHTML = `<p style="font-size:12px;color:var(--text-muted);padding:10px">論文検索中にエラーが発生しました</p>`;
     }
   }
 
+  // Translate an array of PubMed articles into the user's language in
+  // a single batched AI call. Adds `titleTranslated` to each article.
+  // Falls through gracefully if no API key is available — the renderer
+  // will use the original title and the "日本語で読む" fallback link.
+  async translateArticlesList(articles, targetLang) {
+    if (!articles || articles.length === 0) return articles;
+    const langNames = {
+      ja: '日本語', en: 'English', zh: '中文', ko: '한국어',
+      es: 'Español', fr: 'Français', de: 'Deutsch', pt: 'Português',
+      th: 'ไทย', vi: 'Tiếng Việt', ar: 'العربية', hi: 'हिन्दी'
+    };
+    const targetName = langNames[targetLang] || targetLang;
+    const titles = articles.map((a, i) => `${i + 1}. ${a.title}`).join('\n');
+    const prompt = `以下の医学論文のタイトルを ${targetName} に翻訳してください。
+専門用語は自然な表現で訳し、タイトルの意味と文脈を正確に伝えてください。
+番号順に、1行1件で翻訳のみを返してください。余計な説明や前置きは不要です。
+
+${titles}`;
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, { maxTokens: 1500 });
+      const text = typeof response === 'string' ? response : String(response || '');
+      // Parse "1. ...\n2. ...\n" format into an array. Also handles
+      // full-width numbers "１．" that some models use in Japanese output.
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      const translated = [];
+      const toHalfWidth = (s) => s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+      for (const rawLine of lines) {
+        const line = toHalfWidth(rawLine).replace(/[．、。]/g, '.');
+        const m = line.match(/^(\d+)[.\s　)]+(.+)/);
+        if (m) {
+          const idx = parseInt(m[1], 10) - 1;
+          if (idx >= 0 && idx < articles.length) translated[idx] = m[2].trim();
+        }
+      }
+      return articles.map((a, i) => ({
+        ...a,
+        titleTranslated: translated[i] || a.title,
+        _translatedLang: targetLang
+      }));
+    } catch (err) {
+      console.warn('[translateArticlesList] skipped:', err.message);
+      return articles;
+    }
+  }
+
   renderDashResearch(container, articles) {
-    container.innerHTML = articles.map(a => `
+    container.innerHTML = articles.map(a => {
+      const displayTitle = a.titleTranslated || a.title;
+      const showOriginal = a.titleTranslated && a.titleTranslated !== a.title;
+      return `
       <div style="padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:600;line-height:1.4;margin-bottom:4px">${a.title}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${(a.authors||'').substring(0,60)} — ${a.journal} (${a.date})</div>
+        <div style="font-size:12px;font-weight:600;line-height:1.4;margin-bottom:4px">${Components.escapeHtml(displayTitle)}</div>
+        ${showOriginal ? `<div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-bottom:4px">${Components.escapeHtml(a.title)}</div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${Components.escapeHtml((a.authors||'').substring(0,60))} — ${Components.escapeHtml(a.journal || '')} (${Components.escapeHtml(a.date || '')})</div>
         <div style="display:flex;gap:6px">
-          <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--accent)">日本語で読む</a>
-          <a href="${a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--text-muted)">PubMed</a>
+          <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--accent)">全文を読む</a>
+          <a href="${a.url}" target="_blank" rel="noopener" style="font-size:10px;color:var(--text-muted)">PubMed (原文)</a>
         </div>
-      </div>
-    `).join('') + `<div style="padding:8px 0"><button class="btn btn-outline btn-sm" onclick="app.navigate('research')" style="font-size:11px">もっと見る</button></div>`;
+      </div>`;
+    }).join('') + `<div style="padding:8px 0"><button class="btn btn-outline btn-sm" onclick="app.navigate('research')" style="font-size:11px">もっと見る</button></div>`;
   }
 
   async autoLoadResearchPage() {
@@ -6992,9 +7059,38 @@ URL/連絡先：（あれば）`;
         : (response == null ? '' : JSON.stringify(response));
 
       const parsed = this.parseAIResponse(responseText);
-      if (parsed) {
+
+      // Final sanity check: reject responses that match the shape of
+      // the old generateDemoAnalysis() output (deleted long ago) which
+      // still circulates in some user sessions via persisted caches or
+      // echoed prompt context. If the parsed object has the legacy
+      // shape, treat it as garbage and show a helpful message instead
+      // of leaking raw JSON to the UI.
+      const isLegacyDemoShape = (obj) => {
+        if (!obj || typeof obj !== 'object') return false;
+        if (typeof obj.healthScore === 'number' && obj.trends && obj.trends.fatigue && obj.trends.fatigue.direction) return true;
+        if (Array.isArray(obj.actionItems) && Array.isArray(obj.researchUpdates)) return true;
+        if (typeof obj.summary === 'string' && /入力データ\s*\d+\s*件を分析/.test(obj.summary)) return true;
+        return false;
+      };
+
+      if (parsed && !isLegacyDemoShape(parsed)) {
         parsed._fromAPI = true;
         return parsed;
+      }
+
+      if (parsed && isLegacyDemoShape(parsed)) {
+        console.warn('[analyzeViaAPI] Rejected legacy-demo-shaped response from model');
+        return {
+          summary: '記録を保存しました。',
+          findings: this.isAdmin()
+            ? 'モデルが旧スキーマ形式の出力を返しました。プロンプトを見直すか、別のモデルをお試しください。'
+            : 'もう少し詳しい分析をお待ちください。',
+          actions: [],
+          products: [],
+          _fromAPI: true,
+          _rejected: 'legacy_shape'
+        };
       }
 
       // Plain-text response (no JSON detected even after repair)
@@ -7271,6 +7367,45 @@ URL/連絡先：（あれば）`;
   getAIComment(entryId) {
     const comments = store.get('aiComments') || {};
     return comments[entryId] || null;
+  }
+
+  // One-shot purge of aiComments entries matching the old demo
+  // output shape. These got persisted before the rejection guards
+  // were added and keep resurfacing as garbled JSON in the dashboard.
+  cleanupLegacyAIComments() {
+    const comments = store.get('aiComments') || {};
+    const keys = Object.keys(comments);
+    let removed = 0;
+    const isLegacy = (r) => {
+      if (!r || typeof r !== 'object') return false;
+      if (typeof r.healthScore === 'number' && r.trends?.fatigue?.direction) return true;
+      if (Array.isArray(r.actionItems) && Array.isArray(r.researchUpdates)) return true;
+      if (typeof r.summary === 'string' && /入力データ\s*\d+\s*件を分析/.test(r.summary)) return true;
+      for (const f of ['summary', 'findings', '_raw']) {
+        const v = r[f];
+        if (typeof v === 'string' && /^\s*\{\s*"(summary|healthScore|trends)"/.test(v)) return true;
+      }
+      return false;
+    };
+    for (const k of keys) {
+      const c = comments[k];
+      if (c && isLegacy(c.result)) {
+        delete comments[k];
+        removed++;
+      }
+    }
+    store.set('aiComments', comments);
+    const fb = store.get('latestFeedback');
+    if (isLegacy(fb)) {
+      store.set('latestFeedback', null);
+      removed++;
+    }
+    if (removed === 0) {
+      Components.showToast('古い分析データは見つかりませんでした', 'info');
+    } else {
+      Components.showToast(`${removed}件の古い分析データを削除しました`, 'success');
+      setTimeout(() => this.navigate('dashboard'), 800);
+    }
   }
 
   // Auto-translate URLs for non-tech-savvy users (avg age 65)
@@ -8711,15 +8846,40 @@ App.prototype.render_dashboard = function() {
             const comment = app.getAIComment(e.id);
             if (!comment) return e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : '';
             const r = comment.result || {};
-            // Prefer parsed structured fields. _raw is only used if it's
-            // a real string AND no parsed fields exist (defensive against
-            // legacy records that stored an object as _raw).
-            const pickString = (v) => (typeof v === 'string' && v.trim() ? v : '');
+
+            // Detect legacy-demo-shaped results and reject them. The old
+            // generateDemoAnalysis() returned objects with a `healthScore`
+            // + `trends.fatigue.direction` shape that the current prompt
+            // schema does not produce. If we see that shape — or we see
+            // a raw JSON-looking string in any text field — treat the
+            // comment as corrupt and show a friendly placeholder instead
+            // of dumping the object to the user.
+            const looksLikeLegacyDemo = (obj) => {
+              if (!obj || typeof obj !== 'object') return false;
+              if (typeof obj.healthScore === 'number' && obj.trends && obj.trends.fatigue && obj.trends.fatigue.direction) return true;
+              if (Array.isArray(obj.actionItems) && Array.isArray(obj.researchUpdates)) return true;
+              return false;
+            };
+            const looksLikeRawJsonString = (s) => {
+              if (typeof s !== 'string') return false;
+              const t = s.trimStart();
+              if (!t.startsWith('{') && !t.startsWith('[')) return false;
+              if (/"healthScore"\s*:|"trends"\s*:\s*\{|入力データ\s*\d+\s*件を分析/.test(t)) return true;
+              if (/^\{\s*"[a-zA-Z_]+"\s*:/.test(t) && (t.match(/"[a-zA-Z_]+"\s*:/g) || []).length >= 3) return true;
+              return false;
+            };
+
+            if (looksLikeLegacyDemo(r)) {
+              return `<div style="margin-top:8px;padding:10px 12px;background:var(--warning-bg);border-radius:var(--radius-sm);border-left:3px solid var(--warning);font-size:11px;color:var(--text-muted)">古い分析データが残っています。この記録を再送信すると新しい分析が保存されます。</div>`;
+            }
+
+            const pickString = (v) => {
+              if (typeof v !== 'string' || !v.trim()) return '';
+              if (looksLikeRawJsonString(v)) return '';
+              return v;
+            };
             let text = pickString(r.summary) || pickString(r.findings) || pickString(r._raw);
-            // If everything is non-string (legacy bad data), regenerate a
-            // friendly placeholder rather than dumping raw JSON to the user.
             if (!text) text = '分析結果を取得できませんでした。再度記録を送信してください。';
-            // Cap at 500 chars; never JSON.stringify an object here.
             const display = text.substring(0, 500);
             const actions = Array.isArray(r.actions) ? r.actions.filter(a => typeof a === 'string').slice(0, 3) : [];
             return `<div style="margin-top:8px;padding:10px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
@@ -10003,9 +10163,10 @@ App.prototype.render_admin = function() {
       <button class="btn btn-primary" onclick="app.generateDemoData()">デモデータ生成</button>
       <button class="btn btn-secondary" onclick="app.exportData()">データエクスポート</button>
       <button class="btn btn-warning" onclick="app.deduplicateRecords()">重複レコード削除</button>
+      <button class="btn btn-warning" onclick="app.cleanupLegacyAIComments()">旧分析データ削除</button>
       <button class="btn btn-danger" onclick="app.confirmAction(this,'データ全削除',()=>{store.clearAll();location.reload()})">データ全削除</button>
     </div>
-    <div style="padding:8px 16px 0;font-size:11px;color:var(--text-muted)">「重複レコード削除」は、同じ内容のレコードを1つに統合します（一度だけ実行すれば十分です）。</div>
+    <div style="padding:8px 16px 0;font-size:11px;color:var(--text-muted)">「重複レコード削除」は同じ内容のレコードを統合します。「旧分析データ削除」は過去の不正な形式のAI分析結果（生JSONとして表示されるもの）を消去します。どちらも一度だけ実行すれば十分です。</div>
   </div>
   </div>`;
 };
