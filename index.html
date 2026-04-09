@@ -3180,15 +3180,39 @@ var AIEngine = class AIEngine {
       'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
-    const proxyUrl = localStorage.getItem('anthropic_proxy_url') || 'https://stock-screener.agewaller.workers.dev';
-    const endpoint = proxyUrl;
 
-    console.log('[Anthropic] Model:', apiModelId, 'via proxy:', proxyUrl);
+    // Resolve transport mode: "direct" (browser → api.anthropic.com
+    // using the anthropic-dangerous-direct-browser-access header) or
+    // "proxy" (browser → Cloudflare Worker → api.anthropic.com).
+    // The admin can flip between them from the admin panel; the
+    // selection persists in localStorage.anthropic_mode.
+    //
+    // NEW DEFAULT (Apr 2026): direct mode. The Cloudflare Worker
+    // proxy historically suffered from CORS preflight failures and
+    // deployment issues; direct mode bypasses the proxy entirely
+    // using Anthropic's anthropic-dangerous-direct-browser-access
+    // header. Users who previously configured a working proxy can
+    // still opt in by selecting "プロキシ経由" in the admin panel.
+    const mode = localStorage.getItem('anthropic_mode'); // 'direct' | 'proxy' | null
+    const proxyUrl = localStorage.getItem('anthropic_proxy_url');
+    const isDirect = mode !== 'proxy';
+
+    const url = isDirect
+      ? 'https://api.anthropic.com/v1/messages'
+      : (proxyUrl || 'https://stock-screener.agewaller.workers.dev');
+    console.log('[Anthropic] Model:', apiModelId, isDirect ? '(direct)' : 'via proxy:', url);
 
     const headers = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
     };
+    // Required by Anthropic to allow direct browser-to-api calls.
+    // Without this header, api.anthropic.com responds with an error
+    // about "unsupported browser access".
+    if (isDirect) {
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
 
     // Vision: when options.imageBase64 is supplied, wrap the prompt and
     // image in a content array per the Anthropic messages API contract.
@@ -3223,11 +3247,21 @@ var AIEngine = class AIEngine {
       messages: [{ role: 'user', content: userContent }]
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+    } catch (fetchErr) {
+      console.error('[Anthropic] fetch failed:', fetchErr);
+      const reason = fetchErr.message || fetchErr.name || 'unknown';
+      throw new Error(
+        (isDirect ? 'Anthropicに直接接続できません' : 'プロキシに接続できません') +
+        ` (${reason}) URL: ${url}`
+      );
+    }
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
@@ -5389,6 +5423,10 @@ var FirebaseBackend = {
       }
       if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
       if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
+      // Apply admin-configured Anthropic transport mode (direct/proxy)
+      if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
+        localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
+      }
 
       // Legacy per-user keys (backward compatibility)
       const legacyKeys = await this.loadApiKeys();
@@ -5821,6 +5859,18 @@ var App = class App {
       proxyEl.value = proxyStored || 'https://stock-screener.agewaller.workers.dev';
     }
 
+    // Load Anthropic mode (direct vs proxy). Default to "direct" for
+    // new installations since the proxy requires a Cloudflare Worker
+    // deployment and CORS config that most users don't have.
+    const mode = localStorage.getItem('anthropic_mode') || 'direct';
+    const directRadio = document.getElementById('anthropic-mode-direct');
+    const proxyRadio = document.getElementById('anthropic-mode-proxy');
+    if (directRadio) directRadio.checked = (mode === 'direct');
+    if (proxyRadio) proxyRadio.checked = (mode === 'proxy');
+    // Hide the proxy URL field in direct mode for clarity
+    const proxyGroup = document.getElementById('proxy-url-group');
+    if (proxyGroup) proxyGroup.style.display = (mode === 'proxy') ? '' : 'none';
+
     const keys = ['anthropic', 'openai', 'google'];
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
@@ -5836,6 +5886,28 @@ var App = class App {
       statusEl.className = 'tag ' + (hasAny ? 'tag-success' : 'tag-warning');
       statusEl.textContent = hasAny ? 'APIキー設定済' : 'APIキー未設定';
     }
+  }
+
+  // Switch the Anthropic transport mode. Persists to localStorage
+  // and writes to the global admin config so all users inherit the
+  // setting. Shows/hides the proxy URL field accordingly.
+  setAnthropicMode(mode) {
+    if (mode !== 'direct' && mode !== 'proxy') return;
+    if (!this.isAdmin()) {
+      Components.showToast('接続モードの変更は管理者専用です', 'error');
+      return;
+    }
+    localStorage.setItem('anthropic_mode', mode);
+    const proxyGroup = document.getElementById('proxy-url-group');
+    if (proxyGroup) proxyGroup.style.display = (mode === 'proxy') ? '' : 'none';
+    // Persist to global admin config so other users inherit it
+    if (FirebaseBackend.initialized) {
+      FirebaseBackend.saveGlobalConfig({ anthropicMode: mode }).catch(err => {
+        console.warn('Failed to persist anthropic mode to global config:', err);
+      });
+    }
+    const modeLabel = mode === 'direct' ? '🌐 直接モード' : '🔀 プロキシ経由';
+    Components.showToast(`Claude接続モードを ${modeLabel} に切り替えました`, 'success');
   }
 
   async saveApiKeys() {
@@ -5868,6 +5940,10 @@ var App = class App {
       if (FirebaseBackend.initialized) {
         const globalConfig = { apiKeys: keyData };
         if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
+        // Include the current Anthropic transport mode so other users
+        // inherit the admin's choice (direct vs proxy).
+        const mode = localStorage.getItem('anthropic_mode');
+        if (mode) globalConfig.anthropicMode = mode;
         await FirebaseBackend.saveGlobalConfig(globalConfig);
       } else {
         Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
@@ -10188,9 +10264,27 @@ App.prototype.render_admin = function() {
         <b>全ユーザー共通設定:</b> ここで保存したAPIキー・プロキシURLは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
       </div>
       <div class="form-group">
-        <label class="form-label">APIプロキシURL（必須）</label>
+        <label class="form-label">Claude 接続モード</label>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px">
+            <input type="radio" name="anthropic-mode" value="direct" id="anthropic-mode-direct" onchange="app.setAnthropicMode('direct')">
+            <span>🌐 直接モード</span>
+            <span style="font-size:10px;color:var(--text-muted);margin-left:auto">推奨</span>
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:12px">
+            <input type="radio" name="anthropic-mode" value="proxy" id="anthropic-mode-proxy" onchange="app.setAnthropicMode('proxy')">
+            <span>🔀 プロキシ経由</span>
+          </label>
+        </div>
+        <span style="font-size:11px;color:var(--text-muted);display:block;line-height:1.5">
+          <b>直接モード</b>: Anthropic API にブラウザから直接接続（anthropic-dangerous-direct-browser-access ヘッダー使用）。Cloudflare Worker 不要。<br>
+          <b>プロキシ経由</b>: Cloudflare Worker を中継して接続。CORS 制限のある環境で使用。
+        </span>
+      </div>
+      <div class="form-group" id="proxy-url-group">
+        <label class="form-label">APIプロキシURL（プロキシ経由モードのみ）</label>
         <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Workerのデプロイ後にURLを貼り付け</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Workerのデプロイ後にURLを貼り付け。「直接モード」を選択した場合は不要です。</span>
       </div>
       <div class="form-group">
         <label class="form-label">Anthropic API Key</label>
