@@ -23,7 +23,7 @@
 - **Authentication**: Googleログイン（OAuth2）
 - **Firestore**: ユーザーデータのクラウド保存（東京リージョン）
 - **承認済みドメイン**: cares.advisers.jp, agewaller.github.io
-- **変更方法**: Firebase Console（ブラウザ）で手動。コード内のconfig.jsに設定値埋め込み済み
+- **変更方法**: Firebase Console（ブラウザ）で手動。設定値は index.html 内の CONFIG.firebase に埋め込み済み
 
 ### 3. Cloudflare Workers（APIプロキシ）
 - **Worker名**: stock-screener
@@ -46,61 +46,46 @@
 
 ---
 
-## ファイル構成（9,591行）
+## ファイル構成
 
 ```
 stock-screener/
-├── index.html              # メインHTML（全JS/CSS統合インライン版）
-├── dashboard.html          # 同上のコピー
+├── index.html              # 本番SPA（HTML/CSS/JS 全てインライン、これ 1 枚が全て）
 ├── CNAME                   # cares.advisers.jp
+├── CLAUDE.md               # 開発ガイド
 ├── SYSTEM_ARCHITECTURE.md  # このファイル
 ├── firestore.rules         # Firestoreセキュリティルール
+├── wrangler.jsonc          # Cloudflare Worker設定
 ├── wrangler.toml           # Cloudflare Worker設定
 │
 ├── .github/workflows/
 │   ├── pages.yml           # GitHub Pagesデプロイ（mainブランチ）
 │   └── deploy-worker.yml   # Cloudflare Workerデプロイ
 │
-├── css/
-│   └── styles.css          # 全スタイル（ライトテーマ固定、モバイル対応）
-│
-├── js/
-│   ├── config.js           # ★最重要：疾患定義、全プロンプト(34件)、品質基準、INLINE_PROMPTS
-│   ├── app.js              # メインアプリロジック（ナビゲーション、フォーム処理、API呼び出し）
-│   ├── pages.js            # 全画面レンダラー（ログイン、ダッシュボード、設定等）
-│   ├── ai-engine.js        # AI API呼び出し（OpenAI/Anthropic/Google + PubMed）
-│   ├── store.js            # 状態管理（localStorage永続化）
-│   ├── firebase-backend.js # Firebase Auth + Firestore連携
-│   ├── components.js       # UIコンポーネント（カード、ゲージ、フォーム等）
-│   ├── integrations.js     # Plaud/Fitbit/Apple Health連携
-│   ├── calendar.js         # Googleカレンダー連携
-│   ├── affiliate.js        # アフィリエイトリンク生成・トラッキング
-│   └── i18n.js             # 多言語対応（12言語）
-│
 └── worker/
     └── anthropic-proxy.js  # Cloudflare Worker（Anthropic APIプロキシ）
 ```
+
+## index.html 内部の <script> ブロック（依存順）
+
+1. `CONFIG` — 疾患定義、全プロンプト(34件)、AI_MODELS、INLINE_PROMPTS、Firebase config
+2. `Store` — 状態管理（localStorage 永続化、Firestore 同期フック）
+3. `AIEngine` — OpenAI / Anthropic / Google + PubMed 呼び出し
+4. `AffiliateEngine` — 商品レコメンド
+5. `Components` — UI コンポーネント（カード、ゲージ、フォーム等）
+6. `I18n` — 多言語対応
+7. `CalendarIntegration`
+8. `Integrations` — Plaud / Fitbit / Apple Health
+9. `FirebaseBackend` — Firebase Auth + Firestore
+10. `App` — メインロジック（ナビ、フォーム、API、レンダリング）
+11. `App.prototype.render_*` — 全画面レンダラー
 
 ---
 
 ## ビルドプロセス
 
-ビルドスクリプト: `/tmp/build_inline.py`（セッション内のみ）
-
-```
-python3 /tmp/build_inline.py
-```
-
-これにより：
-1. 全JS/CSSファイルを読み込み
-2. 1つのHTMLファイルにインライン統合
-3. `dashboard.html` と `index.html` の両方に出力
-
-**ビルド順序**:
-config.js → store.js → ai-engine.js → affiliate.js → components.js →
-i18n.js → calendar.js → integrations.js → firebase-backend.js → app.js → pages.js
-
-**重要**: 新しいJSファイルを追加する場合、build_inline.pyのjs_filesリストに追加が必要
+**ビルド工程は存在しない**。`index.html` が唯一のソースかつ成果物。
+編集は直接 `index.html` に対して行う。
 
 ---
 
@@ -302,12 +287,10 @@ SYSTEM_ARCHITECTURE.md にシステム全体の構造が記載されています
 まずそれを読んでから作業してください。
 ```
 
-### ビルド手順
-セッション内で以下を実行してビルドスクリプトを再作成する必要があります：
-1. SYSTEM_ARCHITECTURE.md の「ビルドプロセス」セクションを参照
-2. build_inline.py を再作成
-3. `python3 /tmp/build_inline.py` でビルド
-4. `git add -A && git commit && git push` でデプロイ
+### 変更手順
+1. `index.html` を直接編集
+2. `git add index.html && git commit && git push origin main`
+3. GitHub Pages (pages.yml) が自動デプロイ
 
 ---
 
