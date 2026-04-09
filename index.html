@@ -3709,7 +3709,21 @@ var Components = {
     const doiUrl = research.doi && research.doi.startsWith('10.') ? `https://doi.org/${research.doi}` : '';
     const pubmedSearchUrl = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(research.title.substring(0, 100))}`;
     const sourceUrl = research.url || doiUrl || pubmedSearchUrl;
-    const translateUrl = sourceUrl ? `https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(sourceUrl)}` : '';
+    // Use modern translate.goog subdomain format. The old
+    // translate.google.com/translate?u= endpoint was deprecated in 2019 and
+    // now returns a "translation not available" landing page.
+    const toGoogTranslate = (srcUrl) => {
+      try {
+        const u = new URL(srcUrl);
+        const host = u.hostname.replace(/\./g, '-');
+        const sep = u.search ? u.search + '&' : '?';
+        return `https://${host}.translate.goog${u.pathname}${sep}_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja`;
+      } catch (e) {
+        return srcUrl;
+      }
+    };
+    const translateUrl = sourceUrl ? toGoogTranslate(sourceUrl) : '';
+    const doiTranslateUrl = doiUrl ? toGoogTranslate(doiUrl) : '';
 
     return `
       <div class="card" style="margin-bottom:12px">
@@ -3727,7 +3741,7 @@ var Components = {
             <a href="${pubmedSearchUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで検索</a>
             ${translateUrl ? `<a href="${translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>` : ''}
             ${doiUrl ? `<a href="${doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">論文全文（DOI）</a>` : ''}
-            ${doiUrl ? `<a href="https://translate.google.com/translate?sl=en&tl=ja&u=${encodeURIComponent(doiUrl)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
+            ${doiTranslateUrl ? `<a href="${doiTranslateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">論文全文（日本語）</a>` : ''}
           </div>
         </div>
       </div>
