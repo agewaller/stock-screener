@@ -39,9 +39,12 @@ var Store = class Store {
       recommendations: [],
       actionItems: [],
 
+      // Nutrition / BMR / PFC dashboard
+      nutritionLog: [],
+
       // Admin
       adminMode: false,
-      selectedModel: 'gpt-4o',
+      selectedModel: 'claude-opus-4-6',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -99,7 +102,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -117,7 +120,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
     ];
     keys.forEach(key => {
       try {
@@ -208,6 +211,34 @@ var Store = class Store {
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
   }
 
+  // ---- Nutrition / BMR / PFC ----
+
+  // Mifflin-St Jeor basal metabolic rate (kcal/day). Returns null if
+  // the user hasn't filled in enough profile info so the caller can
+  // show "--" instead of a misleading number.
+  calculateBMR() {
+    const profile = this.state.userProfile || {};
+    const weight = parseFloat(profile.weight);
+    const height = parseFloat(profile.height);
+    const age = parseFloat(profile.age);
+    if (!weight || !height || !age) return null;
+    const base = 10 * weight + 6.25 * height - 5 * age;
+    if (profile.gender === 'male') return Math.round(base + 5);
+    if (profile.gender === 'female') return Math.round(base - 161);
+    // Unspecified or "other" — midpoint of the two formulas.
+    return Math.round(base - 78);
+  }
+
+  // Add or overwrite today's nutrition entry. Keeps the log sorted
+  // ascending by date so the chart renders without re-sorting.
+  upsertNutritionEntry(entry) {
+    if (!entry || !entry.date) return;
+    const log = (this.state.nutritionLog || []).filter(e => e.date !== entry.date);
+    log.push(entry);
+    log.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    this.set('nutritionLog', log);
+  }
+
   // Clear user data (preserve system config like Firebase settings)
   clearAll() {
     // Save system config before clearing
@@ -235,7 +266,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'gpt-4o';
+    this.state.selectedModel = 'claude-opus-4-6';
   }
 };
 

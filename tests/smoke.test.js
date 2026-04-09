@@ -758,6 +758,131 @@ test('APIキー message is gated behind isAdmin()', () => {
     'analyzeViaAPI mentions APIキー without isAdmin() gate');
 });
 
+// ─── Claude model ID mapping ───
+// Incident: callAnthropic hardcoded claude-3-5-sonnet-20241022, which
+// Anthropic has since deprecated. Users saw "分析の呼び出しに失敗" for
+// every request. The call site must now derive the API model id from
+// the store's selectedModel via MODEL_MAP.
+
+section('Claude Model ID Mapping');
+
+test('callAnthropic maps modelId via MODEL_MAP, not a hardcoded id', () => {
+  const body = extractFunction(js('js/ai-engine.js'), 'callAnthropic');
+  assert(body, 'callAnthropic not found');
+  assert(/MODEL_MAP\s*=/.test(body),
+    'callAnthropic must define MODEL_MAP for internal→API id translation');
+  assert(!body.includes("'claude-3-5-sonnet-20241022'"),
+    'callAnthropic still references the deprecated claude-3-5-sonnet-20241022 id');
+  assert(/MODEL_MAP\[modelId\]/.test(body),
+    'callAnthropic must look up apiModelId via MODEL_MAP[modelId]');
+});
+
+test('callAnthropic supports Vision via options.imageBase64', () => {
+  const body = extractFunction(js('js/ai-engine.js'), 'callAnthropic');
+  assert(body.includes('imageBase64'),
+    'callAnthropic must branch on options.imageBase64 to enable Vision');
+  assert(/type:\s*['"]image['"]/.test(body),
+    'callAnthropic must emit a {type: "image"} content block when an image is supplied');
+});
+
+test('callAnthropic accepts options.systemPrompt override', () => {
+  const body = extractFunction(js('js/ai-engine.js'), 'callAnthropic');
+  assert(/options\.systemPrompt/.test(body),
+    'callAnthropic must honour options.systemPrompt so callers can override the default persona');
+});
+
+test('getApiKey guards against undefined modelId', () => {
+  const body = extractFunction(js('js/ai-engine.js'), 'getApiKey');
+  assert(body, 'getApiKey not found');
+  assert(/if\s*\(\s*!modelId\s*\)/.test(body),
+    'getApiKey must early-return when modelId is falsy, otherwise startsWith() throws TypeError');
+});
+
+// ─── Default model = Claude Opus 4.6 ───
+// Incident: we kept defaulting to gpt-4o even after requesting Opus as
+// the strongest model. Billing is not a constraint and we want Opus by
+// default everywhere.
+
+section('Default Model');
+
+test('CONFIG.AI_MODELS marks claude-opus-4-6 as default', () => {
+  const body = js('js/config.js');
+  const opusLine = body.split('\n').find(l => l.includes('claude-opus-4-6') && l.includes('default'));
+  assert(opusLine && /default:\s*true/.test(opusLine),
+    'CONFIG.AI_MODELS must set default: true on claude-opus-4-6');
+  // And the old default must no longer be marked default.
+  const gptLine = body.split('\n').find(l => l.includes("id: 'gpt-4o'"));
+  assert(gptLine && !/default:\s*true/.test(gptLine),
+    'gpt-4o must no longer be the default');
+});
+
+test('store.state.selectedModel defaults to claude-opus-4-6', () => {
+  const body = js('js/store.js');
+  assert(/selectedModel:\s*['"]claude-opus-4-6['"]/.test(body),
+    'Store initial state must set selectedModel to claude-opus-4-6');
+  assert(!/selectedModel\s*=\s*['"]gpt-4o['"]/.test(body),
+    'store must not fall back to gpt-4o anywhere');
+});
+
+// ─── Nutrition / BMR / PFC dashboard ───
+// New feature: the dashboard shows intake calories vs BMR and PFC
+// balance. Guards the store contract, charts, and the afterRender hook.
+
+section('Nutrition / BMR / PFC Dashboard');
+
+test('store persists nutritionLog and exposes BMR/upsert helpers', () => {
+  const body = js('js/store.js');
+  assert(/nutritionLog:\s*\[\s*\]/.test(body),
+    'Store must initialize nutritionLog as an empty array');
+  // Both save and load lists must include nutritionLog for persistence.
+  const persistCount = (body.match(/'nutritionLog'/g) || []).length;
+  assert(persistCount >= 2,
+    "nutritionLog must be listed in both persistKeys and loadFromStorage key lists");
+  const bmr = extractFunction(body, 'calculateBMR');
+  assert(bmr, 'store.calculateBMR must exist');
+  assert(/Mifflin|10\s*\*\s*weight/.test(bmr),
+    'calculateBMR must use the Mifflin-St Jeor formula');
+  const upsert = extractFunction(body, 'upsertNutritionEntry');
+  assert(upsert, 'store.upsertNutritionEntry must exist');
+  assert(upsert.includes('filter') && upsert.includes('sort'),
+    'upsertNutritionEntry must dedupe by date and keep the log sorted');
+});
+
+test('app exposes nutrition chart + extraction + clear methods', () => {
+  const src = js('js/app.js');
+  for (const fn of ['initNutritionCharts', 'extractTodayNutrition', 'clearNutritionLog']) {
+    assert(extractFunction(src, fn), `App.prototype.${fn} must exist`);
+  }
+  const init = extractFunction(src, 'initNutritionCharts');
+  assert(init.includes('nutrition-calorie-chart') && init.includes('nutrition-pfc-chart'),
+    'initNutritionCharts must bind both canvas ids used by render_dashboard');
+  assert(/chartInstances\.nutritionCal/.test(init) && /chartInstances\.nutritionPfc/.test(init),
+    'initNutritionCharts must cache chart instances on this.chartInstances');
+});
+
+test('extractTodayNutrition never calls window.confirm/alert (mobile breaks)', () => {
+  const body = extractFunction(js('js/app.js'), 'clearNutritionLog');
+  assert(body, 'clearNutritionLog not found');
+  assert(!/\bconfirm\s*\(/.test(body) && !/\balert\s*\(/.test(body),
+    'clearNutritionLog must not use window.confirm/alert — they are blocked on mobile. Use an inline toast UI instead.');
+});
+
+test('dashboard afterRender hook initializes nutrition charts', () => {
+  const body = extractFunction(js('js/app.js'), 'afterRender');
+  assert(body, 'afterRender not found');
+  assert(body.includes('initNutritionCharts'),
+    "afterRender('dashboard') must call initNutritionCharts so the charts render on first paint");
+});
+
+test('render_dashboard includes the nutrition section', () => {
+  const body = extractFunction(js('js/pages.js'), 'App.prototype.render_dashboard');
+  assert(body, 'render_dashboard not found');
+  assert(body.includes('nutrition-calorie-chart') && body.includes('nutrition-pfc-chart'),
+    'render_dashboard must contain both canvas ids for the nutrition charts');
+  assert(body.includes('calculateBMR'),
+    'render_dashboard must read BMR from store.calculateBMR()');
+});
+
 // ─── Admin access control ───
 // Incident: saveApiKeys/setModel used to be callable by any user. They
 // must check isAdmin() first and write to global config via

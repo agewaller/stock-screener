@@ -15,7 +15,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
     store.set('isAnalyzing', true);
 
     try {
@@ -151,7 +151,9 @@ var AIEngine = class AIEngine {
   // preferred path first and skip non-vision fallbacks unless they
   // happen to support the input.
   buildProviderFallbackList(preferredModel) {
-    const anthropic = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
+    // Anthropic Opus is our primary provider — billing is not a
+    // constraint and it gives the strongest analysis.
+    const anthropic = { model: 'claude-opus-4-6', callFn: this.callAnthropic };
     const openai = { model: 'gpt-4o', callFn: this.callOpenAI };
     const google = { model: 'gemini-2.5-pro', callFn: this.callGoogle };
 
@@ -162,15 +164,24 @@ var AIEngine = class AIEngine {
       return [{ model: preferredModel, callFn: this.callOpenAI }, anthropic, google];
     }
     if (preferredModel?.startsWith('gemini-')) {
-      return [{ model: preferredModel, callFn: this.callGoogle }, openai, anthropic];
+      return [{ model: preferredModel, callFn: this.callGoogle }, anthropic, openai];
     }
-    // Unknown model — try all in order of reliability
-    return [openai, anthropic, google];
+    // Unknown model — try all in order of reliability, Opus first.
+    return [anthropic, openai, google];
   }
 
   // Anthropic Claude API (via proxy or direct)
   async callAnthropic(modelId, prompt, apiKey, options) {
-    const apiModelId = 'claude-3-5-sonnet-20241022';
+    // Map internal model identifiers (the CONFIG.AI_MODELS ids) onto
+    // the actual API model names. Anthropic rotates model IDs: any
+    // hardcoded id eventually returns HTTP 400 once deprecated, which
+    // the user sees as "分析の呼び出しに失敗".
+    const MODEL_MAP = {
+      'claude-sonnet-4-6': 'claude-sonnet-4-6',
+      'claude-opus-4-6':   'claude-opus-4-6',
+      'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    };
+    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
     const proxyUrl = localStorage.getItem('anthropic_proxy_url') || 'https://stock-screener.agewaller.workers.dev';
     const endpoint = proxyUrl;
 
@@ -181,12 +192,37 @@ var AIEngine = class AIEngine {
       'x-api-key': apiKey,
     };
 
+    // Vision: when options.imageBase64 is supplied, wrap the prompt and
+    // image in a content array per the Anthropic messages API contract.
+    // The base64 string may arrive as a raw payload or a data URL
+    // ("data:image/png;base64,iVBOR..."); split out the media type and
+    // payload cleanly so we never send a malformed source block.
+    let userContent;
+    if (options.imageBase64) {
+      let mediaType = 'image/jpeg';
+      let data = options.imageBase64;
+      const dataUrlMatch = /^data:([^;]+);base64,(.*)$/.exec(data);
+      if (dataUrlMatch) {
+        mediaType = dataUrlMatch[1];
+        data = dataUrlMatch[2];
+      }
+      userContent = [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
+        { type: 'text', text: prompt.substring(0, 100000) }
+      ];
+    } else {
+      userContent = prompt.substring(0, 100000);
+    }
+
+    const systemPrompt = options.systemPrompt
+      || 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。';
+
     const body = {
       model: apiModelId,
       max_tokens: options.maxTokens || 4096,
       temperature: options.temperature || 0.3,
-      system: 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。',
-      messages: [{ role: 'user', content: prompt.substring(0, 100000) }]
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }]
     };
 
     const response = await fetch(endpoint, {
@@ -339,6 +375,10 @@ var AIEngine = class AIEngine {
   }
 
   getApiKey(modelId) {
+    // Guard against undefined / null: callers sometimes pass an
+    // un-initialized selectedModel early in the bootstrap, and the
+    // template literal + startsWith() would throw TypeError.
+    if (!modelId) return '';
     // Check all possible key storage patterns
     const directKey = localStorage.getItem(`apikey_${modelId}`);
     if (directKey) return directKey;

@@ -985,6 +985,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   pre, code { white-space: pre-wrap; word-break: break-all; }
   textarea { max-width: 100% !important; }
   .grid-recs { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-nutrition { grid-template-columns: repeat(2, 1fr) !important; }
   .grid-auto { grid-template-columns: 1fr !important; }
   * { max-width: 100vw !important; }
   .app-container, .main-content, .page-content, .card, .card-body, .card-header,

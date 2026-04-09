@@ -144,6 +144,7 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') {
       this.initDashboardCharts();
+      setTimeout(() => this.initNutritionCharts(), 100);
       setTimeout(() => this.loadDashResearch(), 300);
       setTimeout(() => this.loadActionRecommendations(), 600);
     }
@@ -275,7 +276,7 @@ var App = class App {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
 
-    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const model = store.get('selectedModel') || 'claude-opus-4-6';
     const apiKey = aiEngine.getApiKey(model);
 
     if (!apiKey) {
@@ -2397,6 +2398,189 @@ URL/連絡先：（あれば）`;
         }
       });
     }
+  }
+
+  // ---- Nutrition / BMR / PFC ----
+  initNutritionCharts() {
+    if (typeof Chart === 'undefined') return;
+    const log = store.get('nutritionLog') || [];
+    const bmr = store.calculateBMR();
+    // Show the last 14 days so the chart still has room even if logs
+    // are sparse.
+    const recent = log.slice(-14);
+    const labels = recent.map(e => {
+      const d = new Date(e.date);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+    const emptyLabels = labels.length ? labels : ['データなし'];
+    const emptyData = labels.length ? null : [0];
+
+    const calCtx = document.getElementById('nutrition-calorie-chart');
+    if (calCtx) {
+      if (this.chartInstances.nutritionCal) this.chartInstances.nutritionCal.destroy();
+      const datasets = [
+        {
+          label: '摂取カロリー',
+          data: emptyData || recent.map(e => e.calories || 0),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.15)',
+          tension: 0.3, fill: true,
+        }
+      ];
+      if (bmr != null) {
+        datasets.push({
+          label: '基礎代謝 BMR',
+          data: new Array((emptyData || recent).length).fill(bmr),
+          borderColor: '#ef4444',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        });
+      }
+      this.chartInstances.nutritionCal = new Chart(calCtx, {
+        type: 'line',
+        data: { labels: emptyLabels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#8896b0' } },
+            x: { grid: { display: false }, ticks: { color: '#8896b0' } }
+          },
+          plugins: { legend: { labels: { color: '#8896b0', font: { size: 11 } } } }
+        }
+      });
+    }
+
+    const pfcCtx = document.getElementById('nutrition-pfc-chart');
+    if (pfcCtx) {
+      if (this.chartInstances.nutritionPfc) this.chartInstances.nutritionPfc.destroy();
+      this.chartInstances.nutritionPfc = new Chart(pfcCtx, {
+        type: 'bar',
+        data: {
+          labels: emptyLabels,
+          datasets: [
+            {
+              label: 'タンパク質',
+              data: emptyData || recent.map(e => e.protein_g || 0),
+              backgroundColor: '#3b82f6',
+            },
+            {
+              label: '脂質',
+              data: emptyData || recent.map(e => e.fat_g || 0),
+              backgroundColor: '#f59e0b',
+            },
+            {
+              label: '炭水化物',
+              data: emptyData || recent.map(e => e.carbs_g || 0),
+              backgroundColor: '#10b981',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { color: '#8896b0' } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: '#8896b0' } }
+          },
+          plugins: { legend: { labels: { color: '#8896b0', font: { size: 11 } } } }
+        }
+      });
+    }
+  }
+
+  // Aggregate today's text entries into a single nutrition estimate via
+  // the model. Uses a dedicated JSON-shaped prompt so the result can be
+  // parsed directly into a nutritionLog row.
+  async extractTodayNutrition() {
+    const today = new Date().toISOString().split('T')[0];
+    const entries = (store.get('textEntries') || []).filter(e => {
+      if (!e.timestamp) return false;
+      return new Date(e.timestamp).toISOString().split('T')[0] === today;
+    });
+    if (entries.length === 0) {
+      Components.showToast('今日の記録がまだありません', 'info');
+      return;
+    }
+    const model = store.get('selectedModel') || 'claude-opus-4-6';
+    const apiKey = aiEngine.getApiKey(model);
+    if (!apiKey) {
+      Components.showToast('モデルのAPIキーが未設定です（設定ページから登録してください）', 'error');
+      return;
+    }
+    Components.showToast('今日の記録から栄養を集計中...', 'info');
+
+    const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
+    const prompt = `以下は今日（${today}）のユーザーの食事・生活記録です。記録全体から1日の合計摂取カロリーとPFC内訳を推定してください。記録に含まれない食事は0として扱わず、「記録された範囲」を反映してください。
+
+応答は必ず次のJSON 1 オブジェクトだけを返してください（前後の説明・コードブロックなし）:
+{"calories": <整数kcal>, "protein_g": <整数>, "fat_g": <整数>, "carbs_g": <整数>, "confidence": <0-1の小数>, "note": "<日本語の短い注記>"}
+
+記録:
+${joined.substring(0, 8000)}`;
+
+    try {
+      const result = await this.analyzeViaAPI(prompt, 'text_analysis');
+      // analyzeViaAPI may return a parsed object or a string; extract JSON robustly.
+      let parsed = null;
+      if (result && typeof result === 'object' && result.calories != null) {
+        parsed = result;
+      } else {
+        const text = typeof result === 'string' ? result : (result?._raw || result?.summary || result?.findings || '');
+        const m = typeof text === 'string' ? text.match(/\{[\s\S]*?\}/) : null;
+        if (m) {
+          try { parsed = JSON.parse(m[0]); } catch (e) {}
+        }
+      }
+      if (!parsed || parsed.calories == null) {
+        Components.showToast('栄養データの解析に失敗しました。記録を増やしてから再度お試しください。', 'error');
+        return;
+      }
+      const entry = {
+        date: today,
+        calories: Number(parsed.calories) || 0,
+        protein_g: Number(parsed.protein_g) || 0,
+        fat_g: Number(parsed.fat_g) || 0,
+        carbs_g: Number(parsed.carbs_g) || 0,
+        confidence: Number(parsed.confidence) || 0,
+        note: typeof parsed.note === 'string' ? parsed.note : ''
+      };
+      store.upsertNutritionEntry(entry);
+      Components.showToast(`今日: ${entry.calories} kcal を記録しました`, 'success');
+      this.navigate('dashboard');
+      setTimeout(() => this.initNutritionCharts(), 100);
+    } catch (err) {
+      console.error('[extractTodayNutrition] error:', err);
+      Components.showToast('栄養集計中にエラーが発生しました: ' + (err.message || err), 'error');
+    }
+  }
+
+  clearNutritionLog() {
+    // Inline confirmation UI — CLAUDE.md forbids the built-in modal
+    // dialogs because they are silently blocked on mobile browsers.
+    // Show a toast with explicit cancel/delete buttons instead.
+    const container = document.getElementById('toast-container') || (() => {
+      const c = document.createElement('div'); c.id = 'toast-container'; c.className = 'toast-container';
+      document.body.appendChild(c); return c;
+    })();
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-warning';
+    toast.innerHTML = `<span>栄養ログを削除しますか？</span>
+      <button class="btn btn-sm btn-danger" style="margin-left:10px">削除</button>
+      <button class="btn btn-sm btn-outline" style="margin-left:6px">キャンセル</button>`;
+    container.appendChild(toast);
+    const [okBtn, cancelBtn] = toast.querySelectorAll('button');
+    const close = () => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); };
+    okBtn.onclick = () => {
+      store.set('nutritionLog', []);
+      close();
+      Components.showToast('栄養ログを削除しました', 'success');
+      this.navigate('dashboard');
+      setTimeout(() => this.initNutritionCharts(), 100);
+    };
+    cancelBtn.onclick = close;
   }
 
   // ---- Deduplicate existing records in Firestore ----

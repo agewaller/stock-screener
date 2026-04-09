@@ -546,6 +546,71 @@ App.prototype.render_dashboard = function() {
     <div id="dash-research" style="display:block"></div>
   </div>
 
+  <!-- 8. Nutrition / BMR / PFC (collapsible) -->
+  ${(() => {
+    const log = store.get('nutritionLog') || [];
+    const hasLog = log.length > 0;
+    const bmr = store.calculateBMR();
+    const bmrText = bmr != null ? bmr + ' kcal' : '--';
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntry = log.find(e => e.date === today);
+    const todayCal = todayEntry ? Math.round(todayEntry.calories || 0) : null;
+    const todayDiffText = (todayCal != null && bmr != null)
+      ? (todayCal - bmr > 0 ? '+' : '') + (todayCal - bmr) + ' kcal'
+      : '--';
+    const recent7Log = log.slice(-7);
+    const avg7 = recent7Log.length
+      ? Math.round(recent7Log.reduce((s, e) => s + (e.calories || 0), 0) / recent7Log.length)
+      : null;
+    const initiallyOpen = hasLog ? 'block' : 'none';
+    const initialArrow = hasLog ? '▾' : '▸';
+    return `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+        onclick="var c=document.getElementById('dash-nutrition');var open=c.style.display==='none';c.style.display=open?'block':'none';this.querySelector('.arrow').textContent=open?'▾':'▸';if(open)setTimeout(()=>app.initNutritionCharts(),30)">
+        <h3 style="font-size:15px;font-weight:600">栄養 / PFCバランス</h3>
+        <span class="arrow" style="font-size:14px;color:var(--text-muted)">${initialArrow}</span>
+      </div>
+      <div id="dash-nutrition" style="display:${initiallyOpen}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" class="grid-nutrition">
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">基礎代謝 BMR</div>
+            <div style="font-size:16px;font-weight:700">${bmrText}</div>
+            ${bmr == null ? '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">設定→身長/体重/年齢を入力</div>' : ''}
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">今日の摂取</div>
+            <div style="font-size:16px;font-weight:700">${todayCal != null ? todayCal + ' kcal' : '--'}</div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:2px">BMR差 ${todayDiffText}</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">7日平均</div>
+            <div style="font-size:16px;font-weight:700">${avg7 != null ? avg7 + ' kcal' : '--'}</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">記録日数</div>
+            <div style="font-size:16px;font-weight:700">${log.length}</div>
+          </div></div>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header" style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
+            <span class="card-title" style="font-size:13px">摂取カロリー vs 基礎代謝</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px" onclick="app.extractTodayNutrition()">今日の記録から集計</button>
+              ${hasLog ? `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 10px" onclick="app.clearNutritionLog()">クリア</button>` : ''}
+            </div>
+          </div>
+          <div class="card-body" style="height:200px;padding:10px 14px"><canvas id="nutrition-calorie-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="padding:8px 14px"><span class="card-title" style="font-size:13px">PFCバランス（g）</span></div>
+          <div class="card-body" style="height:200px;padding:10px 14px"><canvas id="nutrition-pfc-chart"></canvas></div>
+        </div>
+        ${!hasLog ? `<div style="font-size:11px;color:var(--text-muted);padding:10px 2px;text-align:center">「今日の記録から集計」を押すと、今日書いた食事記録から摂取カロリー・PFCを自動計算します。</div>` : ''}
+      </div>
+    </div>`;
+  })()}
+
   <!-- 7. Stats + Chart (collapsible) -->
   ${hasData ? `
   <div style="margin-bottom:16px">
@@ -793,7 +858,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-6';
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -1409,7 +1474,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-6';
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };

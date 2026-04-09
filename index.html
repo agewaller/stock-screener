@@ -996,6 +996,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   pre, code { white-space: pre-wrap; word-break: break-all; }
   textarea { max-width: 100% !important; }
   .grid-recs { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-nutrition { grid-template-columns: repeat(2, 1fr) !important; }
   .grid-auto { grid-template-columns: 1fr !important; }
   * { max-width: 100vw !important; }
   .app-container, .main-content, .page-content, .card, .card-body, .card-header,
@@ -1224,12 +1225,13 @@ var CONFIG = {
     measurementId: 'G-YEHQ7MNRFX'
   },
 
-  // AI Model Options
+  // AI Model Options. Opus 4.6 is the default because billing is not a
+  // constraint and we want the strongest model by default.
   AI_MODELS: [
-    { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'OpenAI最新マルチモーダルモデル', default: true },
+    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', description: '最高精度（プロキシ設定が必要）', default: true },
     { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'Anthropic', description: '高速・高精度（プロキシ設定が必要）' },
-    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', description: '最高精度（プロキシ設定が必要）' },
     { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', provider: 'Anthropic', description: '高速・低コスト（プロキシ設定が必要）' },
+    { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'OpenAI最新マルチモーダルモデル' },
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', description: 'Google最新モデル' }
   ],
 
@@ -2759,9 +2761,12 @@ var Store = class Store {
       recommendations: [],
       actionItems: [],
 
+      // Nutrition / BMR / PFC dashboard
+      nutritionLog: [],
+
       // Admin
       adminMode: false,
-      selectedModel: 'gpt-4o',
+      selectedModel: 'claude-opus-4-6',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -2819,7 +2824,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -2837,7 +2842,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
     ];
     keys.forEach(key => {
       try {
@@ -2928,6 +2933,34 @@ var Store = class Store {
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
   }
 
+  // ---- Nutrition / BMR / PFC ----
+
+  // Mifflin-St Jeor basal metabolic rate (kcal/day). Returns null if
+  // the user hasn't filled in enough profile info so the caller can
+  // show "--" instead of a misleading number.
+  calculateBMR() {
+    const profile = this.state.userProfile || {};
+    const weight = parseFloat(profile.weight);
+    const height = parseFloat(profile.height);
+    const age = parseFloat(profile.age);
+    if (!weight || !height || !age) return null;
+    const base = 10 * weight + 6.25 * height - 5 * age;
+    if (profile.gender === 'male') return Math.round(base + 5);
+    if (profile.gender === 'female') return Math.round(base - 161);
+    // Unspecified or "other" — midpoint of the two formulas.
+    return Math.round(base - 78);
+  }
+
+  // Add or overwrite today's nutrition entry. Keeps the log sorted
+  // ascending by date so the chart renders without re-sorting.
+  upsertNutritionEntry(entry) {
+    if (!entry || !entry.date) return;
+    const log = (this.state.nutritionLog || []).filter(e => e.date !== entry.date);
+    log.push(entry);
+    log.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    this.set('nutritionLog', log);
+  }
+
   // Clear user data (preserve system config like Firebase settings)
   clearAll() {
     // Save system config before clearing
@@ -2955,7 +2988,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'gpt-4o';
+    this.state.selectedModel = 'claude-opus-4-6';
   }
 };
 
@@ -2980,7 +3013,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-sonnet-4-6';
+    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
     store.set('isAnalyzing', true);
 
     try {
@@ -3116,7 +3149,9 @@ var AIEngine = class AIEngine {
   // preferred path first and skip non-vision fallbacks unless they
   // happen to support the input.
   buildProviderFallbackList(preferredModel) {
-    const anthropic = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
+    // Anthropic Opus is our primary provider — billing is not a
+    // constraint and it gives the strongest analysis.
+    const anthropic = { model: 'claude-opus-4-6', callFn: this.callAnthropic };
     const openai = { model: 'gpt-4o', callFn: this.callOpenAI };
     const google = { model: 'gemini-2.5-pro', callFn: this.callGoogle };
 
@@ -3127,15 +3162,24 @@ var AIEngine = class AIEngine {
       return [{ model: preferredModel, callFn: this.callOpenAI }, anthropic, google];
     }
     if (preferredModel?.startsWith('gemini-')) {
-      return [{ model: preferredModel, callFn: this.callGoogle }, openai, anthropic];
+      return [{ model: preferredModel, callFn: this.callGoogle }, anthropic, openai];
     }
-    // Unknown model — try all in order of reliability
-    return [openai, anthropic, google];
+    // Unknown model — try all in order of reliability, Opus first.
+    return [anthropic, openai, google];
   }
 
   // Anthropic Claude API (via proxy or direct)
   async callAnthropic(modelId, prompt, apiKey, options) {
-    const apiModelId = 'claude-3-5-sonnet-20241022';
+    // Map internal model identifiers (the CONFIG.AI_MODELS ids) onto
+    // the actual API model names. Anthropic rotates model IDs: any
+    // hardcoded id eventually returns HTTP 400 once deprecated, which
+    // the user sees as "分析の呼び出しに失敗".
+    const MODEL_MAP = {
+      'claude-sonnet-4-6': 'claude-sonnet-4-6',
+      'claude-opus-4-6':   'claude-opus-4-6',
+      'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+    };
+    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
     const proxyUrl = localStorage.getItem('anthropic_proxy_url') || 'https://stock-screener.agewaller.workers.dev';
     const endpoint = proxyUrl;
 
@@ -3146,12 +3190,37 @@ var AIEngine = class AIEngine {
       'x-api-key': apiKey,
     };
 
+    // Vision: when options.imageBase64 is supplied, wrap the prompt and
+    // image in a content array per the Anthropic messages API contract.
+    // The base64 string may arrive as a raw payload or a data URL
+    // ("data:image/png;base64,iVBOR..."); split out the media type and
+    // payload cleanly so we never send a malformed source block.
+    let userContent;
+    if (options.imageBase64) {
+      let mediaType = 'image/jpeg';
+      let data = options.imageBase64;
+      const dataUrlMatch = /^data:([^;]+);base64,(.*)$/.exec(data);
+      if (dataUrlMatch) {
+        mediaType = dataUrlMatch[1];
+        data = dataUrlMatch[2];
+      }
+      userContent = [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
+        { type: 'text', text: prompt.substring(0, 100000) }
+      ];
+    } else {
+      userContent = prompt.substring(0, 100000);
+    }
+
+    const systemPrompt = options.systemPrompt
+      || 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。';
+
     const body = {
       model: apiModelId,
       max_tokens: options.maxTokens || 4096,
       temperature: options.temperature || 0.3,
-      system: 'あなたは慢性疾患管理の専門家です。最新のエビデンスに基づいた分析とアドバイスを日本語で提供してください。',
-      messages: [{ role: 'user', content: prompt.substring(0, 100000) }]
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }]
     };
 
     const response = await fetch(endpoint, {
@@ -3304,6 +3373,10 @@ var AIEngine = class AIEngine {
   }
 
   getApiKey(modelId) {
+    // Guard against undefined / null: callers sometimes pass an
+    // un-initialized selectedModel early in the bootstrap, and the
+    // template literal + startsWith() would throw TypeError.
+    if (!modelId) return '';
     // Check all possible key storage patterns
     const directKey = localStorage.getItem(`apikey_${modelId}`);
     if (directKey) return directKey;
@@ -5677,6 +5750,7 @@ var App = class App {
   afterRender(page) {
     if (page === 'dashboard') {
       this.initDashboardCharts();
+      setTimeout(() => this.initNutritionCharts(), 100);
       setTimeout(() => this.loadDashResearch(), 300);
       setTimeout(() => this.loadActionRecommendations(), 600);
     }
@@ -5808,7 +5882,7 @@ var App = class App {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
 
-    const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const model = store.get('selectedModel') || 'claude-opus-4-6';
     const apiKey = aiEngine.getApiKey(model);
 
     if (!apiKey) {
@@ -7932,6 +8006,189 @@ URL/連絡先：（あれば）`;
     }
   }
 
+  // ---- Nutrition / BMR / PFC ----
+  initNutritionCharts() {
+    if (typeof Chart === 'undefined') return;
+    const log = store.get('nutritionLog') || [];
+    const bmr = store.calculateBMR();
+    // Show the last 14 days so the chart still has room even if logs
+    // are sparse.
+    const recent = log.slice(-14);
+    const labels = recent.map(e => {
+      const d = new Date(e.date);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+    const emptyLabels = labels.length ? labels : ['データなし'];
+    const emptyData = labels.length ? null : [0];
+
+    const calCtx = document.getElementById('nutrition-calorie-chart');
+    if (calCtx) {
+      if (this.chartInstances.nutritionCal) this.chartInstances.nutritionCal.destroy();
+      const datasets = [
+        {
+          label: '摂取カロリー',
+          data: emptyData || recent.map(e => e.calories || 0),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.15)',
+          tension: 0.3, fill: true,
+        }
+      ];
+      if (bmr != null) {
+        datasets.push({
+          label: '基礎代謝 BMR',
+          data: new Array((emptyData || recent).length).fill(bmr),
+          borderColor: '#ef4444',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        });
+      }
+      this.chartInstances.nutritionCal = new Chart(calCtx, {
+        type: 'line',
+        data: { labels: emptyLabels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, ticks: { color: '#8896b0' } },
+            x: { grid: { display: false }, ticks: { color: '#8896b0' } }
+          },
+          plugins: { legend: { labels: { color: '#8896b0', font: { size: 11 } } } }
+        }
+      });
+    }
+
+    const pfcCtx = document.getElementById('nutrition-pfc-chart');
+    if (pfcCtx) {
+      if (this.chartInstances.nutritionPfc) this.chartInstances.nutritionPfc.destroy();
+      this.chartInstances.nutritionPfc = new Chart(pfcCtx, {
+        type: 'bar',
+        data: {
+          labels: emptyLabels,
+          datasets: [
+            {
+              label: 'タンパク質',
+              data: emptyData || recent.map(e => e.protein_g || 0),
+              backgroundColor: '#3b82f6',
+            },
+            {
+              label: '脂質',
+              data: emptyData || recent.map(e => e.fat_g || 0),
+              backgroundColor: '#f59e0b',
+            },
+            {
+              label: '炭水化物',
+              data: emptyData || recent.map(e => e.carbs_g || 0),
+              backgroundColor: '#10b981',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, grid: { display: false }, ticks: { color: '#8896b0' } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: '#8896b0' } }
+          },
+          plugins: { legend: { labels: { color: '#8896b0', font: { size: 11 } } } }
+        }
+      });
+    }
+  }
+
+  // Aggregate today's text entries into a single nutrition estimate via
+  // the model. Uses a dedicated JSON-shaped prompt so the result can be
+  // parsed directly into a nutritionLog row.
+  async extractTodayNutrition() {
+    const today = new Date().toISOString().split('T')[0];
+    const entries = (store.get('textEntries') || []).filter(e => {
+      if (!e.timestamp) return false;
+      return new Date(e.timestamp).toISOString().split('T')[0] === today;
+    });
+    if (entries.length === 0) {
+      Components.showToast('今日の記録がまだありません', 'info');
+      return;
+    }
+    const model = store.get('selectedModel') || 'claude-opus-4-6';
+    const apiKey = aiEngine.getApiKey(model);
+    if (!apiKey) {
+      Components.showToast('モデルのAPIキーが未設定です（設定ページから登録してください）', 'error');
+      return;
+    }
+    Components.showToast('今日の記録から栄養を集計中...', 'info');
+
+    const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
+    const prompt = `以下は今日（${today}）のユーザーの食事・生活記録です。記録全体から1日の合計摂取カロリーとPFC内訳を推定してください。記録に含まれない食事は0として扱わず、「記録された範囲」を反映してください。
+
+応答は必ず次のJSON 1 オブジェクトだけを返してください（前後の説明・コードブロックなし）:
+{"calories": <整数kcal>, "protein_g": <整数>, "fat_g": <整数>, "carbs_g": <整数>, "confidence": <0-1の小数>, "note": "<日本語の短い注記>"}
+
+記録:
+${joined.substring(0, 8000)}`;
+
+    try {
+      const result = await this.analyzeViaAPI(prompt, 'text_analysis');
+      // analyzeViaAPI may return a parsed object or a string; extract JSON robustly.
+      let parsed = null;
+      if (result && typeof result === 'object' && result.calories != null) {
+        parsed = result;
+      } else {
+        const text = typeof result === 'string' ? result : (result?._raw || result?.summary || result?.findings || '');
+        const m = typeof text === 'string' ? text.match(/\{[\s\S]*?\}/) : null;
+        if (m) {
+          try { parsed = JSON.parse(m[0]); } catch (e) {}
+        }
+      }
+      if (!parsed || parsed.calories == null) {
+        Components.showToast('栄養データの解析に失敗しました。記録を増やしてから再度お試しください。', 'error');
+        return;
+      }
+      const entry = {
+        date: today,
+        calories: Number(parsed.calories) || 0,
+        protein_g: Number(parsed.protein_g) || 0,
+        fat_g: Number(parsed.fat_g) || 0,
+        carbs_g: Number(parsed.carbs_g) || 0,
+        confidence: Number(parsed.confidence) || 0,
+        note: typeof parsed.note === 'string' ? parsed.note : ''
+      };
+      store.upsertNutritionEntry(entry);
+      Components.showToast(`今日: ${entry.calories} kcal を記録しました`, 'success');
+      this.navigate('dashboard');
+      setTimeout(() => this.initNutritionCharts(), 100);
+    } catch (err) {
+      console.error('[extractTodayNutrition] error:', err);
+      Components.showToast('栄養集計中にエラーが発生しました: ' + (err.message || err), 'error');
+    }
+  }
+
+  clearNutritionLog() {
+    // Inline confirmation UI — CLAUDE.md forbids the built-in modal
+    // dialogs because they are silently blocked on mobile browsers.
+    // Show a toast with explicit cancel/delete buttons instead.
+    const container = document.getElementById('toast-container') || (() => {
+      const c = document.createElement('div'); c.id = 'toast-container'; c.className = 'toast-container';
+      document.body.appendChild(c); return c;
+    })();
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-warning';
+    toast.innerHTML = `<span>栄養ログを削除しますか？</span>
+      <button class="btn btn-sm btn-danger" style="margin-left:10px">削除</button>
+      <button class="btn btn-sm btn-outline" style="margin-left:6px">キャンセル</button>`;
+    container.appendChild(toast);
+    const [okBtn, cancelBtn] = toast.querySelectorAll('button');
+    const close = () => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); };
+    okBtn.onclick = () => {
+      store.set('nutritionLog', []);
+      close();
+      Components.showToast('栄養ログを削除しました', 'success');
+      this.navigate('dashboard');
+      setTimeout(() => this.initNutritionCharts(), 100);
+    };
+    cancelBtn.onclick = close;
+  }
+
   // ---- Deduplicate existing records in Firestore ----
   // One-shot cleanup for users who accumulated duplicates before the
   // autosync-on-load bug was fixed.
@@ -8538,6 +8795,71 @@ App.prototype.render_dashboard = function() {
     <div id="dash-research" style="display:block"></div>
   </div>
 
+  <!-- 8. Nutrition / BMR / PFC (collapsible) -->
+  ${(() => {
+    const log = store.get('nutritionLog') || [];
+    const hasLog = log.length > 0;
+    const bmr = store.calculateBMR();
+    const bmrText = bmr != null ? bmr + ' kcal' : '--';
+    const today = new Date().toISOString().split('T')[0];
+    const todayEntry = log.find(e => e.date === today);
+    const todayCal = todayEntry ? Math.round(todayEntry.calories || 0) : null;
+    const todayDiffText = (todayCal != null && bmr != null)
+      ? (todayCal - bmr > 0 ? '+' : '') + (todayCal - bmr) + ' kcal'
+      : '--';
+    const recent7Log = log.slice(-7);
+    const avg7 = recent7Log.length
+      ? Math.round(recent7Log.reduce((s, e) => s + (e.calories || 0), 0) / recent7Log.length)
+      : null;
+    const initiallyOpen = hasLog ? 'block' : 'none';
+    const initialArrow = hasLog ? '▾' : '▸';
+    return `
+    <div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
+        onclick="var c=document.getElementById('dash-nutrition');var open=c.style.display==='none';c.style.display=open?'block':'none';this.querySelector('.arrow').textContent=open?'▾':'▸';if(open)setTimeout(()=>app.initNutritionCharts(),30)">
+        <h3 style="font-size:15px;font-weight:600">栄養 / PFCバランス</h3>
+        <span class="arrow" style="font-size:14px;color:var(--text-muted)">${initialArrow}</span>
+      </div>
+      <div id="dash-nutrition" style="display:${initiallyOpen}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" class="grid-nutrition">
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">基礎代謝 BMR</div>
+            <div style="font-size:16px;font-weight:700">${bmrText}</div>
+            ${bmr == null ? '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">設定→身長/体重/年齢を入力</div>' : ''}
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">今日の摂取</div>
+            <div style="font-size:16px;font-weight:700">${todayCal != null ? todayCal + ' kcal' : '--'}</div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:2px">BMR差 ${todayDiffText}</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">7日平均</div>
+            <div style="font-size:16px;font-weight:700">${avg7 != null ? avg7 + ' kcal' : '--'}</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:10px;text-align:center">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">記録日数</div>
+            <div style="font-size:16px;font-weight:700">${log.length}</div>
+          </div></div>
+        </div>
+        <div class="card" style="margin-bottom:8px">
+          <div class="card-header" style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center">
+            <span class="card-title" style="font-size:13px">摂取カロリー vs 基礎代謝</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px" onclick="app.extractTodayNutrition()">今日の記録から集計</button>
+              ${hasLog ? `<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 10px" onclick="app.clearNutritionLog()">クリア</button>` : ''}
+            </div>
+          </div>
+          <div class="card-body" style="height:200px;padding:10px 14px"><canvas id="nutrition-calorie-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="padding:8px 14px"><span class="card-title" style="font-size:13px">PFCバランス（g）</span></div>
+          <div class="card-body" style="height:200px;padding:10px 14px"><canvas id="nutrition-pfc-chart"></canvas></div>
+        </div>
+        ${!hasLog ? `<div style="font-size:11px;color:var(--text-muted);padding:10px 2px;text-align:center">「今日の記録から集計」を押すと、今日書いた食事記録から摂取カロリー・PFCを自動計算します。</div>` : ''}
+      </div>
+    </div>`;
+  })()}
+
   <!-- 7. Stats + Chart (collapsible) -->
   ${hasData ? `
   <div style="margin-bottom:16px">
@@ -8785,7 +9107,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-6';
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -9401,7 +9723,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-sonnet-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-6';
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
