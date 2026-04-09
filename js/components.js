@@ -395,12 +395,56 @@ var Components = {
     }, 4000);
   },
 
-  // Loading spinner
-  loading(text = '分析中...') {
+  // Loading spinner with indeterminate progress gauge.
+  //
+  // Shows active feedback while background analysis runs. The elapsed
+  // seconds counter ticks once per second so users can see it is still
+  // working — elderly users otherwise assume the app has frozen. The
+  // setInterval stops itself as soon as the counter element disappears
+  // (caller replaces the container's innerHTML with the result).
+  loading(text = '分析中...', opts = {}) {
+    const subtext = opts.subtext !== undefined
+      ? opts.subtext
+      : 'しばらくお待ちください（通常15〜30秒程度）';
+    const showElapsed = opts.showElapsed !== false;
+    const elapsedId = 'elapsed_' + Math.random().toString(36).slice(2, 10);
+
+    if (showElapsed && typeof window !== 'undefined') {
+      const startTime = Date.now();
+      setTimeout(() => {
+        const interval = setInterval(() => {
+          const el = document.getElementById(elapsedId);
+          if (!el) { clearInterval(interval); return; }
+          const secs = Math.floor((Date.now() - startTime) / 1000);
+          el.textContent = secs + '秒経過';
+        }, 1000);
+      }, 0);
+    }
+
     return `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px">
-        <div class="spinner" style="width:40px;height:40px;border-width:4px;margin-bottom:16px"></div>
-        <span style="font-size:14px;color:var(--text-secondary)">${text}</span>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;gap:14px">
+        <div class="spinner" style="width:40px;height:40px;border-width:4px"></div>
+        <div class="progress-indeterminate" aria-hidden="true"><span></span></div>
+        <div style="text-align:center">
+          <div style="font-size:14px;color:var(--text-secondary);font-weight:600">${text}</div>
+          ${subtext ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${subtext}</div>` : ''}
+          ${showElapsed ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace"><span id="${elapsedId}">0秒経過</span></div>` : ''}
+        </div>
+      </div>
+    `;
+  },
+
+  // Inline typing indicator for the chat view. Appended after the user's
+  // message while the model is generating a reply. Removed by the caller
+  // (sendChat) once the assistant message arrives.
+  typingIndicator() {
+    return `
+      <div class="chat-message assistant" id="chat-typing-indicator">
+        <div class="user-avatar" style="width:28px;height:28px;font-size:14px">💬</div>
+        <div class="chat-bubble" style="display:flex;align-items:center;gap:8px">
+          <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span style="font-size:11px;color:var(--text-muted)">考え中...</span>
+        </div>
       </div>
     `;
   },

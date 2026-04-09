@@ -697,6 +697,58 @@ test('Chat avatar does not display literal "AI"', () => {
     'Chat avatar must not render the literal text "AI"');
 });
 
+// ─── Progress feedback while the model is working ───
+// Incident: users (avg age 65) thought the app had frozen during the
+// 15-30s analysis window. The chat view sat silent and dashboard file
+// uploads only showed a toast, so they reloaded mid-request. Ensure the
+// progress gauge + typing indicator stay wired up.
+
+section('Progress Feedback');
+
+test('Components.loading renders a progress gauge', () => {
+  const body = extractFunction(js('js/components.js'), 'loading');
+  assert(body, 'Components.loading not found');
+  assert(body.includes('progress-indeterminate'),
+    'loading() must render the .progress-indeterminate bar');
+  assert(body.includes('秒経過'),
+    'loading() must show an elapsed-seconds counter so users see it is still working');
+});
+
+test('Components.typingIndicator renders animated dots', () => {
+  const body = extractFunction(js('js/components.js'), 'typingIndicator');
+  assert(body, 'Components.typingIndicator not found');
+  assert(body.includes('typing-dots'),
+    'typingIndicator() must render the .typing-dots animation');
+  assert(body.includes('chat-typing-indicator'),
+    'typingIndicator() must use the id chat-typing-indicator so it is auto-removed on re-render');
+});
+
+test('sendChat shows typing indicator while awaiting reply', () => {
+  const body = extractFunction(js('js/app.js'), 'sendChat');
+  assert(body, 'sendChat not found');
+  assert(body.includes('typingIndicator'),
+    'sendChat must insert Components.typingIndicator() after posting the user message');
+});
+
+test('dashQuickFile shows loading gauge in the feedback area', () => {
+  const body = extractFunction(js('js/app.js'), 'dashQuickFile');
+  assert(body, 'dashQuickFile not found');
+  assert(body.includes('Components.loading'),
+    'dashQuickFile must render Components.loading() into dash-ai-feedback so the user sees progress');
+});
+
+test('CSS defines progress-indeterminate and typing-dots animations', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/styles.css'), 'utf8');
+  assert(/\.progress-indeterminate\s*\{/.test(css),
+    'css/styles.css must define .progress-indeterminate');
+  assert(/@keyframes\s+progress-slide/.test(css),
+    'css/styles.css must define @keyframes progress-slide');
+  assert(/\.typing-dots\s*\{/.test(css),
+    'css/styles.css must define .typing-dots');
+  assert(/@keyframes\s+typing-bounce/.test(css),
+    'css/styles.css must define @keyframes typing-bounce');
+});
+
 test('APIキー message is gated behind isAdmin()', () => {
   // analyzeViaAPI no-key fallback must not expose APIキー to regular users
   const body = extractFunction(js('js/app.js'), 'analyzeViaAPI');

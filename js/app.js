@@ -1057,6 +1057,15 @@ URL/連絡先：（あれば）`;
     store.set('conversationHistory', history);
     this.renderChatMessages();
 
+    // Show typing indicator while we wait for the reply. The chat view
+    // otherwise sits silent for 10-30 seconds, which elderly users read
+    // as "the app froze".
+    const chatContainer = document.getElementById('chat-messages');
+    if (chatContainer) {
+      chatContainer.insertAdjacentHTML('beforeend', Components.typingIndicator());
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
     // Generate response
     try {
       const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
@@ -1874,6 +1883,15 @@ URL/連絡先：（あれば）`;
 
         Components.showToast(`${file.name} を分析中...`, 'info');
         this.navigate('dashboard');
+
+        // Immediately show the progress gauge in the feedback area so the
+        // user sees that something is happening while the API call runs.
+        const feedbackEl = document.getElementById('dash-ai-feedback');
+        if (feedbackEl) {
+          feedbackEl.innerHTML = Components.loading(
+            isImage ? '写真を分析しています...' : 'ファイルを分析しています...'
+          );
+        }
 
         // ALL analysis via API prompt
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
