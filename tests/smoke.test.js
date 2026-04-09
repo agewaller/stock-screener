@@ -1268,6 +1268,64 @@ test('No top-level await outside async functions', () => {
   }
 });
 
+// ─── Integration → Dashboard reflection contract ───
+// Incident: Apple Health / Fitbit imports landed in vitals/activity/
+// sleep collections only, which the dashboard doesn't render. Users
+// uploaded data and saw nothing change on the home screen. Fix: every
+// integration that brings in data must also call _addImportEntry()
+// (or push directly to textEntries) so it appears in the dashboard's
+// "あなたの記録" feed and updates integrationSyncs for the status
+// badge.
+
+section('Integration → Dashboard Reflection');
+
+test('Integrations exposes _addImportEntry() helper', () => {
+  const src = js('js/integrations.js');
+  assert(/_addImportEntry\s*\(/.test(src),
+    'Integrations._addImportEntry() must exist');
+  // Helper must push to textEntries AND set integrationSyncs
+  assert(/textEntries[\s\S]*store\.set\(\s*['"]textEntries['"]/.test(src),
+    '_addImportEntry must push to textEntries');
+  assert(/integrationSyncs/.test(src),
+    '_addImportEntry must update integrationSyncs');
+});
+
+test('Apple Health import creates dashboard-visible entry', () => {
+  const body = extractFunction(js('js/integrations.js'), 'importData');
+  assert(body, 'appleHealth.importData not found');
+  assert(/_addImportEntry\s*\(/.test(body) || /textEntries/.test(body),
+    'Apple Health importData must create a text entry visible on dashboard');
+});
+
+test('Fitbit importToday creates dashboard-visible entry', () => {
+  const body = extractFunction(js('js/integrations.js'), 'importToday');
+  assert(body, 'fitbit.importToday not found');
+  assert(/_addImportEntry\s*\(/.test(body),
+    'Fitbit importToday must call _addImportEntry');
+});
+
+test('Plaud saveTranscript updates integrationSyncs', () => {
+  const body = extractFunction(js('js/integrations.js'), 'saveTranscript');
+  assert(body, 'plaud.saveTranscript not found');
+  assert(/integrationSyncs/.test(body),
+    'plaud.saveTranscript must update integrationSyncs for the status badge');
+});
+
+test('integrationSyncs is in store persistKeys', () => {
+  const storeSrc = js('js/store.js');
+  assert(/persistKeys[\s\S]*?'integrationSyncs'/.test(storeSrc),
+    'integrationSyncs must be persisted across reloads');
+});
+
+test('Dashboard subscribes to data changes for auto-refresh', () => {
+  const initBody = extractFunction(js('js/app.js'), 'init');
+  assert(initBody, 'init not found');
+  // Must subscribe to textEntries (or similar) and call navigate('dashboard')
+  assert(/store\.on\s*\(\s*['"]textEntries['"]/.test(initBody) ||
+         /scheduleDashRefresh/.test(initBody),
+    'init() must subscribe to data changes to auto-refresh the dashboard');
+});
+
 // ─── Summary ───
 
 console.log(`\n${'─'.repeat(50)}`);
