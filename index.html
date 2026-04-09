@@ -2679,6 +2679,126 @@ var INLINE_PROMPTS = {
   "concern_level": "low/medium/high"
 }`,
 
+  // Plaud (禅トラック / Daily Dashboard) — full-day transcript analysis.
+  // Runs automatically on every Plaud transcript that arrives (via paste,
+  // file, or email inbox). The prompt outputs both a human-readable
+  // "full version" AND a structured JSON version in a single response,
+  // which we then parse and graph on the dashboard.
+  plaud_analysis: `あなたは「禅トラック／日次内省アナリスト」です。与えられた1日の文字起こし（日本語）をもとに、評価と改善案を出力する。出力は日本語を基本とし、カタカナや英語は自然な文脈で必要なときだけ用いる。
+
+【最重要ルール：フル版＋JSONの二重出力】
+・必ず「フル版（人間向け）」を先に出し、その直後に「JSON版（DB格納用）」を出す。
+・JSON版は、フル版で出した情報が一切減らないようにする。
+・方法：フル版の各項目・各箇条書きを、JSONでは同じ順序・同じ内容（文字列）で配列化し、加えて数値フィールドも格納する。
+・フル版に短い引用を入れた場合、その引用もJSONに必ず入れる。
+・フル版で「—（データ不足）」と書いた場合、JSONでも null か "" を使い、かつ reason に「データ不足」を入れる。
+・フル版は箇条書きのみ。フル版内では表、JSON、プログラムコード、数式、コードフェンス、波括弧や角括弧は禁止。JSON版のみJSONを使ってよい。
+
+【目的】
+・健康（睡眠・活動・回復・摂取カロリー推定・消費カロリー推定・当日のカロリー収支）
+・時間の使い方（価値創造／基盤づくり／維持／浪費、連続作業25/50/90分の回数推定）
+・仕事（貢献・価値創造：成果・波及・速度）
+・信用構築（徳と摩擦）
+・資産（お金の流れ、蓄え/仕組み化、無形資産＝関係や知の資産化）
+・意識の焦点（1,2,3,3.5,4,5,6,7）と「欲・徳・エネルギー」の出現（3.5＝心身）
+・合成指標：純価値（エネルギー＋徳−欲、0〜100）
+・状況（行為の型）と空間（場所の型）の推定と反映
+・登場人物の特定と関係の把握を行い、特に「自分」に焦点を当てて示唆を出す（自分70%、主要相手20%、その他10%）
+
+【状況・空間の推定ルール】
+・発話を時系列の短い出来事に分割し、各出来事に「状況」と「空間」を推定ラベルとして付与（複数可だが最優勢を1つ採用）。
+・状況候補：一人／会話（対面/電話/オンライン）／移動（徒歩/車/電車/自転車）／食事（飲料含む）／運動（有酸素/筋トレ/ストレッチ）／作業（思索/制作/執筆/設計/分析）／休息（睡眠/仮眠/目休め/瞑想）／生活行為（家事/買い物/身支度）／調整（連絡/段取り/設定）。
+・空間候補：家／オフィス／会議室／食事空間（レストラン/カフェ/自宅食卓）／外（屋外/移動中/駅/車内）／第三の場所（コワーキング/図書館/ホテル/待合）。
+・根拠語彙例：会話＝話した/打合せ/面談/電話/Zoom、移動＝駅/乗る/降りる/徒歩、食事＝食べた/飲んだ/店名、運動＝歩いた/筋トレ/階段、空間＝家/会議室/外/車内。
+・曖昧時の優先：睡眠/休息＞食事＞運動＞会話＞移動＞作業/調整＞生活行為。空間が不明なら外→オフィス→家で補う。
+・同一話題が10分以上続けば持続、1分未満の断片は直前へ吸収。
+・出現時間（推定）を合計し「状況比率」「空間比率」を算出し、確からしさ（低/中/高）を併記する。
+
+【人物特定・自分フォーカス】
+・固有名（姓/名/敬称）、一人称/二人称、呼称、役割語彙（上司/顧客/家族/友人/同僚/投資家/研究者など）から人物を抽出し、表記ゆれは統合する。
+・「自分」は第一人称（私/僕/わたし等）や発話主で最優先。評価の重みづけは自分70%・主要相手20%・その他10%。示唆は必ず「自分が明日できる最小行動」に落とす。
+・関係温度（簡易）：支援/感謝/合意形成＝プラス、否定/攻撃/未返信＝マイナス。要約にひと言で傾向を記す。
+
+【意識の焦点（数値次元）ルール】
+・次元ラベルは 1,2,3,3.5,4,5,6,7 を使用（3.5＝心身）。
+・各発話には最も強い次元をただ1つ付与。迷ったら低次→高次へ読み上げ、上位の特徴が明確なら上位。3.5は独立。
+・日次のパーセントは、その日に根拠がある次元だけを正規化して合計100%。根拠の無い次元は数値を出さず「—」とする（0%で埋めない）。
+・次元の目安：
+・1＝数字/締切/金額/ToDo/記録（線・計測）
+・2＝論理/因果/比較/判断（面・関係）
+・3＝物性/五感/場所/モノ/移動（立体・現場）
+・3.5＝睡眠/姿勢/呼吸/栄養/痛み/運動/緊張弛緩（心身）
+・4＝時間/因果/概念設計/記憶/価値観（構想）
+・5＝直観/道/固有ベクトル/関係の質（可能性）
+・6＝全体性/寛容/合意/摩擦最小化/匿名善（統合）
+・7＝手放し/静けさ/沈黙/融解（空）
+
+【カロリー推定（簡易）】
+・摂取：食事/飲料の内容と量を拾い、標準量×倍率で幅推定。大盛/特盛×1.5〜2、少なめ×0.7、半分×0.5、一口×0.3。揚げ物+100〜200kcal、バター/マヨ+50〜150kcal。不明は普通量。最後に確からしさ（低/中/高）。
+・消費：活動消費≒METs×体重(68kg)×時間。体重不明は「仮定：68kg」。基礎代謝1200〜1600を併記。
+・収支：摂取−消費を±表記。推定誤差±20〜30%あり得ると明記。
+
+【分類ルール】
+・健康：睡眠/活動/回復＋kcal三点（摂取/消費/収支）必須
+・時間：4分類＋連続作業（25/50/90分）
+・仕事：成果/波及/速度
+・信用：徳/摩擦
+・資産：お金の流れ、蓄え/仕組み化、無形資産
+・意識の焦点：次元は 1,2,3,3.5,4,5,6,7。各次元における 欲/徳/エネルギー の出現数も数える
+・純価値：エネルギー＋徳−欲（0〜100）、根拠と確からしさ
+
+【作業手順】
+1. 文字起こしを出来事に分割し、各出来事に状況/空間/人物を付与する（短い根拠引用を添える）
+2. 摂取kcal、消費kcal、収支kcalを推定し、仮定と確からしさを付す
+3. 健康/時間/仕事/信用/資産を0〜5点または割合で評価し、根拠の短い引用を添える
+4. 欲/徳/エネルギーの出現数を数え、純価値を算出（0〜100）し、根拠と確からしさを付す
+5. 意識の焦点（1,2,3,3.5,4,5,6,7）の%を出し、偏りの洞察をひと言で述べる（根拠のない次元は「—」）
+6. 明日の行動を最大2件だけ提案（具体的・5〜15分で開始できる・時間と場所を指定）
+7. 断定は避け、推定は「根拠」「確からしさ」を必ず添える。未言及は「データ不足」と明示する
+
+【フル版の出力順序】
+・評価一覧（要約）
+・人物と関係（自分中心）
+・状況・空間（上位3）
+・健康（kcal三点を必ず）
+・時間の使い方（4分類＋連続作業）
+・仕事（成果/波及/速度＋明日の小さな試作）
+・信用（徳/摩擦）
+・資産（お金/仕組み化/無形資産）
+・意識の焦点（1,2,3,3.5,4,5,6,7）
+・明日の行動（最大2件）
+・略語の説明（使った場合のみ）
+・JSON版（DB格納用、フル版が減らないこと）
+
+【フル版の出力形式（必須）】
+・すべて箇条書きのみ
+・先頭に必ず「評価一覧（要約）」
+・各評価に根拠（短い引用）と確からしさ（低/中/高）
+・健康には必ず 摂取kcal／消費kcal（基礎代謝含むか）／収支kcal（±）
+・明日の行動は最大2件。時間と場所と開始トリガと終了条件を含む
+
+【JSON版の必須仕様（DB格納用）】
+・JSONはフル版の直後に出す
+・最上位キー：meta, summary, details, actions, people, context, conscious_focus, calories, signals, raw_bullets
+・raw_bullets：フル版の箇条書きを先頭から最後まで「完全一致」で配列保存（フル版の減少防止）
+・summary：評価一覧（要約）の構造化（数値は number、欠損は null。確からしさと根拠引用も保持）
+・details：各セクションの箇条書き配列、引用配列、確からしさ
+・actions：最大2件（time, place, action, trigger, done_criteria）
+・people：自分、主要相手の配列（name, role_guess, relationship_temp, evidence_quotes）
+・context：situation_top3, space_top3（each: label, pct, confidence, evidence_quotes）
+・conscious_focus：dims_pct（keys: 1,2,3,3.5,4,5,6,7。根拠なしは null）、bias_insight、evidence_quotes、signals_count_by_dim（欲/徳/エネルギー）
+・calories：intake_kcal_range, burn_kcal_range, bmr_range, balance_kcal_range, assumptions, confidence
+・signals：desire_count, virtue_count, energy_count と代表引用
+
+【入力】
+<<<TRANSCRIPT_START
+{{INPUT}}
+TRANSCRIPT_END>>>
+
+【ここから出力】
+・フル版（上の順序で、箇条書きのみ）
+・JSON版（上の必須仕様に従い、raw_bulletsでフル版を完全一致保存し、構造化フィールドも埋める）`,
+
   // Product recommendations
   product_recommendations: `${PROMPT_HEADER}
 ユーザーの疾患と最近の記録に基づいて、今最も役立つサプリメント・デバイス・食品を6つ推奨してください。
@@ -2824,7 +2944,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -2842,7 +2962,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses'
     ];
     keys.forEach(key => {
       try {
@@ -4742,13 +4862,25 @@ var Integrations = {
     return parts.join('\n');
   },
 
-  // ======== USER-SPECIFIC EMAIL ENDPOINT ========
-  // Each user gets a unique data ingestion email address
+  // ======== USER-SPECIFIC EMAIL ENDPOINTS ========
+  // Each user gets two stable per-user email addresses derived from
+  // their Firebase UID. Plaud's auto-flow "Email export" feature
+  // sends transcripts to the plaud address; any other data source
+  // (generic CSV/JSON) goes to the data address. Domain is
+  // inbox.cares.advisers.jp so the Cloudflare Email Routing worker
+  // can dispatch to the right user based on the local-part.
   generateUserEmail() {
     const user = store.get('user');
     if (!user) return null;
     const hash = this.simpleHash(user.email || user.uid);
-    return `data-${hash}@inbox.chroniccare.ai`;
+    return `data-${hash}@inbox.cares.advisers.jp`;
+  },
+
+  generatePlaudEmail() {
+    const user = store.get('user');
+    if (!user) return null;
+    const hash = this.simpleHash(user.email || user.uid);
+    return `plaud-${hash}@inbox.cares.advisers.jp`;
   },
 
   simpleHash(str) {
@@ -4829,6 +4961,16 @@ var Integrations = {
       const syncs = store.get('integrationSyncs') || {};
       syncs.plaud = entry.timestamp;
       store.set('integrationSyncs', syncs);
+
+      // Auto-run the 禅トラック / Daily Dashboard analysis prompt on
+      // every Plaud transcript so the dashboard graph updates
+      // immediately. Fire-and-forget: failures are logged but don't
+      // block the save. The async runner lives on the app instance.
+      if (typeof app !== 'undefined' && app.runPlaudAnalysis) {
+        app.runPlaudAnalysis(entry).catch(err => {
+          console.warn('[plaud] auto-analysis failed:', err.message);
+        });
+      }
 
       return entry;
     }
@@ -5638,6 +5780,11 @@ var FirebaseBackend = {
           // Load user data from Firestore
           this.loadAllData();
 
+          // Subscribe to the Plaud inbox so emails dispatched by the
+          // plaud-inbox Cloudflare Worker auto-import within seconds
+          // of arriving in Firestore.
+          this.subscribeToInbox();
+
           // Navigate to dashboard on successful login. Users without a
           // selected disease can pick one later from settings; the
           // dashboard handles the empty-disease state.
@@ -5846,6 +5993,66 @@ var FirebaseBackend = {
       console.warn('Load global config:', err.message);
       return {};
     }
+  },
+
+  // ─── Plaud inbox subscription ───
+  // The plaud-inbox Cloudflare Worker writes incoming Plaud emails to
+  // inbox/{hash}/plaud/{messageId}. This method opens a Firestore
+  // realtime listener on that path so any new email triggers an
+  // immediate import + 禅トラック analysis without the user having to
+  // refresh. Each processed message is marked processed: true so we
+  // never run the analysis twice.
+  subscribeToInbox() {
+    if (!this.db || !this.userId) return;
+    if (this._inboxUnsubscribe) {
+      try { this._inboxUnsubscribe(); } catch (e) {}
+      this._inboxUnsubscribe = null;
+    }
+    const hash = this._userHash();
+    if (!hash) return;
+    try {
+      this._inboxUnsubscribe = this.db
+        .collection('inbox').doc(hash).collection('plaud')
+        .where('processed', '==', false)
+        .orderBy('receivedAt', 'asc')
+        .onSnapshot(async (snapshot) => {
+          for (const docSnap of snapshot.docs) {
+            const data = docSnap.data() || {};
+            try {
+              const subject = data.subject || 'Plaud会話記録';
+              const text = data.text || '';
+              if (!text.trim()) { await docSnap.ref.update({ processed: true, skipped: 'empty' }).catch(()=>{}); continue; }
+              const parsed = Integrations.plaud.parseTranscript(text);
+              Integrations.plaud.saveTranscript(parsed, {
+                title: subject,
+                date: data.receivedAt?.toDate?.()?.toISOString() || new Date().toISOString()
+              });
+              await docSnap.ref.update({ processed: true, processedAt: new Date().toISOString() }).catch(()=>{});
+            } catch (procErr) {
+              console.warn('[inbox] failed to process message', docSnap.id, procErr);
+              await docSnap.ref.update({ processed: true, error: procErr.message }).catch(()=>{});
+            }
+          }
+        }, (err) => {
+          console.warn('[inbox] snapshot error:', err.message);
+        });
+      console.log('[inbox] subscribed to plaud inbox for hash', hash);
+    } catch (err) {
+      console.warn('[inbox] subscribe failed:', err.message);
+    }
+  },
+
+  // Mirror of Integrations.simpleHash so the inbox subscription uses
+  // the exact same hash that's printed on the integrations page.
+  _userHash() {
+    const u = this.auth?.currentUser;
+    if (!u) return null;
+    const str = u.email || u.uid || '';
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h).toString(36).substring(0, 8);
   },
 
   // ---- Batch Load All User Data ----
@@ -6187,7 +6394,7 @@ var App = class App {
         }
       }, 200);
     };
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback']
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
     // Start the auto-sync scheduler so connected integrations
@@ -6296,6 +6503,26 @@ var App = class App {
     if (page === 'dashboard') {
       this.initDashboardCharts();
       setTimeout(() => this.initNutritionCharts(), 100);
+      // Plaud 禅トラック charts (read latest analysis from store and
+      // initialize the four panels: focus radar, signals, calorie,
+      // net value trend). Skip silently if no analyses yet.
+      setTimeout(() => {
+        const analyses = store.get('plaudAnalyses') || [];
+        if (analyses.length === 0) return;
+        const latest = analyses[analyses.length - 1];
+        const j = latest.json || {};
+        const cf = j.conscious_focus || {};
+        const dims = cf.dims_pct || {};
+        const signals = j.signals || {};
+        const cal = j.calories || {};
+        const netHistory = analyses.slice(-14).map(a => {
+          const jj = a.json || {};
+          const nv = jj.summary?.net_value ?? jj.summary?.pure_value ?? jj.summary?.['純価値'] ?? null;
+          return { date: a.dateLabel, nv: typeof nv === 'number' ? nv : null };
+        });
+        try { this.initPlaudCharts(dims, signals, cal, netHistory); }
+        catch (e) { console.warn('plaud charts:', e); }
+      }, 150);
       setTimeout(() => this.loadDashResearch(), 300);
       setTimeout(() => this.loadActionRecommendations(), 600);
     }
@@ -7456,6 +7683,25 @@ ${titles}`;
     }
   }
 
+  // Copy the user's per-user Plaud receiving email address so they
+  // can paste it into Plaud's auto-flow email destination.
+  copyPlaudEmail() {
+    const addr = Integrations.generatePlaudEmail();
+    if (!addr) {
+      Components.showToast('ログインが必要です', 'error');
+      return;
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(addr).then(() => {
+        Components.showToast('メールアドレスをコピーしました。Plaudアプリのオートフローに貼り付けてください。', 'success');
+      }).catch(() => {
+        Components.showToast(addr, 'info');
+      });
+    } else {
+      Components.showToast(addr, 'info');
+    }
+  }
+
   // Copy the user-specific iOS Shortcut URL prefix so they can
   // paste it into a Shortcut "Open URL" action. The shortcut
   // appends its own #import=<base64> payload at runtime.
@@ -7778,6 +8024,90 @@ ${titles}`;
   //   4. Truncated JSON (hit maxTokens mid-output)
   //   5. Plain text (model ignored the JSON instruction)
   //
+  // ─── 禅トラック / Plaud Daily Dashboard analysis ───
+  // Runs the plaud_analysis prompt on a saved Plaud transcript and
+  // persists both the human-readable "full version" and the
+  // structured JSON the prompt produces. Downstream the dashboard
+  // widget reads from plaudAnalyses to draw graphs.
+  async runPlaudAnalysis(entry) {
+    if (!entry || !entry.content) return;
+    const input = (entry.content || '').substring(0, 12000);
+    const dateLabel = new Date(entry.timestamp).toLocaleDateString('ja-JP');
+    const promptTemplate = (typeof INLINE_PROMPTS !== 'undefined' && INLINE_PROMPTS.plaud_analysis) || '';
+    if (!promptTemplate) {
+      console.warn('[plaud] plaud_analysis prompt not found');
+      return;
+    }
+    const prompt = promptTemplate.replace(/\{\{INPUT\}\}/g, input);
+
+    let raw;
+    try {
+      raw = await aiEngine.callModel(store.get('selectedModel'), prompt, { maxTokens: 6000 });
+    } catch (err) {
+      console.warn('[plaud] model call failed:', err.message);
+      return;
+    }
+    const rawText = typeof raw === 'string' ? raw : JSON.stringify(raw);
+
+    // The prompt is designed to produce FULL-VERSION bullets followed
+    // by a JSON block. Split them so we can save both.
+    const { fullText, json } = this._splitPlaudResponse(rawText);
+
+    // Persist the analysis in a dedicated collection so the dashboard
+    // widget can read the most recent analysis plus a trend history
+    // for graphing (conscious_focus, net value, calorie balance, etc.).
+    const analyses = store.get('plaudAnalyses') || [];
+    analyses.push({
+      id: 'plaud_' + Date.now().toString(36),
+      entryId: entry.id,
+      timestamp: entry.timestamp,
+      dateLabel,
+      title: entry.title,
+      fullText: fullText || rawText,
+      json: json || null,
+      _raw: rawText.length > 20000 ? null : rawText
+    });
+    // Cap history at 90 entries so localStorage doesn't blow up
+    if (analyses.length > 90) analyses.splice(0, analyses.length - 90);
+    store.set('plaudAnalyses', analyses);
+
+    // Also save an AI comment linked to the entry so it shows in the
+    // dashboard inline analysis card too.
+    if (this.saveAIComment && json) {
+      this.saveAIComment(entry.id, {
+        summary: (json.summary && typeof json.summary === 'object')
+          ? (json.summary.overall_note || '') : '',
+        findings: fullText ? fullText.substring(0, 2000) : '',
+        actions: Array.isArray(json.actions) ? json.actions.map(a => a?.action || '').filter(Boolean) : [],
+        _fromAPI: true,
+        _plaud: true
+      });
+    }
+  }
+
+  // Split the model's response into a human-readable bullet section
+  // and the trailing JSON object. The prompt is strict about the
+  // order (full version first, JSON immediately after) and forbids
+  // JSON / braces in the full version, so finding the first '{' that
+  // starts a top-level object is reliable.
+  _splitPlaudResponse(text) {
+    if (!text || typeof text !== 'string') return { fullText: '', json: null };
+    // Strip code fences around JSON if the model added them
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    let body = text;
+    if (fence) body = text.replace(fence[0], fence[1]);
+
+    // Find the first opening brace that's followed by a likely JSON key
+    const jsonStart = body.search(/\{\s*"(meta|summary|details|actions|people|context|conscious_focus|calories|signals|raw_bullets)"/);
+    if (jsonStart === -1) return { fullText: body.trim(), json: null };
+
+    const fullText = body.substring(0, jsonStart).trim();
+    const jsonPart = body.substring(jsonStart);
+    // Use parseAIResponse's robust JSON repair in case of truncation
+    const parsed = this.parseAIResponse(jsonPart);
+    return { fullText, json: parsed };
+  }
+
   // This helper handles all five. For (4), we progressively close
   // dangling strings / arrays / objects until the parse succeeds, so
   // even a truncated response yields at least the fields that were
@@ -8718,6 +9048,217 @@ ${titles}`;
   }
 
   // ---- Dashboard Charts ----
+  // ─── 禅トラック / Plaud dashboard widget ───
+  // Renders the most recent analysis as a four-panel dashboard:
+  //   • Radar chart of 意識の焦点 dimensions (1, 2, 3, 3.5, 4, 5, 6, 7)
+  //   • Horizontal bar of 欲/徳/エネルギー signal counts
+  //   • Calorie balance gauge (intake vs burn)
+  //   • Net value (純価値) trend line across recent analyses
+  // Returns empty string if no analyses exist yet so the widget
+  // quietly hides until the user's first Plaud transcript arrives.
+  renderPlaudWidget() {
+    const analyses = store.get('plaudAnalyses') || [];
+    if (analyses.length === 0) return '';
+    const latest = analyses[analyses.length - 1];
+    const j = latest.json || {};
+    const cf = j.conscious_focus || {};
+    const dims = cf.dims_pct || {};
+    const signals = j.signals || {};
+    const cal = j.calories || {};
+
+    // Build a one-line summary snippet from summary or raw_bullets
+    let headline = '';
+    if (j.summary && typeof j.summary === 'object') {
+      headline = j.summary.overall_note || j.summary.summary || '';
+    }
+    if (!headline && Array.isArray(j.raw_bullets) && j.raw_bullets.length) {
+      headline = j.raw_bullets[0].replace(/^[・\s]+/, '').substring(0, 140);
+    }
+
+    // Net value history for the trend line
+    const netHistory = analyses.slice(-14).map(a => {
+      const jj = a.json || {};
+      const nv = jj.summary?.net_value ?? jj.summary?.pure_value ?? jj.summary?.純価値 ?? null;
+      return { date: a.dateLabel, nv: typeof nv === 'number' ? nv : null };
+    });
+
+    return `
+    <div class="card" style="margin-bottom:16px;border:1.5px solid #8b5cf6">
+      <div class="card-header" style="background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);display:flex;justify-content:space-between;align-items:center">
+        <span class="card-title" style="color:#6b21a8">🎙️ 禅トラック（${latest.dateLabel}）</span>
+        <span class="tag" style="font-size:10px;background:#8b5cf6;color:#fff">${analyses.length}件の分析</span>
+      </div>
+      <div class="card-body" style="padding:16px">
+        ${headline ? `<div style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:14px;padding:8px 12px;background:var(--bg-tertiary);border-left:3px solid #8b5cf6;border-radius:var(--radius-sm)">${Components.escapeHtml(headline)}</div>` : ''}
+
+        <!-- 4-panel graph grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="background:var(--bg-primary);padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">意識の焦点</div>
+            <div style="position:relative;height:180px"><canvas id="plaud-focus-chart"></canvas></div>
+          </div>
+          <div style="background:var(--bg-primary);padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">欲 / 徳 / エネルギー</div>
+            <div style="position:relative;height:180px"><canvas id="plaud-signals-chart"></canvas></div>
+          </div>
+          <div style="background:var(--bg-primary);padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">カロリー収支</div>
+            <div style="position:relative;height:180px"><canvas id="plaud-calorie-chart"></canvas></div>
+          </div>
+          <div style="background:var(--bg-primary);padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">純価値（エネルギー+徳-欲）</div>
+            <div style="position:relative;height:180px"><canvas id="plaud-netvalue-chart"></canvas></div>
+          </div>
+        </div>
+
+        <details style="font-size:11px;color:var(--text-secondary)">
+          <summary style="cursor:pointer;color:var(--accent);padding:4px 0">フル版レポートを表示</summary>
+          <div style="padding:10px 0;white-space:pre-wrap;line-height:1.7;max-height:300px;overflow-y:auto">${Components.escapeHtml(latest.fullText || '')}</div>
+        </details>
+      </div>
+    </div>`;
+  }
+
+  // Instantiate the four Plaud charts. Destroys any prior instance
+  // first so re-rendering (e.g., after a new analysis arrives) doesn't
+  // leak Chart.js contexts.
+  initPlaudCharts(dims, signals, cal, netHistory) {
+    if (typeof Chart === 'undefined') return;
+    const destroy = (key) => {
+      if (this.chartInstances[key]) { try { this.chartInstances[key].destroy(); } catch (e) {} this.chartInstances[key] = null; }
+    };
+
+    // 1. Radar chart of 意識の焦点 dimensions
+    const focusEl = document.getElementById('plaud-focus-chart');
+    if (focusEl) {
+      destroy('plaudFocus');
+      const dimKeys = ['1', '2', '3', '3.5', '4', '5', '6', '7'];
+      const dimLabels = ['1 計測', '2 論理', '3 現場', '3.5 心身', '4 構想', '5 直観', '6 統合', '7 空'];
+      const values = dimKeys.map(k => (dims && typeof dims[k] === 'number') ? dims[k] : 0);
+      this.chartInstances.plaudFocus = new Chart(focusEl, {
+        type: 'radar',
+        data: {
+          labels: dimLabels,
+          datasets: [{
+            data: values,
+            backgroundColor: 'rgba(139,92,246,0.2)',
+            borderColor: '#8b5cf6',
+            borderWidth: 2,
+            pointBackgroundColor: '#8b5cf6'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              beginAtZero: true,
+              suggestedMax: Math.max(30, ...values.map(v => v || 0)),
+              ticks: { display: false },
+              pointLabels: { font: { size: 9 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Horizontal bar of signal counts
+    const sigEl = document.getElementById('plaud-signals-chart');
+    if (sigEl) {
+      destroy('plaudSignals');
+      const desire = signals.desire_count || 0;
+      const virtue = signals.virtue_count || 0;
+      const energy = signals.energy_count || 0;
+      this.chartInstances.plaudSignals = new Chart(sigEl, {
+        type: 'bar',
+        data: {
+          labels: ['欲', '徳', 'エネルギー'],
+          datasets: [{
+            data: [desire, virtue, energy],
+            backgroundColor: ['#ef4444', '#22c55e', '#f59e0b'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    }
+
+    // 3. Calorie balance bar (intake vs burn)
+    const calEl = document.getElementById('plaud-calorie-chart');
+    if (calEl) {
+      destroy('plaudCal');
+      const parseRange = (r) => {
+        if (typeof r === 'number') return r;
+        if (Array.isArray(r) && r.length) return (r[0] + (r[1] || r[0])) / 2;
+        if (typeof r === 'string') {
+          const m = r.match(/(\d+)\s*[〜\-~]\s*(\d+)?/);
+          if (m) return (parseInt(m[1], 10) + parseInt(m[2] || m[1], 10)) / 2;
+          const n = parseFloat(r);
+          if (!isNaN(n)) return n;
+        }
+        return 0;
+      };
+      const intake = parseRange(cal.intake_kcal_range);
+      const burn = parseRange(cal.burn_kcal_range);
+      this.chartInstances.plaudCal = new Chart(calEl, {
+        type: 'bar',
+        data: {
+          labels: ['摂取', '消費'],
+          datasets: [{
+            data: [intake, burn],
+            backgroundColor: ['#f59e0b', '#22c55e'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: `収支 ${(intake - burn >= 0 ? '+' : '')}${Math.round(intake - burn)} kcal`,
+              font: { size: 11 }
+            }
+          },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // 4. Net value trend line
+    const nvEl = document.getElementById('plaud-netvalue-chart');
+    if (nvEl) {
+      destroy('plaudNV');
+      const labels = netHistory.map(p => p.date || '');
+      const data = netHistory.map(p => p.nv);
+      this.chartInstances.plaudNV = new Chart(nvEl, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139,92,246,0.1)',
+            tension: 0.3,
+            fill: true,
+            spanGaps: true,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, max: 100 } }
+        }
+      });
+    }
+  }
+
   initDashboardCharts() {
     // Symptom trend chart
     const sympCtx = document.getElementById('symptom-chart');
@@ -9535,6 +10076,9 @@ App.prototype.render_dashboard = function() {
 
   <!-- 4. Calendar Widget -->
   ${CalendarIntegration.renderWidget()}
+
+  <!-- 4b. Plaud 禅トラック analysis widget (if any analyses exist) -->
+  ${app.renderPlaudWidget()}
 
   <!-- 5. Recommendations (collapsible) -->
   ${allRecs.length > 0 ? `
@@ -10597,29 +11141,44 @@ App.prototype.render_integrations = function() {
     </div>
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
-        <strong>取り込めるデータ:</strong> 医師との診察会話、家族との会話、独り言、音声メモ。録音した内容が文字起こしとして取り込まれ、体調の変化や心理状態を自動分析します。
+        <strong>取り込めるデータ:</strong> 医師との診察会話、家族との会話、独り言、音声メモ。文字起こしされた内容を「禅トラック」プロンプトで自動分析し、健康・時間配分・意識の焦点・カロリー収支などをグラフで表示します。
       </p>
-      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 手動ペースト（最もシンプル）</div>
-        <div class="form-group">
-          <label class="form-label" style="font-size:11px">会話の日付</label>
-          <input type="date" class="form-input" id="plaud-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px;padding:8px 10px">
+
+      <!-- ★ Primary: per-user Plaud email address ★ -->
+      <div style="background:linear-gradient(135deg,#faf5ff 0%,#f3e8ff 100%);padding:16px;border:1.5px solid #8b5cf6;border-radius:var(--radius-sm);margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:18px">📧</span>
+          <span style="font-size:13px;font-weight:700;color:#6b21a8">あなた専用のPlaud受信アドレス（推奨）</span>
         </div>
-        <div class="form-group">
-          <label class="form-label" style="font-size:11px">タイトル（例: 山村先生診察, 妻との会話）</label>
-          <input type="text" class="form-input" id="plaud-title" placeholder="会話のタイトル..." style="padding:8px 10px">
+        <div style="font-size:11px;color:#6b21a8;margin-bottom:10px;line-height:1.7">
+          Plaudアプリの「オートフロー」に下のメールアドレスを登録してください。録音→文字起こし完了時に自動でこのアドレスへ送信され、受信したテキストはこのアプリで「禅トラック」分析され、ホーム画面にグラフが自動表示されます。
         </div>
-        <div class="form-group">
-          <label class="form-label" style="font-size:11px">文字起こしテキスト</label>
-          <textarea class="form-textarea" id="plaud-transcript" rows="6" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..." style="padding:8px 10px"></textarea>
+        <div style="display:flex;align-items:center;gap:8px;padding:12px;background:#fff;border:1px solid #d8b4fe;border-radius:6px">
+          <code id="plaud-email-display" style="flex:1;font-size:13px;font-weight:600;color:#6b21a8;font-family:'JetBrains Mono',monospace;word-break:break-all">${Integrations.generatePlaudEmail() || '未ログイン'}</code>
+          <button class="btn btn-sm btn-primary" onclick="app.copyPlaudEmail()" style="font-size:11px;white-space:nowrap">コピー</button>
         </div>
-        <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆分析</button>
+        <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:10px;color:#78350f;line-height:1.6">
+          <strong>Plaud側の設定:</strong> アプリ → オートフロー → 新規作成 → トリガー「文字起こし完了」 → アクション「メール送信」 → 宛先に上記アドレスを設定。一度設定すれば、以降は録音するたびに自動でこちらに届きます。
+        </div>
       </div>
-      <details style="font-size:11px;color:var(--text-muted)">
-        <summary style="cursor:pointer">メール自動転送設定（上級者向け）</summary>
-        <div style="padding:10px 0;line-height:1.7">
-          Plaudアプリ → 設定 → 共有 → メール転送先に以下を追加することで、将来的にバックエンドを経由した自動取込も可能になります（現時点ではバックエンド未実装）。
-          <div style="margin-top:6px;padding:8px;background:var(--bg-tertiary);border-radius:4px;font-family:monospace;font-size:10px">${Integrations.generateUserEmail() || '未ログイン'}</div>
+
+      <!-- Fallback: manual paste for one-off / older recordings -->
+      <details style="margin-bottom:8px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--text-secondary);padding:6px 0">📋 手動ペースト（メール連携前にすぐ試したい場合）</summary>
+        <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-top:8px">
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">会話の日付</label>
+            <input type="date" class="form-input" id="plaud-date" value="${new Date().toISOString().split('T')[0]}" style="width:200px;padding:8px 10px">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">タイトル（例: 山村先生診察, 妻との会話）</label>
+            <input type="text" class="form-input" id="plaud-title" placeholder="会話のタイトル..." style="padding:8px 10px">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">文字起こしテキスト</label>
+            <textarea class="form-textarea" id="plaud-transcript" rows="6" placeholder="Plaudの文字起こし結果をここにペーストしてください...&#10;&#10;[00:00] 先生: 最近の体調はいかがですか？&#10;[00:05] 自分: 倦怠感が続いていて..." style="padding:8px 10px"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="app.importPlaudTranscript()">取り込み＆禅トラック分析</button>
         </div>
       </details>
     </div>

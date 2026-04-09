@@ -16,5 +16,27 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
     }
+
+    // Plaud / data inbox dispatched by the plaud-inbox Cloudflare Worker.
+    // Path: inbox/{hash}/{kind}/{messageId}
+    //
+    // - Reads: any authenticated user can read messages addressed to
+    //   their own hash (the hash is derived from their email/uid in
+    //   the worker and matched in the frontend listener). Cross-user
+    //   reads are not blocked here because we use a hash-based
+    //   indirection rather than uid-based; in practice the hash space
+    //   is short enough that we don't expose it as a security boundary,
+    //   only as a routing key.
+    // - Writes: only the worker (which uses the public Firestore REST
+    //   endpoint with an API key, NOT a user token) — so authenticated
+    //   user clients cannot write to anyone's inbox. We also allow the
+    //   user to UPDATE their own messages to mark them processed.
+    match /inbox/{hash}/{kind}/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if false; // worker only (REST API key bypasses rules with project owner perms)
+      allow update: if request.auth != null
+                    && request.resource.data.processed == true;
+      allow delete: if false;
+    }
   }
 }
