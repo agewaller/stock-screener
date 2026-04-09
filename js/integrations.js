@@ -4,6 +4,60 @@
    ============================================================ */
 var Integrations = {
 
+  // ======== SHARED IMPORT HELPERS ========
+  // Create a user-visible text entry whenever an integration imports
+  // data. This is what makes Plaud / Apple Health / Fitbit / file
+  // uploads show up on the home dashboard's "あなたの記録" feed.
+  // Without this, imported data lands in vitals/activity/sleep
+  // collections that the dashboard doesn't render and the user thinks
+  // nothing happened.
+  _addImportEntry({ source, icon, title, summary }) {
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      timestamp: new Date().toISOString(),
+      category: 'integration',
+      type: source + '_import',
+      title: `${icon} ${title}`,
+      content: summary || '',
+      source
+    };
+    const textEntries = store.get('textEntries') || [];
+    textEntries.push(entry);
+    store.set('textEntries', textEntries);
+    // Track last sync per source so the integrations page / dashboard
+    // can show "最終同期: 2分前" etc.
+    const syncs = store.get('integrationSyncs') || {};
+    syncs[source] = entry.timestamp;
+    store.set('integrationSyncs', syncs);
+    return entry;
+  },
+
+  // Build a one-glance summary string from a parsed health export.
+  _buildHealthSummary(parsed, sourceName) {
+    const parts = [];
+    if (parsed.vitals?.length) {
+      const hrEntries = parsed.vitals.filter(v => v.heart_rate);
+      const stepEntries = parsed.activity?.filter(a => a.steps) || [];
+      const sleepEntries = parsed.sleep || [];
+      const spo2Entries = parsed.vitals.filter(v => v.spo2);
+      if (hrEntries.length) {
+        const avg = hrEntries.reduce((s, v) => s + v.heart_rate, 0) / hrEntries.length;
+        parts.push(`心拍数: 平均 ${Math.round(avg)} bpm (${hrEntries.length}件)`);
+      }
+      if (spo2Entries.length) {
+        const avg = spo2Entries.reduce((s, v) => s + v.spo2, 0) / spo2Entries.length;
+        parts.push(`SpO2: 平均 ${avg.toFixed(1)}%`);
+      }
+      if (stepEntries.length) {
+        const total = stepEntries.reduce((s, v) => s + v.steps, 0);
+        parts.push(`歩数: ${total.toLocaleString()} 歩`);
+      }
+      if (sleepEntries.length) parts.push(`睡眠: ${sleepEntries.length} 件`);
+    }
+    if (parts.length === 0) return `${sourceName} からデータを取り込みました`;
+    return parts.join('\n');
+  },
+
   // ======== USER-SPECIFIC EMAIL ENDPOINT ========
   // Each user gets a unique data ingestion email address
   generateUserEmail() {
@@ -65,7 +119,7 @@ var Integrations = {
         timestamp: metadata.date || new Date().toISOString(),
         category: 'conversation',
         type: 'plaud_transcript',
-        title: metadata.title || 'Plaud会話記録',
+        title: `🎙️ ${metadata.title || 'Plaud会話記録'}`,
         content: parsed.fullText,
         summary: parsed.summary,
         speakerCount: parsed.speakerCount,
@@ -86,6 +140,11 @@ var Integrations = {
         type: 'plaud_data'
       });
       store.set('conversationHistory', history);
+
+      // Track last sync time for the dashboard's connection status widget
+      const syncs = store.get('integrationSyncs') || {};
+      syncs.plaud = entry.timestamp;
+      store.set('integrationSyncs', syncs);
 
       return entry;
     }
@@ -182,6 +241,7 @@ var Integrations = {
     async importToday() {
       try {
         const data = await this.fetchDailySummary();
+        const summaryParts = [];
 
         // Parse activity
         if (data.activity?.summary) {
@@ -193,11 +253,13 @@ var Integrations = {
             rest_time: a.sedentaryMinutes,
             source: 'fitbit'
           });
+          summaryParts.push(`歩数 ${a.steps?.toLocaleString() || 0}歩 / 活動 ${(a.fairlyActiveMinutes || 0) + (a.veryActiveMinutes || 0)}分 / 消費 ${a.caloriesOut || 0}kcal`);
         }
 
         // Parse sleep
         if (data.sleep?.summary) {
           const s = data.sleep.summary;
+          const hours = ((s.totalMinutesAsleep || 0) / 60).toFixed(1);
           store.addHealthData('sleep', {
             duration: (s.totalMinutesAsleep || 0) / 60,
             deep_sleep: (s.stages?.deep || 0) / 60,
@@ -205,6 +267,7 @@ var Integrations = {
             awakenings: s.stages?.wake || 0,
             source: 'fitbit'
           });
+          summaryParts.push(`睡眠 ${hours}h (深睡眠 ${((s.stages?.deep || 0) / 60).toFixed(1)}h)`);
         }
 
         // Parse heart rate
@@ -214,6 +277,17 @@ var Integrations = {
             heart_rate: hr.restingHeartRate || 0,
             hrv_data: hr.heartRateZones || [],
             source: 'fitbit'
+          });
+          if (hr.restingHeartRate) summaryParts.push(`安静時心拍 ${hr.restingHeartRate}bpm`);
+        }
+
+        // Create a dashboard-visible summary entry
+        if (summaryParts.length > 0) {
+          Integrations._addImportEntry({
+            source: 'fitbit',
+            icon: '⌚',
+            title: `Fitbit 同期 (${data.date})`,
+            summary: summaryParts.join('\n')
           });
         }
 
@@ -234,12 +308,38 @@ var Integrations = {
         const dateStr = d.toISOString().split('T')[0];
         try {
           const data = await this.fetchDailySummary(dateStr);
+          if (data.activity?.summary) {
+            const a = data.activity.summary;
+            store.addHealthData('activity', {
+              steps: a.steps,
+              active_minutes: (a.fairlyActiveMinutes || 0) + (a.veryActiveMinutes || 0),
+              calories: a.caloriesOut,
+              source: 'fitbit'
+            });
+          }
+          if (data.sleep?.summary) {
+            const s = data.sleep.summary;
+            store.addHealthData('sleep', {
+              duration: (s.totalMinutesAsleep || 0) / 60,
+              source: 'fitbit'
+            });
+          }
           results.push(data);
-          // Small delay to avoid rate limiting
           await new Promise(r => setTimeout(r, 500));
         } catch (err) {
           console.warn(`Fitbit data for ${dateStr} failed:`, err);
         }
+      }
+      // Single dashboard entry summarising the whole batch
+      if (results.length > 0) {
+        const totalSteps = results.reduce((s, r) => s + (r.activity?.summary?.steps || 0), 0);
+        const avgSleep = results.reduce((s, r) => s + ((r.sleep?.summary?.totalMinutesAsleep || 0) / 60), 0) / results.length;
+        Integrations._addImportEntry({
+          source: 'fitbit',
+          icon: '⌚',
+          title: `Fitbit 過去${results.length}日分を同期`,
+          summary: `合計歩数 ${totalSteps.toLocaleString()} 歩 / 平均睡眠 ${avgSleep.toFixed(1)}h`
+        });
       }
       Components.showToast(`${results.length}日分のFitbitデータを取り込みました`, 'success');
       return results;
@@ -311,6 +411,21 @@ var Integrations = {
           });
         }
       });
+
+      // Also create a user-visible summary entry in textEntries so the
+      // imported data shows up on the home dashboard's "あなたの記録"
+      // feed. Without this, Apple Health data only lands in the vitals/
+      // activity/sleep collections which the dashboard doesn't render.
+      if (count > 0) {
+        const summary = Integrations._buildHealthSummary(parsed, 'Apple Health');
+        Integrations._addImportEntry({
+          source: 'apple_health',
+          icon: '🍎',
+          title: `Apple Health 同期 (${count}件)`,
+          summary
+        });
+      }
+
       Components.showToast(`Apple Health: ${count}件のデータを取り込みました`, 'success');
       return count;
     },
@@ -369,6 +484,14 @@ var Integrations = {
           const cat = r.category || r.type || 'vitals';
           store.addHealthData(cat, { ...r, source: 'csv_import' });
         });
+        // Make the import visible on the home dashboard
+        this._addImportEntry({
+          source: 'csv_import',
+          icon: '📊',
+          title: `${file.name} (${rows.length}件)`,
+          summary: `CSVから ${rows.length} 件のデータを取り込みました\n` +
+                   rows.slice(0, 3).map(r => Object.entries(r).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(' / ')).join('\n')
+        });
         Components.showToast(`CSV: ${rows.length}件のデータを取り込みました`, 'success');
         return rows.length;
       }
@@ -379,6 +502,12 @@ var Integrations = {
       if (data) {
         if (Array.isArray(data)) {
           data.forEach(d => store.addHealthData(d.category || 'vitals', { ...d, source: 'json_import' }));
+          this._addImportEntry({
+            source: 'json_import',
+            icon: '📦',
+            title: `${file.name} (${data.length}件)`,
+            summary: `JSONから ${data.length} 件のデータを取り込みました`
+          });
           Components.showToast(`JSON: ${data.length}件のデータを取り込みました`, 'success');
           return data.length;
         }

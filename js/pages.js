@@ -372,6 +372,46 @@ App.prototype.render_dashboard = function() {
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
 
+  <!-- Integration sync status — shows last received data per source -->
+  ${(() => {
+    const syncs = store.get('integrationSyncs') || {};
+    const sourceMeta = {
+      plaud: { icon: '🎙️', label: 'Plaud' },
+      apple_health: { icon: '🍎', label: 'Apple Health' },
+      fitbit: { icon: '⌚', label: 'Fitbit' },
+      csv_import: { icon: '📊', label: 'CSV取込' },
+      json_import: { icon: '📦', label: 'JSON取込' },
+    };
+    const items = Object.entries(syncs)
+      .filter(([k]) => sourceMeta[k])
+      .sort((a, b) => new Date(b[1]) - new Date(a[1]))
+      .slice(0, 4);
+    if (items.length === 0) return '';
+    const formatRel = (ts) => {
+      const diff = Date.now() - new Date(ts).getTime();
+      if (diff < 60000) return 'たった今';
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}分前`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}時間前`;
+      return `${Math.floor(diff / 86400000)}日前`;
+    };
+    return `
+    <div style="margin-bottom:16px;padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:11px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <strong style="color:var(--text-muted)">📡 連携データ</strong>
+        <a onclick="app.navigate('integrations')" style="color:var(--accent);text-decoration:none;cursor:pointer">設定 →</a>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${items.map(([k, ts]) => `
+          <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg-primary);border-radius:10px">
+            <span>${sourceMeta[k].icon}</span>
+            <span>${sourceMeta[k].label}</span>
+            <span style="color:var(--text-muted)">${formatRel(ts)}</span>
+          </span>
+        `).join('')}
+      </div>
+    </div>`;
+  })()}
+
   ${enrichedEntries.length > 0 ? `
   <div style="margin-bottom:20px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -387,13 +427,29 @@ App.prototype.render_dashboard = function() {
       const preview = Components.escapeHtml(rawContent.substring(0, 100).replace(/\n/g, ' '));
       const safeTitle = Components.escapeHtml(e.title || new Date(e.timestamp).toLocaleDateString('ja-JP'));
       const eid = 'rec-' + (e.id || i);
+      // Source badge — show where the data came from for imported entries
+      const sourceLabels = {
+        plaud: { icon: '🎙️', label: 'Plaud', color: '#8b5cf6' },
+        apple_health: { icon: '🍎', label: 'Apple Health', color: '#ef4444' },
+        fitbit: { icon: '⌚', label: 'Fitbit', color: '#22c55e' },
+        csv_import: { icon: '📊', label: 'CSV', color: '#3b82f6' },
+        json_import: { icon: '📦', label: 'JSON', color: '#f59e0b' },
+        file_import: { icon: '📎', label: 'ファイル', color: '#64748b' },
+      };
+      const src = sourceLabels[e.source];
+      const sourceBadge = src
+        ? `<span class="tag" style="font-size:9px;background:${src.color}22;color:${src.color};padding:1px 6px">${src.icon} ${src.label}</span>`
+        : '';
+      // Border color: highlight integration imports so they pop on the feed
+      const borderColor = src ? src.color : 'var(--accent)';
       return `
-      <div class="card" style="margin-bottom:8px;border-left:3px solid var(--accent)">
+      <div class="card" style="margin-bottom:8px;border-left:3px solid ${borderColor}">
         <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
           <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
               <span style="font-size:12px;font-weight:600">${safeTitle}</span>
+              ${sourceBadge}
               <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
             </div>
             <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${isLong ? '...' : ''}</div>

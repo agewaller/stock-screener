@@ -25,6 +25,25 @@ var App = class App {
     localStorage.removeItem('cc_theme');
     store.on('currentPage', (p) => this.navigate(p));
 
+    // Auto-refresh the dashboard whenever new data lands in any of the
+    // user-visible collections. This makes Plaud / Apple Health / Fitbit
+    // / file imports show up immediately on the home screen without the
+    // user having to manually navigate away and back. Debounced so a
+    // batch import doesn't trigger N renders.
+    let refreshTimer = null;
+    const scheduleDashRefresh = () => {
+      if (this.currentPage !== 'dashboard') return;
+      if (refreshTimer) return;
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        if (this.currentPage === 'dashboard') {
+          try { this.navigate('dashboard'); } catch (e) { console.warn('dash refresh:', e); }
+        }
+      }, 200);
+    };
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback']
+      .forEach(key => store.on(key, scheduleDashRefresh));
+
     // Show immediate content from localStorage while Firebase loads
     const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
     if (hasLocalAuth) {
