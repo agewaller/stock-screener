@@ -4922,7 +4922,8 @@ var Integrations = {
     },
 
     // Import Fitbit data into store
-    async importToday() {
+    async importToday(opts = {}) {
+      const silent = opts.silent === true;
       try {
         const data = await this.fetchDailySummary();
         const summaryParts = [];
@@ -4965,7 +4966,10 @@ var Integrations = {
           if (hr.restingHeartRate) summaryParts.push(`安静時心拍 ${hr.restingHeartRate}bpm`);
         }
 
-        // Create a dashboard-visible summary entry
+        // Create a dashboard-visible summary entry. In silent mode
+        // (background auto-sync), skip creating a visible entry if
+        // nothing new was imported — avoids spamming the feed with
+        // empty "Fitbit sync" rows every 30 minutes.
         if (summaryParts.length > 0) {
           Integrations._addImportEntry({
             source: 'fitbit',
@@ -4975,10 +4979,10 @@ var Integrations = {
           });
         }
 
-        Components.showToast('Fitbitデータを取り込みました', 'success');
+        if (!silent) Components.showToast('Fitbitデータを取り込みました', 'success');
         return data;
       } catch (err) {
-        Components.showToast('Fitbitデータ取得エラー: ' + err.message, 'error');
+        if (!silent) Components.showToast('Fitbitデータ取得エラー: ' + err.message, 'error');
         throw err;
       }
     },
@@ -5418,6 +5422,144 @@ Integrations.urlImport = {
     const json = JSON.stringify(payload);
     const b64 = btoa(unescape(encodeURIComponent(json)));
     return `${origin || window.location.origin}${window.location.pathname}#import=${encodeURIComponent(b64)}`;
+  }
+};
+
+// ─── AUTO-SYNC SCHEDULER ───
+//
+// Connected integrations refresh automatically while the app is open,
+// so the user only has to set up each integration once. This module
+// coordinates periodic re-fetch + on-visibility refresh + initial
+// sync-on-load, with per-source debounce and silent failure handling.
+//
+// Trigger points:
+//   1. app.init() → 2s after load (after Firebase auth settles)
+//   2. Every 30 minutes while tab is open (setInterval)
+//   3. Tab visibility change from hidden→visible (user returns)
+//   4. Window focus event (fallback for older browsers)
+//
+// Per-source gating: only fetch if that integration is connected
+// (Fitbit access token present, Google Calendar ICS URL saved).
+//
+// Apple Health / Apple Watch and Plaud don't have web APIs we can
+// poll, so they're not included here. Apple Health pushes via the
+// iOS Shortcut Automation (handled by Integrations.urlImport), and
+// Plaud requires manual paste.
+Integrations.autoSync = {
+  // Don't re-run more than once every 5 minutes regardless of triggers
+  MIN_INTERVAL_MS: 5 * 60 * 1000,
+  // Periodic sync while tab is open (30 minutes)
+  PERIODIC_INTERVAL_MS: 30 * 60 * 1000,
+
+  _lastRunAt: 0,
+  _periodicTimer: null,
+  _inFlight: false,
+  _listenersAttached: false,
+
+  // Initialize the scheduler. Idempotent: safe to call multiple times.
+  init() {
+    if (this._listenersAttached) return;
+    this._listenersAttached = true;
+
+    // Initial sync 2s after init — gives Firebase auth / loadAllData
+    // time to settle so we don't race against the startup sequence.
+    setTimeout(() => this.runIfNeeded('init'), 2000);
+
+    // Periodic sync while the tab stays open
+    this._periodicTimer = setInterval(
+      () => this.runIfNeeded('periodic'),
+      this.PERIODIC_INTERVAL_MS
+    );
+
+    // Refresh when the user returns to the tab
+    if (typeof document !== 'undefined' && 'visibilityState' in document) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.runIfNeeded('visibility');
+        }
+      });
+    }
+
+    // Fallback for browsers without Page Visibility API
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => this.runIfNeeded('focus'));
+    }
+  },
+
+  // Run all sync-able integrations in parallel. Silent failures.
+  async runIfNeeded(trigger = 'manual') {
+    if (this._inFlight) return;
+    const now = Date.now();
+    if (trigger !== 'manual' && (now - this._lastRunAt) < this.MIN_INTERVAL_MS) {
+      return; // debounce
+    }
+    this._inFlight = true;
+    this._lastRunAt = now;
+    console.log('[autoSync] running (' + trigger + ')');
+
+    try {
+      const tasks = [];
+
+      // Fitbit: only if access token exists (i.e. user connected OAuth)
+      if (Integrations.fitbit.accessToken) {
+        tasks.push(this._syncFitbit());
+      }
+
+      // Google Calendar: only if ICS URL is saved
+      const icsUrl = localStorage.getItem('ics_calendar_url');
+      if (icsUrl) {
+        tasks.push(this._syncGoogleCalendar(icsUrl));
+      }
+
+      if (tasks.length === 0) {
+        console.log('[autoSync] no connected integrations');
+        return;
+      }
+
+      const results = await Promise.allSettled(tasks);
+      // Persist the successful sync timestamp for visible "最終同期"
+      // status in the integrations page without requiring a refresh.
+      const syncs = store.get('integrationSyncs') || {};
+      syncs._lastAutoRun = new Date().toISOString();
+      store.set('integrationSyncs', syncs);
+
+      // Aggregate any errors for the console but don't spam toasts
+      const errors = results.filter(r => r.status === 'rejected');
+      if (errors.length > 0) {
+        console.warn('[autoSync]', errors.length, 'sync tasks failed:',
+          errors.map(e => e.reason?.message).join(', '));
+      } else {
+        console.log('[autoSync] all tasks OK (' + tasks.length + ')');
+      }
+    } finally {
+      this._inFlight = false;
+    }
+  },
+
+  async _syncFitbit() {
+    try {
+      await Integrations.fitbit.importToday({ silent: true });
+    } catch (e) {
+      console.warn('[autoSync] Fitbit failed:', e.message);
+      throw e;
+    }
+  },
+
+  async _syncGoogleCalendar(url) {
+    try {
+      await CalendarIntegration.importFromIcsUrl(url);
+    } catch (e) {
+      console.warn('[autoSync] GCal failed:', e.message);
+      throw e;
+    }
+  },
+
+  // Manual "sync now" — bypasses the debounce. Used when the user
+  // clicks the refresh button in the integrations page.
+  async runNow() {
+    this._lastRunAt = 0; // reset debounce
+    await this.runIfNeeded('manual');
+    Components.showToast('連携データを同期しました', 'success');
   }
 };
 
@@ -6047,6 +6189,11 @@ var App = class App {
     };
     ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback']
       .forEach(key => store.on(key, scheduleDashRefresh));
+
+    // Start the auto-sync scheduler so connected integrations
+    // (Fitbit, Google Calendar) refresh automatically while the
+    // app is open — set up once, update forever.
+    try { Integrations.autoSync.init(); } catch (e) { console.warn('autoSync init:', e); }
 
     // Show immediate content from localStorage while Firebase loads
     const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
@@ -10311,16 +10458,41 @@ App.prototype.render_integrations = function() {
     { key: 'google_calendar',  icon: '📅', name: 'Googleカレンダー',     color: '#3b82f6', count: calendarEvents.length,       lastSync: syncs.google_calendar, anchor: 'gcal-section' },
   ];
 
+  const lastAutoSync = syncs._lastAutoRun;
+  const autoSyncActive = !!(Integrations.fitbit.accessToken || localStorage.getItem('ics_calendar_url'));
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">連携設定</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">お持ちのデバイスやサービスからデータを取り込みます。取り込んだデータは「記録」と「ホーム」で確認できます。</p>
+    <p style="font-size:13px;color:var(--text-secondary)">一度連携すれば、アプリを開いている間は自動で同期され続けます。手動の取り込み作業は不要です。</p>
+  </div>
+
+  <!-- Auto-sync status banner — always visible so users know it's running -->
+  <div style="margin-bottom:16px;padding:12px 16px;background:${autoSyncActive ? '#f0fdf4' : 'var(--bg-tertiary)'};border:1px solid ${autoSyncActive ? '#86efac' : 'var(--border)'};border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${autoSyncActive ? '🔄' : '⏸️'}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:${autoSyncActive ? '#166534' : 'var(--text-secondary)'}">
+          ${autoSyncActive ? '自動同期: 有効' : '自動同期: 未設定'}
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+          ${autoSyncActive
+            ? `Fitbit・Googleカレンダーは30分ごと + タブを開くたびに自動更新${lastAutoSync ? ' · 最終 ' + formatRel(lastAutoSync) : ''}`
+            : '下のカードから連携を設定すると、以降は自動で同期されます'}
+        </div>
+      </div>
+    </div>
+    ${autoSyncActive ? `
+      <button class="btn btn-sm btn-primary" onclick="Integrations.autoSync.runNow()" style="font-size:11px;white-space:nowrap">🔄 今すぐ同期</button>
+    ` : ''}
   </div>
 
   <!-- Connection status grid — glanceable overview -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px">
     ${statuses.map(s => {
-      const connected = s.count > 0 || (s.key === 'fitbit' && fitbitConnected);
+      const connected = s.count > 0 || (s.key === 'fitbit' && fitbitConnected) || (s.key === 'google_calendar' && localStorage.getItem('ics_calendar_url'));
+      // Mark which sources are in the auto-sync loop
+      const autoSynced = (s.key === 'fitbit' && fitbitConnected) || (s.key === 'google_calendar' && !!localStorage.getItem('ics_calendar_url'));
       return `
       <a onclick="document.getElementById('${s.anchor}').scrollIntoView({behavior:'smooth',block:'start'})"
          style="display:block;padding:14px 12px;background:var(--bg-primary);border:1.5px solid ${connected ? s.color : 'var(--border)'};border-radius:var(--radius-sm);cursor:pointer;text-decoration:none;color:inherit;transition:all 0.15s">
@@ -10331,6 +10503,7 @@ App.prototype.render_integrations = function() {
         <div style="font-size:11px;color:${connected ? s.color : 'var(--text-muted)'};font-weight:600">
           ${connected ? '✓ 接続済' : '未設定'}
         </div>
+        ${autoSynced ? `<div style="font-size:9px;color:${s.color};margin-top:2px;font-weight:600">🔄 自動同期中</div>` : ''}
         <div style="font-size:10px;color:var(--text-muted);margin-top:2px">
           ${s.count > 0 ? s.count + '件' : ''}${s.count > 0 && s.lastSync ? ' · ' : ''}${s.lastSync ? formatRel(s.lastSync) : ''}
         </div>
@@ -10370,11 +10543,20 @@ App.prototype.render_integrations = function() {
             <code id="shortcut-url-prefix" style="display:block;background:#fff7ed;padding:6px 8px;border-radius:4px;font-size:10px;margin-top:4px;color:#9a3412;word-break:break-all">${window.location.origin}${window.location.pathname}#import=</code>
             <span style="font-size:10px">（上のURL末尾に Base64エンコードの結果を連結）</span>
           </li>
-          <li>「オートメーション」タブで毎日21:00などに自動実行を設定</li>
+          <li><strong>オートメーションで毎日自動実行 ←★ ここが重要</strong><br>
+            ショートカットアプリ下部「オートメーション」タブ → 「+」<br>
+            → 「個人用オートメーションを作成」<br>
+            → 「時刻」を選択 → 21:00（就寝前など）→ 「毎日」<br>
+            → 作成したショートカットを選択 → 「実行前に尋ねる」を<strong>オフ</strong>にする<br>
+            <span style="color:#dc2626;font-weight:600">→ これで毎日21時に自動的にデータがアプリに送信されます。ユーザーは何もしなくてOK。</span>
+          </li>
         </ol>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn btn-sm btn-primary" onclick="app.copyShortcutUrlPrefix()" style="font-size:11px">URLをコピー</button>
           <button class="btn btn-sm btn-secondary" onclick="var u=app.buildSampleShortcutUrl();Components.showToast('サンプルURLをコピー。新しいタブで開くとデモデータが取り込まれます','info')" style="font-size:11px">サンプルURLをテスト</button>
+        </div>
+        <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f">
+          <strong>💡 一度設定すれば、以降は完全自動</strong>。毎日同じ時刻に iOS が自動でショートカットを実行し、心拍数・歩数・睡眠などをこのアプリに送信します。アプリを開く必要すらありません。
         </div>
       </div>
 
@@ -10455,11 +10637,17 @@ App.prototype.render_integrations = function() {
       </p>
       ${fitbitConnected ? `
         <div style="padding:12px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius-sm);margin-bottom:12px">
-          <div style="font-size:13px;color:#166534;font-weight:600;margin-bottom:8px">✓ Fitbitに接続されています</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <div style="font-size:13px;color:#166534;font-weight:700">✓ Fitbitに接続されています</div>
+            <span style="font-size:10px;background:#166534;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>
+          </div>
+          <div style="font-size:11px;color:#166534;margin-bottom:10px;line-height:1.6">
+            アプリを開いている間、30分ごとに自動で今日のデータが更新されます。手動で取り込む必要はありません。
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="app.importFitbitToday()">今日のデータを取得</button>
-            <button class="btn btn-secondary btn-sm" onclick="app.importFitbitHistory()">過去7日分を取得</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--danger)" onclick="Integrations.fitbit.disconnect();app.navigate('integrations')">接続解除</button>
+            <button class="btn btn-outline btn-sm" onclick="app.importFitbitHistory()" style="font-size:11px">過去7日分を一括取得</button>
+            <button class="btn btn-outline btn-sm" onclick="Integrations.autoSync.runNow()" style="font-size:11px">🔄 今すぐ同期</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px" onclick="Integrations.fitbit.disconnect();app.navigate('integrations')">接続解除</button>
           </div>
           <div id="fitbit-import-status" style="margin-top:10px"></div>
         </div>
@@ -10495,6 +10683,21 @@ App.prototype.render_integrations = function() {
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
         <strong>取り込めるデータ:</strong> 予定・会議・通院。ダッシュボードで今日のスケジュールを自動表示し、活動負荷を可視化します。
       </p>
+      ${localStorage.getItem('ics_calendar_url') ? `
+        <div style="padding:12px;background:#eff6ff;border:1px solid #93c5fd;border-radius:var(--radius-sm);margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <div style="font-size:13px;color:#1e40af;font-weight:700">✓ カレンダーに接続されています</div>
+            <span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>
+          </div>
+          <div style="font-size:11px;color:#1e40af;margin-bottom:10px;line-height:1.6">
+            アプリを開いている間、30分ごとに自動でイベントが更新されます。Googleカレンダーで予定を追加・変更すると、次の同期時に自動反映されます。
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-outline btn-sm" onclick="Integrations.autoSync.runNow()" style="font-size:11px">🔄 今すぐ同期</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px" onclick="localStorage.removeItem('ics_calendar_url');app.navigate('integrations')">接続解除</button>
+          </div>
+        </div>
+      ` : ''}
       <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（最もシンプル）</div>
         <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
@@ -10502,16 +10705,16 @@ App.prototype.render_integrations = function() {
           <li>左側メニューで同期したいカレンダーを選択</li>
           <li>「カレンダーの統合」セクション → 「<strong>iCal 形式の秘密アドレス</strong>」をコピー<br>
             <span style="font-size:10px;color:var(--text-muted)">（URLは <code>https://calendar.google.com/calendar/ical/.../basic.ics</code> の形式）</span></li>
-          <li>下に貼り付け →「取り込む」</li>
+          <li>下に貼り付け →「${localStorage.getItem('ics_calendar_url') ? '更新' : '接続'}」</li>
         </ol>
         <div class="form-group">
           <input type="text" class="form-input" id="gcal-ics-url" value="${Components.escapeHtml(localStorage.getItem('ics_calendar_url') || '')}" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="padding:8px 10px;font-size:11px">
         </div>
-        <button class="btn btn-primary" onclick="app.connectGoogleCalendar()">📅 カレンダーを取り込む</button>
+        <button class="btn btn-primary" onclick="app.connectGoogleCalendar()">📅 ${localStorage.getItem('ics_calendar_url') ? 'URLを更新' : 'カレンダーに接続'}</button>
         <div id="gcal-import-status" style="margin-top:10px"></div>
       </div>
-      <div style="font-size:10px;color:var(--text-muted);line-height:1.7">
-        ※ 「iCal 形式の秘密アドレス」は読み取り専用の公開URLです。Googleアカウントのパスワードは一切送信されません。カレンダーを頻繁に更新する場合は、このページを再度開くと最新情報が取得されます。
+      <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f">
+        <strong>💡 一度接続すれば、以降は自動</strong>。Googleカレンダーのパスワードは一切送信されません。「iCal 形式の秘密アドレス」は読み取り専用URLです。
       </div>
     </div>
   </div>
