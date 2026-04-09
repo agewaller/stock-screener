@@ -9142,11 +9142,127 @@ App.prototype.render_data_input = function() {
       }).join('')}
     </div>` : '';
 
+  // Integration reception history — shows every entry that came in
+  // via Plaud / Apple Health / Fitbit / CSV / JSON file imports so the
+  // user can confirm their connected data is actually arriving. Each
+  // row shows the exact received timestamp and the content that was
+  // saved, grouped by source.
+  const INTEGRATION_SOURCES = {
+    plaud:        { icon: '🎙️', label: 'Plaud',        color: '#8b5cf6' },
+    apple_health: { icon: '🍎', label: 'Apple Health', color: '#ef4444' },
+    fitbit:       { icon: '⌚', label: 'Fitbit',       color: '#22c55e' },
+    csv_import:   { icon: '📊', label: 'CSV取込',      color: '#3b82f6' },
+    json_import:  { icon: '📦', label: 'JSON取込',     color: '#f59e0b' },
+    file_import:  { icon: '📎', label: 'ファイル取込', color: '#64748b' },
+  };
+  const integrationEntries = textEntries
+    .filter(e => e.source && INTEGRATION_SOURCES[e.source])
+    .slice()
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  const formatReceivedAt = (ts) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+    const relative = diffMin < 1 ? 'たった今'
+      : diffMin < 60 ? `${diffMin}分前`
+      : diffHr < 24 ? `${diffHr}時間前`
+      : diffDay < 7 ? `${diffDay}日前`
+      : d.toLocaleDateString('ja-JP');
+    const absolute = d.toLocaleString('ja-JP', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    return { relative, absolute };
+  };
+
+  // Group integration entries by source for a per-source status summary.
+  const bySource = {};
+  integrationEntries.forEach(e => {
+    if (!bySource[e.source]) bySource[e.source] = [];
+    bySource[e.source].push(e);
+  });
+
+  const integrationHistoryHtml = `
+  <div class="card" style="margin-bottom:20px;border:1px solid var(--border)">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <span class="card-title">📡 連携データの受信履歴</span>
+      <button class="btn btn-outline btn-sm" onclick="app.navigate('integrations')" style="font-size:11px">連携設定 →</button>
+    </div>
+    <div class="card-body" style="padding:12px 16px">
+      ${integrationEntries.length === 0 ? `
+        <div style="text-align:center;padding:20px 10px;color:var(--text-muted);font-size:12px;line-height:1.7">
+          連携データはまだ届いていません。<br>
+          「連携設定」から Plaud / Apple Health / Fitbit 等を設定すると、<br>
+          ここに受信したデータの日時と内容が表示されます。
+        </div>
+      ` : `
+        <!-- Per-source summary -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          ${Object.entries(bySource).map(([k, items]) => {
+            const meta = INTEGRATION_SOURCES[k];
+            const latest = items[0];
+            const { relative } = formatReceivedAt(latest.timestamp);
+            return `
+              <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${meta.color}15;border:1px solid ${meta.color}44;border-radius:12px;font-size:11px">
+                <span>${meta.icon}</span>
+                <span style="font-weight:600;color:${meta.color}">${meta.label}</span>
+                <span style="color:var(--text-muted)">${items.length}件</span>
+                <span style="color:var(--text-muted)">· 最終 ${relative}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Received entries list (newest first, up to 10) -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${integrationEntries.slice(0, 10).map((e, i) => {
+            const meta = INTEGRATION_SOURCES[e.source];
+            const { relative, absolute } = formatReceivedAt(e.timestamp);
+            const content = e.content || '';
+            const contentPreview = content.length > 200 ? content.substring(0, 200) + '…' : content;
+            const needsExpand = content.length > 200;
+            const eid = 'integ-' + (e.id || i);
+            return `
+              <div style="padding:10px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);border-left:3px solid ${meta.color}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                    <span style="font-size:14px">${meta.icon}</span>
+                    <span style="font-size:12px;font-weight:600;color:${meta.color}">${meta.label}</span>
+                    <span class="tag" style="font-size:9px;background:var(--bg-primary);color:var(--text-muted);padding:1px 6px">受信</span>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0">
+                    <div style="font-size:11px;font-weight:600;color:var(--text-primary)">${relative}</div>
+                    <div style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace" title="${absolute}">${absolute}</div>
+                  </div>
+                </div>
+                ${e.title ? `<div style="font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">${Components.escapeHtml(e.title)}</div>` : ''}
+                <div id="${eid}-preview" style="font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.escapeHtml(contentPreview)}</div>
+                ${needsExpand ? `
+                  <div id="${eid}-full" style="display:none;font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.escapeHtml(content)}</div>
+                  <button onclick="var p=document.getElementById('${eid}-preview'),f=document.getElementById('${eid}-full');var showing=f.style.display!=='none';p.style.display=showing?'block':'none';f.style.display=showing?'none':'block';this.textContent=showing?'全文を表示':'折りたたむ'" style="margin-top:4px;background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:2px 0">全文を表示</button>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+        ${integrationEntries.length > 10 ? `
+          <div style="text-align:center;margin-top:10px;font-size:10px;color:var(--text-muted)">他に ${integrationEntries.length - 10} 件の受信データがあります（タイムラインで確認できます）</div>
+        ` : ''}
+      `}
+    </div>
+  </div>`;
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">データ入力</h2>
     <p style="font-size:13px;color:var(--text-secondary)">日々の体調や気づきを記録してください。テキストから即座にアドバイスを生成します。</p>
   </div>
+
+  ${integrationHistoryHtml}
 
   <!-- 1. Free Text Input (Primary) -->
   <div class="card" style="margin-bottom:24px">
