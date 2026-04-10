@@ -8569,7 +8569,7 @@ ${titles}`;
       reader.onload = (ev) => {
         store.addHealthData('photos', {
           filename: file.name, type: file.type, size: file.size,
-          dataUrl: isImage ? ev.target.result.substring(0, 500) : '',
+          dataUrl: isImage ? ev.target.result : '',
           category: category
         });
 
@@ -8651,7 +8651,7 @@ ${titles}`;
         // Save file reference
         store.addHealthData('photos', {
           filename: file.name, type: file.type, size: file.size,
-          dataUrl: isImage ? ev.target.result.substring(0, 500) : '',
+          dataUrl: isImage ? ev.target.result : '',
           category: isImage ? '写真' : 'ファイル'
         });
 
@@ -10926,10 +10926,15 @@ App.prototype.render_timeline = function() {
 
     // Photos
     if (e._type === 'photo') {
+      const safeName = Components.escapeHtml(e.filename || '画像');
+      const safeType = Components.escapeHtml(e.type || '');
+      const thumb = (e.dataUrl && /^data:image\//.test(e.dataUrl))
+        ? `<img src="${e.dataUrl}" alt="${safeName}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">`
+        : '<span style="font-size:20px">📸</span>';
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
-          <span>📸</span>
-          <span style="font-size:12px;flex:1">${e.filename || '画像'} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
+          ${thumb}
+          <span style="font-size:12px;flex:1">${safeName} (${safeType}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
         </div>`;
     }
