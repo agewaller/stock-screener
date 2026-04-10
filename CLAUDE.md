@@ -26,6 +26,7 @@ wrangler.{jsonc,toml}         ← Worker デプロイ設定
 git add index.html
 git commit -m "変更内容"
 git push origin main             # → GitHub Pages 自動デプロイ（pages.yml）
+# 開発ブランチ work でも pages.yml を実行する設定に変更済み
 ```
 
 Worker を変更した場合は `worker/anthropic-proxy.js` を編集→push で
