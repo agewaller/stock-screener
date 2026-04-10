@@ -2660,6 +2660,55 @@ var INLINE_PROMPTS = {
 
 ※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。`,
 
+  // Meal photo specialized analysis (food-first, personalized advice)
+  meal_photo_analysis: `${PROMPT_HEADER}
+ユーザーが食事写真をアップロードしました。画像内の料理をできるだけ具体的に特定し、カロリー・栄養を深く推計してください。
+
+【最重要】
+1. 料理名・食材・調理法・推定量（g）をできる限り列挙する
+2. 推定カロリーを「料理別内訳」と「合計」で示す
+3. PFC（gと%）・食物繊維・塩分・抗炎症スコアを算出する
+4. ユーザープロフィール（年齢・性別・身長・体重・活動量）からBMR/推定消費カロリーを計算し、この食事が今日の予算に与える影響を示す
+5. ユーザーの既存データ（選択疾患、最近の症状、過去の食事傾向）と掛け合わせた「個別化アドバイス」を必ず出す
+
+【解析手順】
+A. 写真から見える料理候補を列挙（確信度つき）
+B. 各料理の推定量（g）を推定し、標準栄養テーブルを基に kcal/PFC を推計
+C. 不確実性が高い場合は「幅」で提示（例: 550-700kcal）
+D. 選択疾患（{{SELECTED_DISEASES}}）との適合性を評価
+E. 今日すぐ実行できる改善提案を3つ出す（置換・追加・量調整）
+
+【出力形式】以下のJSON形式で返してください：
+{
+  "category": "食事",
+  "summary": "1行要約",
+  "identified_items": [{"name":"料理名","amount_estimate_g":0,"confidence":"high/medium/low"}],
+  "findings": "主な所見（改行区切り）",
+  "nutrition": {
+    "calories": 0,
+    "calorie_range": "min-max",
+    "protein_g": 0,
+    "fat_g": 0,
+    "carb_g": 0,
+    "fiber_g": 0,
+    "salt_g": 0,
+    "anti_inflammatory_score": 0,
+    "bmr": 0,
+    "daily_budget": 0,
+    "remaining_budget": 0
+  },
+  "disease_fit": "疾患との適合性評価",
+  "personalized_advice": [
+    "ユーザーデータと掛け合わせた具体的提案1",
+    "ユーザーデータと掛け合わせた具体的提案2",
+    "ユーザーデータと掛け合わせた具体的提案3"
+  ],
+  "actions": ["今日の具体アクション1", "今日の具体アクション2", "今日の具体アクション3"],
+  "deeper_prompt": "精度を上げるために追加で聞く質問"
+}
+
+※推定であることを明記し、医療判断は主治医相談を促してください。`,
+
   // Conversation/Plaud transcript analysis
   conversation_analysis: `${PROMPT_HEADER}
 以下はユーザーの会話の文字起こしです。健康状態とストレスを分析してください。
@@ -8457,11 +8506,13 @@ ${titles}`;
     reader.onload = async (ev) => {
       const isImage = file.type.startsWith('image/');
       const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+      const promptType = isImage ? this.selectImagePromptType(file) : 'text_analysis';
       const result = await this.analyzeViaAPI(
         `[写真: ${file.name}]`,
-        isImage ? 'image_analysis' : 'text_analysis',
+        promptType,
         imgOpts
       );
+      this.persistNutritionFromAnalysis(result);
 
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
@@ -8475,6 +8526,37 @@ ${titles}`;
   }
 
   // ---- Dashboard Quick Input ----
+  isLikelyMealPhoto(file) {
+    if (!file) return false;
+    const name = (file.name || '').toLowerCase();
+    return /meal|food|dish|lunch|dinner|breakfast|bento|弁当|食事|ごはん|朝食|昼食|夕食|料理|ランチ|ディナー/.test(name);
+  }
+
+  selectImagePromptType(file) {
+    return this.isLikelyMealPhoto(file) ? 'meal_photo_analysis' : 'image_analysis';
+  }
+
+  persistNutritionFromAnalysis(result) {
+    if (!result || !result.nutrition || typeof result.nutrition !== 'object') return;
+    const n = result.nutrition;
+    const calories = Number(n.calories);
+    if (!Number.isFinite(calories) || calories <= 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = (store.get('nutritionLog') || []).find(e => e.date === today) || {};
+    store.upsertNutritionEntry({
+      date: today,
+      calories: Math.round(calories),
+      protein: Number(n.protein_g) || existing.protein || 0,
+      fat: Number(n.fat_g) || existing.fat || 0,
+      carbs: Number(n.carb_g) || existing.carbs || 0,
+      fiber: Number(n.fiber_g) || existing.fiber || 0,
+      salt: Number(n.salt_g) || existing.salt || 0,
+      antiInflammatoryScore: Number(n.anti_inflammatory_score) || existing.antiInflammatoryScore || 0,
+      bmr: Number(n.bmr) || existing.bmr || store.calculateBMR() || null,
+      budget: Number(n.daily_budget) || existing.budget || null
+    });
+  }
+
   dashQuickSubmit() {
     const input = document.getElementById('dash-quick-input');
     if (!input || !input.value.trim()) {
@@ -8607,13 +8689,15 @@ ${titles}`;
 
         // ALL analysis via API prompt
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        const promptType = isImage ? this.selectImagePromptType(file) : 'text_analysis';
         setTimeout(() => {
           this.analyzeViaAPI(
             `[ファイル: ${file.name}] ${category}`,
-            isImage ? 'image_analysis' : 'text_analysis',
+            promptType,
             imgOpts
           ).then(result => {
             store.set('latestFeedback', result);
+            this.persistNutritionFromAnalysis(result);
             // Save AI comment linked to file entry
             const fileEntries = store.get('textEntries') || [];
             const lastFileEntry = fileEntries.filter(e => e.type === 'file_upload').pop();
@@ -8677,11 +8761,13 @@ ${titles}`;
 
         // Run API analysis
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        const promptType = isImage ? this.selectImagePromptType(file) : 'text_analysis';
         const result = await this.analyzeViaAPI(
           `[ファイル: ${file.name}] ${isImage ? '写真' : 'ファイル'}`,
-          isImage ? 'image_analysis' : 'text_analysis',
+          promptType,
           imgOpts
         );
+        this.persistNutritionFromAnalysis(result);
 
         // Save AI comment
         this.saveAIComment(entryId, result);
