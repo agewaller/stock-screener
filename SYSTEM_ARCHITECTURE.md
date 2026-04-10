@@ -13,7 +13,7 @@
 
 ### 1. GitHub Pages（フロントエンド）
 - **役割**: 静的HTMLサイトのホスティング
-- **デプロイ**: mainブランチへのpushで自動デプロイ（GitHub Actions）
+- **デプロイ**: main/workブランチへのpushで自動デプロイ（GitHub Actions）
 - **ドメイン**: cares.advisers.jp（CNAMEで設定済み）
 - **変更方法**: このリポジトリのコードを編集→push
 
@@ -31,7 +31,7 @@
 - **役割**: ブラウザ→Anthropic Claude APIのCORSプロキシ
 - **デプロイ**: GitHub Actions（.github/workflows/deploy-worker.yml）
 - **APIトークン**: GitHubのSecrets（CLOUDFLARE_API_TOKEN）に保存済み
-- **変更方法**: worker/anthropic-proxy.jsを編集→push→自動デプロイ
+- **変更方法**: worker/anthropic-proxy.jsを編集→push→自動デプロイ（main/work）
 
 ### 4. 外部API
 - **OpenAI GPT-4o**: ブラウザから直接呼び出し（CORSOKいらない）
@@ -81,6 +81,12 @@ stock-screener/
 11. `App.prototype.render_*` — 全画面レンダラー
 
 ---
+
+## 運用メモ（反映されない時の確認）
+
+- GitHub Pages と Worker は GitHub Actions の対象ブランチに push されないと本番反映されない。
+- 2026-04-10 以降は `main` と `work` の両方を自動デプロイ対象に統一。
+- 反映確認は Actions タブで `Deploy to GitHub Pages` / `Deploy Cloudflare Worker` の成功を確認する。
 
 ## ビルドプロセス
 
