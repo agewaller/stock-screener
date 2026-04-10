@@ -39,6 +39,14 @@
 - **PubMed（NCBI E-utilities）**: ブラウザから直接呼び出し（CORS不要）
 - **APIキー管理**: 管理パネルで設定→localStorage + Firestore保存
 
+### 5.5 本番直接変更（緊急運用）
+- **Workflow**: `.github/workflows/direct-prod-deploy.yml`
+- **起動方法**: GitHub Actions の `workflow_dispatch` から手動実行
+- **対象**: frontend / worker / all を選択可能
+- **ref指定**: branch / tag / commit SHA を明示してデプロイ可能
+- **目的**: main push を待てない緊急時の即時反映 + 監査ログ確保
+- **運用手順**: `PRODUCTION_DIRECT_CHANGE_DESIGN.md` を参照
+
 ### 5. DNS（ドメイン）
 - **ドメイン**: advisers.jp（サブドメイン cares を使用）
 - **DNS設定**: CNAME cares → agewaller.github.io
@@ -54,13 +62,15 @@ stock-screener/
 ├── CNAME                   # cares.advisers.jp
 ├── CLAUDE.md               # 開発ガイド
 ├── SYSTEM_ARCHITECTURE.md  # このファイル
+├── PRODUCTION_DIRECT_CHANGE_DESIGN.md # 本番直接変更の運用設計
 ├── firestore.rules         # Firestoreセキュリティルール
 ├── wrangler.jsonc          # Cloudflare Worker設定
 ├── wrangler.toml           # Cloudflare Worker設定
 │
 ├── .github/workflows/
 │   ├── pages.yml           # GitHub Pagesデプロイ（mainブランチ）
-│   └── deploy-worker.yml   # Cloudflare Workerデプロイ
+│   ├── deploy-worker.yml   # Cloudflare Workerデプロイ
+│   └── direct-prod-deploy.yml # 本番直接反映（手動実行）
 │
 └── worker/
     └── anthropic-proxy.js  # Cloudflare Worker（Anthropic APIプロキシ）
