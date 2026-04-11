@@ -1,0 +1,70 @@
+name: Direct Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "デプロイ対象"
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - frontend
+          - worker
+      ref:
+        description: "デプロイする Git ref（branch / tag / commit SHA）"
+        required: true
+        default: main
+      worker_name:
+        description: "Worker 名（target=worker/all のみ使用）"
+        required: false
+        default: stock-screener
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: direct-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-frontend:
+    if: ${{ inputs.target == 'all' || inputs.target == 'frontend' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to Pages
+        uses: actions/deploy-pages@v4
+
+  deploy-worker:
+    if: ${{ inputs.target == 'all' || inputs.target == 'worker' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --name ${{ inputs.worker_name }}
