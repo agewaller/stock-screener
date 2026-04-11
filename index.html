@@ -7744,7 +7744,18 @@ ${titles}`;
       // IMPORTANT: do not call signInWithPopup here.
       // This flow is only for obtaining calendar consent while preserving
       // the currently authenticated Firebase user/session.
-      const result = await currentUser.reauthenticateWithPopup(provider);
+      //
+      // If Google is already linked to the current Firebase user, refresh
+      // consent via re-auth. Otherwise, link Google to the current user
+      // account first (still without swapping the signed-in Firebase user).
+      const hasGoogleProvider = Array.isArray(currentUser.providerData) &&
+        currentUser.providerData.some(p => p.providerId === 'google.com');
+      let result;
+      if (hasGoogleProvider) {
+        result = await currentUser.reauthenticateWithPopup(provider);
+      } else {
+        result = await currentUser.linkWithPopup(provider);
+      }
       const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
       const accessToken = cred?.accessToken;
       const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
