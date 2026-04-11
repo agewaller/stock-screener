@@ -7502,6 +7502,7 @@ ${titles}`;
     const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
     const days = parseInt(document.getElementById('pubmed-search-days')?.value || '90');
     const resultsArea = document.getElementById('pubmed-results');
+    const lang = (store.get('userProfile') || {}).language || 'ja';
     if (!resultsArea) return;
 
     resultsArea.innerHTML = Components.loading('最新の研究論文を検索しています...');
@@ -7521,6 +7522,18 @@ ${titles}`;
         return;
       }
 
+      // Show translated titles in the research page as well (not only
+      // dashboard), so users can read the latest papers in their
+      // selected profile language without relying on external
+      // translation pages.
+      if (lang !== 'en') {
+        try {
+          articles = await this.translateArticlesList(articles, lang);
+        } catch (err) {
+          console.warn('[searchPubMedLive] translation failed, showing originals:', err.message);
+        }
+      }
+
       resultsArea.innerHTML = `
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${articles.length}件の研究論文</div>
         ${articles.map(a => `
@@ -7530,7 +7543,8 @@ ${titles}`;
                 <span style="font-size:10px;color:var(--text-muted)">${a.journal}</span>
                 <span style="font-size:10px;color:var(--text-muted)">${a.date}</span>
               </div>
-              <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
+              <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${Components.escapeHtml(a.titleTranslated || a.title)}</h4>
+              ${(a.titleTranslated && a.titleTranslated !== a.title) ? `<div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-bottom:6px">${Components.escapeHtml(a.title)}</div>` : ''}
               <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${(a.authors || '').substring(0, 80)}${(a.authors || '').length > 80 ? '...' : ''}</p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="font-size:12px">この研究を読む</a>
