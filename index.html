@@ -935,6 +935,23 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   40%           { transform: translateY(-4px); opacity: 1; }
 }
 
+.chat-progress {
+  position: relative;
+  width: 140px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.chat-progress > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 36%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: progress-slide 1.4s ease-in-out infinite;
+}
+
 /* ---- Toast Notifications ---- */
 .toast-container {
   position: fixed;
@@ -4276,7 +4293,7 @@ var Components = {
   // working — elderly users otherwise assume the app has frozen. The
   // setInterval stops itself as soon as the counter element disappears
   // (caller replaces the container's innerHTML with the result).
-  loading(text = '分析中...', opts = {}) {
+  loading(text = '認識中...', opts = {}) {
     const subtext = opts.subtext !== undefined
       ? opts.subtext
       : 'しばらくお待ちください（通常15〜30秒程度）';
@@ -4311,13 +4328,16 @@ var Components = {
   // Inline typing indicator for the chat view. Appended after the user's
   // message while the model is generating a reply. Removed by the caller
   // (sendChat) once the assistant message arrives.
-  typingIndicator() {
+  typingIndicator(label = '認識中...') {
     return `
       <div class="chat-message assistant" id="chat-typing-indicator">
         <div class="user-avatar" style="width:28px;height:28px;font-size:14px">💬</div>
-        <div class="chat-bubble" style="display:flex;align-items:center;gap:8px">
-          <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
-          <span style="font-size:11px;color:var(--text-muted)">考え中...</span>
+        <div class="chat-bubble" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:180px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span style="font-size:11px;color:var(--text-muted)">${label}</span>
+          </div>
+          <div class="chat-progress" aria-hidden="true"><span></span></div>
         </div>
       </div>
     `;
@@ -8645,7 +8665,7 @@ ${titles}`;
     const file = event.target.files?.[0];
     if (!file) return;
     const resultEl = document.getElementById('guest-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('写真を分析しています...');
+    if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
 
     const reader = new FileReader();
     reader.onload = async (ev) => {
@@ -8709,7 +8729,7 @@ ${titles}`;
 
     // Show loading state
     const feedback = document.getElementById('dash-ai-feedback');
-    if (feedback) feedback.innerHTML = Components.loading('分析中...');
+    if (feedback) feedback.innerHTML = Components.loading('入力内容を認識中...');
 
     // ALL analysis via API prompt - save result with the entry
     const entryId = entry.id;
@@ -8802,7 +8822,7 @@ ${titles}`;
         });
         store.set('conversationHistory', history);
 
-        Components.showToast(`${file.name} を分析中...`, 'info');
+        Components.showToast(`${file.name} を認識中...`, 'info');
         this.navigate('dashboard');
 
         // Immediately show the progress gauge in the feedback area so the
@@ -8810,7 +8830,7 @@ ${titles}`;
         const feedbackEl = document.getElementById('dash-ai-feedback');
         if (feedbackEl) {
           feedbackEl.innerHTML = Components.loading(
-            isImage ? '写真を分析しています...' : 'ファイルを分析しています...'
+            isImage ? '写真を認識中...' : 'ファイルを認識中...'
           );
         }
 
@@ -8842,7 +8862,7 @@ ${titles}`;
   dataPageFileUpload(files) {
     if (!files || !files.length) return;
     const resultEl = document.getElementById('data-file-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('ファイルを分析中...');
+    if (resultEl) resultEl.innerHTML = Components.loading('ファイルを認識中...');
 
     Array.from(files).forEach(async (file) => {
       const isImage = file.type.startsWith('image/');
@@ -8886,7 +8906,7 @@ ${titles}`;
         history.push({ role: 'user', content: `[ファイル: ${file.name}]`, timestamp: new Date().toISOString(), type: 'file_upload' });
         store.set('conversationHistory', history);
 
-        Components.showToast(`${file.name} を分析中...`, 'info');
+        Components.showToast(`${file.name} を認識中...`, 'info');
 
         // Run API analysis
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
