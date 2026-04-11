@@ -4647,46 +4647,14 @@ var CalendarIntegration = {
     return upcoming;
   },
 
-  // Google OAuth access token (calendar.readonly) で直接イベント取得。
-  // ユーザーは「Googleで連携」ボタンで同意するだけ。
-  async importFromGoogleAccessToken(accessToken) {
-    if (!accessToken) {
-      throw new Error('Google認可トークンが見つかりません。再度「Googleで連携」を押してください。');
-    }
-
-    const now = new Date();
-    const timeMin = new Date(now.getTime() - 7 * 86400000).toISOString();
-    const timeMax = new Date(now.getTime() + 90 * 86400000).toISOString();
-    const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
-      singleEvents: 'true',
-      orderBy: 'startTime',
-      maxResults: '1000',
-      timeMin,
-      timeMax
-    }).toString();
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (!res.ok) {
-      let message = `Google Calendar API ${res.status}`;
-      try {
-        const err = await res.json();
-        message = err?.error?.message || message;
-      } catch (_) {}
-      throw new Error(message);
-    }
-
-    const data = await res.json();
-    const events = this.saveEvents(data.items || []);
-    localStorage.setItem('google_calendar_oauth_connected', '1');
-
-    const syncs = store.get('integrationSyncs') || {};
-    syncs.google_calendar = new Date().toISOString();
-    store.set('integrationSyncs', syncs);
-
-    return events;
-  },
+  // NOTE: Google OAuth-based import (calendar.readonly scope) was
+  // removed because it triggered Google's "このアプリは Google で確認
+  // されていません" unverified-app consent screen. That warning cannot
+  // be suppressed without going through Google's OAuth verification
+  // process (which for a sensitive scope requires a security review).
+  // The ICS URL path (importFromIcsUrl above) provides the same
+  // functional outcome — periodic read-only calendar sync — without
+  // any OAuth consent screen at all.
 
   // RFC 5545 minimal parser — handles the events Google/Outlook send.
   // Not a full implementation (RRULE, VTIMEZONE etc. are ignored) but
@@ -7911,91 +7879,12 @@ ${titles}`;
     }
   }
 
-  async connectGoogleCalendarWithGoogle() {
-    const status = document.getElementById('gcal-import-status');
-    if (status) status.innerHTML = Components.loading('Googleアカウント認証中...');
-    try {
-      if (!FirebaseBackend?.auth) throw new Error('Googleログインを有効にしてからお試しください');
-      const currentUser = FirebaseBackend.auth.currentUser;
-      if (!currentUser) {
-        throw new Error('先にログインしてからGoogleカレンダー連携を行ってください');
-      }
-
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-      provider.setCustomParameters({
-        prompt: 'consent',
-        include_granted_scopes: 'true'
-      });
-
-      // IMPORTANT: do not call signInWithPopup here.
-      // This flow is only for obtaining calendar consent while preserving
-      // the currently authenticated Firebase user/session.
-      //
-      // If Google is already linked to the current Firebase user, refresh
-      // consent via re-auth. Otherwise, link Google to the current user
-      // account first (still without swapping the signed-in Firebase user).
-      const hasGoogleProvider = Array.isArray(currentUser.providerData) &&
-        currentUser.providerData.some(p => p.providerId === 'google.com');
-      let result;
-      if (hasGoogleProvider) {
-        result = await currentUser.reauthenticateWithPopup(provider);
-      } else {
-        result = await currentUser.linkWithPopup(provider);
-      }
-      const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-      const accessToken = cred?.accessToken;
-      const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
-
-      if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ Google連携で${events.length}件取り込みました</div>`;
-      Components.showToast(`Googleカレンダーから${events.length}件取り込みました`, 'success');
-    } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        if (status) status.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px">キャンセルされました</div>';
-        return;
-      }
-      if (this.isGoogleCalendarUnverifiedAppError(err)) {
-        this.showGoogleCalendarIcsFallback(status);
-        return;
-      }
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
-      Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
-    }
-  }
-
-  isGoogleCalendarUnverifiedAppError(err) {
-    const code = String(err?.code || '').toLowerCase();
-    const message = String(err?.message || '').toLowerCase();
-    return code.includes('access_blocked') ||
-      code.includes('unauthorized-domain') ||
-      message.includes('app is blocked') ||
-      message.includes('has not completed the google verification process') ||
-      message.includes('this app is not verified') ||
-      message.includes('このアプリは google で確認されていません');
-  }
-
-  showGoogleCalendarIcsFallback(statusEl) {
-    const fallbackHtml = `
-      <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:10px;padding:12px;color:#1e3a8a;font-size:12px;line-height:1.7">
-        <div style="font-weight:700;margin-bottom:6px">Google OAuth が未検証のため、URL連携で取り込みます</div>
-        <ol style="margin:0 0 0 18px;padding:0">
-          <li>Googleカレンダー設定 → 対象カレンダー → 「カレンダーの統合」</li>
-          <li>「iCal 形式の秘密アドレス」をコピー</li>
-          <li>下の入力欄に貼り付けて「URLで接続」を押す</li>
-        </ol>
-      </div>
-    `;
-    if (statusEl) statusEl.innerHTML = fallbackHtml;
-    const input = document.getElementById('gcal-ics-url');
-    if (input) {
-      input.focus();
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    Components.showToast('Google未検証アプリのため、ICS URL連携をご利用ください', 'warning');
-  }
-
   disconnectGoogleCalendar() {
     localStorage.removeItem('ics_calendar_url');
+    // Also clear the legacy OAuth flag in case the user previously
+    // connected via the now-removed OAuth path. Without this, the
+    // stored flag would keep the integration in a "connected but not
+    // functional" ghost state.
     localStorage.removeItem('google_calendar_oauth_connected');
     store.set('calendarEvents', []);
     app.navigate('integrations');
@@ -11437,7 +11326,14 @@ App.prototype.render_integrations = function() {
   const syncs = store.get('integrationSyncs') || {};
   const calendarEvents = store.get('calendarEvents') || [];
   const fitbitConnected = Integrations.fitbit.connected;
-  const gcalConnected = !!(localStorage.getItem('ics_calendar_url') || localStorage.getItem('google_calendar_oauth_connected'));
+  // Only iCal URL counts as "connected" now. The old OAuth flow is
+  // no longer exposed from the UI because Google's unverified-app
+  // consent warning cannot be suppressed without completing the
+  // Google OAuth verification process, and users reported confusion
+  // seeing that warning. Stale `google_calendar_oauth_connected`
+  // flags from previous sessions are ignored; users just paste their
+  // iCal URL once and the app stays synced automatically.
+  const gcalConnected = !!localStorage.getItem('ics_calendar_url');
   const now = Date.now();
 
   const countSource = (s) => textEntries.filter(e => e.source === s).length;
@@ -11703,33 +11599,19 @@ App.prototype.render_integrations = function() {
         <div style="padding:12px;background:#eff6ff;border:1px solid #93c5fd;border-radius:var(--radius-sm);margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
             <div style="font-size:13px;color:#1e40af;font-weight:700">✓ カレンダーに接続されています</div>
-            ${localStorage.getItem('ics_calendar_url')
-              ? '<span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>'
-              : '<span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🪪 Google許可済み</span>'}
+            <span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>
           </div>
           <div style="font-size:11px;color:#1e40af;margin-bottom:10px;line-height:1.6">
-            ${localStorage.getItem('ics_calendar_url')
-              ? 'アプリを開いている間、30分ごとに自動でイベントが更新されます。Googleカレンダーで予定を追加・変更すると、次の同期時に自動反映されます。'
-              : 'Googleアカウントで読み取り許可済みです。予定を更新したら「今すぐ同期」を押すだけで最新イベントを再取り込みできます。'}
+            アプリを開いている間、30分ごとに自動でイベントが更新されます。Googleカレンダーで予定を追加・変更すると、次の同期時に自動反映されます。
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-outline btn-sm" onclick="${localStorage.getItem('ics_calendar_url') ? 'Integrations.autoSync.runNow()' : 'app.connectGoogleCalendarWithGoogle()'}" style="font-size:11px">🔄 今すぐ同期</button>
+            <button class="btn btn-outline btn-sm" onclick="Integrations.autoSync.runNow()" style="font-size:11px">🔄 今すぐ同期</button>
             <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px" onclick="app.disconnectGoogleCalendar()">接続解除</button>
           </div>
         </div>
       ` : ''}
       <div style="background:#eef2ff;padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px;border:1px solid #c7d2fe">
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px">✅ かんたん連携（推奨）</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.9;margin-bottom:10px">
-          「Googleで連携」を押して、Googleの画面で「カレンダーの閲覧を許可」をOKするだけで取り込みできます。
-        </div>
-        <button class="btn btn-primary" onclick="app.connectGoogleCalendarWithGoogle()">🔐 Googleで連携して取り込む</button>
-        <div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
-          ※ Google側でOAuth未検証の場合は、下の「URLで接続」に自動で切り替えてご案内します。
-        </div>
-      </div>
-      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（従来方式）</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付けて連携</div>
         <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
           <li>Googleカレンダーを開く → 右上の⚙️ → 「設定」</li>
           <li>左側メニューで同期したいカレンダーを選択</li>
@@ -11740,7 +11622,7 @@ App.prototype.render_integrations = function() {
         <div class="form-group">
           <input type="text" class="form-input" id="gcal-ics-url" value="${Components.escapeHtml(localStorage.getItem('ics_calendar_url') || '')}" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="padding:8px 10px;font-size:11px">
         </div>
-        <button class="btn btn-outline" onclick="app.connectGoogleCalendar()">📅 ${localStorage.getItem('ics_calendar_url') ? 'URLを更新' : 'URLで接続'}</button>
+        <button class="btn btn-primary" onclick="app.connectGoogleCalendar()">📅 ${localStorage.getItem('ics_calendar_url') ? 'URLを更新' : 'URLで接続'}</button>
         <div id="gcal-import-status" style="margin-top:10px"></div>
       </div>
       <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f">
