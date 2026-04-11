@@ -6174,12 +6174,22 @@ var FirebaseBackend = {
     }
     const hash = this._userHash();
     if (!hash) return;
+    // Track listener status so the integrations page can display it.
+    // Any error here (permission denied / no such index / offline)
+    // would otherwise be silent in console only.
+    store.set('inboxStatus', { state: 'connecting', hash, at: Date.now() });
     try {
       this._inboxUnsubscribe = this.db
         .collection('inbox').doc(hash).collection('plaud')
         .where('processed', '==', false)
         .orderBy('receivedAt', 'asc')
         .onSnapshot(async (snapshot) => {
+          store.set('inboxStatus', {
+            state: 'live',
+            hash,
+            pending: snapshot.size,
+            at: Date.now()
+          });
           for (const docSnap of snapshot.docs) {
             const data = docSnap.data() || {};
             try {
@@ -6198,11 +6208,23 @@ var FirebaseBackend = {
             }
           }
         }, (err) => {
-          console.warn('[inbox] snapshot error:', err.message);
+          console.warn('[inbox] snapshot error:', err.code || '', err.message);
+          store.set('inboxStatus', {
+            state: 'error',
+            hash,
+            error: (err.code ? err.code + ': ' : '') + (err.message || String(err)),
+            at: Date.now()
+          });
         });
       console.log('[inbox] subscribed to plaud inbox for hash', hash);
     } catch (err) {
       console.warn('[inbox] subscribe failed:', err.message);
+      store.set('inboxStatus', {
+        state: 'error',
+        hash,
+        error: 'subscribe failed: ' + (err.message || String(err)),
+        at: Date.now()
+      });
     }
   },
 
@@ -7939,23 +7961,63 @@ ${titles}`;
         include_granted_scopes: 'true'
       });
 
-      // IMPORTANT: do not call signInWithPopup here.
-      // This flow is only for obtaining calendar consent while preserving
-      // the currently authenticated Firebase user/session.
-      //
-      // If Google is already linked to the current Firebase user, refresh
-      // consent via re-auth. Otherwise, link Google to the current user
-      // account first (still without swapping the signed-in Firebase user).
+      // Try to obtain a Google OAuth access token while preserving the
+      // Firebase user session. We attempt reauthenticateWithPopup /
+      // linkWithPopup first (these keep the current user intact), but
+      // multiple Firebase SDK versions intermittently fail to populate
+      // credential.accessToken for those methods — the user then sees
+      // "Google認可トークンが見つかりません" even though the popup
+      // completed successfully. We work around this in two ways:
+      //   1. Read accessToken from multiple possible locations on the
+      //      result object (cred.accessToken, result._tokenResponse.
+      //      oauthAccessToken).
+      //   2. If still missing, fall back to signInWithPopup which
+      //      reliably exposes the access token. For same-account
+      //      sign-ins this merely refreshes the session; the user's
+      //      Firebase uid does not change.
+      const extractAccessToken = (res) => {
+        try {
+          const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(res);
+          if (cred?.accessToken) return cred.accessToken;
+        } catch (_) {}
+        return res?._tokenResponse?.oauthAccessToken
+          || res?.credential?.accessToken
+          || null;
+      };
+
       const hasGoogleProvider = Array.isArray(currentUser.providerData) &&
         currentUser.providerData.some(p => p.providerId === 'google.com');
-      let result;
-      if (hasGoogleProvider) {
-        result = await currentUser.reauthenticateWithPopup(provider);
-      } else {
-        result = await currentUser.linkWithPopup(provider);
+
+      let accessToken = null;
+      try {
+        const result = hasGoogleProvider
+          ? await currentUser.reauthenticateWithPopup(provider)
+          : await currentUser.linkWithPopup(provider);
+        accessToken = extractAccessToken(result);
+      } catch (inner) {
+        // Bubble up cancellation / block errors to the outer catch.
+        if (inner?.code === 'auth/popup-closed-by-user'
+            || inner?.code === 'auth/cancelled-popup-request'
+            || inner?.code === 'auth/popup-blocked') {
+          throw inner;
+        }
+        console.warn('[calendar] reauth/link path failed, falling back to signInWithPopup:', inner?.code || '', inner?.message || '');
       }
-      const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-      const accessToken = cred?.accessToken;
+
+      if (!accessToken) {
+        // Fallback: signInWithPopup. This replaces the current Firebase
+        // session with a fresh one for the same Google account and
+        // reliably returns an OAuth access token.
+        const result2 = await FirebaseBackend.auth.signInWithPopup(provider);
+        accessToken = extractAccessToken(result2);
+        if (result2?.user) {
+          FirebaseBackend.handleSignedInUser(result2.user);
+        }
+      }
+
+      if (!accessToken) {
+        throw new Error('Googleからアクセストークンを取得できませんでした。別のGoogleアカウントでお試しいただくか、ICS URL連携をご利用ください。');
+      }
       const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
 
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ Google連携で${events.length}件取り込みました</div>`;
@@ -11636,6 +11698,30 @@ App.prototype.render_integrations = function() {
         <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:10px;color:#78350f;line-height:1.6">
           <strong>Plaud側の設定:</strong> アプリ → オートフロー → 新規作成 → トリガー「文字起こし完了」 → アクション「メール送信」 → 宛先に上記アドレスを設定。一度設定すれば、以降は録音するたびに自動でこちらに届きます。
         </div>
+        ${(() => {
+          const s = store.get('inboxStatus');
+          if (!s) {
+            return `<div style="margin-top:8px;padding:8px 10px;background:#f1f5f9;border-left:3px solid #94a3b8;border-radius:4px;font-size:10px;color:#475569;line-height:1.6">
+              <strong>受信リスナー:</strong> 未起動（ログイン後に自動で接続されます）
+            </div>`;
+          }
+          if (s.state === 'error') {
+            return `<div style="margin-top:8px;padding:8px 10px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;font-size:10px;color:#991b1b;line-height:1.6">
+              <strong>受信リスナー:</strong> エラー<br>
+              <span style="font-family:monospace;word-break:break-all">${Components.escapeHtml(s.error || '')}</span><br>
+              <span style="color:#7f1d1d">※ Firestore rules / Cloudflare Worker / Email Routing の設定を確認してください</span>
+            </div>`;
+          }
+          if (s.state === 'live') {
+            const pendText = (s.pending > 0) ? `（未処理 ${s.pending} 件を処理中...）` : '（待機中）';
+            return `<div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:4px;font-size:10px;color:#14532d;line-height:1.6">
+              <strong>受信リスナー:</strong> 接続中 hash=<code>${Components.escapeHtml(s.hash || '')}</code> ${pendText}
+            </div>`;
+          }
+          return `<div style="margin-top:8px;padding:8px 10px;background:#fff7ed;border-left:3px solid #f97316;border-radius:4px;font-size:10px;color:#9a3412;line-height:1.6">
+            <strong>受信リスナー:</strong> 接続中...
+          </div>`;
+        })()}
       </div>
 
       <!-- Fallback: manual paste for one-off / older recordings -->

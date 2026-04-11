@@ -1,0 +1,19 @@
+name = "plaud-inbox"
+main = "worker/plaud-inbox.js"
+compatibility_date = "2024-09-01"
+
+# Cloudflare Email Worker: routes incoming emails at
+# plaud-{hash}@inbox.cares.advisers.jp and data-{hash}@inbox.cares.advisers.jp
+# into the Firestore `inbox/{hash}/{kind}/{messageId}` collection. The
+# frontend (index.html) subscribes to that collection via onSnapshot and
+# auto-runs Integrations.plaud.saveTranscript → 禅トラック analysis on
+# every new message.
+#
+# After deploying, the Cloudflare dashboard → Email Routing → "Send to
+# a Worker" binding must be set to this worker (`plaud-inbox`).
+#
+# Required secrets (set via `wrangler secret put ...`):
+#   FIREBASE_PROJECT_ID   # e.g. care-14c31
+#   FIREBASE_API_KEY      # Firebase Web API key (public-safe)
+
+observability = { enabled = true }

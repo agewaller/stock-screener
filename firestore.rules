@@ -27,13 +27,28 @@ service cloud.firestore {
     //   indirection rather than uid-based; in practice the hash space
     //   is short enough that we don't expose it as a security boundary,
     //   only as a routing key.
-    // - Writes: only the worker (which uses the public Firestore REST
-    //   endpoint with an API key, NOT a user token) — so authenticated
-    //   user clients cannot write to anyone's inbox. We also allow the
-    //   user to UPDATE their own messages to mark them processed.
+    //
+    // - Writes: the Cloudflare Worker hits the Firestore REST API with
+    //   the public Firebase Web API key (NOT a service-account admin
+    //   token), so from the rules' perspective `request.auth == null`.
+    //   The previous rule had `allow create: if false` under the wrong
+    //   assumption that the REST API bypasses rules with project-owner
+    //   perms — it doesn't, so every inbound Plaud email was silently
+    //   rejected and never reached the frontend. We now allow create
+    //   with shape validation: the doc must start out processed=false,
+    //   carry a plaud/data kind, have a non-empty text body under
+    //   200KB, and the hash field in the payload must match the path
+    //   hash (so an attacker can't write to an arbitrary user inbox
+    //   via a mismatched hash).
     match /inbox/{hash}/{kind}/{messageId} {
       allow read: if request.auth != null;
-      allow create: if false; // worker only (REST API key bypasses rules with project owner perms)
+      allow create: if request.resource.data.processed == false
+                    && (kind == 'plaud' || kind == 'data')
+                    && request.resource.data.hash is string
+                    && request.resource.data.hash == hash
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 200000;
       allow update: if request.auth != null
                     && request.resource.data.processed == true;
       allow delete: if false;

@@ -1,19 +1,33 @@
-name: Deploy Cloudflare Worker
+name: Deploy Cloudflare Workers
 
 on:
   push:
     branches: ["main", "work"]
-    paths: ["worker/**"]
+    paths:
+      - "worker/**"
+      - "wrangler.toml"
+      - "wrangler.plaud-inbox.toml"
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-anthropic-proxy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy Worker
+      - name: Deploy Anthropic proxy Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: "."
           command: deploy --name stock-screener
+
+  deploy-plaud-inbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Plaud inbox email Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --config wrangler.plaud-inbox.toml
