@@ -11724,8 +11724,9 @@ App.prototype.render_integrations = function() {
           「Googleで連携」を押して、Googleの画面で「カレンダーの閲覧を許可」をOKするだけで取り込みできます。
         </div>
         <button class="btn btn-primary" onclick="app.connectGoogleCalendarWithGoogle()">🔐 Googleで連携して取り込む</button>
-        <div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
-          ※ Google側でOAuth未検証の場合は、下の「URLで接続」に自動で切り替えてご案内します。
+        <div style="margin-top:10px;padding:8px 10px;background:#fff7ed;border-left:3px solid #f97316;border-radius:4px;font-size:11px;color:#9a3412;line-height:1.7">
+          <strong>※ 「このアプリは Google で確認されていません」という警告が出た場合</strong>：<br>
+          画面下の <b>「詳細」</b> をタップ → <b>「cares.advisers.jp（安全でないページ）に移動」</b> をタップしてそのまま進めてください。未病ダイアリーは本人のカレンダーを読み取るだけで、パスワードや書き込み権限は一切要求しません。
         </div>
       </div>
       <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
