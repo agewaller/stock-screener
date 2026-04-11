@@ -20,7 +20,12 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+          // `anthropic-version` was missing from this list, so any
+          // browser request that carried the header (which the client
+          // now always sends) failed the CORS preflight silently,
+          // leaving `fetch()` to reject with a generic network error
+          // and the dashboard textbox to appear unresponsive.
+          'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access',
           'Access-Control-Max-Age': '86400',
         },
       });

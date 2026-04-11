@@ -6237,6 +6237,33 @@ var FirebaseBackend = {
     this._loading = true;
 
     try {
+      // Load global admin-managed config FIRST so API keys are in
+      // localStorage before the user can submit any text box on the
+      // dashboard. Previously this was the last step, and on slow
+      // connections the user could submit a quick entry before the
+      // keys arrived, landing them in the no-api-key fallback branch
+      // that returns "ただいま詳細分析をご用意できません".
+      try {
+        const globalConfig = await this.loadGlobalConfig();
+        const hasGlobalKeys = globalConfig && globalConfig.apiKeys
+          && Object.values(globalConfig.apiKeys).some(v => v);
+        if (hasGlobalKeys) {
+          if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
+          if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
+          if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
+          console.log('[Firebase] Loaded global API keys (early)');
+        }
+        if (globalConfig && globalConfig.proxyUrl !== undefined) {
+          localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl || '');
+        }
+        if (globalConfig && globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
+        if (globalConfig && (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy')) {
+          localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
+        }
+      } catch (e) {
+        console.warn('[Firebase] Early globalConfig load failed:', e?.message || e);
+      }
+
       // Load user profile
       const profileDoc = await this.userDoc().get();
       if (profileDoc.exists) {
@@ -6288,26 +6315,12 @@ var FirebaseBackend = {
 
       await Promise.all(loadPromises);
 
-      // Load global admin-managed config (shared by all users)
-      // This takes precedence over any per-user legacy keys so that admin
-      // changes propagate to everyone automatically.
+      // Legacy per-user keys (backward compatibility). Global config
+      // already ran at the top of this function, so re-fetch just for
+      // the hasGlobalKeys check used by the legacy migration branch.
       const globalConfig = await this.loadGlobalConfig();
-      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
-
-      if (hasGlobalKeys) {
-        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
-        if (globalConfig.apiKeys.openai) localStorage.setItem('apikey_openai', globalConfig.apiKeys.openai);
-        if (globalConfig.apiKeys.google) localStorage.setItem('apikey_google', globalConfig.apiKeys.google);
-        console.log('[Firebase] Loaded global API keys');
-      }
-      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
-      if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
-      // Apply admin-configured Anthropic transport mode (direct/proxy)
-      if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
-        localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
-      }
-
-      // Legacy per-user keys (backward compatibility)
+      const hasGlobalKeys = globalConfig && globalConfig.apiKeys
+        && Object.values(globalConfig.apiKeys).some(v => v);
       const legacyKeys = await this.loadApiKeys();
       const hasLegacyKeys = legacyKeys && Object.values(legacyKeys).some(v => v);
 
@@ -8889,22 +8902,47 @@ ${titles}`;
 
     input.value = '';
 
-    // Show loading state
+    // Clear the previous feedback so the dashboard re-render doesn't
+    // flash the old result on top of the new request.
+    store.set('latestFeedback', null);
+
+    // Re-render the dashboard FIRST so the new text entry appears in
+    // the feed and the DOM for dash-ai-feedback is fresh. Then inject
+    // the loading spinner into the freshly rendered element. The old
+    // code set the spinner BEFORE navigate, which silently destroyed
+    // it: navigate rebuilds dash-ai-feedback from latestFeedback and
+    // wiped the spinner, leaving the user staring at either nothing
+    // or a stale result while the API call ran in the background.
+    this.navigate('dashboard');
     const feedback = document.getElementById('dash-ai-feedback');
     if (feedback) feedback.innerHTML = Components.loading('入力内容を認識中...');
 
     // ALL analysis via API prompt - save result with the entry
     const entryId = entry.id;
-    this.analyzeViaAPI(content, 'text_analysis').then(result => {
-      store.set('latestFeedback', result);
-      // Save AI comment with the entry
-      this.saveAIComment(entryId, result);
-      const el = document.getElementById('dash-ai-feedback');
-      if (el) el.innerHTML = this.renderAnalysisCard(result);
-    });
-
-    // Re-render dashboard (keeps loading state visible)
-    this.navigate('dashboard');
+    this.analyzeViaAPI(content, 'text_analysis')
+      .then(result => {
+        store.set('latestFeedback', result);
+        this.saveAIComment(entryId, result);
+        const el = document.getElementById('dash-ai-feedback');
+        if (el) el.innerHTML = this.renderAnalysisCard(result);
+      })
+      .catch(err => {
+        // Previously unhandled: the spinner stayed forever and the
+        // user assumed the app had frozen. Now we surface the error
+        // in the feedback area so at least the loading state ends.
+        console.error('[dashQuickSubmit] analyzeViaAPI failed:', err);
+        const el = document.getElementById('dash-ai-feedback');
+        if (el) {
+          el.innerHTML = `
+            <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
+              <div class="card-body" style="padding:12px 16px">
+                <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">${Components.escapeHtml(err?.message || String(err))}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。時間をおいて「再分析」ボタンまたは再度の送信でリトライできます。</div>
+              </div>
+            </div>`;
+        }
+      });
   }
 
   // Deep structured analysis of any user input
