@@ -34,10 +34,10 @@ export default {
     try {
       // Get the request body
       const body = await request.json();
-      const apiKey = request.headers.get('x-api-key');
+      const apiKey = request.headers.get('x-api-key') || env.ANTHROPIC_API_KEY;
 
       if (!apiKey) {
-        return corsResponse({ error: 'x-api-key header required' }, 401);
+        return corsResponse({ error: 'x-api-key header required (or set ANTHROPIC_API_KEY on Worker)' }, 401);
       }
 
       // Forward to Anthropic API

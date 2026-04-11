@@ -3298,7 +3298,8 @@ var AIEngine = class AIEngine {
     const errors = [];
     for (const { model, callFn } of providers) {
       const key = this.getApiKey(model);
-      if (!key) {
+      const canUseSharedProxy = model.startsWith('claude-') && this.canUseSharedProxy();
+      if (!key && !canUseSharedProxy) {
         errors.push(`${model}: no API key`);
         continue;
       }
@@ -3318,6 +3319,13 @@ var AIEngine = class AIEngine {
       }
     }
     throw new Error('ALL_PROVIDERS_FAILED: ' + errors.join(' | '));
+  }
+
+  // Shared proxy mode allows guest / pre-login users to receive AI
+  // advice without storing provider API keys in the browser.
+  // The Cloudflare Worker must have ANTHROPIC_API_KEY set as a secret.
+  canUseSharedProxy() {
+    return localStorage.getItem('enable_shared_guest_ai') !== '0';
   }
 
   // Build the list of providers to try, in order, starting with the
@@ -3372,7 +3380,8 @@ var AIEngine = class AIEngine {
     // still opt in by selecting "プロキシ経由" in the admin panel.
     const mode = localStorage.getItem('anthropic_mode'); // 'direct' | 'proxy' | null
     const proxyUrl = localStorage.getItem('anthropic_proxy_url');
-    const isDirect = mode !== 'proxy';
+    const useSharedProxy = !apiKey && this.canUseSharedProxy();
+    const isDirect = !useSharedProxy && mode !== 'proxy';
 
     const url = isDirect
       ? 'https://api.anthropic.com/v1/messages'
@@ -3381,9 +3390,9 @@ var AIEngine = class AIEngine {
 
     const headers = {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     };
+    if (apiKey) headers['x-api-key'] = apiKey;
     // Required by Anthropic to allow direct browser-to-api calls.
     // Without this header, api.anthropic.com responds with an error
     // about "unsupported browser access".
