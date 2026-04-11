@@ -7299,6 +7299,11 @@ var App = class App {
     this.analyzeViaAPI(inputWithContext, promptType)
       .then(result => {
         store.set('isAnalyzing', false);
+        if (result && result._fromAPI === false) {
+          const errText = result._error || result.findings || '分析に失敗しました';
+          store.set('latestFeedbackError', errText);
+          return;
+        }
         store.set('latestFeedback', result);
         this.saveAIComment(entry.id, result);
       })
@@ -8339,21 +8344,17 @@ ${titles}`;
       );
     }
 
-    if (!apiKey) {
-      // No API key available — return minimal neutral feedback.
-      // For admin this signals a setup issue; for regular users we avoid
-      // exposing any system/API terminology.
-      const adminHint = this.isAdmin()
-        ? '管理パネル → APIキータブで共通APIキーを保存してください。保存後、全ユーザーに自動反映されます。'
-        : 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
-      return {
-        summary: '記録を保存しました。',
-        findings: adminHint,
-        actions: [],
-        products: [],
-        _fromAPI: false
-      };
-    }
+    // NOTE: we intentionally do NOT short-circuit here on `!apiKey`.
+    // aiEngine.callModel has its own shared-proxy fallback (the
+    // Cloudflare Worker with a server-side ANTHROPIC_API_KEY secret)
+    // for Claude models. Early-returning here would bypass that path
+    // entirely — every logged-in user without a local key would get
+    // the "ただいま詳細分析をご用意できません" fallback even though the
+    // shared proxy could serve the request. The previous code had this
+    // bug because f19eac1 added canUseSharedProxy to callModel but
+    // forgot to remove the short-circuit here, which is exactly the
+    // regression users were hitting as "ダッシュボードにコメントしても
+    // エラーが出ます".
 
     try {
       // 4096 tokens allows the AI to produce the full schema
@@ -8458,7 +8459,11 @@ ${titles}`;
         findings: adminHint,
         actions: [],
         products: [],
-        _fromAPI: false
+        _fromAPI: false,
+        // Preserve the raw error message so callers (dashQuickSubmit /
+        // submitTextEntry) can render an explicit error card instead
+        // of treating the fallback like a successful analysis.
+        _error: err?.message || String(err)
       };
     }
   }
@@ -8996,6 +9001,16 @@ ${titles}`;
     this.analyzeViaAPI(content, 'text_analysis')
       .then(result => {
         store.set('isAnalyzing', false);
+        // analyzeViaAPI swallows model errors and returns a fallback
+        // object with _fromAPI:false. We treat that as an error so the
+        // user sees the actual reason (propagated via _error) in the
+        // red error card, not as a successful "記録を保存しました"
+        // result.
+        if (result && result._fromAPI === false) {
+          const errText = result._error || result.findings || '分析に失敗しました';
+          store.set('latestFeedbackError', errText);
+          return;
+        }
         store.set('latestFeedback', result);
         this.saveAIComment(entryId, result);
       })
@@ -10439,7 +10454,7 @@ App.prototype.render_dashboard = function() {
           <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
             <div class="card-body" style="padding:12px 16px">
               <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
-              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">${Components.escapeHtml(err)}</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
             </div>
           </div>`;
