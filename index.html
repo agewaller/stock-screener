@@ -8149,21 +8149,29 @@ ${titles}`;
   // Main entry point: analyze any user input via API
   async analyzeViaAPI(input, type, options = {}) {
     const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
+    const isGuestContext = !store.get('isAuthenticated');
+    const isFastGuestText = isGuestContext && options.fastGuest === true && type === 'text_analysis';
 
     // Select prompt template
-    let promptTemplate = INLINE_PROMPTS[type] || INLINE_PROMPTS.text_analysis;
+    let promptTemplate = isFastGuestText
+      ? (INLINE_PROMPTS.timeline_insight || INLINE_PROMPTS.text_analysis)
+      : (INLINE_PROMPTS[type] || INLINE_PROMPTS.text_analysis);
     let prompt = promptTemplate
       .replace(/\{\{INPUT\}\}/g, (input || '').substring(0, 8000))
       .replace(/\{\{SEED\}\}/g, Math.floor(Date.now() / 86400000).toString());
 
-    // Interpolate standard variables. In guest mode (pre-login), use a
-    // much smaller context window to avoid slow prompt assembly when
-    // localStorage already contains many historical records.
-    const isGuestContext = !store.get('isAuthenticated');
-    prompt = aiEngine.interpolatePrompt(
-      prompt,
-      aiEngine.collectCurrentUserData({ guest: isGuestContext })
-    );
+    // Fast path for pre-login quick comments: keep the prompt tiny and
+    // skip heavy context interpolation so the first response returns in
+    // a few seconds instead of waiting for full-schema generation.
+    if (!isFastGuestText) {
+      // Interpolate standard variables. In guest mode (pre-login), use a
+      // much smaller context window to avoid slow prompt assembly when
+      // localStorage already contains many historical records.
+      prompt = aiEngine.interpolatePrompt(
+        prompt,
+        aiEngine.collectCurrentUserData({ guest: isGuestContext })
+      );
+    }
 
     if (!apiKey) {
       // No API key available — return minimal neutral feedback.
@@ -8189,7 +8197,10 @@ ${titles}`;
       // causing JSON.parse to fail silently — the user then saw
       // garbled text or "generic" responses because only the fallback
       // plain-text branch fired.
-      const modelOptions = { maxTokens: 4096 };
+      const modelOptions = {
+        maxTokens: isFastGuestText ? 220 : 4096,
+        temperature: isFastGuestText ? 0.2 : 0.3
+      };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
       if (type === 'image_analysis') {
         modelOptions.systemPrompt = '画像を詳細に分析し、慢性疾患患者の健康管理に役立つ情報を日本語で提供してください。必ずJSON形式で返してください。';
@@ -8241,6 +8252,16 @@ ${titles}`;
       }
 
       // Plain-text response (no JSON detected even after repair)
+      if (isFastGuestText) {
+        return {
+          summary: 'かんたんアドバイス',
+          findings: responseText.trim(),
+          actions: [],
+          products: [],
+          _fromAPI: true,
+          _fastGuest: true
+        };
+      }
       return {
         summary: '',
         findings: responseText,
@@ -8694,7 +8715,7 @@ ${titles}`;
     if (diseases.length > 0) store.set('selectedDiseases', diseases);
 
     try {
-      const result = await this.analyzeViaAPI(text, 'text_analysis');
+      const result = await this.analyzeViaAPI(text, 'text_analysis', { fastGuest: true });
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
           `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
