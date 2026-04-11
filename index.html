@@ -6730,7 +6730,12 @@ var App = class App {
     if (FirebaseBackend.initialized) {
       // Real Google OAuth via Firebase
       try {
-        await FirebaseBackend.signInWithGoogle();
+        const user = await FirebaseBackend.signInWithGoogle();
+        if (user) {
+          // Offer Google Calendar setup immediately after Google sign-in
+          // so first-time users can complete both in one flow.
+          this.offerGoogleCalendarSetupAfterLogin();
+        }
         // Navigation handled by onAuthStateChanged
       } catch (err) {
         // Fallback to prompt mode
@@ -6788,6 +6793,50 @@ var App = class App {
 
     Components.showToast(`${email} でログインしました（${diseases.length}疾患選択）`, 'success');
     this.navigate('dashboard');
+  }
+
+  // After Google sign-in, guide users to connect/sync Google Calendar
+  // without forcing extra navigation steps.
+  async offerGoogleCalendarSetupAfterLogin() {
+    const savedIcs = localStorage.getItem('ics_calendar_url');
+    if (savedIcs) {
+      const shouldSync = confirm('Googleログインが完了しました。保存済みのGoogleカレンダーを今すぐ読み込みますか？');
+      if (shouldSync) {
+        await this.syncGoogleCalendarOneClick();
+      }
+      return;
+    }
+    const shouldSetup = confirm('Googleログインが完了しました。続けてGoogleカレンダーを登録しますか？');
+    if (shouldSetup) {
+      this.navigate('integrations');
+      setTimeout(() => {
+        const section = document.getElementById('gcal-section');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+      Components.showToast('Googleカレンダー欄に iCal URL を貼り付けると連携できます', 'info');
+    }
+  }
+
+  // One-click sync from saved ICS URL. Used by settings/integrations
+  // so users can refresh calendar without re-entering URL.
+  async syncGoogleCalendarOneClick() {
+    const savedIcs = localStorage.getItem('ics_calendar_url');
+    if (!savedIcs) {
+      Components.showToast('Googleカレンダーが未登録です。先に連携設定でiCal URLを登録してください。', 'error');
+      this.navigate('integrations');
+      return;
+    }
+    Components.showToast('Googleカレンダーを読み込み中...', 'info');
+    try {
+      const events = await CalendarIntegration.importFromIcsUrl(savedIcs);
+      Components.showToast(`Googleカレンダーを更新しました（${events.length}件）`, 'success');
+      // If user is currently on settings page, refresh status immediately.
+      if (this.currentPage === 'settings') {
+        this.navigate('settings');
+      }
+    } catch (err) {
+      Components.showToast('Googleカレンダー読み込みに失敗しました: ' + err.message, 'error');
+    }
   }
 
   async loginWithEmail(e) {
@@ -7440,6 +7489,18 @@ ${titles}`;
         return;
       }
 
+      // Keep research tab behavior consistent with the dashboard:
+      // pre-translate titles into the user's selected language so users
+      // can scan results immediately without leaving the page.
+      const lang = (store.get('userProfile') || {}).language || 'ja';
+      if (lang !== 'en') {
+        try {
+          articles = await this.translateArticlesList(articles, lang);
+        } catch (err) {
+          console.warn('[searchPubMedLive] translation failed, showing originals:', err.message);
+        }
+      }
+
       resultsArea.innerHTML = `
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${articles.length}件の研究論文</div>
         ${articles.map(a => `
@@ -7449,7 +7510,10 @@ ${titles}`;
                 <span style="font-size:10px;color:var(--text-muted)">${a.journal}</span>
                 <span style="font-size:10px;color:var(--text-muted)">${a.date}</span>
               </div>
-              <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${a.title}</h4>
+              <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${Components.escapeHtml(a.titleTranslated || a.title)}</h4>
+              ${(a.titleTranslated && a.titleTranslated !== a.title)
+                ? `<p style="font-size:11px;color:var(--text-muted);font-style:italic;margin-bottom:8px">${Components.escapeHtml(a.title)}</p>`
+                : ''}
               <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${(a.authors || '').substring(0, 80)}${(a.authors || '').length > 80 ? '...' : ''}</p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="font-size:12px">この研究を読む</a>
@@ -11669,6 +11733,25 @@ App.prototype.render_settings = function() {
       <div class="form-group"><label class="form-label">備考</label><textarea class="form-textarea" id="profile-notes" rows="2" placeholder="アレルギー、既往歴、家族歴..." style="padding:8px 10px"></textarea></div>
 
       <button class="btn btn-primary btn-sm" onclick="app.saveProfile()">プロフィールを保存</button>
+    </div>
+  </div>
+
+  <!-- Google Calendar quick actions -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">Googleカレンダー</span></div>
+    <div class="card-body" style="padding:12px 16px">
+      <p style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:10px">
+        ${localStorage.getItem('ics_calendar_url')
+          ? '登録済みのGoogleカレンダーをワンクリックで再読み込みできます。'
+          : 'Googleカレンダー未登録です。連携設定でiCal URLを一度登録すると、ここからワンクリック読み込みが使えます。'}
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="app.syncGoogleCalendarOneClick()">📅 ワンクリックで読み込み</button>
+        <button class="btn btn-outline btn-sm" onclick="app.navigate('integrations')">連携設定を開く</button>
+      </div>
+      ${(store.get('integrationSyncs') || {}).google_calendar
+        ? `<div style="font-size:11px;color:var(--text-muted);margin-top:8px">最終同期: ${new Date((store.get('integrationSyncs') || {}).google_calendar).toLocaleString('ja-JP')}</div>`
+        : ''}
     </div>
   </div>
 
