@@ -7259,21 +7259,32 @@ var App = class App {
     document.getElementById('text-input-content').value = '';
     document.getElementById('text-input-title').value = '';
 
+    // Flip analyzing/feedback flags BEFORE navigating so the
+    // dashboard renders the loading spinner rather than the stale
+    // feedback, and so the scheduleDashRefresh listener that fires
+    // 200ms after store.set('textEntries', ...) above keeps showing
+    // the spinner instead of wiping it.
+    store.set('latestFeedback', null);
+    store.set('latestFeedbackError', null);
+    store.set('isAnalyzing', true);
+
     // Navigate to dashboard and run API analysis
     this.navigate('dashboard');
     Components.showToast('保存しました', 'success');
 
-    // ALL analysis via API prompt
     const inputWithContext = `[${category}] ${title ? title + ': ' : ''}${content}`;
     const promptType = category === 'conversation' ? 'conversation_analysis' : 'text_analysis';
-    setTimeout(() => {
-      this.analyzeViaAPI(inputWithContext, promptType).then(result => {
+    this.analyzeViaAPI(inputWithContext, promptType)
+      .then(result => {
+        store.set('isAnalyzing', false);
         store.set('latestFeedback', result);
         this.saveAIComment(entry.id, result);
-        const el = document.getElementById('dash-ai-feedback');
-        if (el) el.innerHTML = this.renderAnalysisCard(result);
+      })
+      .catch(err => {
+        console.error('[submitTextEntry] analyzeViaAPI failed:', err);
+        store.set('isAnalyzing', false);
+        store.set('latestFeedbackError', err?.message || String(err));
       });
-    }, 500);
   }
 
   // ---- AI Analysis ----
@@ -8892,6 +8903,19 @@ ${titles}`;
       content: content
     };
 
+    input.value = '';
+
+    // Flip analyzing/feedback flags BEFORE appending textEntries so
+    // any downstream re-render (scheduleDashRefresh fires 200ms after
+    // store.set('textEntries', ...)) renders the loading spinner
+    // instead of the old feedback. Without these flags the spinner
+    // we inject below gets wiped by the scheduled refresh and the
+    // user stares at an empty feedback area for the entire API
+    // roundtrip — the symptom users saw as "AI アドバイスが出ない".
+    store.set('latestFeedback', null);
+    store.set('latestFeedbackError', null);
+    store.set('isAnalyzing', true);
+
     const textEntries = store.get('textEntries') || [];
     textEntries.push(entry);
     store.set('textEntries', textEntries);
@@ -8900,48 +8924,23 @@ ${titles}`;
     history.push({ role: 'user', content: content, timestamp: entry.timestamp, type: 'data_entry' });
     store.set('conversationHistory', history);
 
-    input.value = '';
-
-    // Clear the previous feedback so the dashboard re-render doesn't
-    // flash the old result on top of the new request.
-    store.set('latestFeedback', null);
-
-    // Re-render the dashboard FIRST so the new text entry appears in
-    // the feed and the DOM for dash-ai-feedback is fresh. Then inject
-    // the loading spinner into the freshly rendered element. The old
-    // code set the spinner BEFORE navigate, which silently destroyed
-    // it: navigate rebuilds dash-ai-feedback from latestFeedback and
-    // wiped the spinner, leaving the user staring at either nothing
-    // or a stale result while the API call ran in the background.
+    // Re-render the dashboard so the new text entry appears in the
+    // feed and dash-ai-feedback shows the loading spinner via the
+    // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
-    const feedback = document.getElementById('dash-ai-feedback');
-    if (feedback) feedback.innerHTML = Components.loading('入力内容を認識中...');
 
-    // ALL analysis via API prompt - save result with the entry
+    // ALL analysis via API prompt — save result with the entry.
     const entryId = entry.id;
     this.analyzeViaAPI(content, 'text_analysis')
       .then(result => {
+        store.set('isAnalyzing', false);
         store.set('latestFeedback', result);
         this.saveAIComment(entryId, result);
-        const el = document.getElementById('dash-ai-feedback');
-        if (el) el.innerHTML = this.renderAnalysisCard(result);
       })
       .catch(err => {
-        // Previously unhandled: the spinner stayed forever and the
-        // user assumed the app had frozen. Now we surface the error
-        // in the feedback area so at least the loading state ends.
         console.error('[dashQuickSubmit] analyzeViaAPI failed:', err);
-        const el = document.getElementById('dash-ai-feedback');
-        if (el) {
-          el.innerHTML = `
-            <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
-              <div class="card-body" style="padding:12px 16px">
-                <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
-                <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">${Components.escapeHtml(err?.message || String(err))}</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。時間をおいて「再分析」ボタンまたは再度の送信でリトライできます。</div>
-              </div>
-            </div>`;
-        }
+        store.set('isAnalyzing', false);
+        store.set('latestFeedbackError', err?.message || String(err));
       });
   }
 
@@ -10362,9 +10361,29 @@ App.prototype.render_dashboard = function() {
   <!-- 2. AI Instant Feedback (appears after input) -->
   <div id="dash-ai-feedback" style="margin-bottom:16px">
     ${(() => {
+      // Render in priority order: in-flight analysis > explicit error > latest result.
+      // The `isAnalyzing` flag must be respected here, otherwise the
+      // scheduleDashRefresh listener attached to textEntries would
+      // re-render the dashboard 200ms after dashQuickSubmit injected
+      // the spinner and wipe the loading state — the user would
+      // stare at an empty feedback area for the entire 10-30s API
+      // roundtrip with no visual signal that anything was happening.
+      if (store.get('isAnalyzing')) {
+        return Components.loading('入力内容を認識中...');
+      }
+      const err = store.get('latestFeedbackError');
+      if (err) {
+        return `
+          <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
+            <div class="card-body" style="padding:12px 16px">
+              <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">${Components.escapeHtml(err)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
+            </div>
+          </div>`;
+      }
       const fb = store.get('latestFeedback');
       if (!fb) return '';
-      // Use unified renderAnalysisCard
       try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
     })()}
   </div>
