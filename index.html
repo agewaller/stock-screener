@@ -3660,30 +3660,37 @@ var AIEngine = class AIEngine {
   }
 
   // Collect all current user data for analysis
-  collectCurrentUserData() {
+  collectCurrentUserData(options = {}) {
+    const guestMode = options.guest === true;
+    const cap = (arr, limit) => {
+      if (!Array.isArray(arr)) return [];
+      if (!limit || arr.length <= limit) return arr;
+      return arr.slice(-limit);
+    };
+
     return {
       current: {
-        symptoms: store.getDataRange('symptoms', 1),
-        vitals: store.getDataRange('vitals', 1),
-        sleep: store.getDataRange('sleepData', 1),
-        activity: store.getDataRange('activityData', 1),
-        medications: store.get('medications'),
-        supplements: store.get('supplements')
+        symptoms: cap(store.getDataRange('symptoms', 1), guestMode ? 5 : 50),
+        vitals: cap(store.getDataRange('vitals', 1), guestMode ? 5 : 50),
+        sleep: cap(store.getDataRange('sleepData', 1), guestMode ? 5 : 50),
+        activity: cap(store.getDataRange('activityData', 1), guestMode ? 5 : 50),
+        medications: cap(store.get('medications') || [], guestMode ? 10 : 100),
+        supplements: cap(store.get('supplements') || [], guestMode ? 10 : 100)
       },
       weekly: {
-        symptoms: store.getDataRange('symptoms', 7),
-        vitals: store.getDataRange('vitals', 7),
-        sleep: store.getDataRange('sleepData', 7),
-        activity: store.getDataRange('activityData', 7)
+        symptoms: cap(store.getDataRange('symptoms', 7), guestMode ? 7 : 100),
+        vitals: cap(store.getDataRange('vitals', 7), guestMode ? 7 : 100),
+        sleep: cap(store.getDataRange('sleepData', 7), guestMode ? 7 : 100),
+        activity: cap(store.getDataRange('activityData', 7), guestMode ? 7 : 100)
       },
-      bloodTests: store.get('bloodTests'),
-      supplements: store.get('supplements'),
-      symptoms: store.getDataRange('symptoms', 30),
-      hrv: store.getDataRange('wearableData', 7),
-      activity: store.getDataRange('activityData', 7),
-      pemHistory: store.getDataRange('symptoms', 30).filter(s => s.pem_status === true),
-      textEntries: store.get('textEntries') || [],
-      conversationHistory: store.get('conversationHistory') || []
+      bloodTests: cap(store.get('bloodTests') || [], guestMode ? 10 : 100),
+      supplements: cap(store.get('supplements') || [], guestMode ? 20 : 200),
+      symptoms: cap(store.getDataRange('symptoms', 30), guestMode ? 20 : 300),
+      hrv: cap(store.getDataRange('wearableData', 7), guestMode ? 10 : 100),
+      activity: cap(store.getDataRange('activityData', 7), guestMode ? 14 : 200),
+      pemHistory: cap(store.getDataRange('symptoms', 30).filter(s => s.pem_status === true), guestMode ? 10 : 100),
+      textEntries: cap(store.get('textEntries') || [], guestMode ? 5 : 100),
+      conversationHistory: cap(store.get('conversationHistory') || [], guestMode ? 8 : 120)
     };
   }
 };
@@ -8110,8 +8117,14 @@ ${titles}`;
       .replace(/\{\{INPUT\}\}/g, (input || '').substring(0, 8000))
       .replace(/\{\{SEED\}\}/g, Math.floor(Date.now() / 86400000).toString());
 
-    // Interpolate standard variables
-    prompt = aiEngine.interpolatePrompt(prompt, aiEngine.collectCurrentUserData());
+    // Interpolate standard variables. In guest mode (pre-login), use a
+    // much smaller context window to avoid slow prompt assembly when
+    // localStorage already contains many historical records.
+    const isGuestContext = !store.get('isAuthenticated');
+    prompt = aiEngine.interpolatePrompt(
+      prompt,
+      aiEngine.collectCurrentUserData({ guest: isGuestContext })
+    );
 
     if (!apiKey) {
       // No API key available — return minimal neutral feedback.
