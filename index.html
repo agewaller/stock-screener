@@ -4611,6 +4611,47 @@ var CalendarIntegration = {
     return upcoming;
   },
 
+  // Google OAuth access token (calendar.readonly) で直接イベント取得。
+  // ユーザーは「Googleで連携」ボタンで同意するだけ。
+  async importFromGoogleAccessToken(accessToken) {
+    if (!accessToken) {
+      throw new Error('Google認可トークンが見つかりません。再度「Googleで連携」を押してください。');
+    }
+
+    const now = new Date();
+    const timeMin = new Date(now.getTime() - 7 * 86400000).toISOString();
+    const timeMax = new Date(now.getTime() + 90 * 86400000).toISOString();
+    const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '1000',
+      timeMin,
+      timeMax
+    }).toString();
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!res.ok) {
+      let message = `Google Calendar API ${res.status}`;
+      try {
+        const err = await res.json();
+        message = err?.error?.message || message;
+      } catch (_) {}
+      throw new Error(message);
+    }
+
+    const data = await res.json();
+    const events = this.saveEvents(data.items || []);
+    localStorage.setItem('google_calendar_oauth_connected', '1');
+
+    const syncs = store.get('integrationSyncs') || {};
+    syncs.google_calendar = new Date().toISOString();
+    store.set('integrationSyncs', syncs);
+
+    return events;
+  },
+
   // RFC 5545 minimal parser — handles the events Google/Outlook send.
   // Not a full implementation (RRULE, VTIMEZONE etc. are ignored) but
   // sufficient for showing a daily schedule.
@@ -7721,6 +7762,62 @@ ${titles}`;
       if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
       Components.showToast(err.message, 'error');
     }
+  }
+
+  async connectGoogleCalendarWithGoogle() {
+    const status = document.getElementById('gcal-import-status');
+    if (status) status.innerHTML = Components.loading('Googleアカウント認証中...');
+    try {
+      if (!FirebaseBackend?.auth) throw new Error('Googleログインを有効にしてからお試しください');
+      const currentUser = FirebaseBackend.auth.currentUser;
+      if (!currentUser) {
+        throw new Error('先にログインしてからGoogleカレンダー連携を行ってください');
+      }
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+      provider.setCustomParameters({
+        prompt: 'consent',
+        include_granted_scopes: 'true'
+      });
+
+      // IMPORTANT: do not call signInWithPopup here.
+      // This flow is only for obtaining calendar consent while preserving
+      // the currently authenticated Firebase user/session.
+      //
+      // If Google is already linked to the current Firebase user, refresh
+      // consent via re-auth. Otherwise, link Google to the current user
+      // account first (still without swapping the signed-in Firebase user).
+      const hasGoogleProvider = Array.isArray(currentUser.providerData) &&
+        currentUser.providerData.some(p => p.providerId === 'google.com');
+      let result;
+      if (hasGoogleProvider) {
+        result = await currentUser.reauthenticateWithPopup(provider);
+      } else {
+        result = await currentUser.linkWithPopup(provider);
+      }
+      const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+      const accessToken = cred?.accessToken;
+      const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
+
+      if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ Google連携で${events.length}件取り込みました</div>`;
+      Components.showToast(`Googleカレンダーから${events.length}件取り込みました`, 'success');
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        if (status) status.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px">キャンセルされました</div>';
+        return;
+      }
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
+    }
+  }
+
+  disconnectGoogleCalendar() {
+    localStorage.removeItem('ics_calendar_url');
+    localStorage.removeItem('google_calendar_oauth_connected');
+    store.set('calendarEvents', []);
+    app.navigate('integrations');
+    Components.showToast('Googleカレンダー連携を解除しました', 'success');
   }
 
   // Copy the user's per-user Plaud receiving email address so they
@@ -11079,6 +11176,7 @@ App.prototype.render_integrations = function() {
   const syncs = store.get('integrationSyncs') || {};
   const calendarEvents = store.get('calendarEvents') || [];
   const fitbitConnected = Integrations.fitbit.connected;
+  const gcalConnected = !!(localStorage.getItem('ics_calendar_url') || localStorage.getItem('google_calendar_oauth_connected'));
   const now = Date.now();
 
   const countSource = (s) => textEntries.filter(e => e.source === s).length;
@@ -11132,7 +11230,7 @@ App.prototype.render_integrations = function() {
   <!-- Connection status grid — glanceable overview -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px">
     ${statuses.map(s => {
-      const connected = s.count > 0 || (s.key === 'fitbit' && fitbitConnected) || (s.key === 'google_calendar' && localStorage.getItem('ics_calendar_url'));
+      const connected = s.count > 0 || (s.key === 'fitbit' && fitbitConnected) || (s.key === 'google_calendar' && gcalConnected);
       // Mark which sources are in the auto-sync loop
       const autoSynced = (s.key === 'fitbit' && fitbitConnected) || (s.key === 'google_calendar' && !!localStorage.getItem('ics_calendar_url'));
       return `
@@ -11333,30 +11431,41 @@ App.prototype.render_integrations = function() {
     <div class="card-header">
       <span class="card-title">📅 Googleカレンダー</span>
       <span class="tag ${calendarEvents.length > 0 ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
-        ${calendarEvents.length > 0 ? '✓ ' + calendarEvents.length + '件同期済' : '未接続'}
+        ${gcalConnected ? '✓ 接続済み' : '未接続'}
       </span>
     </div>
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
         <strong>取り込めるデータ:</strong> 予定・会議・通院。ダッシュボードで今日のスケジュールを自動表示し、活動負荷を可視化します。
       </p>
-      ${localStorage.getItem('ics_calendar_url') ? `
+      ${gcalConnected ? `
         <div style="padding:12px;background:#eff6ff;border:1px solid #93c5fd;border-radius:var(--radius-sm);margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
             <div style="font-size:13px;color:#1e40af;font-weight:700">✓ カレンダーに接続されています</div>
-            <span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>
+            ${localStorage.getItem('ics_calendar_url')
+              ? '<span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🔄 自動同期中</span>'
+              : '<span style="font-size:10px;background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">🪪 Google許可済み</span>'}
           </div>
           <div style="font-size:11px;color:#1e40af;margin-bottom:10px;line-height:1.6">
-            アプリを開いている間、30分ごとに自動でイベントが更新されます。Googleカレンダーで予定を追加・変更すると、次の同期時に自動反映されます。
+            ${localStorage.getItem('ics_calendar_url')
+              ? 'アプリを開いている間、30分ごとに自動でイベントが更新されます。Googleカレンダーで予定を追加・変更すると、次の同期時に自動反映されます。'
+              : 'Googleアカウントで読み取り許可済みです。予定を更新したら「今すぐ同期」を押すだけで最新イベントを再取り込みできます。'}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-outline btn-sm" onclick="Integrations.autoSync.runNow()" style="font-size:11px">🔄 今すぐ同期</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px" onclick="localStorage.removeItem('ics_calendar_url');app.navigate('integrations')">接続解除</button>
+            <button class="btn btn-outline btn-sm" onclick="${localStorage.getItem('ics_calendar_url') ? 'Integrations.autoSync.runNow()' : 'app.connectGoogleCalendarWithGoogle()'}" style="font-size:11px">🔄 今すぐ同期</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);font-size:11px" onclick="app.disconnectGoogleCalendar()">接続解除</button>
           </div>
         </div>
       ` : ''}
+      <div style="background:#eef2ff;padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px;border:1px solid #c7d2fe">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">✅ かんたん連携（推奨）</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.9;margin-bottom:10px">
+          「Googleで連携」を押して、Googleの画面で「カレンダーの閲覧を許可」をOKするだけで取り込みできます。
+        </div>
+        <button class="btn btn-primary" onclick="app.connectGoogleCalendarWithGoogle()">🔐 Googleで連携して取り込む</button>
+      </div>
       <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（最もシンプル）</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（従来方式）</div>
         <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
           <li>Googleカレンダーを開く → 右上の⚙️ → 「設定」</li>
           <li>左側メニューで同期したいカレンダーを選択</li>
@@ -11367,7 +11476,7 @@ App.prototype.render_integrations = function() {
         <div class="form-group">
           <input type="text" class="form-input" id="gcal-ics-url" value="${Components.escapeHtml(localStorage.getItem('ics_calendar_url') || '')}" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" style="padding:8px 10px;font-size:11px">
         </div>
-        <button class="btn btn-primary" onclick="app.connectGoogleCalendar()">📅 ${localStorage.getItem('ics_calendar_url') ? 'URLを更新' : 'カレンダーに接続'}</button>
+        <button class="btn btn-outline" onclick="app.connectGoogleCalendar()">📅 ${localStorage.getItem('ics_calendar_url') ? 'URLを更新' : 'URLで接続'}</button>
         <div id="gcal-import-status" style="margin-top:10px"></div>
       </div>
       <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f">
