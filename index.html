@@ -7729,6 +7729,10 @@ ${titles}`;
     if (status) status.innerHTML = Components.loading('Googleアカウント認証中...');
     try {
       if (!FirebaseBackend?.auth) throw new Error('Googleログインを有効にしてからお試しください');
+      const currentUser = FirebaseBackend.auth.currentUser;
+      if (!currentUser) {
+        throw new Error('先にログインしてからGoogleカレンダー連携を行ってください');
+      }
 
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
@@ -7737,7 +7741,10 @@ ${titles}`;
         include_granted_scopes: 'true'
       });
 
-      const result = await FirebaseBackend.auth.signInWithPopup(provider);
+      // IMPORTANT: do not call signInWithPopup here.
+      // This flow is only for obtaining calendar consent while preserving
+      // the currently authenticated Firebase user/session.
+      const result = await currentUser.reauthenticateWithPopup(provider);
       const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
       const accessToken = cred?.accessToken;
       const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
