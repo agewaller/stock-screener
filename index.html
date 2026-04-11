@@ -5861,10 +5861,14 @@ var FirebaseBackend = {
         }
       });
 
-      // Handle redirect result (for mobile Google sign-in)
+      // Handle redirect result — only used when a popup path fell through
+      // to signInWithRedirect (very rare now that we use popups
+      // everywhere). Drive the post-login flow directly so the redirect
+      // return still navigates into the dashboard.
       this.auth.getRedirectResult().then(result => {
         if (result?.user) {
           Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+          this.handleSignedInUser(result.user);
         }
       }).catch(err => {
         console.warn('Redirect result error:', err.message);
@@ -5873,41 +5877,7 @@ var FirebaseBackend = {
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => {
         if (user) {
-          this.userId = user.uid;
-          const userData = {
-            uid: user.uid,
-            displayName: user.displayName,
-            email: user.email,
-            photoURL: user.photoURL
-          };
-          store.update({ user: userData, isAuthenticated: true });
-
-          // Update sidebar user info
-          const avatarEl = document.getElementById('user-avatar');
-          const nameEl = document.getElementById('user-name');
-          if (avatarEl) {
-            if (user.photoURL) {
-              avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
-            } else {
-              avatarEl.textContent = (user.displayName || user.email || '?')[0];
-            }
-          }
-          if (nameEl) nameEl.textContent = user.displayName || user.email;
-
-          // Load user data from Firestore
-          this.loadAllData();
-
-          // Subscribe to the Plaud inbox so emails dispatched by the
-          // plaud-inbox Cloudflare Worker auto-import within seconds
-          // of arriving in Firestore.
-          this.subscribeToInbox();
-
-          // Navigate to dashboard on successful login. Users without a
-          // selected disease can pick one later from settings; the
-          // dashboard handles the empty-disease state.
-          if (app.currentPage === 'login') {
-            app.navigate('dashboard');
-          }
+          this.handleSignedInUser(user);
         } else {
           this.userId = null;
           // Only force login if not already authenticated via localStorage
@@ -5926,34 +5896,93 @@ var FirebaseBackend = {
     }
   },
 
+  // Unified "a user just signed in" flow. Called from both
+  // onAuthStateChanged and signInWithGoogle/Email so that login works
+  // even when the popup's postMessage handshake to the main page is
+  // delayed by Cross-Origin-Opener-Policy (Chrome 2024+) or ITP
+  // (Safari). Idempotent — calling it twice for the same user is
+  // harmless: store.update is idempotent, and loadAllData short-
+  // circuits via its re-entry guard.
+  handleSignedInUser(user) {
+    if (!user) return;
+    this.userId = user.uid;
+    const userData = {
+      uid: user.uid,
+      displayName: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL
+    };
+    store.update({ user: userData, isAuthenticated: true });
+
+    // Update sidebar user info
+    const avatarEl = document.getElementById('user-avatar');
+    const nameEl = document.getElementById('user-name');
+    if (avatarEl) {
+      if (user.photoURL) {
+        avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+      } else {
+        avatarEl.textContent = (user.displayName || user.email || '?')[0];
+      }
+    }
+    if (nameEl) nameEl.textContent = user.displayName || user.email;
+
+    // Load user data from Firestore
+    this.loadAllData();
+
+    // Subscribe to the Plaud inbox so emails dispatched by the
+    // plaud-inbox Cloudflare Worker auto-import within seconds of
+    // arriving in Firestore.
+    this.subscribeToInbox();
+
+    // Always navigate to dashboard after a real sign-in. The previous
+    // `if (currentPage === 'login')` guard missed the case where
+    // signInWithPopup drives this flow directly without ever flipping
+    // currentPage — the main cause of "popup closed but user stayed on
+    // login page" reported by users.
+    app.navigate('dashboard');
+  },
+
   // ---- Authentication ----
   async signInWithGoogle() {
-    // Mobile browsers and in-app browsers often block popup windows.
-    // Use redirect flow on mobile to avoid immediate popup failure.
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // Use signInWithPopup on ALL devices, desktop and mobile.
+    //
+    // Why NOT signInWithRedirect on mobile: Firebase's redirect flow is
+    // broken on iOS Safari and other ITP-enforcing browsers whenever
+    // the hosting domain (cares.advisers.jp) differs from the Firebase
+    // authDomain (care-14c31.firebaseapp.com). On redirect return,
+    // Firebase cannot read the auth state that was set on the third-
+    // party authDomain, so login silently fails and the user ends up
+    // back on the login screen. signInWithPopup avoids this by
+    // communicating via postMessage, which ITP does not block. This
+    // is Firebase's recommended path (SDK 10+) when not hosting on
+    // the authDomain.
+    //
+    // We ALSO can't rely solely on onAuthStateChanged after the popup
+    // closes: Chrome's Cross-Origin-Opener-Policy can delay or drop
+    // the popup→opener postMessage, leaving the auth state handler
+    // un-notified even though the popup itself completed. Driving
+    // handleSignedInUser directly from the popup return value makes
+    // navigation deterministic. A later onAuthStateChanged fire is
+    // harmless because handleSignedInUser is idempotent.
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      if (isMobile) {
-        await this.auth.signInWithRedirect(provider);
-        // Redirect flow continues after page transition.
-        return null;
-      }
-
       const result = await this.auth.signInWithPopup(provider);
       Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+      this.handleSignedInUser(result.user);
       return result.user;
     } catch (err) {
       // User closed the popup — silent, no toast
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         return null;
       }
-      // If popup is blocked, retry with redirect flow.
+      // Popup blocked by the browser (e.g. in-app browsers / strict
+      // privacy settings). Don't fall back to signInWithRedirect — it
+      // silently fails on the ITP path described above. Guide the
+      // user to email sign-in instead.
       if (err.code === 'auth/popup-blocked') {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        await this.auth.signInWithRedirect(provider);
+        Components.showToast('ポップアップがブロックされました。メールアドレスでの登録をお試しください。', 'error');
         return null;
       }
       if (err.code === 'auth/unauthorized-domain') {
@@ -5972,6 +6001,7 @@ var FirebaseBackend = {
       try {
         const result = await this.auth.signInWithEmailAndPassword(email, password);
         Components.showToast('おかえりなさい。ログインしました', 'success');
+        this.handleSignedInUser(result.user);
         return result.user;
       } catch (err) {
         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
@@ -5979,6 +6009,7 @@ var FirebaseBackend = {
           try {
             const result = await this.auth.createUserWithEmailAndPassword(email, password);
             Components.showToast('アカウントを作成しました。ようこそ！', 'success');
+            this.handleSignedInUser(result.user);
             return result.user;
           } catch (createErr) {
             if (createErr.code === 'auth/email-already-in-use') {
@@ -6179,6 +6210,12 @@ var FirebaseBackend = {
   // ---- Batch Load All User Data ----
   async loadAllData() {
     if (!this.userId) return;
+    // Re-entry guard: handleSignedInUser may be called both from the
+    // popup success path (signInWithGoogle) and from onAuthStateChanged
+    // almost simultaneously. Without this guard, the second call would
+    // trigger a second round of Firestore reads while the first is
+    // still in flight.
+    if (this._loading) return;
 
     // Guard against autosync listeners re-writing loaded data back to
     // Firestore. Without this, every store.set() below fires listeners in
