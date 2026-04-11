@@ -7850,9 +7850,44 @@ ${titles}`;
         if (status) status.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:10px">キャンセルされました</div>';
         return;
       }
+      if (this.isGoogleCalendarUnverifiedAppError(err)) {
+        this.showGoogleCalendarIcsFallback(status);
+        return;
+      }
       if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
       Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
     }
+  }
+
+  isGoogleCalendarUnverifiedAppError(err) {
+    const code = String(err?.code || '').toLowerCase();
+    const message = String(err?.message || '').toLowerCase();
+    return code.includes('access_blocked') ||
+      code.includes('unauthorized-domain') ||
+      message.includes('app is blocked') ||
+      message.includes('has not completed the google verification process') ||
+      message.includes('this app is not verified') ||
+      message.includes('このアプリは google で確認されていません');
+  }
+
+  showGoogleCalendarIcsFallback(statusEl) {
+    const fallbackHtml = `
+      <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:10px;padding:12px;color:#1e3a8a;font-size:12px;line-height:1.7">
+        <div style="font-weight:700;margin-bottom:6px">Google OAuth が未検証のため、URL連携で取り込みます</div>
+        <ol style="margin:0 0 0 18px;padding:0">
+          <li>Googleカレンダー設定 → 対象カレンダー → 「カレンダーの統合」</li>
+          <li>「iCal 形式の秘密アドレス」をコピー</li>
+          <li>下の入力欄に貼り付けて「URLで接続」を押す</li>
+        </ol>
+      </div>
+    `;
+    if (statusEl) statusEl.innerHTML = fallbackHtml;
+    const input = document.getElementById('gcal-ics-url');
+    if (input) {
+      input.focus();
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    Components.showToast('Google未検証アプリのため、ICS URL連携をご利用ください', 'warning');
   }
 
   disconnectGoogleCalendar() {
@@ -11532,6 +11567,9 @@ App.prototype.render_integrations = function() {
           「Googleで連携」を押して、Googleの画面で「カレンダーの閲覧を許可」をOKするだけで取り込みできます。
         </div>
         <button class="btn btn-primary" onclick="app.connectGoogleCalendarWithGoogle()">🔐 Googleで連携して取り込む</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
+          ※ Google側でOAuth未検証の場合は、下の「URLで接続」に自動で切り替えてご案内します。
+        </div>
       </div>
       <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">📋 iCal URL を貼り付け（従来方式）</div>
