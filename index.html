@@ -7598,7 +7598,13 @@ var App = class App {
   // ---- PubMed Live Search ----
   // Generate clinic/workshop/event recommendations via API
   async loadActionRecommendations() {
-    const container = document.getElementById('action-live-recs');
+    // The container has different IDs on the dashboard vs the actions
+    // page. Previously only 'action-live-recs' (actions page) was
+    // checked, so the dashboard's 'dash-actions-live' div always
+    // stayed empty — the user saw "クリニック・イベント" with nothing
+    // inside.
+    const container = document.getElementById('action-live-recs')
+      || document.getElementById('dash-actions-live');
     if (!container) return;
 
     // Check cache (refresh every 12 hours)
@@ -7608,12 +7614,10 @@ var App = class App {
       return;
     }
 
-    const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
-    if (!apiKey) {
-      container.innerHTML = this.generateLocalActionRecs();
-      return;
-    }
-
+    // Don't short-circuit on !apiKey — callModel's shared-proxy
+    // fallback may still serve the request via the Worker's
+    // server-side ANTHROPIC_API_KEY secret (same pattern as
+    // analyzeViaAPI).
     container.innerHTML = Components.loading('あなたに合った施設・イベントを検索中...');
 
     const diseases = store.get('selectedDiseases') || [];
@@ -7623,8 +7627,11 @@ var App = class App {
     const dayOfWeek = ['日','月','火','水','木','金','土'][today.getDay()];
     const randomSeed = Math.floor(today.getTime() / 86400000); // Changes daily
 
-    const prompt = `あなたは慢性疾患患者の生活支援の専門家です。
-以下のユーザー情報に基づいて、今日（${today.toLocaleDateString('ja-JP')}・${dayOfWeek}曜日）おすすめのアクションを提案してください。
+    const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
+    const prompt = `${langDirective}
+
+あなたは慢性疾患患者の生活支援の専門家です。
+以下のユーザー情報に基づいて、今日（${today.toLocaleDateString(profile.language === 'en' ? 'en-US' : 'ja-JP')}）おすすめのアクションを提案してください。必ずユーザーの気持ちに寄り添い、励ましの言葉から始め、毎回新しいアプローチを1つ以上含めてください。
 
 【重要】毎回異なる視点・新しい選択肢を提示すること。前回と同じ提案は避けてください。
 ランダムシード: ${randomSeed}（この数値に基づいて提案内容を変化させてください）
