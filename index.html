@@ -6905,11 +6905,31 @@ var App = class App {
       // Plaud 禅トラック charts (read latest analysis from store and
       // initialize the four panels: focus radar, signals, calorie,
       // net value trend). Skip silently if no analyses yet.
+      //
+      // 400ms delay: must be LONGER than scheduleDashRefresh's 200ms
+      // debounce. At 150ms (old value) the charts were drawn on
+      // canvases that were then destroyed 50ms later by the debounced
+      // re-render — the user saw charts flash and disappear, or never
+      // appear at all. 400ms guarantees the last scheduleDashRefresh
+      // has already settled.
       setTimeout(() => {
         const analyses = store.get('plaudAnalyses') || [];
         if (analyses.length === 0) return;
         const latest = analyses[analyses.length - 1];
         const j = latest.json || {};
+
+        // If the model failed to produce structured JSON, the chart
+        // data is all-zero and appears as "empty" canvases. Show the
+        // full-text report as a fallback in that case.
+        const hasStructuredData = j.conscious_focus || j.signals || j.calories;
+        if (!hasStructuredData) {
+          // Skip chart init — the widget HTML already shows the
+          // fullText report in a <details> element. Make it visible.
+          const details = document.querySelector('#plaud-widget-card details');
+          if (details) details.open = true;
+          return;
+        }
+
         const cf = j.conscious_focus || {};
         const dims = cf.dims_pct || {};
         const signals = j.signals || {};
@@ -6921,7 +6941,7 @@ var App = class App {
         });
         try { this.initPlaudCharts(dims, signals, cal, netHistory); }
         catch (e) { console.warn('plaud charts:', e); }
-      }, 150);
+      }, 400);
       setTimeout(() => this.loadDashResearch(), 300);
       setTimeout(() => this.loadActionRecommendations(), 600);
     }
@@ -9928,7 +9948,7 @@ ${titles}`;
     });
 
     return `
-    <div class="card" style="margin-bottom:16px;border:1.5px solid #8b5cf6">
+    <div class="card" id="plaud-widget-card" style="margin-bottom:16px;border:1.5px solid #8b5cf6">
       <div class="card-header" style="background:linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);display:flex;justify-content:space-between;align-items:center">
         <span class="card-title" style="color:#6b21a8">🎙️ 禅トラック（${latest.dateLabel}）</span>
         <span class="tag" style="font-size:10px;background:#8b5cf6;color:#fff">${analyses.length}件の分析</span>
