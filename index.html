@@ -6835,7 +6835,12 @@ var App = class App {
         }
       }, 200);
     };
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'plaudAnalyses']
+    // 'latestFeedbackError' was missing from this list, so when an
+    // API call failed and set the error, no re-render fired — the
+    // dashboard kept showing the loading spinner forever. The user
+    // saw "コメントが出なくなりました". Same for 'isAnalyzing': when
+    // it flips to false we need the dashboard to pick it up.
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
     // Start the auto-sync scheduler so connected integrations
