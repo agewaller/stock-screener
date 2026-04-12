@@ -11,7 +11,9 @@ service cloud.firestore {
       }
     }
 
-    // Admin-only: global settings
+    // Admin-only: global settings (API keys, prompts, model selection).
+    // Read: all authenticated users (they need API keys to call AI).
+    // Write: admin only.
     match /admin/{docId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
@@ -20,28 +22,25 @@ service cloud.firestore {
     // Plaud / data inbox dispatched by the plaud-inbox Cloudflare Worker.
     // Path: inbox/{hash}/{kind}/{messageId}
     //
-    // - Reads: any authenticated user can read messages addressed to
-    //   their own hash (the hash is derived from their email/uid in
-    //   the worker and matched in the frontend listener). Cross-user
-    //   reads are not blocked here because we use a hash-based
-    //   indirection rather than uid-based; in practice the hash space
-    //   is short enough that we don't expose it as a security boundary,
-    //   only as a routing key.
+    // The hash is an 8-char base36 digest of the user's email/uid,
+    // computed identically in both the Worker (local-part extraction)
+    // and the frontend (Integrations.simpleHash / FirebaseBackend.
+    // _userHash). It serves as a privacy-scoped routing key.
     //
-    // - Writes: the Cloudflare Worker hits the Firestore REST API with
-    //   the public Firebase Web API key (NOT a service-account admin
-    //   token), so from the rules' perspective `request.auth == null`.
-    //   The previous rule had `allow create: if false` under the wrong
-    //   assumption that the REST API bypasses rules with project-owner
-    //   perms — it doesn't, so every inbound Plaud email was silently
-    //   rejected and never reached the frontend. We now allow create
-    //   with shape validation: the doc must start out processed=false,
-    //   carry a plaud/data kind, have a non-empty text body under
-    //   200KB, and the hash field in the payload must match the path
-    //   hash (so an attacker can't write to an arbitrary user inbox
-    //   via a mismatched hash).
+    // SECURITY MODEL:
+    //   - Read: authenticated users only, scoped to docs where the
+    //     stored hash field matches the path hash. This prevents
+    //     user A from reading user B's inbox by guessing B's hash.
+    //   - Create: unauthenticated (Worker uses REST API key, not a
+    //     user token). Shape-validated: processed=false, hash matches
+    //     path, text is non-empty and under 200KB.
+    //   - Update: authenticated users can only mark docs processed=true
+    //     in their own hash path. The hash field in the existing doc
+    //     must match the path hash.
+    //   - Delete: denied.
     match /inbox/{hash}/{kind}/{messageId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null
+                  && resource.data.hash == hash;
       allow create: if request.resource.data.processed == false
                     && (kind == 'plaud' || kind == 'data')
                     && request.resource.data.hash is string
@@ -50,7 +49,8 @@ service cloud.firestore {
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 200000;
       allow update: if request.auth != null
-                    && request.resource.data.processed == true;
+                    && request.resource.data.processed == true
+                    && resource.data.hash == hash;
       allow delete: if false;
     }
   }

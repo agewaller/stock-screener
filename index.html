@@ -6252,7 +6252,12 @@ var FirebaseBackend = {
         this.handleSignedInUser(result.user);
         return result.user;
       } catch (err) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        // Firebase 10+ merged auth/wrong-password into auth/invalid-credential.
+        // Only treat auth/user-not-found as "new user → create account".
+        // auth/invalid-credential means the user EXISTS but the password is
+        // wrong — routing it to createUser would confusingly attempt to
+        // re-register an existing email.
+        if (err.code === 'auth/user-not-found') {
           // New user - create account
           try {
             const result = await this.auth.createUserWithEmailAndPassword(email, password);
@@ -6272,7 +6277,7 @@ var FirebaseBackend = {
             throw createErr;
           }
         }
-        if (err.code === 'auth/wrong-password') {
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           Components.showToast('パスワードが違います。もう一度お試しください', 'error');
         } else if (err.code === 'auth/too-many-requests') {
           Components.showToast('しばらく時間をおいてからお試しください', 'error');
@@ -9107,7 +9112,7 @@ ${titles}`;
     if (stringActions.length > 0) {
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px">推奨アクション</div>
-        ${stringActions.map(a => `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--accent)">→</span> ${a}</div>`).join('')}
+        ${stringActions.map(a => `<div style="font-size:12px;margin-bottom:3px"><span style="color:var(--accent)">→</span> ${Components.escapeHtml(a)}</div>`).join('')}
       </div>`;
     }
 
@@ -9287,21 +9292,40 @@ ${titles}`;
     try {
       const result = await this.analyzeViaAPI(text, 'text_analysis', { fastGuest: true });
       if (resultEl) {
-        resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
-          </div>`;
+        // analyzeViaAPI returns _fromAPI:false when all providers fail.
+        // For guests this typically means the Cloudflare Worker's
+        // ANTHROPIC_API_KEY secret is not set, or network failed.
+        // Show the actual error so admins can diagnose, and guide
+        // regular guests to try registering (which loads the admin's
+        // global API key from Firestore).
+        if (result && result._fromAPI === false) {
+          const isAdmin = this.isAdmin();
+          const errDetail = result._error || result.findings || '';
+          resultEl.innerHTML = `
+            <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:12px">
+              <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
+              <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
+                ${isAdmin ? Components.escapeHtml(errDetail) : 'ただいまサーバーが混み合っています。少し時間をおいて再度お試しいただくか、登録してご利用ください。'}
+              </div>
+              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
+            </div>`;
+        } else {
+          resultEl.innerHTML = this.renderAnalysisCard(result) +
+            `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+              <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
+              <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
+              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+            </div>`;
+        }
       }
     } catch (err) {
       console.warn('[guestAnalyze] Failed:', err?.message || err);
       if (resultEl) {
-        resultEl.innerHTML = this.renderAnalysisCard({
-          summary: '回答を生成できませんでした',
-          findings: '通信エラーが発生しました。時間をおいて再度お試しください。',
-          actions: []
-        });
+        resultEl.innerHTML = `
+          <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
+            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">回答を生成できませんでした</div>
+            <div style="font-size:12px;color:#7f1d1d;line-height:1.7">${Components.escapeHtml(err?.message || '通信エラーが発生しました。時間をおいて再度お試しください。')}</div>
+          </div>`;
       }
     } finally {
       // Restore selectedDiseases even when analysis fails.
@@ -9498,34 +9522,35 @@ ${titles}`;
         store.set('conversationHistory', history);
 
         Components.showToast(`${file.name} を認識中...`, 'info');
-        this.navigate('dashboard');
 
-        // Immediately show the progress gauge in the feedback area so the
-        // user sees that something is happening while the API call runs.
-        const feedbackEl = document.getElementById('dash-ai-feedback');
-        if (feedbackEl) {
-          feedbackEl.innerHTML = Components.loading(
-            isImage ? '写真を認識中...' : 'ファイルを認識中...'
-          );
-        }
+        // Use the same isAnalyzing-based loading pattern as
+        // dashQuickSubmit so the spinner survives scheduleDashRefresh.
+        store.set('latestFeedback', null);
+        store.set('latestFeedbackError', null);
+        store.set('isAnalyzing', true);
+        this.navigate('dashboard');
 
         // ALL analysis via API prompt
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
-        setTimeout(() => {
-          this.analyzeViaAPI(
-            `[ファイル: ${file.name}] ${category}`,
-            isImage ? 'image_analysis' : 'text_analysis',
-            imgOpts
-          ).then(result => {
-            store.set('latestFeedback', result);
-            // Save AI comment linked to file entry
-            const fileEntries = store.get('textEntries') || [];
-            const lastFileEntry = fileEntries.filter(e => e.type === 'file_upload').pop();
-            if (lastFileEntry) this.saveAIComment(lastFileEntry.id, result);
-            const el = document.getElementById('dash-ai-feedback');
-            if (el) el.innerHTML = this.renderAnalysisCard(result);
-          });
-        }, 500);
+        this.analyzeViaAPI(
+          `[ファイル: ${file.name}] ${category}`,
+          isImage ? 'image_analysis' : 'text_analysis',
+          imgOpts
+        ).then(result => {
+          store.set('isAnalyzing', false);
+          if (result && result._fromAPI === false) {
+            store.set('latestFeedbackError', result._error || result.findings || '分析に失敗しました');
+            return;
+          }
+          store.set('latestFeedback', result);
+          const fileEntries = store.get('textEntries') || [];
+          const lastFileEntry = fileEntries.filter(e => e.type === 'file_upload').pop();
+          if (lastFileEntry) this.saveAIComment(lastFileEntry.id, result);
+        }).catch(err => {
+          console.error('[dashQuickFile] analyzeViaAPI failed:', err);
+          store.set('isAnalyzing', false);
+          store.set('latestFeedbackError', err?.message || String(err));
+        });
       };
       reader.readAsDataURL(file);
     });
@@ -11001,7 +11026,7 @@ App.prototype.render_dashboard = function() {
             return `<div style="margin-top:8px;padding:10px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);border-left:3px solid var(--accent)">
               <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">分析結果（${new Date(comment.timestamp).toLocaleString('ja-JP')}）</div>
               <div style="font-size:11px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(display)}</div>
-              ${actions.length ? '<div style="margin-top:6px;font-size:11px">' + actions.map(a => '<div style="color:var(--accent)">→ ' + a + '</div>').join('') + '</div>' : ''}
+              ${actions.length ? '<div style="margin-top:6px;font-size:11px">' + actions.map(a => '<div style="color:var(--accent)">→ ' + Components.escapeHtml(a) + '</div>').join('') + '</div>' : ''}
             </div>`;
           })()}
         </div>
@@ -11908,7 +11933,7 @@ App.prototype.render_timeline = function() {
     // Generic data entry
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
-      .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${k}:</strong> ${v}</span>`)
+      .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
     return `
       <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
@@ -12670,8 +12695,8 @@ App.prototype.render_settings = function() {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
         <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${user.displayName?.[0] || '?'}</div>
         <div>
-          <div style="font-size:14px;font-weight:600">${user.displayName || 'ゲスト'}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${user.email || ''}</div>
+          <div style="font-size:14px;font-weight:600">${Components.escapeHtml(user.displayName || 'ゲスト')}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${Components.escapeHtml(user.email || '')}</div>
         </div>
       </div>
 
