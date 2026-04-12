@@ -4536,6 +4536,32 @@ var Components = {
         <p style="font-size:13px;color:var(--text-secondary);max-width:400px;margin:0 auto">${description}</p>
       </div>
     `;
+  },
+
+  // Photo upload UI rendered inside the modal when the user taps the
+  // 📸 写真 card in the structured data entry grid. Previously this
+  // method was missing entirely (Components.photoUpload was called but
+  // never defined), so clicking the card threw TypeError.
+  photoUpload(category) {
+    return `
+      <div style="padding:8px 0">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.7">
+          食事・検査結果・処方箋・お薬・サプリ・デバイス画面・皮膚の状態など、健康に関する写真を撮影またはアップロードしてください。内容を自動認識して分析します。
+        </p>
+        <div class="upload-area" onclick="document.getElementById('modal-photo-input').click()"
+          style="padding:28px;border:2px dashed var(--border);border-radius:var(--radius-sm);text-align:center;cursor:pointer"
+          ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="event.preventDefault();app.handleModalPhotoUpload(event.dataTransfer.files)">
+          <div style="font-size:36px;margin-bottom:8px">📸</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:4px">タップして写真を選択</div>
+          <div style="font-size:11px;color:var(--text-muted)">カメラ撮影 / フォトライブラリ / ドラッグ&ドロップ</div>
+          <input type="file" id="modal-photo-input" hidden multiple accept="image/*"
+            onchange="app.handleModalPhotoUpload(this.files)">
+        </div>
+        <div id="modal-photo-result" style="margin-top:14px"></div>
+      </div>
+    `;
   }
 };
 
@@ -7339,6 +7365,74 @@ var App = class App {
 
   closeModal() {
     document.getElementById('modal-overlay')?.classList.remove('active');
+  }
+
+  // Handle photo selection from the 📸 写真 modal. Reads each file
+  // as a data URL, saves it to textEntries for timeline display, and
+  // fires the image_analysis prompt via analyzeViaAPI so the user gets
+  // a deep analysis (medication recognition, food calorie estimation,
+  // lab result reading, etc.) right inside the modal.
+  handleModalPhotoUpload(files) {
+    if (!files || !files.length) return;
+    const resultEl = document.getElementById('modal-photo-result');
+
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        Components.showToast('画像ファイルのみ対応しています', 'error');
+        return;
+      }
+
+      if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
+
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        // Save photo reference to textEntries for timeline
+        const entry = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          timestamp: new Date().toISOString(),
+          category: '写真',
+          type: 'file_upload',
+          title: `📸 ${file.name}`,
+          content: `写真をアップロードしました（${(file.size / 1024).toFixed(0)}KB）`,
+          dataUrl: ev.target.result.substring(0, 500),
+          source: 'photo_modal'
+        };
+        const textEntries = store.get('textEntries') || [];
+        textEntries.push(entry);
+        store.set('textEntries', textEntries);
+
+        // Also save to photos collection
+        store.addHealthData('photos', {
+          filename: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: ev.target.result.substring(0, 500),
+          category: '写真'
+        });
+
+        // Run AI image analysis
+        try {
+          const result = await this.analyzeViaAPI(
+            `[写真: ${file.name}]`,
+            'image_analysis',
+            { imageBase64: ev.target.result }
+          );
+          if (resultEl) {
+            resultEl.innerHTML = this.renderAnalysisCard(result);
+          }
+          // Save AI comment linked to the entry
+          this.saveAIComment(entry.id, result);
+          store.set('latestFeedback', result);
+          Components.showToast('写真の分析が完了しました', 'success');
+        } catch (err) {
+          console.error('[handleModalPhotoUpload]', err);
+          if (resultEl) {
+            resultEl.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:10px">分析エラー: ${Components.escapeHtml(err?.message || String(err))}</div>`;
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   submitDataForm(e, category) {
