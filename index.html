@@ -7227,6 +7227,23 @@ var App = class App {
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.style.display = 'none';
 
+    // In-app browsers (LINE, Instagram, Facebook, Twitter WebViews)
+    // block Google OAuth entirely. Google returns "アクセスをブロック:
+    // care-14c31.firebaseapp.com のリクエストは Google のポリシーに
+    // 準拠していません". Detect and guide the user BEFORE the popup
+    // attempt — otherwise they see a cryptic Google error page.
+    const ua = navigator.userAgent || '';
+    const isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) ||
+      /Instagram/i.test(ua) || /Twitter/i.test(ua) ||
+      /MicroMessenger/i.test(ua) || /wv\)/i.test(ua);
+    if (isInApp) {
+      this.showLoginError(
+        'アプリ内ブラウザでは Google ログインが使えません。' +
+        'Safari または Chrome でこのページを開き直すか、下のメールアドレスで登録してください。'
+      );
+      return;
+    }
+
     if (!FirebaseBackend.initialized) {
       this.showLoginError('Firebase が初期化できていません。ページを再読み込みしてお試しください。');
       return;
@@ -10637,6 +10654,34 @@ App.prototype.render_login = function() {
           <div style="flex:1;height:1px;background:#e2e8f0"></div>
         </div>
 
+        <!-- In-app browser warning (LINE / Instagram / Twitter / Facebook) -->
+        ${(() => {
+          const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+          const isInApp = /Line\//i.test(ua) || /FBAN|FBAV/i.test(ua) ||
+            /Instagram/i.test(ua) || /Twitter/i.test(ua) ||
+            /MicroMessenger/i.test(ua) || /wv\)/i.test(ua);
+          if (!isInApp) return '';
+          return `
+            <div style="margin-bottom:14px;padding:14px 16px;background:#fff7ed;border:1.5px solid #f97316;border-radius:14px">
+              <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:6px">⚠ アプリ内ブラウザでは Google ログインが使えません</div>
+              <div style="font-size:12px;color:#7c2d12;line-height:1.7;margin-bottom:10px">
+                LINE・Instagram 等のアプリ内ブラウザでは、Google のセキュリティポリシーにより OAuth ログインがブロックされます。以下のどちらかをお試しください：
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+                <a href="x-safari-${typeof location !== 'undefined' ? location.href : 'https://cares.advisers.jp'}"
+                  style="display:block;padding:12px;background:#f97316;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:600;text-decoration:none">
+                  Safari で開く（iPhone）
+                </a>
+                <button onclick="navigator.clipboard?.writeText(location.href);Components.showToast('URLをコピーしました。SafariまたはChromeに貼り付けてください','success')"
+                  style="padding:12px;background:#fff;color:#9a3412;border:1.5px solid #f97316;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+                  📋 URLをコピーしてブラウザで開く
+                </button>
+              </div>
+              <div style="font-size:11px;color:#9a3412;line-height:1.6">
+                または下の<strong>メールアドレス</strong>で登録すれば、このブラウザでもすぐ使えます ↓
+              </div>
+            </div>`;
+        })()}
         <!-- Google Login -->
         <div id="login-error" style="display:none;margin-bottom:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#991b1b;font-size:12px;line-height:1.5;word-break:break-word"></div>
         <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:14px;font-size:14px;border:1.5px solid #e2e8f0;background:#fff">
