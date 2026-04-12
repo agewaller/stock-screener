@@ -6418,7 +6418,13 @@ var FirebaseBackend = {
       this._inboxUnsubscribe = this.db
         .collection('inbox').doc(hash).collection('plaud')
         .where('processed', '==', false)
-        .orderBy('receivedAt', 'asc')
+        // NOTE: .orderBy('receivedAt', 'asc') was removed because it
+        // requires a Firestore composite index that must be manually
+        // created in the Firebase Console. Without the index, the
+        // onSnapshot listener fails with "failed-precondition: The
+        // query requires an index". Since we process ALL unprocessed
+        // messages in a single batch anyway, ordering is not critical
+        // — we sort client-side instead.
         .onSnapshot(async (snapshot) => {
           store.set('inboxStatus', {
             state: 'live',
@@ -6426,7 +6432,13 @@ var FirebaseBackend = {
             pending: snapshot.size,
             at: Date.now()
           });
-          for (const docSnap of snapshot.docs) {
+          // Sort by receivedAt client-side (Firestore timestamps)
+          const docs = snapshot.docs.slice().sort((a, b) => {
+            const ta = a.data()?.receivedAt?.toMillis?.() || 0;
+            const tb = b.data()?.receivedAt?.toMillis?.() || 0;
+            return ta - tb;
+          });
+          for (const docSnap of docs) {
             const data = docSnap.data() || {};
             try {
               const subject = data.subject || 'Plaud会話記録';
