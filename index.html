@@ -11705,10 +11705,36 @@ App.prototype.render_timeline = function() {
     ...d, _type: 'photo', _icon: '📸', _label: d.filename || '写真'
   }));
 
-  // Conversation history (AI chat)
-  (store.get('conversationHistory') || []).filter(c => c.type === 'data_entry').forEach(d => {
-    // Already in textEntries, skip duplicates
-  });
+  // Supplements
+  (store.get('supplements') || []).forEach(d => allEntries.push({
+    ...d, _type: 'supplement', _icon: '💊', _label: d.text_note || d.title || 'サプリメント'
+  }));
+
+  // Meals / nutrition
+  (store.get('meals') || []).forEach(d => allEntries.push({
+    ...d, _type: 'meal', _icon: '🥗', _label: d.text_note || d.title || '食事記録'
+  }));
+
+  // Nutrition log (BMR / PFC / calorie)
+  (store.get('nutritionLog') || []).forEach(d => allEntries.push({
+    ...d, timestamp: d.timestamp || (d.date ? d.date + 'T12:00:00Z' : null),
+    _type: 'nutrition', _icon: '🔥',
+    _label: `${d.calories || 0} kcal (P${d.protein_g || 0} F${d.fat_g || 0} C${d.carbs_g || 0})`
+  }));
+
+  // Plaud analyses (禅トラック)
+  (store.get('plaudAnalyses') || []).forEach(d => allEntries.push({
+    ...d, _type: 'plaud', _icon: '🧘',
+    _label: d.title || '禅トラック分析',
+    content: d.fullText || ''
+  }));
+
+  // Calendar events (today and future)
+  (store.get('calendarEvents') || []).forEach(d => allEntries.push({
+    ...d, timestamp: d.start || d.timestamp,
+    _type: 'calendar', _icon: '📅',
+    _label: d.title || d.summary || 'カレンダー'
+  }));
 
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
@@ -11725,7 +11751,9 @@ App.prototype.render_timeline = function() {
   const categoryLabels = {
     text: '日記・メモ', symptom_note: '症状メモ', symptom_data: '症状スコア',
     vitals: 'バイタル', blood: '血液検査', medication: '服薬',
-    sleep: '睡眠', activity: '活動', photo: '写真'
+    supplement: 'サプリ', meal: '食事', nutrition: '栄養',
+    sleep: '睡眠', activity: '活動', photo: '写真',
+    plaud: '禅トラック', calendar: 'カレンダー'
   };
 
   // Render entries
@@ -12610,34 +12638,64 @@ App.prototype.render_settings = function() {
 };
 
 // Export Data utility
+// Export ALL user data — every collection the app stores. No data
+// should ever be silently omitted. Users must be able to retrieve
+// everything they entered in a single download, organized by
+// collection with consistent ISO timestamps for chronological
+// reconstruction.
 App.prototype.exportData = function() {
   const data = {
-    exportDate: new Date().toISOString(),
+    _meta: {
+      exportDate: new Date().toISOString(),
+      appVersion: CONFIG.APP_VERSION || '1.0.0',
+      format: 'mibyou_diary_v2',
+      note: 'This file contains ALL of your health data. Keep it safe.'
+    },
+    // ── User identity & preferences ──
     user: store.get('user'),
-    disease: store.get('selectedDisease'),
+    userProfile: store.get('userProfile'),
+    selectedDisease: store.get('selectedDisease'),
     selectedDiseases: store.get('selectedDiseases'),
-    symptoms: store.get('symptoms'),
-    vitals: store.get('vitals'),
-    bloodTests: store.get('bloodTests'),
-    medications: store.get('medications'),
-    supplements: store.get('supplements'),
-    meals: store.get('meals'),
-    sleepData: store.get('sleepData'),
-    activityData: store.get('activityData'),
-    analysisHistory: store.get('analysisHistory'),
-    conversationHistory: store.get('conversationHistory'),
-    textEntries: store.get('textEntries'),
+    selectedModel: store.get('selectedModel'),
     customPrompts: store.get('customPrompts'),
-    selectedModel: store.get('selectedModel')
+    dashboardLayout: store.get('dashboardLayout'),
+    // ── Core health records (time-series) ──
+    textEntries: store.get('textEntries') || [],
+    symptoms: store.get('symptoms') || [],
+    vitals: store.get('vitals') || [],
+    bloodTests: store.get('bloodTests') || [],
+    medications: store.get('medications') || [],
+    supplements: store.get('supplements') || [],
+    meals: store.get('meals') || [],
+    sleepData: store.get('sleepData') || [],
+    activityData: store.get('activityData') || [],
+    // ── Photos & files ──
+    photos: store.get('photos') || [],
+    // ── AI analysis history ──
+    analysisHistory: store.get('analysisHistory') || [],
+    aiComments: store.get('aiComments') || {},
+    latestFeedback: store.get('latestFeedback'),
+    // ── Nutrition / BMR / PFC ──
+    nutritionLog: store.get('nutritionLog') || [],
+    // ── Plaud / 禅トラック ──
+    plaudAnalyses: store.get('plaudAnalyses') || [],
+    // ── Conversation (AI chat) ──
+    conversationHistory: store.get('conversationHistory') || [],
+    // ── Calendar ──
+    calendarEvents: store.get('calendarEvents') || [],
+    // ── Integration sync timestamps ──
+    integrationSyncs: store.get('integrationSyncs') || {},
+    // ── Cached research (re-fetchable, but included for completeness) ──
+    cachedResearch: store.get('cachedResearch')
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `chroniccare_export_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `mibyou_diary_export_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  Components.showToast('データをエクスポートしました', 'success');
+  Components.showToast('すべてのデータをエクスポートしました', 'success');
 };
 
 // Import Data from JSON file
@@ -12649,11 +12707,19 @@ App.prototype.importDataFile = function(file) {
       const data = JSON.parse(e.target.result);
       let count = 0;
 
+      // Import ALL keys that exportData writes. Any key added to
+      // exportData must also appear here; otherwise data round-trips
+      // would silently lose collections.
       const importKeys = [
-        'selectedDisease', 'selectedDiseases', 'symptoms', 'vitals',
-        'bloodTests', 'medications', 'supplements', 'meals',
-        'sleepData', 'activityData', 'analysisHistory',
-        'conversationHistory', 'textEntries', 'customPrompts', 'selectedModel'
+        'selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts',
+        'dashboardLayout', 'userProfile',
+        'textEntries', 'symptoms', 'vitals', 'bloodTests',
+        'medications', 'supplements', 'meals',
+        'sleepData', 'activityData', 'photos',
+        'analysisHistory', 'aiComments', 'latestFeedback',
+        'nutritionLog', 'plaudAnalyses',
+        'conversationHistory', 'calendarEvents',
+        'integrationSyncs', 'cachedResearch'
       ];
 
       importKeys.forEach(key => {
