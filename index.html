@@ -9322,7 +9322,13 @@ ${titles}`;
             <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:12px">
               <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
               <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
-                ${isAdmin ? Components.escapeHtml(errDetail) : 'ただいまサーバーが混み合っています。少し時間をおいて再度お試しいただくか、登録してご利用ください。'}
+                ${isAdmin
+                  ? `<div style="margin-bottom:8px">${Components.escapeHtml(errDetail)}</div>
+                     <div style="padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.6">
+                       <strong>管理者向け:</strong> ゲストモードの分析には Cloudflare Worker に ANTHROPIC_API_KEY シークレットの設定が必要です。<br>
+                       <code style="background:#fee2e2;padding:1px 6px;border-radius:3px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code>
+                     </div>`
+                  : 'ただいまサービスを準備中です。メールアドレスで登録すると、すぐに分析機能をご利用いただけます。'}
               </div>
               <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
             </div>`;
