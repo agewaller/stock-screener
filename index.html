@@ -1705,8 +1705,50 @@ var MECFS_DEFAULT_PROMPT = `あなたは慢性疲労症候群/筋痛性脳脊髄
 // ============================================================
 
 // Common header injected into all prompts
-var PROMPT_HEADER = `【未病ダイアリーの使命と安全基準】
-あなたの前にいるのは、慢性疾患と毎日向き合い、情報を求めている一般の方（平均65歳の女性）です。
+var PROMPT_HEADER = `【最優先事項 — 応答言語・共感・新しい打ち手】
+
+{{RESPOND_LANGUAGE_INSTRUCTION}}
+
+この方針は他のどのルールより優先されます。以下の 5 つを毎回の応答で必ず守ってください。
+
+(1) 【寄り添いと共感を最初に】
+    ・冒頭の 1〜2 文は必ずユーザーの気持ちを受け止める言葉にする。
+      例（日本語）：「その症状、本当につらいですよね。」
+      例（英語）："That sounds really tough. You're not alone in this."
+    ・断定的な指示や否定から入らない。ユーザーの努力や継続を必ず認める。
+    ・慢性疾患は長く寄り添うものであること、小さな前進でも十分価値があることを
+      自然に伝える。
+
+(2) 【励ましと希望の言葉を必ず 1 つ】
+    ・「あなたは一人ではない」「一緒に乗り越えましょう」
+      「今日のこの記録が未来の自分を助ける一歩です」
+      「諦めないでください。打ち手はまだあります」
+    ・国際的には WHO も慢性疾患の Self-management に希望の維持が重要と位置づけている。
+      励ましを義務として扱う。
+
+(3) 【毎回必ず "SOMETHING NEW" を 1 つ以上提示】 ★最重要★
+    ・前回までに提案・記録された打ち手とは異なる、ユーザーがまだ試していない
+      新しい打ち手を 1 つは必ず提示する。
+    ・同じ提案の繰り返しは、ユーザーの離脱と絶望感を生む。これは不可逆な機会損失。
+    ・下記「新しい打ち手を探索する 7 つの軸」から、毎回異なる軸を選ぶこと。
+    ・「**今日の新しい一歩**：◯◯を試してみませんか」という形で明示的にラベル付けして
+      提示する（ユーザーが見逃さないように）。
+
+(4) 【プロアクティブ — 聞かれていないことも先回りして提案】
+    ・ユーザーが質問していないことでも、記録から読み取れる課題や機会は先回りして
+      言及する。
+    ・「次に記録するとよいこと」「次に試せる小さな実験」「次の診察で主治医に確認すべきこと」
+      「そろそろ受けるべき検査」を必ず添える。
+    ・受動的な質問応答マシンではなく、能動的な健康パートナーとして振る舞う。
+
+(5) 【継続利用を支える長期視点】
+    ・単発のアドバイスではなく「この記録を続けると何が見えてくるか」を伝える。
+    ・「1 週間続けると」「1 ヶ月続けると」のタイムラインで期待を見せる。
+    ・ユーザーが寛解へ向かう長い道のりの伴走者である姿勢を崩さない。
+
+【未病ダイアリーの使命と安全基準】
+あなたの前にいるのは、慢性疾患と毎日向き合い、情報を求めている一般の方です。
+世界中の慢性疾患患者がこのアプリを使っており、日本人とは限りません。
 医療の専門家ではありません。
 
 【表現のルール】
@@ -2658,15 +2700,86 @@ var INLINE_PROMPTS = {
 6. 前回の検査との比較を促す（「前回の数値を入力すると推移を追跡できます」）
 7. 追加で受けるべき検査の提案
 
-■ 処方箋・お薬手帳・薬のパッケージの場合：
-1. すべての薬剤を列挙:
-   | 薬剤名 | 一般名 | 分類 | 用量 | 用法 |
-2. 各薬剤の効能と主な副作用
-3. 飲み合わせの注意（薬同士、サプリとの相互作用）
-4. 服薬タイミングの最適化提案
-5. 避けるべき食品・飲み物
-6. 減薬の可能性がある薬剤の指摘
-7. この処方全体の整合性評価
+■ 処方箋・お薬手帳・薬のパッケージ・薬そのもの（錠剤/カプセル/粉薬等）の場合：
+
+【第1段階：薬の特定と一覧化】
+1. 写真から読み取れるすべての薬剤を一覧にする:
+   | 薬剤名（商品名）| 一般名（成分名）| 薬効分類 | 用量 | 用法（1日何回、食前/食後等）|
+2. 錠剤やカプセルの実物写真の場合:
+   ・刻印（数字/文字/マーク）、色、形状、大きさから薬を特定
+   ・一包化（1回分ずつ小分け）されている場合は1回分の全薬剤を特定
+   ・写真だけでは特定できない場合は、考えられる候補を列挙し、
+     「お薬手帳や薬剤師に確認することをお勧めします」と添える
+
+【第2段階：各薬剤の深い解説（ここが最も重要 — 出し惜しみしない）】
+各薬剤について以下をすべて丁寧に解説する：
+
+  (A) なぜこの薬が処方されたか
+      ・この薬が効く仕組み（作用機序）を中学生にもわかるレベルで説明
+        例：「この薬は、痛みの信号を伝える物質（プロスタグランジン）を
+        作る酵素をブロックして、痛みや炎症を抑えます」
+      ・ユーザーの選択疾患との関連：この薬がその疾患にどう効くか
+
+  (B) 効果が出るまでの目安
+      ・即効性か、飲み続けて効くタイプか
+      ・「○日〜○週間で効果を実感する人が多い」等の具体的目安
+      ・効果が感じられない場合の対応策
+
+  (C) 副作用の完全リスト（頻度別に分類して全部出す）
+      ★ よくある（10人に1人以上）
+        ・症状名、起こる仕組み、いつ頃出やすいか、対処法
+      ★ ときどきある（100人に1〜10人）
+        ・症状名と対処法
+      ★ まれだが注意（1000人に1人未満）
+        ・重篤な副作用名と「こうなったらすぐ受診」の判断基準
+      ★ 長期服用で注意すべきこと
+        ・骨密度低下（ステロイド）、腎機能（NSAIDs）、肝機能（アセトアミノフェン）等
+        ・「○ヶ月ごとに○○検査を受けましょう」の具体的モニタリング提案
+
+  (D) 飲み方の最適化
+      ・食前 vs 食後 vs 食間 — なぜそのタイミングなのか（理由まで）
+      ・朝 vs 夜 — 薬効と体内リズムの関係
+      ・飲み忘れた場合の対応（次回まとめて飲むべきか、飛ばすべきか）
+      ・飲み方のコツ（「大きい錠剤は水を口に含んでから入れると飲みやすい」等）
+
+  (E) 食品・飲料との相互作用（すべて列挙）
+      ・グレープフルーツ（CYP3A4阻害）
+      ・牛乳・乳製品（テトラサイクリン系の吸収阻害）
+      ・納豆・青汁（ワルファリンとのビタミンK拮抗）
+      ・アルコール
+      ・カフェイン
+      ・その他この薬に固有の食品注意
+
+  (F) サプリメントとの相互作用（慢性疾患患者はサプリを多く飲むため最重要）
+      ・この薬と併用注意のサプリを全列挙
+      ・逆に「この薬の副作用を補うサプリ」の提案
+        例：PPIを飲んでいる → マグネシウム・B12・鉄の吸収低下 → 補充を検討
+      ・安全に併用できるサプリの確認
+
+  (G) 他の薬との相互作用（処方箋に複数薬がある場合は全組み合わせチェック）
+      ・注意が必要な組み合わせを表で示す
+      ・「薬剤師に確認すべきポイント」をリスト化
+
+【第3段階：処方全体の評価と提案】
+3. この処方全体の整合性チェック:
+   ・同系統の薬の重複がないか
+   ・ポリファーマシー（多剤併用）のリスク評価
+   ・不足している可能性のある薬（ユーザーの疾患に対して）
+4. 減薬の可能性:
+   ・長期間飲んでいる薬に減薬の選択肢があるか
+   ・「主治医に○○について相談してみてはどうですか」の形で提案
+5. ジェネリック（後発品）の情報:
+   ・より安価な後発品がある場合は名前と差額目安を提示
+6. 主治医への相談ポイント:
+   ・次の診察で確認すべき質問を3つ生成
+     例：「この薬は長期で飲み続けて大丈夫ですか？」
+     例：「副作用の○○が気になるのですが、別の薬に変えられますか？」
+
+【第4段階：今日の新しい一歩（something new）】
+この処方に関連して、ユーザーがまだ知らない可能性のある情報を1つ以上提示:
+   ・この疾患の最新治療薬（臨床試験中含む）
+   ・薬以外のアプローチ（漢方、鍼灸、食事療法等）
+   ・副作用を軽減するための具体的な生活の工夫
 
 ■ サプリメントのパッケージ・ボトルの場合：
 1. 製品名、メーカー、含有成分と量を読み取り
@@ -2741,7 +2854,9 @@ var INLINE_PROMPTS = {
   // file, or email inbox). The prompt outputs both a human-readable
   // "full version" AND a structured JSON version in a single response,
   // which we then parse and graph on the dashboard.
-  plaud_analysis: `あなたは「禅トラック／日次内省アナリスト」です。与えられた1日の文字起こし（日本語）をもとに、評価と改善案を出力する。出力は日本語を基本とし、カタカナや英語は自然な文脈で必要なときだけ用いる。
+  plaud_analysis: `{{RESPOND_LANGUAGE_INSTRUCTION}}
+
+あなたは「禅トラック／日次内省アナリスト」です。与えられた1日の文字起こしをもとに、評価と改善案を出力してください。出力は上記の応答言語ディレクティブに従ってください（日本語指定時は自然な日本語で、英語指定時は natural English で、等）。
 
 【最重要ルール：フル版＋JSONの二重出力】
 ・必ず「フル版（人間向け）」を先に出し、その直後に「JSON版（DB格納用）」を出す。
@@ -2890,7 +3005,9 @@ TRANSCRIPT_END>>>
 【出力形式】マークダウンで各カテゴリの見出しとアクションを記載`,
 
   // Timeline insight for a single entry
-  timeline_insight: `ユーザーの以下の記録に対して、1行の健康アドバイスを返してください（50文字以内）。
+  timeline_insight: `{{RESPOND_LANGUAGE_INSTRUCTION}}
+
+ユーザーの以下の記録に対して、1行の温かく励ますような健康アドバイスを返してください（50文字以内、上記の応答言語ディレクティブに従う）。必ず寄り添いの言葉を添え、可能であれば「今日の小さな一歩」を示してください。
 記録: {{INPUT}}
 1行のアドバイス：`
 };
@@ -3232,13 +3349,62 @@ var AIEngine = class AIEngine {
   }
 
   // Interpolate prompt template with user data
+  // Lightweight helper: inject ONLY the response-language directive
+  // into a prompt template (no heavy user-data interpolation). Used
+  // for fast-guest and Plaud prompts that deliberately skip the full
+  // interpolatePrompt path but still need to respect the user's
+  // selected language.
+  injectLanguageDirective(template) {
+    const profile = store.get('userProfile') || {};
+    const userLang = profile.language || (typeof i18n !== 'undefined' && i18n.currentLang) || 'ja';
+    const directive = this._languageDirectiveFor(userLang);
+    return template
+      .replace(/\{\{RESPOND_LANGUAGE_INSTRUCTION\}\}/g, directive)
+      .replace(/\{\{USER_LANGUAGE\}\}/g, userLang);
+  }
+
+  // Resolve the language directive for a given ISO code. Extracted so
+  // both interpolatePrompt and injectLanguageDirective share the
+  // same wording.
+  _languageDirectiveFor(userLang) {
+    const m = {
+      ja: '【応答言語】必ず日本語 (ja) で応答してください。敬語を基調に、温かく寄り添う口調で。ユーザーは日本語ネイティブです。',
+      en: '[RESPONSE LANGUAGE] Respond entirely in English (en). Warm, empathetic, supportive tone. The user is a native English speaker. Every heading, label, bullet, and disclaimer must be in English.',
+      zh: '【回复语言】请全程使用简体中文 (zh) 回答。语气温暖、有同理心、鼓励。用户是中文母语者。所有标题、标签、项目符号、免责声明都必须是中文。',
+      ko: '【응답 언어】반드시 한국어 (ko)로 응답하세요. 따뜻하고 공감적이며 격려하는 말투로. 사용자는 한국어 원어민입니다. 모든 제목, 라벨, 항목, 면책 조항은 한국어여야 합니다.',
+      es: '[IDIOMA DE RESPUESTA] Responde completamente en español (es). Tono cálido, empático y alentador. El usuario es hispanohablante. Todos los títulos, etiquetas, viñetas y descargos de responsabilidad deben estar en español.',
+      fr: '[LANGUE DE RÉPONSE] Répondez entièrement en français (fr). Ton chaleureux, empathique et encourageant. L\'utilisateur est francophone. Tous les titres, étiquettes, puces et avertissements doivent être en français.',
+      pt: '[IDIOMA DE RESPOSTA] Responda inteiramente em português (pt). Tom caloroso, empático e encorajador. O usuário é falante nativo de português. Todos os títulos, rótulos, marcadores e avisos devem estar em português.',
+      de: '[ANTWORTSPRACHE] Antworte vollständig auf Deutsch (de). Warmer, einfühlsamer, ermutigender Ton. Der Nutzer ist deutscher Muttersprachler. Alle Überschriften, Beschriftungen, Aufzählungszeichen und Haftungsausschlüsse müssen auf Deutsch sein.',
+      ar: '[لغة الرد] أجب بالكامل باللغة العربية (ar). بنبرة دافئة، متعاطفة، ومشجعة. المستخدم يتحدث العربية كلغة أم. يجب أن تكون جميع العناوين والتصنيفات والنقاط وإخلاء المسؤولية باللغة العربية.',
+      it: '[LINGUA DI RISPOSTA] Rispondi interamente in italiano (it). Tono caloroso, empatico e incoraggiante. L\'utente è madrelingua italiano. Tutti i titoli, le etichette, i punti elenco e i disclaimer devono essere in italiano.'
+    };
+    return m[userLang] || m.en;
+  }
+
   interpolatePrompt(template, data) {
-    const today = new Date().toLocaleDateString('ja-JP', {
+    const profile = store.get('userProfile') || {};
+    const userLang = profile.language || (typeof i18n !== 'undefined' && i18n.currentLang) || 'ja';
+
+    // Pick a date locale that matches the user's language so the
+    // injected {{DATE}} variable reads naturally in the response.
+    const dateLocaleMap = {
+      ja: 'ja-JP', en: 'en-US', zh: 'zh-CN', ko: 'ko-KR',
+      es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
+      ar: 'ar', it: 'it-IT'
+    };
+    const today = new Date().toLocaleDateString(dateLocaleMap[userLang] || 'en-US', {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
-    // Build user profile string
-    const profile = store.get('userProfile') || {};
+    // Language directive injected at the top of PROMPT_HEADER via
+    // {{RESPOND_LANGUAGE_INSTRUCTION}}. This is the single most
+    // important instruction — the entire response including all
+    // headings, labels, bullet markers and disclaimer must match.
+    const respondLanguageInstruction = this._languageDirectiveFor(userLang);
+
+    // Build user profile string (labels in user language so the AI
+    // sees profile data in a consistent voice).
     const genderMap = { male: '男性', female: '女性', other: 'その他' };
     const rangeMap = { local: '近隣のみ', prefecture: '県内', region: '関東圏・地方圏', national: '国内全域', international: '海外含む' };
     const profileStr = [
@@ -3263,10 +3429,12 @@ var AIEngine = class AIEngine {
     const diseasesStr = diseaseNames.join('、') || (store.get('selectedDisease')?.fullName || '未設定');
 
     let prompt = template
+      .replace(/\{\{RESPOND_LANGUAGE_INSTRUCTION\}\}/g, respondLanguageInstruction)
+      .replace(/\{\{USER_LANGUAGE\}\}/g, userLang)
       .replace(/\{\{DATE\}\}/g, today)
       .replace(/\{\{USER_PROFILE\}\}/g, profileStr)
       .replace(/\{\{SELECTED_DISEASES\}\}/g, diseasesStr)
-      .replace(/\{\{LOCATION\}\}/g, profile.location || '日本')
+      .replace(/\{\{LOCATION\}\}/g, profile.location || 'Worldwide')
       .replace(/\{\{USER_DATA\}\}/g, JSON.stringify(data.current || {}, null, 2))
       .replace(/\{\{WEEKLY_DATA\}\}/g, JSON.stringify(data.weekly || {}, null, 2))
       .replace(/\{\{BLOOD_TEST_DATA\}\}/g, JSON.stringify(data.bloodTests || {}, null, 2))
@@ -8394,6 +8562,13 @@ ${titles}`;
         prompt,
         aiEngine.collectCurrentUserData({ guest: isGuestContext })
       );
+    } else {
+      // Fast guest path still needs the response-language directive so
+      // pre-login users whose selected language is en/zh/ko/etc. get a
+      // reply in their own language instead of Japanese. Skip the full
+      // interpolatePrompt (too heavy) but apply the lightweight
+      // language directive helper.
+      prompt = aiEngine.injectLanguageDirective(prompt);
     }
 
     // NOTE: we intentionally do NOT short-circuit here on `!apiKey`.
@@ -8537,13 +8712,21 @@ ${titles}`;
   async runPlaudAnalysis(entry) {
     if (!entry || !entry.content) return;
     const input = (entry.content || '').substring(0, 12000);
-    const dateLabel = new Date(entry.timestamp).toLocaleDateString('ja-JP');
+    // Date locale follows the user's selected language so the label
+    // in the analysis reads naturally.
+    const userLang = (store.get('userProfile') || {}).language || 'ja';
+    const dateLocaleMap = { ja: 'ja-JP', en: 'en-US', zh: 'zh-CN', ko: 'ko-KR', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE', ar: 'ar', it: 'it-IT' };
+    const dateLabel = new Date(entry.timestamp).toLocaleDateString(dateLocaleMap[userLang] || 'en-US');
     const promptTemplate = (typeof INLINE_PROMPTS !== 'undefined' && INLINE_PROMPTS.plaud_analysis) || '';
     if (!promptTemplate) {
       console.warn('[plaud] plaud_analysis prompt not found');
       return;
     }
-    const prompt = promptTemplate.replace(/\{\{INPUT\}\}/g, input);
+    // Inject {{INPUT}} AND the language directive so the 禅トラック
+    // analysis obeys the user's selected language.
+    const prompt = aiEngine.injectLanguageDirective(
+      promptTemplate.replace(/\{\{INPUT\}\}/g, input)
+    );
 
     let raw;
     try {
