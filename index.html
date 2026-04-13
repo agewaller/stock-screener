@@ -3279,6 +3279,12 @@ var Store = class Store {
       // Nutrition / BMR / PFC dashboard
       nutritionLog: [],
 
+      // API usage tracking (admin dashboard). Each entry:
+      //   { ts: ISO string, model: string, input: int, output: int,
+      //     costJpy: number, source: 'guest'|'auth'|'admin' }
+      // Capped at 5000 records (~3 months at 50 req/day).
+      apiUsage: [],
+
       // Admin
       adminMode: false,
       selectedModel: 'claude-opus-4-6',
@@ -3339,7 +3345,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses', 'apiUsage'
     ];
     if (persistKeys.includes(key)) {
       try {
@@ -3357,7 +3363,7 @@ var Store = class Store {
       'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
       'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
       'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses'
+      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses', 'apiUsage'
     ];
     keys.forEach(key => {
       try {
@@ -3474,6 +3480,44 @@ var Store = class Store {
     log.push(entry);
     log.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     this.set('nutritionLog', log);
+  }
+
+  // ---- API usage tracking ----
+  // Cost-per-million-tokens (USD). Updated to reflect Anthropic /
+  // OpenAI / Google public pricing as of 2026. Multiply tokens × rate
+  // ÷ 1,000,000 ÷ usdJpy to get JPY.
+  static COSTS_PER_MTOKEN_USD = {
+    'claude-opus-4-6':   { input: 15,   output: 75   },
+    'claude-sonnet-4-6': { input: 3,    output: 15   },
+    'claude-haiku-4-5':  { input: 1,    output: 5    },
+    'gpt-4o':            { input: 2.5,  output: 10   },
+    'gemini-2.5-pro':    { input: 1.25, output: 5    }
+  };
+  static USD_JPY = 150;
+
+  // Record one API call. Cost is computed automatically from the
+  // model + token counts. The admin usage dashboard reads from this
+  // log to render daily/monthly stats and trend charts.
+  recordApiUsage(model, inputTokens, outputTokens, source) {
+    if (!model) return;
+    const inT = Number(inputTokens) || 0;
+    const outT = Number(outputTokens) || 0;
+    if (inT === 0 && outT === 0) return;
+    const rates = Store.COSTS_PER_MTOKEN_USD[model] || { input: 5, output: 25 };
+    const costUsd = (inT * rates.input + outT * rates.output) / 1_000_000;
+    const costJpy = Math.round(costUsd * Store.USD_JPY * 100) / 100;
+    const log = this.state.apiUsage || [];
+    log.push({
+      ts: new Date().toISOString(),
+      model,
+      input: inT,
+      output: outT,
+      costJpy,
+      source: source || 'auth'
+    });
+    // Cap the log at 5000 entries (~3 months of typical usage)
+    if (log.length > 5000) log.splice(0, log.length - 5000);
+    this.set('apiUsage', log);
   }
 
   // Clear user data (preserve system config like Firebase settings)
@@ -3848,6 +3892,13 @@ var AIEngine = class AIEngine {
 
     const data = await response.json();
     console.log('[Anthropic] Success');
+    // Record token usage for the admin dashboard. Anthropic returns
+    // `usage.input_tokens` and `usage.output_tokens` on every response.
+    try {
+      const u = data.usage || {};
+      const source = !apiKey && useSharedProxy ? 'guest' : 'auth';
+      store.recordApiUsage(modelId, u.input_tokens, u.output_tokens, source);
+    } catch (e) { console.warn('[usage track]', e.message); }
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 
@@ -3886,6 +3937,10 @@ var AIEngine = class AIEngine {
     }
 
     const data = await response.json();
+    try {
+      const u = data.usage || {};
+      store.recordApiUsage(modelId, u.prompt_tokens, u.completion_tokens, 'auth');
+    } catch (e) { console.warn('[usage track]', e.message); }
     return data.choices?.[0]?.message?.content || JSON.stringify(data);
   }
 
@@ -3911,6 +3966,10 @@ var AIEngine = class AIEngine {
     }
 
     const data = await response.json();
+    try {
+      const u = data.usageMetadata || {};
+      store.recordApiUsage(modelId, u.promptTokenCount, u.candidatesTokenCount, 'auth');
+    } catch (e) { console.warn('[usage track]', e.message); }
     return data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
   }
 
@@ -10091,13 +10150,236 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     if (target) target.style.display = 'block';
 
     const tabs = document.querySelectorAll('#admin-tabs .tab');
-    const tabNames = ['prompts', 'models', 'api', 'affiliate', 'firebase', 'data'];
+    const tabNames = ['prompts', 'models', 'api', 'usage', 'affiliate', 'firebase', 'data'];
     const idx = tabNames.indexOf(tabId);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
 
     // Load fields for specific tabs
     if (tabId === 'api') this.loadApiKeyFields();
     if (tabId === 'firebase') this.loadFirebaseConfigFields();
+    if (tabId === 'usage') setTimeout(() => this.initUsageCharts(), 50);
+  }
+
+  // ---- API Usage Dashboard (admin) ----
+  // Renders a complete usage breakdown from store.apiUsage records.
+  // Shows: today / this month totals, per-model breakdown, daily
+  // trend chart (last 30 days), and recent API calls.
+  renderUsageDashboard() {
+    const log = store.get('apiUsage') || [];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    // Aggregations
+    const today = log.filter(e => e.ts.startsWith(todayStr));
+    const month = log.filter(e => e.ts >= monthStart);
+
+    const sumCost = arr => arr.reduce((s, e) => s + (e.costJpy || 0), 0);
+    const sumIn = arr => arr.reduce((s, e) => s + (e.input || 0), 0);
+    const sumOut = arr => arr.reduce((s, e) => s + (e.output || 0), 0);
+
+    const todayCost = sumCost(today).toFixed(2);
+    const monthCost = sumCost(month).toFixed(2);
+    const todayCalls = today.length;
+    const monthCalls = month.length;
+
+    // Per-model breakdown for current month
+    const byModel = {};
+    month.forEach(e => {
+      if (!byModel[e.model]) byModel[e.model] = { calls: 0, input: 0, output: 0, cost: 0 };
+      byModel[e.model].calls++;
+      byModel[e.model].input += (e.input || 0);
+      byModel[e.model].output += (e.output || 0);
+      byModel[e.model].cost += (e.costJpy || 0);
+    });
+
+    // Per-source breakdown (guest vs auth)
+    const bySource = { guest: 0, auth: 0 };
+    month.forEach(e => { bySource[e.source || 'auth'] = (bySource[e.source || 'auth'] || 0) + (e.costJpy || 0); });
+
+    // Recent 10 calls
+    const recent = log.slice(-10).reverse();
+
+    if (log.length === 0) {
+      return `
+        <div class="card"><div class="card-body" style="padding:24px;text-align:center">
+          <div style="font-size:48px;margin-bottom:12px;opacity:0.4">📊</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">使用量データがまだありません</div>
+          <div style="font-size:12px;color:var(--text-muted)">ユーザーが分析を実行すると、ここに集計が表示されます。</div>
+        </div></div>`;
+    }
+
+    const modelRows = Object.entries(byModel)
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .map(([m, s]) => `
+        <tr>
+          <td style="padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px">${Components.escapeHtml(m)}</td>
+          <td style="padding:8px 12px;text-align:right;font-size:12px">${s.calls.toLocaleString()}</td>
+          <td style="padding:8px 12px;text-align:right;font-size:12px">${(s.input / 1000).toFixed(1)}K</td>
+          <td style="padding:8px 12px;text-align:right;font-size:12px">${(s.output / 1000).toFixed(1)}K</td>
+          <td style="padding:8px 12px;text-align:right;font-size:12px;font-weight:600;color:var(--accent)">¥${s.cost.toFixed(2)}</td>
+        </tr>`).join('');
+
+    const recentRows = recent.map(e => {
+      const t = new Date(e.ts);
+      const time = `${(t.getMonth() + 1)}/${t.getDate()} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+      return `
+        <tr>
+          <td style="padding:6px 10px;font-size:10px;color:var(--text-muted);font-family:monospace">${time}</td>
+          <td style="padding:6px 10px;font-size:10px;font-family:monospace">${Components.escapeHtml(e.model)}</td>
+          <td style="padding:6px 10px;font-size:10px;text-align:right">${(e.input || 0).toLocaleString()}</td>
+          <td style="padding:6px 10px;font-size:10px;text-align:right">${(e.output || 0).toLocaleString()}</td>
+          <td style="padding:6px 10px;font-size:10px;text-align:right;color:var(--accent)">¥${(e.costJpy || 0).toFixed(3)}</td>
+          <td style="padding:6px 10px;font-size:9px;color:var(--text-muted)">${e.source || 'auth'}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:18px">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">📊 API 使用量ダッシュボード</h3>
+        <p style="font-size:12px;color:var(--text-muted)">トークン消費量と推定コスト (1 USD = ¥${Store.USD_JPY})</p>
+      </div>
+
+      <!-- Top metric cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+        <div class="card"><div class="card-body" style="padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">今日のコスト</div>
+          <div style="font-size:24px;font-weight:700;color:var(--accent)">¥${todayCost}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${todayCalls} リクエスト</div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">今月のコスト</div>
+          <div style="font-size:24px;font-weight:700;color:var(--accent)">¥${monthCost}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${monthCalls} リクエスト</div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">入力トークン (今月)</div>
+          <div style="font-size:20px;font-weight:700">${(sumIn(month) / 1000).toFixed(1)}K</div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">出力トークン (今月)</div>
+          <div style="font-size:20px;font-weight:700">${(sumOut(month) / 1000).toFixed(1)}K</div>
+        </div></div>
+      </div>
+
+      <!-- Daily trend chart -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="card-title">過去 30 日の日次コスト推移</span></div>
+        <div class="card-body" style="height:240px;padding:14px"><canvas id="usage-trend-chart"></canvas></div>
+      </div>
+
+      <!-- Per-model breakdown -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="card-title">モデル別内訳 (今月)</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:var(--bg-tertiary)">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted)">モデル</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text-muted)">回数</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text-muted)">入力</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text-muted)">出力</th>
+              <th style="padding:10px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text-muted)">コスト</th>
+            </tr></thead>
+            <tbody>${modelRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Source breakdown -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="card-title">利用区分 (今月)</span></div>
+        <div class="card-body" style="padding:14px;display:flex;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted)">ログイン後</div>
+            <div style="font-size:18px;font-weight:700">¥${(bySource.auth || 0).toFixed(2)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted)">ゲスト (登録前)</div>
+            <div style="font-size:18px;font-weight:700">¥${(bySource.guest || 0).toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent calls -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title">最近の 10 件</span>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--bg-tertiary)">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">時刻</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">モデル</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--text-muted)">入力</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--text-muted)">出力</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--text-muted)">コスト</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">区分</th>
+            </tr></thead>
+            <tbody>${recentRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text-muted);padding:8px 0">
+        ※ コストは Anthropic / OpenAI / Google の公開単価から算出した推定値です。実際の請求とは多少のズレがあります。
+      </div>`;
+  }
+
+  // Render the 30-day trend chart for usage dashboard.
+  initUsageCharts() {
+    if (typeof Chart === 'undefined') return;
+    const log = store.get('apiUsage') || [];
+    if (log.length === 0) return;
+
+    // Build last 30 days bucket
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      days.push({
+        key: d.toISOString().split('T')[0],
+        label: `${d.getMonth() + 1}/${d.getDate()}`,
+        cost: 0
+      });
+    }
+    const byDay = new Map(days.map(d => [d.key, d]));
+    log.forEach(e => {
+      const dayKey = (e.ts || '').split('T')[0];
+      const bucket = byDay.get(dayKey);
+      if (bucket) bucket.cost += (e.costJpy || 0);
+    });
+
+    const canvas = document.getElementById('usage-trend-chart');
+    if (!canvas) return;
+    if (this.chartInstances.usageTrend) { try { this.chartInstances.usageTrend.destroy(); } catch (_) {} }
+    this.chartInstances.usageTrend = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: days.map(d => d.label),
+        datasets: [{
+          label: '日次コスト (円)',
+          data: days.map(d => d.cost.toFixed(2)),
+          backgroundColor: 'rgba(99, 102, 241, 0.6)',
+          borderColor: '#6366f1',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#8896b0', font: { size: 10 } } },
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#8896b0', font: { size: 10 }, callback: v => '¥' + v }
+          }
+        }
+      }
+    });
   }
 
   togglePromptEdit(key) {
@@ -12694,6 +12976,7 @@ App.prototype.render_admin = function() {
     <div class="tab active" onclick="app.switchAdminTab('prompts')">プロンプト管理（${totalPrompts}）</div>
     <div class="tab" onclick="app.switchAdminTab('models')">AIモデル</div>
     <div class="tab" onclick="app.switchAdminTab('api')">APIキー</div>
+    <div class="tab" onclick="app.switchAdminTab('usage')">📊 使用量</div>
     <div class="tab" onclick="app.switchAdminTab('affiliate')">アフィリエイト</div>
     <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
     <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
@@ -12842,6 +13125,11 @@ App.prototype.render_admin = function() {
     </div>
   </div>
 
+  </div>
+
+  <!-- TAB: Usage Dashboard -->
+  <div class="admin-tab-content" id="admin-tab-usage" style="display:none">
+    ${app.renderUsageDashboard()}
   </div>
 
   <!-- TAB: Affiliate -->
