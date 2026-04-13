@@ -1,4 +1,4 @@
-# 未病ダイアリー（Mibyou Diary）システムアーキテクチャ
+# 健康日記（Health Diary, 旧名: 未病ダイアリー）システムアーキテクチャ
 
 ## 概要
 慢性疾患患者のための体調記録・情報整理ツール。日本発、全世界対応。
@@ -282,7 +282,7 @@ renderAnalysisCard(result)  ← app.js
 新しいClaude Codeセッションで以下を伝えてください：
 
 ```
-リポジトリ agewaller/stock-screener で「未病ダイアリー」の開発を続けます。
+リポジトリ agewaller/stock-screener で「健康日記」（旧名: 未病ダイアリー）の開発を続けます。
 SYSTEM_ARCHITECTURE.md にシステム全体の構造が記載されています。
 まずそれを読んでから作業してください。
 ```

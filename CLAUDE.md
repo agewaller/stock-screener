@@ -1,4 +1,4 @@
-# 未病ダイアリー（Mibyou Diary）
+# 健康日記（Health Diary, 旧名: 未病ダイアリー）
 
 慢性疾患患者のための体調記録・情報整理ツール（SPA, vanilla JS）。
 サイト: https://cares.advisers.jp

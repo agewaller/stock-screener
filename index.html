@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>未病ダイアリー 〜慢性疾患の寛解をサポート〜</title>
+<title>健康日記 〜慢性疾患の寛解をサポート〜</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -1214,7 +1214,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
           </svg>
         </div>
         <div>
-          <span class="sidebar-logo-text">未病ダイアリー</span>
+          <span class="sidebar-logo-text">健康日記</span>
           <span class="sidebar-logo-sub">〜慢性疾患の寛解をサポート〜</span>
         </div>
       </a>
@@ -1268,7 +1268,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
    Configuration & Constants
    ============================================================ */
 var CONFIG = {
-  APP_NAME: '未病ダイアリー',
+  APP_NAME: '健康日記',
   APP_VERSION: '1.0.0',
 
   // Contact email — single source of truth for all お問い合わせ
@@ -1751,7 +1751,7 @@ var PROMPT_HEADER = `【最優先事項 — 応答言語・共感・新しい打
     ・「1 週間続けると」「1 ヶ月続けると」のタイムラインで期待を見せる。
     ・ユーザーが寛解へ向かう長い道のりの伴走者である姿勢を崩さない。
 
-【未病ダイアリーの使命と安全基準】
+【健康日記の使命と安全基準】
 あなたの前にいるのは、慢性疾患と毎日向き合い、情報を求めている一般の方です。
 世界中の慢性疾患患者がこのアプリを使っており、日本人とは限りません。
 医療の専門家ではありません。
@@ -3090,7 +3090,7 @@ TRANSCRIPT_END>>>
   guest_first_consultation: `{{RESPOND_LANGUAGE_INSTRUCTION}}
 
 あなたは慢性疾患患者の生活を支える伴走パートナーです。ユーザーは
-未病ダイアリーを初めて訪れた方で、ログイン前にちょっと相談しています。
+健康日記を初めて訪れた方で、ログイン前にちょっと相談しています。
 入力が短くても、その人の不安に寄り添い、価値ある初回診断を返してください。
 
 【姿勢】
@@ -3116,7 +3116,7 @@ TRANSCRIPT_END>>>
     "次の診察で主治医に確認するとよいこと 3（20-40 文字）"
   ],
   "new_approach": "**今日の新しい一歩**: ユーザーがまだ試していなさそうな新しい選択肢を 1 つ。具体的な商品名・方法・参考研究を含めて 2-4 行で",
-  "next_check": "次に未病ダイアリーに記録するとよいこと 1-2 項目（症状の数値化方法など）",
+  "next_check": "次に健康日記に記録するとよいこと 1-2 項目（症状の数値化方法など）",
   "deeper_prompt": "登録すれば、毎日の変化を追跡してより的確なアドバイスを継続的にお届けできます。"
 }
 
@@ -4767,7 +4767,7 @@ var i18n = {
   translations: {
     ja: {
       // App
-      app_name: '未病ダイアリー',
+      app_name: '健康日記',
       app_subtitle: '〜慢性疾患の寛解をサポート〜',
       // Nav
       dashboard: 'ホーム',
@@ -4835,7 +4835,7 @@ var i18n = {
       error: 'エラー',
     },
     en: {
-      app_name: 'Mibyou Diary',
+      app_name: 'Health Diary',
       app_subtitle: '〜Supporting chronic illness remission〜',
       dashboard: 'Home',
       record: 'Record',
@@ -4898,7 +4898,7 @@ var i18n = {
       error: 'Error',
     },
     zh: {
-      app_name: '未病日记', app_subtitle: '〜慢性疾病的缓解支持〜',
+      app_name: '健康日记', app_subtitle: '〜慢性疾病的缓解支持〜',
       dashboard: '首页', record: '记录', actions: '行动', research: '研究',
       ask_ai: '咨询', integrations: '连接', settings: '设置',
       admin: '管理',
@@ -4913,7 +4913,7 @@ var i18n = {
       selected: '已选', items: '条', loading: '加载中...', saved: '已保存',
     },
     ko: {
-      app_name: '미병 다이어리', app_subtitle: '〜만성질환의 관해를 서포트〜',
+      app_name: '건강 일기', app_subtitle: '〜만성질환의 관해를 서포트〜',
       dashboard: '홈', record: '기록', actions: '액션', research: '연구',
       ask_ai: '상담', integrations: '연결', settings: '설정',
       quick_input_placeholder: '오늘 몸 상태는 어떠세요? (예: 두통, 피곤함, 약 복용...)',
@@ -9977,7 +9977,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     const pages = {
       privacy: { title: 'プライバシーポリシー', content: `
 <h3>個人情報の取り扱いについて</h3>
-<p>シェアーズ株式会社（以下「当社」）は、未病ダイアリー（以下「本サービス」）における個人情報の取り扱いについて、以下のとおり定めます。</p>
+<p>シェアーズ株式会社（以下「当社」）は、健康日記（以下「本サービス」）における個人情報の取り扱いについて、以下のとおり定めます。</p>
 
 <h4>1. 収集する情報</h4>
 <p>・Googleアカウント情報（メールアドレス、表示名）<br>
@@ -10009,7 +10009,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
 <p>最終更新日: 2025年4月</p>` },
 
       terms: { title: '利用規約', content: `
-<h3>未病ダイアリー 利用規約</h3>
+<h3>健康日記 利用規約</h3>
 
 <h4>第1条（サービスの性質）</h4>
 <p>本サービスは体調記録・情報整理のためのツールであり、<strong>医療機器ではなく、医療行為を行うものではありません</strong>。本サービスが提示する情報は参考情報であり、医師による診断・治療・処方の代替にはなりません。</p>
@@ -10040,7 +10040,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
 <h3>免責事項</h3>
 
 <h4>医療行為ではありません</h4>
-<p>未病ダイアリーは体調記録・情報整理ツールであり、<strong>医療機器プログラム（SaMD）には該当しません</strong>。本サービスは診断、治療、処方、または医学的助言を提供するものではありません。</p>
+<p>健康日記は体調記録・情報整理ツールであり、<strong>医療機器プログラム（SaMD）には該当しません</strong>。本サービスは診断、治療、処方、または医学的助言を提供するものではありません。</p>
 
 <h4>参考情報の性質</h4>
 <p>本サービスが表示する情報（研究論文の要約、サプリメント情報、生活習慣に関する情報等）はすべて参考情報です。これらの情報は：<br>
@@ -11035,7 +11035,7 @@ App.prototype.render_login = function() {
         <div style="width:48px;height:48px;margin:0 auto 16px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 7 8 7 13a5 5 0 0010 0c0-5-5-10-5-10z"/></svg>
         </div>
-        <h1 style="font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:6px">未病ダイアリー</h1>
+        <h1 style="font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:6px">健康日記</h1>
         <p style="font-size:14px;color:#64748b;line-height:1.5">体調記録・情報整理ツール</p>
       </div>
 
@@ -11122,22 +11122,42 @@ App.prototype.render_login = function() {
             /Instagram/i.test(ua) || /Twitter/i.test(ua) ||
             /MicroMessenger/i.test(ua) || /wv\)/i.test(ua);
           if (!isInApp) return '';
+          // Detect LINE specifically for its openExternalBrowser hint.
+          const isLine = /Line\//i.test(ua);
+          const currentUrl = typeof location !== 'undefined' ? location.href : 'https://cares.advisers.jp';
+          // LINE supports a query parameter that forces its in-app
+          // browser to open the URL in the system default browser.
+          // For other apps this param is just ignored.
+          const lineBreakoutUrl = currentUrl + (currentUrl.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
           return `
             <div style="margin-bottom:14px;padding:14px 16px;background:#fff7ed;border:1.5px solid #f97316;border-radius:14px">
               <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:6px">⚠ アプリ内ブラウザでは Google ログインが使えません</div>
               <div style="font-size:12px;color:#7c2d12;line-height:1.7;margin-bottom:10px">
-                LINE・Instagram 等のアプリ内ブラウザでは、Google のセキュリティポリシーにより OAuth ログインがブロックされます。以下のどちらかをお試しください：
+                LINE・Instagram 等のアプリ内ブラウザでは、Google のセキュリティポリシーにより OAuth ログインがブロックされます。以下のいずれかをお試しください：
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-                <a href="x-safari-${typeof location !== 'undefined' ? location.href : 'https://cares.advisers.jp'}"
-                  style="display:block;padding:12px;background:#f97316;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:600;text-decoration:none">
-                  Safari で開く（iPhone）
-                </a>
-                <button onclick="navigator.clipboard?.writeText(location.href);Components.showToast('URLをコピーしました。SafariまたはChromeに貼り付けてください','success')"
+                ${isLine ? `
+                <a href="${Components.escapeHtml(lineBreakoutUrl)}"
+                  style="display:block;padding:12px;background:#06c755;color:#fff;border-radius:10px;text-align:center;font-size:13px;font-weight:600;text-decoration:none">
+                  Safari/Chrome で開く（LINE 専用）
+                </a>` : ''}
+                <button onclick="app.openInBrowser()"
+                  style="padding:12px;background:#f97316;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+                  📤 共有メニューから Safari で開く
+                </button>
+                <button onclick="app.copyCurrentUrl()"
                   style="padding:12px;background:#fff;color:#9a3412;border:1.5px solid #f97316;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
                   📋 URLをコピーしてブラウザで開く
                 </button>
               </div>
+              <details style="font-size:11px;color:#7c2d12;line-height:1.6;margin-bottom:8px">
+                <summary style="cursor:pointer;font-weight:600">手動で Safari に切り替える方法</summary>
+                <ol style="margin:6px 0 0 20px;padding:0">
+                  <li>画面右上または下部の <strong>「⋯」（メニュー）</strong>ボタンをタップ</li>
+                  <li>「<strong>Safari で開く</strong>」または「<strong>ブラウザで開く</strong>」を選択</li>
+                  <li>開いた Safari でもう一度「Google でログイン」を押す</li>
+                </ol>
+              </details>
               <div style="font-size:11px;color:#9a3412;line-height:1.6">
                 または下の<strong>メールアドレス</strong>で登録すれば、このブラウザでもすぐ使えます ↓
               </div>
@@ -12804,7 +12824,7 @@ App.prototype.render_integrations = function() {
         <button class="btn btn-primary" onclick="app.connectGoogleCalendarWithGoogle()">🔐 Googleで連携して取り込む</button>
         <div style="margin-top:10px;padding:8px 10px;background:#fff7ed;border-left:3px solid #f97316;border-radius:4px;font-size:11px;color:#9a3412;line-height:1.7">
           <strong>※ 「このアプリは Google で確認されていません」という警告が出た場合</strong>：<br>
-          画面下の <b>「詳細」</b> をタップ → <b>「cares.advisers.jp（安全でないページ）に移動」</b> をタップしてそのまま進めてください。未病ダイアリーは本人のカレンダーを読み取るだけで、パスワードや書き込み権限は一切要求しません。
+          画面下の <b>「詳細」</b> をタップ → <b>「cares.advisers.jp（安全でないページ）に移動」</b> をタップしてそのまま進めてください。健康日記は本人のカレンダーを読み取るだけで、パスワードや書き込み権限は一切要求しません。
         </div>
       </div>
       <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
@@ -13247,6 +13267,45 @@ App.prototype.render_settings = function() {
 // Export Data utility
 // Export ALL user data — every collection the app stores. No data
 // should ever be silently omitted. Users must be able to retrieve
+// In-app browser breakout helpers. iOS WebViews (LINE, Instagram,
+// Facebook, etc.) block Google OAuth, so the login screen offers
+// these buttons to nudge users into Safari/Chrome where the redirect
+// flow works. `x-safari-` URL schemes only function from the
+// Shortcuts app, not from anchor tags inside a WebView, so we use
+// navigator.share + clipboard fallbacks instead.
+App.prototype.openInBrowser = async function() {
+  const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
+  if (typeof navigator !== 'undefined' && navigator.share) {
+    try {
+      await navigator.share({ title: '健康日記', url });
+    } catch (e) {
+      // User canceled — fall back to clipboard so they can still proceed.
+      this.copyCurrentUrl();
+    }
+  } else {
+    Components.showToast('お使いのブラウザは共有メニューに対応していません。URLをコピーします。', 'info');
+    this.copyCurrentUrl();
+  }
+};
+
+App.prototype.copyCurrentUrl = function() {
+  const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
+  const fallback = () => {
+    try {
+      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
+    } catch (_) {
+      Components.showToast('URLのコピーに失敗しました', 'error');
+    }
+  };
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      Components.showToast('URLをコピーしました。Safari/Chromeのアドレスバーに貼り付けてください', 'success');
+    }).catch(fallback);
+  } else {
+    fallback();
+  }
+};
+
 // everything they entered in a single download, organized by
 // collection with consistent ISO timestamps for chronological
 // reconstruction.

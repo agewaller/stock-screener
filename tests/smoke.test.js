@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 未病ダイアリー 全機能チェック
+ * 健康日記 全機能チェック
  * Run: node tests/smoke.test.js
  *
  * index.html の inline JS を静的解析し、全ユーザーアクションの
