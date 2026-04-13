@@ -1271,6 +1271,11 @@ var CONFIG = {
   APP_NAME: '未病ダイアリー',
   APP_VERSION: '1.0.0',
 
+  // Contact email — single source of truth for all お問い合わせ
+  // links, privacy/terms documents, and user-facing email mentions.
+  // Update this one value to change the contact address everywhere.
+  CONTACT_EMAIL: 'info@bluemarl.in',
+
   // Firebase config
   FIREBASE: {
     apiKey: 'AIzaSyDx9ByplxdzaWkLJrHnPhbf13MmUBEmLT8',
@@ -9980,10 +9985,10 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
 <p>データはGoogle Firebase（東京リージョン）に暗号化して保存されます。</p>
 
 <h4>6. データの削除・開示</h4>
-<p>ユーザーは設定画面からいつでもすべてのデータを削除できます。個人情報の開示・訂正・削除の請求は support@advisers.jp までご連絡ください。</p>
+<p>ユーザーは設定画面からいつでもすべてのデータを削除できます。個人情報の開示・訂正・削除の請求は ${CONFIG.CONTACT_EMAIL} までご連絡ください。</p>
 
 <h4>7. お問い合わせ</h4>
-<p>シェアーズ株式会社<br>E-mail: support@advisers.jp</p>
+<p>シェアーズ株式会社<br>E-mail: ${CONFIG.CONTACT_EMAIL}</p>
 <p>最終更新日: 2025年4月</p>` },
 
       terms: { title: '利用規約', content: `
@@ -10968,7 +10973,7 @@ App.prototype.render_login = function() {
         <span style="color:#cbd5e1">|</span>
         <a href="#" onclick="app.showLegalPage('disclaimer');return false" style="font-size:11px;color:#6366f1;text-decoration:none">免責事項</a>
         <span style="color:#cbd5e1">|</span>
-        <a href="mailto:support@advisers.jp" style="font-size:11px;color:#6366f1;text-decoration:none">お問い合わせ</a>
+        <a href="mailto:${CONFIG.CONTACT_EMAIL}" style="font-size:11px;color:#6366f1;text-decoration:none">お問い合わせ</a>
       </div>
 
       <!-- Footer -->
