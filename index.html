@@ -9430,7 +9430,9 @@ ${titles}`;
     }
     const text = input.value.trim();
     const resultEl = document.getElementById('guest-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('分析しています...');
+    if (resultEl) resultEl.innerHTML = Components.loading('じっくり分析しています...', {
+      subtext: '寄り添ったアドバイスをお届けします。15〜30秒ほどお待ちください。'
+    });
 
     // Collect selected diseases from guest tags
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
@@ -9441,7 +9443,13 @@ ${titles}`;
     if (diseases.length > 0) store.set('selectedDiseases', diseases);
 
     try {
-      const result = await this.analyzeViaAPI(text, 'text_analysis', { fastGuest: true });
+      // Use the FULL text_analysis prompt (not fastGuest one-liner) so
+      // pre-login users get the same depth of analysis as logged-in
+      // users — PROMPT_HEADER with empathy + something-new + OODA
+      // framework, plus structured findings/actions/new_approach.
+      // The `guest: true` flag inside collectCurrentUserData still
+      // caps any cached data so the prompt assembly stays fast.
+      const result = await this.analyzeViaAPI(text, 'text_analysis');
       if (resultEl) {
         // analyzeViaAPI returns _fromAPI:false when all providers fail.
         // For guests this typically means the Cloudflare Worker's
