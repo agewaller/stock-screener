@@ -3185,7 +3185,47 @@ TRANSCRIPT_END>>>
 
 ユーザーの以下の記録に対して、1行の温かく励ますような健康アドバイスを返してください（50文字以内、上記の応答言語ディレクティブに従う）。必ず寄り添いの言葉を添え、可能であれば「今日の小さな一歩」を示してください。
 記録: {{INPUT}}
-1行のアドバイス：`
+1行のアドバイス：`,
+
+  // Pre-login (guest) first-impression consultation. Tuned for SPEED
+  // and DETAIL simultaneously: small system prompt (no full
+  // PROMPT_HEADER), focused JSON schema, ~10-15 second response time
+  // with 5 structured sections so the user gets a rich first
+  // experience without waiting forever.
+  guest_first_consultation: `{{RESPOND_LANGUAGE_INSTRUCTION}}
+
+あなたは慢性疾患患者の生活を支える伴走パートナーです。ユーザーは
+未病ダイアリーを初めて訪れた方で、ログイン前にちょっと相談しています。
+入力が短くても、その人の不安に寄り添い、価値ある初回診断を返してください。
+
+【姿勢】
+・冒頭は必ず共感の言葉から始める（「その症状、つらいですね」等）
+・否定しない、命令しない、医療行為と誤解されない言葉を使う
+・励ましと希望を必ず含める
+・「今日の新しい一歩」を 1 つ必ず提示（ユーザーがまだ試していなさそうな具体策）
+・主治医・専門家への相談の重要性も自然に伝える
+
+【ユーザー入力】
+{{INPUT}}
+
+【選択疾患（任意）】
+{{SELECTED_DISEASES}}
+
+【出力形式】以下の JSON で返してください（マークダウンや前置きなし、JSON のみ）:
+{
+  "summary": "1-2 行の温かい共感メッセージ + 状況の簡潔な認識",
+  "findings": "ユーザーの入力から読み取れる体調・心理状態の解釈（3-5 行）。考えられる原因を 2-3 個列挙し、それぞれ 1 行で説明",
+  "actions": [
+    "今日できる具体的な小さな一歩 1（理由付き、20-40 文字）",
+    "今週中に試せること 2（理由付き、20-40 文字）",
+    "次の診察で主治医に確認するとよいこと 3（20-40 文字）"
+  ],
+  "new_approach": "**今日の新しい一歩**: ユーザーがまだ試していなさそうな新しい選択肢を 1 つ。具体的な商品名・方法・参考研究を含めて 2-4 行で",
+  "next_check": "次に未病ダイアリーに記録するとよいこと 1-2 項目（症状の数値化方法など）",
+  "deeper_prompt": "登録すれば、毎日の変化を追跡してより的確なアドバイスを継続的にお届けできます。"
+}
+
+※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。`
 };
 
 
@@ -9430,66 +9470,68 @@ ${titles}`;
     }
     const text = input.value.trim();
     const resultEl = document.getElementById('guest-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('じっくり分析しています...', {
-      subtext: '寄り添ったアドバイスをお届けします。15〜30秒ほどお待ちください。'
+    if (resultEl) resultEl.innerHTML = Components.loading('寄り添い分析中...', {
+      subtext: 'あなたに最適な提案をお届けします（10〜20秒）'
     });
 
     // Collect selected diseases from guest tags
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
     const diseases = Array.from(selectedTags).map(t => t.dataset.id);
-
-    // Temporarily set diseases for prompt interpolation
     const prevDiseases = store.get('selectedDiseases');
     if (diseases.length > 0) store.set('selectedDiseases', diseases);
 
     try {
-      // Use the FULL text_analysis prompt (not fastGuest one-liner) so
-      // pre-login users get the same depth of analysis as logged-in
-      // users — PROMPT_HEADER with empathy + something-new + OODA
-      // framework, plus structured findings/actions/new_approach.
-      // The `guest: true` flag inside collectCurrentUserData still
-      // caps any cached data so the prompt assembly stays fast.
-      const result = await this.analyzeViaAPI(text, 'text_analysis');
+      // Use the dedicated guest_first_consultation prompt — small,
+      // focused, returns rich JSON in 10-20 seconds. This is the
+      // best balance of detail and speed for first-time visitors:
+      //   - No PROMPT_HEADER overhead (saves ~5K tokens)
+      //   - Specific instructions for empathetic first impression
+      //   - Required JSON schema (summary/findings/actions/new_approach)
+      //   - Lower maxTokens (1500) for faster response
+      const tmpl = INLINE_PROMPTS.guest_first_consultation || INLINE_PROMPTS.text_analysis;
+      const diseaseLabel = diseases.length > 0 ? diseases.join(', ') : '未指定';
+      const promptWithDirective = aiEngine.injectLanguageDirective(tmpl)
+        .replace(/\{\{INPUT\}\}/g, text.substring(0, 2000))
+        .replace(/\{\{SELECTED_DISEASES\}\}/g, diseaseLabel);
+
+      const rawResponse = await aiEngine.callModel(
+        store.get('selectedModel') || 'claude-opus-4-6',
+        promptWithDirective,
+        { maxTokens: 1500, temperature: 0.4 }
+      );
+      const responseText = typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse);
+      const result = this.parseAIResponse(responseText) || {
+        summary: 'アドバイスをお届けします',
+        findings: responseText,
+        actions: []
+      };
+      result._fromAPI = true;
+
       if (resultEl) {
-        // analyzeViaAPI returns _fromAPI:false when all providers fail.
-        // For guests this typically means the Cloudflare Worker's
-        // ANTHROPIC_API_KEY secret is not set, or network failed.
-        // Show the actual error so admins can diagnose, and guide
-        // regular guests to try registering (which loads the admin's
-        // global API key from Firestore).
-        if (result && result._fromAPI === false) {
-          const isAdmin = this.isAdmin();
-          const errDetail = result._error || result.findings || '';
-          resultEl.innerHTML = `
-            <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:12px">
-              <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
-              <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
-                ${isAdmin
-                  ? `<div style="margin-bottom:8px">${Components.escapeHtml(errDetail)}</div>
-                     <div style="padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.6">
-                       <strong>管理者向け:</strong> ゲストモードの分析には Cloudflare Worker に ANTHROPIC_API_KEY シークレットの設定が必要です。<br>
-                       <code style="background:#fee2e2;padding:1px 6px;border-radius:3px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code>
-                     </div>`
-                  : 'ただいまサービスを準備中です。メールアドレスで登録すると、すぐに分析機能をご利用いただけます。'}
-              </div>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
-            </div>`;
-        } else {
-          resultEl.innerHTML = this.renderAnalysisCard(result) +
-            `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-              <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-              <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
-            </div>`;
-        }
+        resultEl.innerHTML = this.renderAnalysisCard(result) +
+          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
+            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          </div>`;
       }
     } catch (err) {
       console.warn('[guestAnalyze] Failed:', err?.message || err);
+      const isAdmin = this.isAdmin();
       if (resultEl) {
         resultEl.innerHTML = `
-          <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
-            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">回答を生成できませんでした</div>
-            <div style="font-size:12px;color:#7f1d1d;line-height:1.7">${Components.escapeHtml(err?.message || '通信エラーが発生しました。時間をおいて再度お試しください。')}</div>
+          <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
+            <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
+              ${isAdmin
+                ? `<div style="margin-bottom:8px">${Components.escapeHtml(err?.message || String(err))}</div>
+                   <div style="padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.6">
+                     <strong>管理者向け:</strong> ゲストモードの分析には Cloudflare Worker に ANTHROPIC_API_KEY シークレットの設定が必要です。<br>
+                     <code style="background:#fee2e2;padding:1px 6px;border-radius:3px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code>
+                   </div>`
+                : 'ただいまサービスを準備中です。メールアドレスで登録すると、すぐに分析機能をご利用いただけます。'}
+            </div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
           </div>`;
       }
     } finally {
