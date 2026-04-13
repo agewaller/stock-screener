@@ -1,13 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read/write their own data
+    // Users can only read/write their own data.
+    // Admin (agewaller@gmail.com) can additionally READ any user
+    // document and subcollection — this powers the "ユーザ管理" tab
+    // in the admin dashboard so the operator can see total user
+    // count and per-user activity to inform product improvements.
+    // Admin write is intentionally NOT granted; user data integrity
+    // is preserved.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null
+                  && (request.auth.uid == userId
+                      || request.auth.token.email == 'agewaller@gmail.com');
+      allow write: if request.auth != null && request.auth.uid == userId;
 
       // Subcollections (textEntries, symptoms, vitals, etc.)
       match /{subcollection}/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null
+                    && (request.auth.uid == userId
+                        || request.auth.token.email == 'agewaller@gmail.com');
+        allow write: if request.auth != null && request.auth.uid == userId;
       }
     }
 

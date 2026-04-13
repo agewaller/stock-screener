@@ -6357,6 +6357,15 @@ var FirebaseBackend = {
         if (p && typeof p.catch === 'function') p.catch(err => console.warn('[loadAllData]', err));
       } catch (e) { console.warn('[loadAllData sync]', e); }
       try { this.subscribeToInbox(); } catch (e) { console.warn('[subscribeToInbox]', e); }
+      // Touch user metadata on every sign-in so the admin "ユーザ管理"
+      // dashboard can list users with email / displayName / lastSeenAt
+      // without having to rely on the Firebase Admin SDK (which the
+      // browser cannot use). firstSeenAt is only written if absent so
+      // the registration date is preserved across logins.
+      try {
+        const p = this.touchUserMetadata(user);
+        if (p && typeof p.catch === 'function') p.catch(err => console.warn('[touchUserMetadata]', err));
+      } catch (e) { console.warn('[touchUserMetadata sync]', e); }
 
       // Always navigate to dashboard after a real sign-in. The previous
       // `if (currentPage === 'login')` guard missed the case where
@@ -6507,6 +6516,32 @@ var FirebaseBackend = {
       await this.userDoc().set(data, { merge: true });
     } catch (err) {
       console.error('Save profile error:', err);
+    }
+  },
+
+  // Write per-user metadata (email, displayName, lastSeenAt). Called
+  // from handleSignedInUser on every sign-in so the admin dashboard
+  // can enumerate users without the Firebase Admin SDK. firstSeenAt
+  // is only set on the first call so the original registration date
+  // is preserved across logins.
+  async touchUserMetadata(user) {
+    if (!user || !this.userId) return;
+    try {
+      const ref = this.userDoc();
+      const snap = await ref.get();
+      const meta = {
+        email: user.email || '',
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
+        lastSeenAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      // First sign-in for this uid → record firstSeenAt as well.
+      if (!snap.exists || !snap.data()?.firstSeenAt) {
+        meta.firstSeenAt = firebase.firestore.FieldValue.serverTimestamp();
+      }
+      await ref.set(meta, { merge: true });
+    } catch (err) {
+      console.warn('[touchUserMetadata]', err.message);
     }
   },
 
@@ -10108,7 +10143,8 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     if (target) target.style.display = 'block';
 
     const tabs = document.querySelectorAll('#admin-tabs .tab');
-    const tabNames = ['prompts', 'models', 'api', 'usage', 'affiliate', 'firebase', 'data'];
+    // Must match the order of <div class="tab"> in render_admin.
+    const tabNames = ['prompts', 'models', 'api', 'usage', 'users', 'affiliate', 'firebase', 'data'];
     const idx = tabNames.indexOf(tabId);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
 
@@ -10116,6 +10152,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     if (tabId === 'api') this.loadApiKeyFields();
     if (tabId === 'firebase') this.loadFirebaseConfigFields();
     if (tabId === 'usage') setTimeout(() => this.initUsageCharts(), 50);
+    if (tabId === 'users') this.loadUsersDashboard();
   }
 
   // ---- API Usage Dashboard (admin) ----
@@ -10338,6 +10375,278 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
         }
       }
     });
+  }
+
+  // ---- User Management Dashboard (admin) ----
+  // Lists all registered users with their email / displayName /
+  // lastSeenAt. Per-user "詳細" expansion lazy-fetches subcollection
+  // counts so the operator can see what each user has been doing.
+  //
+  // Requires:
+  //   - firestore.rules grants admin (agewaller@gmail.com) read on
+  //     /users/{*} and /users/{*}/{**}/{*}.
+  //   - FirebaseBackend.touchUserMetadata writes email/lastSeenAt to
+  //     each users/{uid} document on every sign-in.
+  async loadUsersDashboard() {
+    const container = document.getElementById('users-dashboard-content');
+    if (!container) return;
+    if (!this.isAdmin || !this.isAdmin()) {
+      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;text-align:center;color:var(--text-muted)">管理者権限が必要です</div></div>`;
+      return;
+    }
+    if (!FirebaseBackend.initialized || !firebase?.firestore) {
+      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;text-align:center;color:var(--text-muted)">Firebase が未接続です。Firebase タブから設定してください。</div></div>`;
+      return;
+    }
+    container.innerHTML = `<div class="card"><div class="card-body" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">読み込み中…</div></div>`;
+    try {
+      // Pull all user docs. The collection scan reads N documents
+      // (1 per user) which scales linearly — fine for hundreds of
+      // users, would need pagination for tens of thousands.
+      const snap = await firebase.firestore().collection('users').get();
+      const users = [];
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        const toMs = (v) => {
+          if (!v) return 0;
+          if (typeof v.toMillis === 'function') return v.toMillis();
+          if (typeof v === 'string') { const t = Date.parse(v); return isNaN(t) ? 0 : t; }
+          if (typeof v === 'number') return v;
+          return 0;
+        };
+        users.push({
+          uid: doc.id,
+          email: d.email || '',
+          displayName: d.displayName || '',
+          photoURL: d.photoURL || '',
+          firstSeenAt: toMs(d.firstSeenAt),
+          lastSeenAt: toMs(d.lastSeenAt),
+          selectedDiseases: Array.isArray(d.settings?.selectedDiseases) ? d.settings.selectedDiseases : (d.settings?.selectedDisease ? [d.settings.selectedDisease] : []),
+          language: d.userProfile?.language || ''
+        });
+      });
+      // Sort by most-recent activity first
+      users.sort((a, b) => b.lastSeenAt - a.lastSeenAt);
+
+      const now = Date.now();
+      const day = 86400000;
+      const totalUsers = users.length;
+      const activeLast24h = users.filter(u => u.lastSeenAt > now - day).length;
+      const activeLast7  = users.filter(u => u.lastSeenAt > now - 7 * day).length;
+      const activeLast30 = users.filter(u => u.lastSeenAt > now - 30 * day).length;
+      const newLast30    = users.filter(u => u.firstSeenAt > now - 30 * day).length;
+
+      const fmtDate = (ms) => {
+        if (!ms) return '—';
+        const d = new Date(ms);
+        const Y = d.getFullYear(), M = String(d.getMonth() + 1).padStart(2, '0'), D = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0'), m = String(d.getMinutes()).padStart(2, '0');
+        return `${Y}/${M}/${D} ${h}:${m}`;
+      };
+      const fmtRelative = (ms) => {
+        if (!ms) return '—';
+        const diff = now - ms;
+        if (diff < 60_000) return 'たった今';
+        if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分前`;
+        if (diff < day) return `${Math.floor(diff / 3600_000)} 時間前`;
+        if (diff < 30 * day) return `${Math.floor(diff / day)} 日前`;
+        if (diff < 365 * day) return `${Math.floor(diff / (30 * day))} ヶ月前`;
+        return `${Math.floor(diff / (365 * day))} 年前`;
+      };
+
+      // Disease id → name lookup
+      const diseaseNames = { '_universal': '共通' };
+      CONFIG.DISEASE_CATEGORIES.forEach(cat => cat.diseases.forEach(d => { diseaseNames[d.id] = d.name; }));
+      const diseaseLabel = (ids) => {
+        if (!ids || !ids.length) return '<span style="color:var(--text-muted)">未設定</span>';
+        return ids.slice(0, 3).map(id => `<span class="tag tag-accent" style="font-size:9px">${Components.escapeHtml(diseaseNames[id] || id)}</span>`).join(' ') + (ids.length > 3 ? ` <span style="font-size:10px;color:var(--text-muted)">+${ids.length - 3}</span>` : '');
+      };
+
+      const userRows = users.length === 0
+        ? `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">登録ユーザーがまだいません。</td></tr>`
+        : users.map((u, idx) => {
+            const safeUid = Components.escapeHtml(u.uid);
+            const initial = (u.displayName || u.email || '?')[0].toUpperCase();
+            const photo = u.photoURL
+              ? `<img src="${Components.escapeHtml(u.photoURL)}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover">`
+              : `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">${Components.escapeHtml(initial)}</div>`;
+            return `
+              <tr style="border-top:1px solid var(--border)" data-user-row="${safeUid}">
+                <td style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${idx + 1}</td>
+                <td style="padding:10px 12px">
+                  <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    ${photo}
+                    <div style="min-width:0">
+                      <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${Components.escapeHtml(u.displayName || u.email || '(no name)')}</div>
+                      <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${Components.escapeHtml(u.email || u.uid)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding:10px 12px">${diseaseLabel(u.selectedDiseases)}</td>
+                <td style="padding:10px 12px;font-size:11px;color:var(--text-muted);white-space:nowrap" title="${fmtDate(u.firstSeenAt)}">${fmtRelative(u.firstSeenAt)}</td>
+                <td style="padding:10px 12px;font-size:11px;white-space:nowrap" title="${fmtDate(u.lastSeenAt)}">
+                  <span style="color:${u.lastSeenAt > now - 7 * day ? 'var(--success,#16a34a)' : 'var(--text-muted)'}">${fmtRelative(u.lastSeenAt)}</span>
+                </td>
+                <td style="padding:10px 12px;text-align:right;white-space:nowrap">
+                  <button class="btn btn-outline btn-sm" style="font-size:10px;padding:4px 10px" onclick="app.loadUserActivity('${safeUid}')">詳細</button>
+                </td>
+              </tr>
+              <tr id="user-activity-${safeUid}" style="display:none;border-top:1px dashed var(--border)">
+                <td colspan="6" style="padding:14px 18px;background:var(--bg-tertiary)">
+                  <div style="font-size:12px;color:var(--text-muted)">読み込み中…</div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+      container.innerHTML = `
+        <!-- Summary cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">
+          <div class="card"><div class="card-body" style="padding:14px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">登録ユーザー総数</div>
+            <div style="font-size:26px;font-weight:700;color:var(--accent)">${totalUsers.toLocaleString()}</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:14px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">過去 24 時間</div>
+            <div style="font-size:22px;font-weight:700">${activeLast24h.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">アクティブ</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:14px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">過去 7 日</div>
+            <div style="font-size:22px;font-weight:700">${activeLast7.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">アクティブ</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:14px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">過去 30 日</div>
+            <div style="font-size:22px;font-weight:700">${activeLast30.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">アクティブ</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="padding:14px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">新規 (30 日)</div>
+            <div style="font-size:22px;font-weight:700;color:var(--success,#16a34a)">+${newLast30.toLocaleString()}</div>
+          </div></div>
+        </div>
+
+        <!-- User list -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">ユーザー一覧（${totalUsers}）</span>
+            <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.loadUsersDashboard()">🔄 再読込</button>
+          </div>
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead><tr style="background:var(--bg-tertiary)">
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">#</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">ユーザー</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">疾患</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">登録日</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--text-muted)">最終アクセス</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--text-muted)">アクション</th>
+              </tr></thead>
+              <tbody>${userRows}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-muted);padding:12px 4px 0;line-height:1.6">
+          ※ メタデータ (email / displayName / lastSeenAt) は、各ユーザーがログインした時点で <code>users/{uid}</code> に書き込まれます。古いユーザーがまだ一度も再ログインしていない場合、表示されない可能性があります。<br>
+          ※ 「詳細」をクリックすると、そのユーザーの記録件数 (テキスト・症状・バイタル・食事・写真など) を読み込みます。
+        </div>
+      `;
+    } catch (err) {
+      console.error('[loadUsersDashboard]', err);
+      const msg = err?.code === 'permission-denied'
+        ? 'Firestore が拒否しました。firestore.rules を最新版にデプロイしてください。'
+        : `読み込みエラー: ${err.message || err}`;
+      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;color:var(--danger,#dc2626);font-size:13px">${Components.escapeHtml(msg)}</div></div>`;
+    }
+  }
+
+  // Lazy-fetch subcollection counts for one user. The same row is
+  // toggled open/closed on repeated clicks so the operator can drill
+  // into multiple users without re-loading.
+  async loadUserActivity(uid) {
+    if (!uid) return;
+    const row = document.getElementById('user-activity-' + uid);
+    if (!row) return;
+    if (row.style.display !== 'none') {
+      row.style.display = 'none';
+      return;
+    }
+    row.style.display = '';
+    const cell = row.querySelector('td');
+    if (!cell) return;
+    cell.innerHTML = `<div style="font-size:12px;color:var(--text-muted)">読み込み中…</div>`;
+    try {
+      const ref = firebase.firestore().collection('users').doc(uid);
+      // Subcollections we know about. Each one is fetched with a
+      // limit so a single super-active user can't blow up the read
+      // bill. Anything at the cap is shown as "500+".
+      const subs = [
+        { key: 'textEntries',     label: 'テキスト記録' },
+        { key: 'symptoms',        label: '症状' },
+        { key: 'vitals',          label: 'バイタル' },
+        { key: 'sleep',           label: '睡眠' },
+        { key: 'medications',     label: '薬' },
+        { key: 'supplements',     label: 'サプリ' },
+        { key: 'meals',           label: '食事' },
+        { key: 'bloodTests',      label: '血液検査' },
+        { key: 'photos',          label: '写真' },
+        { key: 'plaudAnalyses',   label: '禅トラック' },
+        { key: 'conversations',   label: 'AIチャット' },
+        { key: 'analysisHistory', label: '分析履歴' }
+      ];
+      const CAP = 500;
+      const results = await Promise.all(subs.map(async (s) => {
+        try {
+          const snap = await ref.collection(s.key).limit(CAP).get();
+          let latest = 0;
+          snap.forEach(d => {
+            const created = d.data()?.createdAt;
+            const ms = created?.toMillis?.() || (typeof created === 'string' ? Date.parse(created) : 0);
+            if (ms && ms > latest) latest = ms;
+          });
+          return { ...s, count: snap.size, capped: snap.size >= CAP, latest };
+        } catch (e) {
+          return { ...s, count: -1, error: e.code || e.message };
+        }
+      }));
+      const totalRecords = results.reduce((sum, r) => sum + (r.count > 0 ? r.count : 0), 0);
+      const fmtRel = (ms) => {
+        if (!ms) return '—';
+        const diff = Date.now() - ms;
+        const day = 86400000;
+        if (diff < 60_000) return 'たった今';
+        if (diff < 3600_000) return Math.floor(diff / 60_000) + ' 分前';
+        if (diff < day) return Math.floor(diff / 3600_000) + ' 時間前';
+        if (diff < 30 * day) return Math.floor(diff / day) + ' 日前';
+        return Math.floor(diff / (30 * day)) + ' ヶ月前';
+      };
+      const cards = results.map(r => {
+        if (r.count < 0) {
+          return `<div style="padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text-muted)">
+            <div style="font-weight:600;margin-bottom:2px">${Components.escapeHtml(r.label)}</div>
+            <div style="font-size:10px">取得失敗 (${Components.escapeHtml(r.error || '')})</div>
+          </div>`;
+        }
+        const empty = r.count === 0;
+        return `<div style="padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:6px;min-width:120px">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">${Components.escapeHtml(r.label)}</div>
+          <div style="font-size:18px;font-weight:700;color:${empty ? 'var(--text-muted)' : 'var(--accent)'}">${r.capped ? CAP + '+' : r.count}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${empty ? '—' : '最終: ' + fmtRel(r.latest)}</div>
+        </div>`;
+      }).join('');
+      cell.innerHTML = `
+        <div style="margin-bottom:10px;font-size:12px;color:var(--text-muted)">
+          <span style="font-weight:600;color:var(--text-primary)">合計レコード: ${totalRecords.toLocaleString()}</span>
+          <span style="margin-left:12px;font-family:'JetBrains Mono',monospace;font-size:10px">uid: ${Components.escapeHtml(uid)}</span>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">${cards}</div>
+      `;
+    } catch (err) {
+      console.error('[loadUserActivity]', err);
+      cell.innerHTML = `<div style="font-size:12px;color:var(--danger,#dc2626)">読み込みエラー: ${Components.escapeHtml(err.message || String(err))}</div>`;
+    }
   }
 
   togglePromptEdit(key) {
@@ -12955,6 +13264,7 @@ App.prototype.render_admin = function() {
     <div class="tab" onclick="app.switchAdminTab('models')">AIモデル</div>
     <div class="tab" onclick="app.switchAdminTab('api')">APIキー</div>
     <div class="tab" onclick="app.switchAdminTab('usage')">📊 使用量</div>
+    <div class="tab" onclick="app.switchAdminTab('users')">👥 ユーザ管理</div>
     <div class="tab" onclick="app.switchAdminTab('affiliate')">アフィリエイト</div>
     <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
     <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
@@ -13108,6 +13418,19 @@ App.prototype.render_admin = function() {
   <!-- TAB: Usage Dashboard -->
   <div class="admin-tab-content" id="admin-tab-usage" style="display:none">
     ${app.renderUsageDashboard()}
+  </div>
+
+  <!-- TAB: User Management -->
+  <div class="admin-tab-content" id="admin-tab-users" style="display:none">
+    <div style="margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">👥 ユーザ管理</h3>
+      <p style="font-size:12px;color:var(--text-muted)">登録ユーザー数とそれぞれの利用状況を把握し、サービス改善に活用します。</p>
+    </div>
+    <div id="users-dashboard-content">
+      <div class="card"><div class="card-body" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">
+        タブを開くと読み込みます…
+      </div></div>
+    </div>
   </div>
 
   <!-- TAB: Affiliate -->
