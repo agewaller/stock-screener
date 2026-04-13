@@ -5260,6 +5260,24 @@ var CalendarIntegration = {
     });
   },
 
+  // Get events for today + tomorrow (2 days), used by the dashboard
+  // widget. Sorted chronologically.
+  getNext2Days() {
+    const events = store.get('calendarEvents') || [];
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 2); // exclusive: covers today + tomorrow
+    return events
+      .filter(e => {
+        if (!e.start) return false;
+        const d = new Date(e.start);
+        return d >= start && d < end;
+      })
+      .sort((a, b) => new Date(a.start) - new Date(b.start));
+  },
+
   // Get this week's events
   getThisWeek() {
     const events = store.get('calendarEvents') || [];
@@ -5325,32 +5343,51 @@ var CalendarIntegration = {
         </div>`;
     }
 
-    const today = this.getToday();
+    const next2 = this.getNext2Days();
     const week = this.getThisWeek();
     const weekAnalysis = this.analyzeLoad(week);
     const levelColors = { high: 'var(--danger)', medium: 'var(--warning)', low: 'var(--success)' };
     const levelLabels = { high: '負荷高', medium: '適度', low: '余裕' };
 
-    const todayItems = today.filter(e => e.type !== 'birthday').slice(0, 5);
-    const birthdays = today.filter(e => e.type === 'birthday');
+    // Group the 2-day window by date so we can render a "今日"/"明日"
+    // header above each day's events.
+    const todayKey = new Date().toISOString().split('T')[0];
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowKey = tomorrowDate.toISOString().split('T')[0];
+
+    const items = next2.filter(e => e.type !== 'birthday');
+    const todayItems = items.filter(e => (e.start || '').split('T')[0] === todayKey);
+    const tomorrowItems = items.filter(e => (e.start || '').split('T')[0] === tomorrowKey);
+    const birthdays = next2.filter(e => e.type === 'birthday');
+
+    const renderItem = (e) => {
+      const time = e.allDay ? '終日' : new Date(e.start).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;min-width:40px">${time}</span>
+        <span style="font-size:12px;flex:1">${Components.escapeHtml(e.title || '')}</span>
+        ${e.location ? `<span style="font-size:10px;color:var(--text-muted)">📍${Components.escapeHtml(String(e.location).substring(0, 20))}</span>` : ''}
+      </div>`;
+    };
+
+    const renderDaySection = (label, list) => {
+      if (list.length === 0) {
+        return `<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px">${label}</div><div style="font-size:12px;color:var(--text-muted);padding:4px 0">予定なし</div></div>`;
+      }
+      return `<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px">${label}（${list.length}件）</div>${list.map(renderItem).join('')}</div>`;
+    };
 
     return `
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
-          <span class="card-title">📅 今日のスケジュール</span>
+          <span class="card-title">📅 スケジュール（2日分）</span>
           <span class="tag" style="background:${levelColors[weekAnalysis.level]}22;color:${levelColors[weekAnalysis.level]}">${levelLabels[weekAnalysis.level]}（週${weekAnalysis.totalHours}h）</span>
         </div>
         <div class="card-body" style="padding:12px 16px">
           ${weekAnalysis.level !== 'low' ? `<div style="padding:6px 10px;background:${weekAnalysis.level === 'high' ? 'var(--danger-bg)' : 'var(--warning-bg)'};border-radius:var(--radius-sm);font-size:11px;margin-bottom:10px;color:${levelColors[weekAnalysis.level]}">${weekAnalysis.advice}</div>` : ''}
-          ${todayItems.length > 0 ? todayItems.map(e => {
-            const time = e.allDay ? '終日' : new Date(e.start).toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
-            return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;min-width:40px">${time}</span>
-              <span style="font-size:12px;flex:1">${e.title}</span>
-              ${e.location ? `<span style="font-size:10px;color:var(--text-muted)">📍${e.location.substring(0, 20)}</span>` : ''}
-            </div>`;
-          }).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">今日の予定はありません</div>'}
-          ${birthdays.length > 0 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">🎂 ${birthdays.map(b => b.title.replace('さんの誕生日','')).join('、')}さんの誕生日</div>` : ''}
+          ${renderDaySection('今日', todayItems)}
+          ${renderDaySection('明日', tomorrowItems)}
+          ${birthdays.length > 0 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">🎂 ${birthdays.map(b => Components.escapeHtml(b.title.replace('さんの誕生日', ''))).join('、')}さんの誕生日</div>` : ''}
         </div>
       </div>`;
   }
