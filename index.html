@@ -4966,17 +4966,37 @@ var CalendarIntegration = {
         }
         return true;
       })
-      .map(e => ({
-        id: e.id,
-        title: e.summary || '',
-        location: e.location || '',
-        start: e.start?.dateTime || e.start?.date || '',
-        end: e.end?.dateTime || e.end?.date || '',
-        allDay: e.allDay || false,
-        type: e.eventType || 'default',
-        attendees: e.numAttendees || 0,
-        description: (e.description || '').replace(/<[^>]*>/g, '').substring(0, 200)
-      }));
+      .map(e => {
+        // Google Calendar API v3 encodes "all-day" implicitly: the
+        // event has `start.date` (YYYY-MM-DD) instead of
+        // `start.dateTime`. There's no explicit `allDay` flag on the
+        // API response, so we derive it. Older code read `e.allDay`
+        // directly — that was always undefined, and the downstream
+        // widget/analyzer defaulted everything to "timed", which is
+        // why the dashboard widget was under-counting daily events.
+        const isAllDay = !e.start?.dateTime && !!e.start?.date;
+        // attendees is an array on v3 ({email, responseStatus, ...}).
+        // Previously this code read `e.numAttendees` which does not
+        // exist on the API, so every event looked like a 1-person
+        // task and analyzeLoad never classified anything as a meeting.
+        const attendeeCount = Array.isArray(e.attendees) ? e.attendees.length : 0;
+        return {
+          id: e.id,
+          // Include which calendar the event came from so we can
+          // display mixed sources (primary / holidays / shared / etc.)
+          // without collapsing them visually.
+          calendarId: e._calendarId || '',
+          calendarName: e._calendarName || '',
+          title: e.summary || '',
+          location: e.location || '',
+          start: e.start?.dateTime || e.start?.date || '',
+          end: e.end?.dateTime || e.end?.date || '',
+          allDay: isAllDay,
+          type: e.eventType || 'default',
+          attendees: attendeeCount,
+          description: (e.description || '').replace(/<[^>]*>/g, '').substring(0, 200)
+        };
+      });
 
     store.set('calendarEvents', cleaned);
     return cleaned;
@@ -5034,36 +5054,122 @@ var CalendarIntegration = {
 
   // Google OAuth access token (calendar.readonly) で直接イベント取得。
   // ユーザーは「Googleで連携」ボタンで同意するだけ。
+  //
+  // IMPORTANT: This fetches events from EVERY calendar the user has
+  // access to (primary, shared, holidays, family, secondary, etc.)
+  // — not just the primary calendar. Historically this code hit
+  // calendars/primary/events only, which silently dropped every
+  // event stored in any non-primary calendar. Users who had their
+  // work schedule, family events, or national holidays in separate
+  // calendars saw a small fraction of their real schedule.
+  //
+  // It also follows nextPageToken so calendars with more than
+  // 250 events inside the window don't get truncated.
   async importFromGoogleAccessToken(accessToken) {
     if (!accessToken) {
       throw new Error('Google認可トークンが見つかりません。再度「Googleで連携」を押してください。');
     }
 
     const now = new Date();
-    const timeMin = new Date(now.getTime() - 7 * 86400000).toISOString();
-    const timeMax = new Date(now.getTime() + 90 * 86400000).toISOString();
-    const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?' + new URLSearchParams({
-      singleEvents: 'true',
-      orderBy: 'startTime',
-      maxResults: '1000',
-      timeMin,
-      timeMax
-    }).toString();
+    // Widened from -7/+90 days because users reported many
+    // upcoming events outside the old window. -30/+180 covers
+    // a full past month plus half a year forward, which matches
+    // what most users expect from the Google Calendar UI.
+    const timeMin = new Date(now.getTime() - 30 * 86400000).toISOString();
+    const timeMax = new Date(now.getTime() + 180 * 86400000).toISOString();
 
-    const res = await fetch(url, {
+    const authFetch = (url) => fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
-    if (!res.ok) {
+
+    const throwHttp = async (res, ctx) => {
       let message = `Google Calendar API ${res.status}`;
       try {
         const err = await res.json();
         message = err?.error?.message || message;
       } catch (_) {}
-      throw new Error(message);
+      throw new Error(`${ctx}: ${message}`);
+    };
+
+    // Step 1: list all calendars the user has access to.
+    // minAccessRole=reader excludes calendars we can't read anyway.
+    const listRes = await authFetch(
+      'https://www.googleapis.com/calendar/v3/users/me/calendarList?' +
+      new URLSearchParams({ minAccessRole: 'reader', maxResults: '250' }).toString()
+    );
+    if (!listRes.ok) await throwHttp(listRes, 'calendarList');
+    const listData = await listRes.json();
+    // Respect the user's "show in list" preference (selected !== false).
+    // Hidden calendars are typically ones the user has explicitly
+    // chosen not to see in Google Calendar, so we skip them too.
+    const calendars = (listData.items || [])
+      .filter(c => c.id && c.selected !== false)
+      .map(c => ({ id: c.id, name: c.summary || c.summaryOverride || c.id }));
+
+    // If for some reason calendarList returned nothing, fall back
+    // to the primary calendar only, so the user still sees something.
+    if (calendars.length === 0) {
+      calendars.push({ id: 'primary', name: 'primary' });
     }
 
-    const data = await res.json();
-    const events = this.saveEvents(data.items || []);
+    // Step 2: for each calendar, fetch events with pagination.
+    const fetchCalendarEvents = async (cal) => {
+      const out = [];
+      let pageToken = '';
+      // Hard cap of 20 pages (×1000 events/page = 20,000 events max
+      // per calendar) to avoid infinite loops on pathological data.
+      for (let guard = 0; guard < 20; guard++) {
+        const params = new URLSearchParams({
+          singleEvents: 'true',
+          orderBy: 'startTime',
+          maxResults: '1000',
+          timeMin,
+          timeMax
+        });
+        if (pageToken) params.set('pageToken', pageToken);
+        const url = 'https://www.googleapis.com/calendar/v3/calendars/' +
+          encodeURIComponent(cal.id) + '/events?' + params.toString();
+        const res = await authFetch(url);
+        if (!res.ok) {
+          // Skip calendars we can't read (404 / 403) instead of
+          // failing the whole import. This commonly happens with
+          // leftover shared calendars that the user no longer owns.
+          console.warn('[calendar]', cal.id, 'HTTP', res.status);
+          break;
+        }
+        const data = await res.json();
+        (data.items || []).forEach(e => {
+          // Tag with source calendar so saveEvents can preserve it.
+          e._calendarId = cal.id;
+          e._calendarName = cal.name;
+          out.push(e);
+        });
+        if (!data.nextPageToken) break;
+        pageToken = data.nextPageToken;
+      }
+      return out;
+    };
+
+    // Run calendars in parallel. Google's quota is generous enough
+    // for the typical user's 1-10 calendars; chunking only matters
+    // for extreme edge cases (50+ calendars).
+    const results = await Promise.all(calendars.map(fetchCalendarEvents));
+    const merged = [].concat(...results);
+
+    // Dedupe on event id just in case the same event appears on
+    // multiple calendars (e.g. an invitee's copy in primary and the
+    // organizer's copy in a shared calendar share the same event id
+    // after Google normalises it).
+    const seen = new Set();
+    const unique = merged.filter(e => {
+      const key = e.id || (e.summary + ':' + (e.start?.dateTime || e.start?.date || ''));
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log('[calendar] fetched', unique.length, 'events from', calendars.length, 'calendars');
+    const events = this.saveEvents(unique);
     localStorage.setItem('google_calendar_oauth_connected', '1');
 
     const syncs = store.get('integrationSyncs') || {};
