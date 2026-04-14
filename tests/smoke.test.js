@@ -25,9 +25,12 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || 'Assertion failed
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
-// Extract inline script
-const scriptMatch = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/);
-const script = scriptMatch ? scriptMatch[1] : '';
+// Extract inline script(s) — skip src= imports and skip structured
+// data blocks (type="application/ld+json"). Concatenates all
+// remaining inline JS so the analyzer can see the full surface of
+// the SPA regardless of how many <script> tags are used.
+const scriptMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g)];
+const script = scriptMatches.map(m => m[1]).join('\n;\n');
 
 // Helper: extract function body by name (supports class methods,
 // object methods, and App.prototype.X = function() patterns)

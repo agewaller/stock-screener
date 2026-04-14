@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap for https://cares.advisers.jp/
+  健康日記 (Health Diary) — ME/CFS・Long COVID・慢性疾患の症状記録 & AI 分析
+
+  Single-page app hosted at GitHub Pages: all routes resolve to /
+  (SPA hash-based routing). Distinct URLs here mainly serve as
+  canonical anchors for different topical sections that the crawler
+  can use to understand site structure.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://cares.advisers.jp/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://cares.advisers.jp/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/"/>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/#privacy</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/#login</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/.well-known/security.txt</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

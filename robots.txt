@@ -1,0 +1,43 @@
+# robots.txt for https://cares.advisers.jp
+#
+# 健康日記 (Health Diary) — ME/CFS・Long COVID・慢性疾患の症状記録 & AI 分析
+# Operated by シェアーズ株式会社 (info@bluemarl.in)
+
+User-agent: *
+Allow: /
+
+# Block admin endpoints to keep them out of search results.
+# (The admin panel itself is client-side, but fragment routes
+#  are listed here for future-proofing.)
+Disallow: /admin
+Disallow: /#admin
+
+# Privacy / security metadata
+Sitemap: https://cares.advisers.jp/sitemap.xml
+
+# Explicit guidance for major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+User-agent: DuckDuckBot
+Allow: /
+
+# AI / ML crawlers — allow indexing (we want visibility) but note
+# the AI providers we use (Anthropic, OpenAI, Google) have their
+# own API-level data handling policies; this does not affect them.
+User-agent: GPTBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /

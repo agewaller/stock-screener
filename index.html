@@ -3,7 +3,238 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>健康日記 〜慢性疾患の寛解をサポート〜</title>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SEO / Open Graph / Structured Data
+     ───────────────────────────────────────────────────────────
+     Primary keyword focus: ME/CFS (筋痛性脳脊髄炎 / 慢性疲労症候群)
+     Secondary: Long COVID, 線維筋痛症, POTS, MCAS, EDS, and 80+
+     other chronic conditions. The initial HTML contains a full
+     SEO landing block (#page-content → #seo-landing) which the
+     SPA replaces after hydration — crawlers index the static
+     content, humans see the interactive app.
+     ═════════════════════════════════════════════════════════════ -->
+<title>健康日記 | ME/CFS・慢性疲労症候群・Long COVID の症状記録 & AI 分析アプリ</title>
+<meta name="description" content="ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）・Long COVID・線維筋痛症・POTS・MCAS・EDS など慢性疾患の症状を毎日記録し、最新 AI (Claude Opus 4.6) で寛解への道を分析。PEM・ブレインフォグ・ペーシング・LDN 治療の記録に対応。無料。開発者自身が 2 年間のME/CFS闘病から開発。">
+<meta name="keywords" content="ME/CFS,筋痛性脳脊髄炎,慢性疲労症候群,慢性疾患,症状記録アプリ,Long COVID,コロナ後遺症,線維筋痛症,POTS,体位性頻脈症候群,MCAS,マスト細胞活性化症候群,EDS,エーラスダンロス,LDN,低用量ナルトレキソン,PEM,労作後倦怠感,ブレインフォグ,ペーシング,寛解,AI分析,健康日記,PHR,PubMed">
+<meta name="author" content="山口揚平 / シェアーズ株式会社">
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<meta name="googlebot" content="index,follow">
+<meta name="theme-color" content="#6C63FF">
+<meta name="format-detection" content="telephone=no">
+<link rel="canonical" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="en" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/">
+
+<!-- Open Graph (Facebook, LINE, Slack, Discord link previews) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="健康日記 (Health Diary)">
+<meta property="og:title" content="健康日記 | ME/CFS・慢性疲労症候群・Long COVID の症状記録 & AI 分析">
+<meta property="og:description" content="ME/CFS・Long COVID・線維筋痛症など慢性疾患の症状を毎日記録し、AI で寛解への道を分析。PEM・ブレインフォグ・ペーシング・LDN 治療に対応。開発者自身の 2 年間の闘病体験から誕生。">
+<meta property="og:url" content="https://cares.advisers.jp/">
+<meta property="og:image" content="https://cares.advisers.jp/og-image.png">
+<meta property="og:image:alt" content="健康日記 — ME/CFS・慢性疾患の症状記録 & AI 分析アプリ">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="健康日記 | ME/CFS・慢性疾患の症状記録 & AI 分析">
+<meta name="twitter:description" content="ME/CFS・Long COVID・線維筋痛症などの症状を毎日記録し、AI で寛解への道を分析。開発者自身の 2 年間の ME/CFS 闘病体験から誕生。">
+<meta name="twitter:image" content="https://cares.advisers.jp/og-image.png">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3Cpath d='M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z' fill='white' fill-opacity='0.25'/%3E%3Cpath d='M16 11L16 20M12 15.5L16 20L20 15.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+<!-- ═══ Structured Data (schema.org JSON-LD) ═══ -->
+<!-- Organization + WebSite + WebApplication: identifies the
+     publisher, search action, and app metadata for Google
+     Knowledge Graph / rich results. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://cares.advisers.jp/#organization",
+      "name": "シェアーズ株式会社",
+      "alternateName": "Shares Inc.",
+      "url": "https://cares.advisers.jp/",
+      "email": "info@bluemarl.in",
+      "sameAs": [
+        "https://note.com/age"
+      ],
+      "founder": {
+        "@id": "https://cares.advisers.jp/#person-yamaguchi"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://cares.advisers.jp/#person-yamaguchi",
+      "name": "山口揚平",
+      "alternateName": "Yohei Yamaguchi",
+      "jobTitle": "開発者 / ME/CFS 患者",
+      "description": "2 年間の ME/CFS (筋痛性脳脊髄炎／慢性疲労症候群) 闘病経験から『健康日記』を開発。毎日の記録と AI 分析を武器に寛解を目指す患者のためのツールを追求している。",
+      "sameAs": [
+        "https://note.com/age",
+        "https://note.com/age/n/nc8305ab7c124",
+        "https://note.com/age/n/n4f373bc7415a"
+      ],
+      "worksFor": {
+        "@id": "https://cares.advisers.jp/#organization"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://cares.advisers.jp/#website",
+      "url": "https://cares.advisers.jp/",
+      "name": "健康日記",
+      "alternateName": ["Health Diary", "旧・未病ダイアリー"],
+      "description": "ME/CFS・慢性疲労症候群・Long COVID・線維筋痛症など慢性疾患の症状を毎日記録し、AI で寛解への道を分析するアプリ",
+      "inLanguage": ["ja", "en", "zh", "ko"],
+      "publisher": {
+        "@id": "https://cares.advisers.jp/#organization"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://cares.advisers.jp/#webapp",
+      "name": "健康日記",
+      "url": "https://cares.advisers.jp/",
+      "applicationCategory": "HealthApplication",
+      "applicationSubCategory": "慢性疾患・症状記録・PHR (Personal Health Record)",
+      "operatingSystem": "Web (ブラウザ動作、iOS / Android / Windows / macOS / Linux)",
+      "browserRequirements": "JavaScript 対応ブラウザ（Chrome, Safari, Firefox, Edge 最新版）",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY",
+        "availability": "https://schema.org/InStock"
+      },
+      "description": "ME/CFS・Long COVID・線維筋痛症など 80+ の慢性疾患に対応した症状記録アプリ。最新 AI (Claude Opus 4.6 / GPT-4o / Gemini 2.5 Pro) で日々の記録を分析し、寛解への道筋を提案。開発者自身が 2 年間の ME/CFS 闘病から生み出した。",
+      "featureList": [
+        "PEM（労作後症状悪化）の頻度と誘因の記録",
+        "1 日の活動可能時間（ペーシング）追跡",
+        "疲労度・ブレインフォグ・疼痛の 10 段階スコア",
+        "HRV・NK 細胞活性・CRP・サイトカインなど検査結果記録",
+        "服薬管理（LDN / 低用量ナルトレキソン・ピリドスチグミン・SSRI 等）",
+        "食事・睡眠・活動量・水分摂取の自動分析",
+        "最新 AI（Claude / GPT-4o / Gemini）による個別化フィードバック",
+        "PubMed 論文の自動検索と日本語要約",
+        "Google カレンダー / Fitbit / Apple Health / Plaud 連携",
+        "80+ の慢性疾患に対応（ME/CFS・Long COVID・線維筋痛症・POTS・MCAS・EDS・うつ病・甲状腺疾患 等）"
+      ],
+      "creator": {
+        "@id": "https://cares.advisers.jp/#person-yamaguchi"
+      },
+      "about": [
+        {
+          "@type": "MedicalCondition",
+          "name": "筋痛性脳脊髄炎／慢性疲労症候群 (ME/CFS)",
+          "alternateName": ["ME/CFS", "Myalgic Encephalomyelitis", "Chronic Fatigue Syndrome", "慢性疲労症候群", "筋痛性脳脊髄炎"],
+          "code": {
+            "@type": "MedicalCode",
+            "code": "8E49",
+            "codingSystem": "ICD-11"
+          }
+        },
+        {
+          "@type": "MedicalCondition",
+          "name": "Long COVID (コロナ後遺症)",
+          "alternateName": ["Long COVID", "コロナ後遺症", "PASC", "Post-Acute Sequelae of COVID-19"],
+          "code": {
+            "@type": "MedicalCode",
+            "code": "RA02",
+            "codingSystem": "ICD-11"
+          }
+        },
+        {
+          "@type": "MedicalCondition",
+          "name": "線維筋痛症",
+          "alternateName": ["Fibromyalgia", "FM"],
+          "code": {
+            "@type": "MedicalCode",
+            "code": "MG30.01",
+            "codingSystem": "ICD-11"
+          }
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://cares.advisers.jp/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "健康日記は何ができるアプリですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ME/CFS (筋痛性脳脊髄炎／慢性疲労症候群)、Long COVID、線維筋痛症、POTS、MCAS、EDS など 80+ の慢性疾患の症状・服薬・食事・睡眠・バイタルを毎日記録し、最新の AI (Claude Opus 4.6 / GPT-4o / Gemini 2.5 Pro) が寛解への道筋を分析するアプリです。完全無料・ブラウザで動作・データは本人のみアクセス可能。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS (筋痛性脳脊髄炎／慢性疲労症候群) の記録でどんな項目が追えますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "PEM 発生頻度（回/週）、1 日の活動可能時間、疲労度（1-10）、ブレインフォグ（1-10）、疼痛（1-10）、睡眠の質、HRV（心拍変動）、NK 細胞活性、CRP、服薬履歴（LDN・低用量ナルトレキソン等）、食事、水分摂取、ペーシング戦略の実施状況など、ME/CFS 専門医が重視する指標を専用プロンプトで追跡します。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "LDN (低用量ナルトレキソン) の記録には対応していますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい。LDN は ME/CFS・線維筋痛症・Long COVID の神経炎症抑制に使用される治療の一つで、本アプリの服薬管理機能で用量・効果・副作用を日次記録できます。AI 分析では LDN 用量調整のヒントや最新研究（低用量ナルトレキソンのME/CFS治験結果等）も提示します。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "PEM (労作後症状悪化) のトリガーを特定できますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい。毎日の活動・食事・睡眠・心理的ストレスを記録すると、AI が PEM 発生日の前後 24-48 時間を相関分析し、個別のトリガー（身体活動量の閾値・特定食品・睡眠不足・感情ストレス等）を推定します。ペーシング戦略の最適化に役立ちます。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "データは安全に守られますか？漏洩しませんか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい。データは Google Cloud Firestore (東京リージョン) に暗号化保存され、Firebase Authentication により本人以外は一切アクセスできません。AI API (Anthropic / OpenAI / Google) に送られた内容はモデル学習に使われないことが各社公式ポリシーで明示されています。さらにオプションで「AI 送信前の匿名化」により個人情報を自動マスクできます。プライバシーマーク (Pマーク) 取得申請も準備中です。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "開発者は ME/CFS 当事者ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい。開発者の山口揚平 (note: @age) は 2 年間の ME/CFS 闘病を経験し、毎日の記録が最大の武器となった経験からこのアプリを開発しました。note.com で闘病記を連載しています: https://note.com/age/n/n4f373bc7415a"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "どんな慢性疾患に対応していますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ME/CFS・線維筋痛症・片頭痛・多発性硬化症・POTS・EDS・Long COVID・MCAS・SLE・関節リウマチ・橋本病・クローン病・潰瘍性大腸炎・うつ病・双極性障害・PTSD・ADHD・不眠障害・1 型 / 2 型糖尿病・甲状腺機能低下症・PCOS・高血圧・心不全・IBS・GERD・SIBO・化学物質過敏症・ライム病 など、ICD-11 基準で 80+ の慢性疾患に対応しています。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "費用はかかりますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "完全無料です。Google アカウントまたはメールアドレスで登録するだけで全機能が使えます。広告表示や課金要素はありません。AI 分析も運営者負担で提供しています。"
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -1247,7 +1478,173 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')" title="設定">⚙️</button>
       </div>
     </div>
-    <div class="page-content" id="page-content"></div>
+    <div class="page-content" id="page-content"><!-- ═══════════════════════════════════════════════════════════
+      SEO LANDING CONTENT
+      ───────────────────────────────────────────────────────────
+      This static HTML block is indexed by search engines on the
+      initial page load. The SPA replaces #page-content with the
+      interactive app after hydration, so humans see the app and
+      crawlers see this rich content. Primary target: users
+      searching for ME/CFS / 慢性疲労症候群 / Long COVID / 線維筋痛症
+      and related chronic disease keywords.
+      ─────────────────────────────────────────────────────────── -->
+      <div id="seo-landing" style="max-width:840px;margin:0 auto;padding:28px 22px 80px;line-height:1.9;color:#1e293b">
+        <h1 style="font-size:28px;font-weight:800;line-height:1.4;margin-bottom:16px">健康日記 — ME/CFS・慢性疲労症候群・Long COVID の症状記録 &amp; AI 分析アプリ</h1>
+        <p style="font-size:15px;color:#475569;margin-bottom:22px">
+          <strong>ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）</strong>・<strong>Long COVID（コロナ後遺症）</strong>・<strong>線維筋痛症</strong>・<strong>POTS</strong>・<strong>MCAS</strong>・<strong>EDS</strong> など <strong>80+ の慢性疾患</strong>に対応した症状記録＆AI 分析アプリ。毎日の体調・PEM・服薬・食事・睡眠を記録し、最新 AI（Claude Opus 4.6 / GPT-4o / Gemini 2.5 Pro）が寛解への道筋を分析します。完全無料・開発者自身の 2 年間の ME/CFS 闘病体験から誕生。
+        </p>
+
+        <!-- Hero CTA (also visible to users before SPA mounts) -->
+        <div style="padding:18px 22px;background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:28px;text-align:center">
+          <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:6px">🌱 今すぐ記録を始める</div>
+          <div style="font-size:12px;color:#4338ca;line-height:1.7;margin-bottom:10px">
+            Google アカウントまたはメールで登録（無料）。スマホ・PC どちらでも動作します。
+          </div>
+          <a href="#login" style="display:inline-block;padding:10px 24px;background:#6366f1;color:#fff;border-radius:20px;text-decoration:none;font-size:13px;font-weight:600">無料で始める →</a>
+        </div>
+
+        <!-- ② Why record -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">ME/CFS 患者が毎日の記録で変わること</h2>
+        <p style="margin-bottom:14px">
+          ME/CFS（筋痛性脳脊髄炎）は現代医学でも原因が完全には解明されておらず、確立した治療法もまだありません。しかし、<strong>毎日の症状とトリガーを記録し続けると「自分だけのパターン」が見えてきて</strong>、PEM（労作後症状悪化）の予防と寛解への道筋が浮かび上がってきます。
+        </p>
+        <p style="margin-bottom:14px">
+          開発者の山口揚平は、2 年間の ME/CFS 闘病の中で手書きの記録とスプレッドシートを試行錯誤した結果、最終的にこのアプリを自作しました。記録は「病気を科学する」ための最大の武器です。
+        </p>
+
+        <!-- ③ What you can track -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">このアプリで記録できる項目</h2>
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS 専用の定点観測指標</h3>
+        <ul style="margin-left:22px;margin-bottom:14px">
+          <li><strong>PEM 発生頻度</strong>（回/週 → 目標 0）</li>
+          <li><strong>1 日の活動可能時間</strong>（時間 → 増加傾向）</li>
+          <li><strong>疲労度</strong>・<strong>ブレインフォグ</strong>・<strong>疼痛</strong>（1-10 スコア）</li>
+          <li><strong>睡眠の質</strong>（1-10）</li>
+          <li><strong>HRV（心拍変動）</strong>・<strong>NK 細胞活性</strong>・<strong>CRP</strong> などの検査値</li>
+          <li><strong>服薬履歴</strong>（LDN / 低用量ナルトレキソン、ピリドスチグミン、SSRI 等）</li>
+          <li><strong>食事・水分摂取・塩分</strong>（POTS 併発時は 2-3 L/日 + 塩分が推奨）</li>
+        </ul>
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">その他の記録機能</h3>
+        <ul style="margin-left:22px;margin-bottom:14px">
+          <li>血液検査結果の画像取り込み・数値化</li>
+          <li>食事写真の栄養解析（カロリー・PFC バランス）</li>
+          <li>薬の写真からの作用・副作用自動解析</li>
+          <li>医師との会話録音（Plaud 連携）→ 文字起こし → AI 要約</li>
+          <li>Google カレンダー・Fitbit・Apple Health との自動連携</li>
+          <li>PubMed 論文の自動検索と日本語要約</li>
+        </ul>
+
+        <!-- ④ ME/CFS basics -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の基本</h2>
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">PEM（Post-Exertional Malaise, 労作後症状悪化）とは</h3>
+        <p style="margin-bottom:14px">
+          身体的・認知的・感情的な労作の後、数時間〜数日で症状が著しく悪化する現象です。ME/CFS の最も特徴的な症状の一つで、回復には数日〜数週間かかることもあります。PEM の頻度と誘因を特定することが、ペーシング戦略の基礎になります。
+        </p>
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ペーシング（Pacing）とは</h3>
+        <p style="margin-bottom:14px">
+          自分のエネルギー容量を超えない範囲で活動を分散させる戦略です。「energy envelope theory」に基づき、PEM を誘発しない活動量の閾値を見つけて活動と休息を計画的に組み合わせます。本アプリでは毎日の活動量と翌日の症状の相関から、個別の閾値を AI が推定します。
+        </p>
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">LDN（低用量ナルトレキソン）</h3>
+        <p style="margin-bottom:14px">
+          通常 1.5〜4.5 mg の低用量で使用されるナルトレキソン。神経炎症を抑制し、ME/CFS・線維筋痛症・Long COVID に有効性が報告されています。本アプリでは LDN の用量調整履歴と効果を日次で追跡し、最新研究（TRPM3 イオンチャネル、B 細胞標的療法等）も AI が自動でアップデートしてお伝えします。
+        </p>
+
+        <!-- ⑤ Related conditions -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">対応する慢性疾患（80+）</h2>
+        <p style="margin-bottom:14px">ICD-11 基準で分類された以下の疾患に対応しています。複数の疾患を併発している方も、すべて同時に記録できます。</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">🧠 神経系疾患</h3>
+        <p style="margin-bottom:10px">ME/CFS・線維筋痛症・片頭痛・てんかん・多発性硬化症（MS）・パーキンソン病・ALS・末梢神経障害・自律神経障害・POTS（体位性頻脈症候群）・外傷性脳損傷後遺症・慢性疼痛症候群</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">🛡 免疫系疾患</h3>
+        <p style="margin-bottom:10px">Long COVID（コロナ後遺症）・MCAS（マスト細胞活性化症候群）・SLE（全身性エリテマトーデス）・関節リウマチ・シェーグレン症候群・橋本病・クローン病・潰瘍性大腸炎・セリアック病・乾癬・免疫不全症・アレルギー疾患</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">💭 精神・行動の障害</h3>
+        <p style="margin-bottom:10px">うつ病・双極性障害・全般性不安障害（GAD）・PTSD・複雑性 PTSD・OCD・ADHD・ASD・摂食障害・不眠障害・バーンアウト症候群・解離性障害</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">⚗ 内分泌・代謝疾患</h3>
+        <p style="margin-bottom:10px">1 型 / 2 型糖尿病・甲状腺機能低下症・甲状腺機能亢進症（バセドウ病）・副腎機能不全・PCOS・メタボリックシンドローム・肥満症・痛風・骨粗鬆症</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">❤ 循環器・呼吸器・消化器</h3>
+        <p style="margin-bottom:10px">高血圧・心不全・不整脈・虚血性心疾患・レイノー症候群・喘息・COPD・睡眠時無呼吸症候群・IBS（過敏性腸症候群）・GERD・SIBO・胃不全麻痺</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">🦴 筋骨格・結合組織</h3>
+        <p style="margin-bottom:10px">EDS（エーラス・ダンロス症候群）・強直性脊椎炎・重症筋無力症・リウマチ性多発筋痛症・関節過可動性症候群</p>
+        <h3 style="font-size:15px;font-weight:700;margin-top:14px;margin-bottom:6px">🔬 その他・複合的症候群</h3>
+        <p style="margin-bottom:10px">化学物質過敏症（MCS）・電磁波過敏症・慢性ライム病・カビ毒症・がんサバイバー（治療後管理）・化学療法後遺症</p>
+
+        <!-- ⑥ Developer's note -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">開発者の ME/CFS 闘病記（note.com）</h2>
+        <div style="padding:18px 22px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 12px 12px 0;margin-bottom:18px">
+          <p style="font-style:italic;color:#475569;margin-bottom:10px">「2 年間の ME/CFS 闘病の中で、毎日の記録が最大の武器になりました。最初はスプレッドシートでしたが、続かない。このアプリは、自分が本当に必要だと思ったものを形にしたものです」</p>
+          <p style="font-size:13px;color:#64748b;margin-bottom:12px">— 山口揚平（開発者 / note: <a href="https://note.com/age" target="_blank" rel="noopener" style="color:#6366f1;font-weight:600">@age</a>）</p>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            <a href="https://note.com/age/n/nc8305ab7c124" target="_blank" rel="noopener"
+              style="display:block;padding:12px 14px;background:#fff;border:1.5px solid #6366f1;border-radius:10px;text-decoration:none;color:#1e293b">
+              <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:4px">📖 最新の闘病記・考察</div>
+              <div style="font-size:13px;font-weight:700;color:#3730a3;line-height:1.5">ME/CFS 闘病記（最新） — note で読む →</div>
+              <div style="font-size:11px;color:#64748b;margin-top:4px">note.com/age/n/nc8305ab7c124</div>
+            </a>
+            <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener"
+              style="display:block;padding:12px 14px;background:#fff;border:1.5px solid #e4e7ef;border-radius:10px;text-decoration:none;color:#1e293b">
+              <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:4px">📗 原点となった記事</div>
+              <div style="font-size:13px;font-weight:700;color:#334155;line-height:1.5">2 年間の ME/CFS 闘病記 — 毎日の記録が最大の武器になった話 →</div>
+              <div style="font-size:11px;color:#64748b;margin-top:4px">note.com/age/n/n4f373bc7415a</div>
+            </a>
+            <a href="https://note.com/age" target="_blank" rel="noopener"
+              style="display:block;padding:10px 14px;background:#f8fafc;border:1px dashed #94a3b8;border-radius:10px;text-decoration:none;color:#475569;text-align:center;font-size:12px;font-weight:600">
+              note アカウント @age の全記事一覧 →
+            </a>
+          </div>
+        </div>
+
+        <!-- ⑦ FAQ (also covered by FAQPage JSON-LD above) -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">よくある質問（FAQ）</h2>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. 健康日記は何ができるアプリですか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">ME/CFS・Long COVID・線維筋痛症・POTS・MCAS・EDS など 80+ の慢性疾患の症状・服薬・食事・睡眠・バイタルを毎日記録し、最新 AI が寛解への道筋を分析します。完全無料・ブラウザ動作・本人のみアクセス可能。</p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. ME/CFS の記録でどんな項目が追えますか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">PEM 発生頻度・1 日の活動可能時間・疲労度・ブレインフォグ・疼痛・睡眠の質・HRV・NK 細胞活性・CRP・服薬履歴（LDN 等）・水分/塩分摂取など、ME/CFS 専門医が重視する指標を ME/CFS 専用プロンプトで追跡します。</p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. LDN（低用量ナルトレキソン）の記録には対応していますか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">はい。LDN は ME/CFS・線維筋痛症・Long COVID の神経炎症抑制に使われる治療の一つで、本アプリの服薬管理機能で用量・効果・副作用を日次記録できます。AI 分析では用量調整のヒントや最新研究（TRPM3 イオンチャネル、B 細胞標的療法等）も提示します。</p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. PEM（労作後症状悪化）のトリガーを特定できますか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">はい。毎日の活動・食事・睡眠・心理的ストレスを記録すると、AI が PEM 発生日の前後 24-48 時間を相関分析し、個別のトリガー（活動量の閾値・特定食品・睡眠不足・感情ストレス等）を推定します。</p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. データは安全に守られますか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">はい。データは Google Cloud Firestore（東京リージョン）に暗号化保存され、Firebase Authentication により本人以外は一切アクセスできません。AI API に送信されたデータはモデル学習に使われません。プライバシーマーク取得申請も準備中です。</p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. 開発者は ME/CFS 当事者ですか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">はい。開発者の山口揚平は 2 年間の ME/CFS 闘病経験から、毎日の記録が最大の武器となった経験を元にこのアプリを開発しました。note で闘病記を公開しています: <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener" style="color:#6366f1">2 年間のME/CFS闘病記</a></p>
+        </details>
+        <details style="margin-bottom:10px;padding:12px 16px;background:#f8fafc;border-radius:8px">
+          <summary style="cursor:pointer;font-weight:700;font-size:14px">Q. 費用はかかりますか？</summary>
+          <p style="margin-top:8px;font-size:13px;color:#475569">完全無料です。広告表示・課金要素はありません。AI 分析も運営者負担で提供しています。</p>
+        </details>
+
+        <!-- Final CTA -->
+        <div style="margin-top:32px;padding:22px;background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border-radius:14px;text-align:center">
+          <h2 style="font-size:18px;font-weight:700;color:#3730a3;margin-bottom:10px">今日から記録を始めましょう</h2>
+          <p style="font-size:13px;color:#4338ca;line-height:1.8;margin-bottom:14px">
+            ME/CFS・Long COVID・線維筋痛症など慢性疾患の寛解への道は、正確な記録から。<br>
+            完全無料・Google アカウントまたはメールで今すぐ登録。
+          </p>
+          <a href="#login" style="display:inline-block;padding:12px 28px;background:#6366f1;color:#fff;border-radius:20px;text-decoration:none;font-size:14px;font-weight:700">無料で始める →</a>
+        </div>
+
+        <!-- Footer links for crawlers -->
+        <div style="margin-top:36px;padding-top:20px;border-top:1px solid #e4e7ef;font-size:12px;color:#64748b;text-align:center">
+          <p>
+            <a href="/#privacy" style="color:#6366f1;margin:0 8px">プライバシーと安全</a>・
+            <a href="https://github.com/agewaller/stock-screener/blob/main/docs/3省2GL準拠宣言.md" target="_blank" rel="noopener" style="color:#6366f1;margin:0 8px">3省2GL準拠宣言</a>・
+            <a href="https://note.com/age" target="_blank" rel="noopener" style="color:#6366f1;margin:0 8px">開発者 note</a>・
+            <a href="mailto:info@bluemarl.in" style="color:#6366f1;margin:0 8px">お問い合わせ</a>
+          </p>
+          <p style="margin-top:8px">運営: シェアーズ株式会社 ・ 🇯🇵 Made in Japan</p>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
@@ -11904,14 +12301,35 @@ App.prototype.render_login = function() {
         </div>
       </div>
 
-      <!-- Testimonial -->
+      <!-- Testimonial + Developer's note articles -->
       <div style="margin-bottom:24px;padding:16px;border-left:3px solid #6366f1;background:#fafaff;border-radius:0 12px 12px 0">
         <div style="font-size:12px;color:#475569;line-height:1.8;font-style:italic;margin-bottom:8px">
           「2年間のME/CFS闘病の中で、毎日の記録が最大の武器になりました」
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:11px;color:#64748b">山口揚平 / 開発者</span>
-          <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener" style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600">闘病記 →</a>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:11px;color:#64748b">山口揚平 / 開発者（note: @age）</span>
+        </div>
+        <!-- Featured note articles (newest first) -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="https://note.com/age/n/nc8305ab7c124" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1.5px solid #6366f1;border-radius:8px;text-decoration:none">
+            <span style="font-size:18px">📖</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:2px">最新の闘病記</div>
+              <div style="font-size:12px;font-weight:700;color:#3730a3;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ME/CFS 闘病記（最新） — note で読む</div>
+            </div>
+            <span style="color:#6366f1;font-size:12px;flex-shrink:0">→</span>
+          </a>
+          <a href="https://note.com/age/n/n4f373bc7415a" target="_blank" rel="noopener"
+            style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none">
+            <span style="font-size:18px">📗</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:2px">原点の記事</div>
+              <div style="font-size:12px;font-weight:700;color:#334155;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">2 年間の ME/CFS 闘病記 — 毎日の記録が最大の武器</div>
+            </div>
+            <span style="color:#64748b;font-size:12px;flex-shrink:0">→</span>
+          </a>
+          <a href="https://note.com/age" target="_blank" rel="noopener" style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600;text-align:center;padding:4px">note @age の全記事を見る →</a>
         </div>
       </div>
 
