@@ -1951,82 +1951,152 @@ var CONFIG = {
   // ============================================================
   DISEASE_EPIDEMIOLOGY: {
     // ─── Tier 1: 固い数字 (数億人〜十数億人) ───
-    chronic_pain:       { world: 1_500_000_000, label: '約 15 億人',       tier: 1, density: 'high',   source: '最新レビュー' },
-    metabolic_syndrome: { world: 1_540_000_000, label: '約 15.4 億人',     tier: 1, density: 'medium', source: '2023 成人推計' },
-    hypertension:       { world: 1_400_000_000, label: '約 14 億人',       tier: 1, density: 'medium', source: 'WHO 30-79歳' },
-    migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021' },
-    sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人' },
-    obesity:            { world:   890_000_000, label: '約 8.9 億人',      tier: 1, density: 'medium', source: 'WHO 成人' },
-    insomnia:           { world:   852_000_000, label: '約 8.52 億人',     tier: 1, density: 'medium', source: '成人推計' },
-    gerd:               { world:   826_000_000, label: '約 8.26 億人',     tier: 1, density: 'low',    source: 'GBD 2021' },
-    diabetes_t2:        { world:   589_000_000, label: '約 5.89 億人',     tier: 1, density: 'high',   source: 'IDF 20-79歳 (T1+T2)' },
-    gad:                { world:   359_000_000, label: '約 3.59 億人',     tier: 1, density: 'medium', source: '不安障害全体' },
-    depression:         { world:   332_000_000, label: '約 3.32 億人',     tier: 1, density: 'high',   source: 'WHO 2025' },
-    copd:               { world:   342_000_000, label: '約 2.92〜3.92 億人', tier: 1, density: 'medium', source: '2019 LLN/GOLD' },
-    asthma:             { world:   262_000_000, label: '約 2.62 億人',     tier: 1, density: 'medium', source: 'WHO fact sheet' },
-    ihd:                { world:   254_000_000, label: '約 2.54 億人',     tier: 1, density: 'low',    source: 'GBD 2021' },
+    chronic_pain:       { world: 1_500_000_000, label: '約 15 億人',       tier: 1, density: 'high',   source: '最新レビュー',
+                          japan: 23_000_000, japanLabel: '約 2,300 万人',      japanSource: 'ペインクリニック学会推計' },
+    metabolic_syndrome: { world: 1_540_000_000, label: '約 15.4 億人',     tier: 1, density: 'medium', source: '2023 成人推計',
+                          japan: 20_000_000, japanLabel: '約 2,000 万人',      japanSource: '厚労省' },
+    hypertension:       { world: 1_400_000_000, label: '約 14 億人',       tier: 1, density: 'medium', source: 'WHO 30-79歳',
+                          japan: 43_000_000, japanLabel: '約 4,300 万人',      japanSource: '日本高血圧学会' },
+    migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
+                          japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
+    sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
+                          japan: 22_000_000, japanLabel: '約 2,200 万人 (推計)', japanSource: '推計、診断率低' },
+    obesity:            { world:   890_000_000, label: '約 8.9 億人',      tier: 1, density: 'medium', source: 'WHO 成人',
+                          japan: 28_000_000, japanLabel: '約 2,800 万人',      japanSource: 'BMI≥25 国民健康栄養調査' },
+    insomnia:           { world:   852_000_000, label: '約 8.52 億人',     tier: 1, density: 'medium', source: '成人推計',
+                          japan: 30_000_000, japanLabel: '約 3,000 万人',      japanSource: '国民生活基礎調査' },
+    gerd:               { world:   826_000_000, label: '約 8.26 億人',     tier: 1, density: 'low',    source: 'GBD 2021',
+                          japan: 20_000_000, japanLabel: '約 2,000 万人 (推計)', japanSource: '国内有病率 ~17%' },
+    diabetes_t2:        { world:   589_000_000, label: '約 5.89 億人',     tier: 1, density: 'high',   source: 'IDF 20-79歳 (T1+T2)',
+                          japan: 10_000_000, japanLabel: '約 1,000 万人',      japanSource: '厚労省 (T1+T2)' },
+    gad:                { world:   359_000_000, label: '約 3.59 億人',     tier: 1, density: 'medium', source: '不安障害全体',
+                          japan:  5_000_000, japanLabel: '約 500 万人 (推計)', japanSource: '生涯有病率 4-5%' },
+    depression:         { world:   332_000_000, label: '約 3.32 億人',     tier: 1, density: 'high',   source: 'WHO 2025',
+                          japan:  1_720_000, japanLabel: '約 172 万人',        japanSource: '厚労省患者調査 2020' },
+    copd:               { world:   342_000_000, label: '約 2.92〜3.92 億人', tier: 1, density: 'medium', source: '2019 LLN/GOLD',
+                          japan:  5_300_000, japanLabel: '約 530 万人',        japanSource: 'NICE Study' },
+    asthma:             { world:   262_000_000, label: '約 2.62 億人',     tier: 1, density: 'medium', source: 'WHO fact sheet',
+                          japan:  8_000_000, japanLabel: '約 800 万人 (推計)', japanSource: '厚労省推計' },
+    ihd:                { world:   254_000_000, label: '約 2.54 億人',     tier: 1, density: 'low',    source: 'GBD 2021',
+                          japan:  1_000_000, japanLabel: '約 100 万人',        japanSource: '日本循環器学会' },
 
     // ─── Tier 2: 数千万規模 ───
-    long_covid:         { world:  65_000_000, label: '少なくとも 6,500 万人', tier: 2, density: 'high',   source: 'グローバル推計' },
-    heart_failure:      { world:  64_000_000, label: '6,400 万人',           tier: 2, density: 'high',   source: 'グローバル推計' },
-    asd:                { world:  62_000_000, label: '約 6,200 万人',        tier: 2, density: 'high',   source: 'グローバル推計' },
-    gout:               { world:  55_800_000, label: '5,580 万人',           tier: 2, density: 'medium', source: 'グローバル推計' },
-    cancer_survivor:    { world:  53_500_000, label: '5,350 万人',           tier: 2, density: 'high',   source: 'GLOBOCAN 5年有病' },
-    arrhythmia:         { world:  52_550_000, label: '5,255 万人 (AF/AFL)',  tier: 2, density: 'medium', source: 'グローバル推計' },
-    epilepsy:           { world:  50_000_000, label: '5,000 万人',           tier: 2, density: 'high',   source: 'WHO' },
-    psoriasis:          { world:  43_000_000, label: '4,300 万人',           tier: 2, density: 'medium', source: '2021 burden' },
-    bipolar:            { world:  37_000_000, label: '3,700 万人',           tier: 2, density: 'high',   source: 'グローバル推計' },
-    ra:                 { world:  17_900_000, label: '1,790 万人',           tier: 2, density: 'high',   source: 'グローバル推計' },
-    eating:             { world:  16_000_000, label: '1,600 万人',           tier: 2, density: 'high',   source: 'グローバル推計' },
-    diabetes_t1:        { world:   9_500_000, label: '950 万人',             tier: 2, density: 'high',   source: 'IDF' },
-    parkinsons:         { world:   8_500_000, label: '850 万人超',           tier: 2, density: 'high',   source: 'グローバル推計' },
-    sle:                { world:   3_410_000, label: '341 万人',             tier: 2, density: 'high',   source: 'グローバル推計' },
-    ms:                 { world:   2_900_000, label: '290 万人',             tier: 2, density: 'high',   source: 'Atlas of MS 2023' },
+    long_covid:         { world:  65_000_000, label: '少なくとも 6,500 万人', tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:  7_000_000, japanLabel: '約 700 万人 (推計)', japanSource: '厚労省研究班推計 累積感染×有病率' },
+    heart_failure:      { world:  64_000_000, label: '6,400 万人',           tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:  1_300_000, japanLabel: '約 130 万人',        japanSource: '日本循環器学会' },
+    asd:                { world:  62_000_000, label: '約 6,200 万人',        tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:  1_000_000, japanLabel: '約 100 万人 (推計)', japanSource: '有病率 ~1%' },
+    gout:               { world:  55_800_000, label: '5,580 万人',           tier: 2, density: 'medium', source: 'グローバル推計',
+                          japan:  1_250_000, japanLabel: '約 125 万人',        japanSource: '痛風のみ。高尿酸血症で約 1,000 万人' },
+    cancer_survivor:    { world:  53_500_000, label: '5,350 万人',           tier: 2, density: 'high',   source: 'GLOBOCAN 5年有病',
+                          japan:  7_000_000, japanLabel: '約 700 万人',        japanSource: '国立がん研究センター 5年有病含' },
+    arrhythmia:         { world:  52_550_000, label: '5,255 万人 (AF/AFL)',  tier: 2, density: 'medium', source: 'グローバル推計',
+                          japan:  1_500_000, japanLabel: '約 100-170 万人 (AF)', japanSource: '日本循環器学会' },
+    epilepsy:           { world:  50_000_000, label: '5,000 万人',           tier: 2, density: 'high',   source: 'WHO',
+                          japan:  1_000_000, japanLabel: '約 100 万人',        japanSource: '日本てんかん学会' },
+    psoriasis:          { world:  43_000_000, label: '4,300 万人',           tier: 2, density: 'medium', source: '2021 burden',
+                          japan:    500_000, japanLabel: '約 43-50 万人',      japanSource: '日本皮膚科学会推計' },
+    bipolar:            { world:  37_000_000, label: '3,700 万人',           tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:    750_000, japanLabel: '約 50-100 万人 (推計)', japanSource: '生涯有病率 ~0.7%' },
+    ra:                 { world:  17_900_000, label: '1,790 万人',           tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:    900_000, japanLabel: '約 82-100 万人',     japanSource: '日本リウマチ学会' },
+    eating:             { world:  16_000_000, label: '1,600 万人',           tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:    250_000, japanLabel: '約 20-30 万人',      japanSource: '厚労省研究班' },
+    diabetes_t1:        { world:   9_500_000, label: '950 万人',             tier: 2, density: 'high',   source: 'IDF',
+                          japan:    120_000, japanLabel: '約 10-14 万人',      japanSource: 'T1D のみ' },
+    parkinsons:         { world:   8_500_000, label: '850 万人超',           tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:    200_000, japanLabel: '約 20 万人',         japanSource: '厚労省患者調査' },
+    sle:                { world:   3_410_000, label: '341 万人',             tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:     80_000, japanLabel: '約 6-10 万人',       japanSource: '指定難病、医療受給者証' },
+    ms:                 { world:   2_900_000, label: '290 万人',             tier: 2, density: 'high',   source: 'Atlas of MS 2023',
+                          japan:     25_000, japanLabel: '約 2-3 万人',        japanSource: '指定難病' },
 
     // ─── Tier 3: 有病率からの粗推計 (表示時 "(推計)" 付き) ───
-    osteoporosis:       { world: 1_500_000_000, label: '約 15 億人 (粗推計)',       tier: 3, density: 'medium', source: '18.3% 外挿',       note: '年齢性差の影響大' },
-    ibs:                { world: 1_080_000_000, label: '約 10.8 億人 (推計)',      tier: 3, density: 'medium', source: '13.21% メタ解析外挿' },
-    thyroid_hypo:       { world:   410_000_000, label: '最大 4.1 億人 (推計)',     tier: 3, density: 'medium', source: '~5% レビュー' },
-    raynauds:           { world:   400_000_000, label: '約 4.0 億人 (粗推計)',     tier: 3, density: 'low',    source: '4.85% 外挿' },
-    ptsd:               { world:   320_000_000, label: '約 3.2 億人 (生涯有病率)', tier: 3, density: 'high',   source: '3.9% 生涯有病率' },
-    fibromyalgia:       { world:   220_000_000, label: '約 2.2 億人 (推計)',       tier: 3, density: 'high',   source: '2.7% 外挿' },
-    neuropathy:         { world:   200_000_000, label: '約 2.0 億人 (推計)',       tier: 3, density: 'medium', source: '2.4% 外挿' },
-    pcos:               { world:   175_000_000, label: '約 1.75 億人 (推計)',      tier: 3, density: 'medium', source: '15-49歳女性19億×9.2%' },
-    ocd:                { world:   164_000_000, label: '約 8,200 万〜2.46 億人 (推計)', tier: 3, density: 'high', source: '1-3% 幅' },
-    celiac:             { world:    86_000_000, label: '約 5,740 万〜1.15 億人 (推計)', tier: 3, density: 'medium', source: '0.7-1.4% 外挿' },
-    mecfs:              { world:    67_000_000, label: '約 6,700 万人 (推計)',     tier: 3, density: 'high',   source: 'レビュー文献' },
-    sjogrens:           { world:     5_000_000, label: '約 500 万人 (推計)',       tier: 3, density: 'high',   source: '60.82/10万外挿' },
-    adrenal:            { world:     2_500_000, label: '約 250 万人 (推計)',       tier: 3, density: 'high',   source: '300/100万外挿' },
-    eds:                { world:    12_500_000, label: '約 900〜1,600 万人 (推計)', tier: 3, density: 'high',   source: '1/900-1/500', note: '診断基準ゆれ大' },
-    myasthenia:         { world:     1_000_000, label: '約 100 万人 (推計)',       tier: 3, density: 'high',   source: '12.4/10万外挿' },
-    als:                { world:       370_000, label: '約 37 万人 (推計)',        tier: 3, density: 'high',   source: '4.5/10万外挿' },
+    osteoporosis:       { world: 1_500_000_000, label: '約 15 億人 (粗推計)',       tier: 3, density: 'medium', source: '18.3% 外挿',       note: '年齢性差の影響大',
+                          japan: 12_800_000, japanLabel: '約 1,280 万人',           japanSource: '日本骨粗鬆症学会' },
+    ibs:                { world: 1_080_000_000, label: '約 10.8 億人 (推計)',      tier: 3, density: 'medium', source: '13.21% メタ解析外挿',
+                          japan: 14_000_000, japanLabel: '約 1,400 万人',          japanSource: '日本消化器病学会' },
+    thyroid_hypo:       { world:   410_000_000, label: '最大 4.1 億人 (推計)',     tier: 3, density: 'medium', source: '~5% レビュー',
+                          japan:  7_500_000, japanLabel: '約 500-1,000 万人 (潜在含)', japanSource: '橋本病は別カウント' },
+    raynauds:           { world:   400_000_000, label: '約 4.0 億人 (粗推計)',     tier: 3, density: 'low',    source: '4.85% 外挿',
+                          japan:  null,      japanLabel: '国内推計策定中',        japanSource: '有病率データ未確定' },
+    ptsd:               { world:   320_000_000, label: '約 3.2 億人 (生涯有病率)', tier: 3, density: 'high',   source: '3.9% 生涯有病率',
+                          japan:  1_800_000, japanLabel: '約 160-200 万人 (生涯)', japanSource: '生涯有病率 1.3-1.6%' },
+    fibromyalgia:       { world:   220_000_000, label: '約 2.2 億人 (推計)',       tier: 3, density: 'high',   source: '2.7% 外挿',
+                          japan:  2_000_000, japanLabel: '約 200 万人',            japanSource: '日本線維筋痛症学会' },
+    neuropathy:         { world:   200_000_000, label: '約 2.0 億人 (推計)',       tier: 3, density: 'medium', source: '2.4% 外挿',
+                          japan:  3_000_000, japanLabel: '約 200-400 万人 (推計)', japanSource: '糖尿病性含' },
+    pcos:               { world:   175_000_000, label: '約 1.75 億人 (推計)',      tier: 3, density: 'medium', source: '15-49歳女性19億×9.2%',
+                          japan:  2_000_000, japanLabel: '約 100-300 万人 (推計)', japanSource: '日本産婦人科学会' },
+    ocd:                { world:   164_000_000, label: '約 8,200 万〜2.46 億人 (推計)', tier: 3, density: 'high', source: '1-3% 幅',
+                          japan:  1_800_000, japanLabel: '約 100-250 万人 (推計)', japanSource: '生涯有病率 1-2%' },
+    celiac:             { world:    86_000_000, label: '約 5,740 万〜1.15 億人 (推計)', tier: 3, density: 'medium', source: '0.7-1.4% 外挿',
+                          japan:     10_000, japanLabel: '極めて稀 (数千人レベル)', japanSource: '国内有病率 低' },
+    mecfs:              { world:    67_000_000, label: '約 6,700 万人 (推計)',     tier: 3, density: 'high',   source: 'レビュー文献',
+                          japan:    200_000, japanLabel: '約 10-30 万人 (推計)',   japanSource: '厚労省研究班' },
+    sjogrens:           { world:     5_000_000, label: '約 500 万人 (推計)',       tier: 3, density: 'high',   source: '60.82/10万外挿',
+                          japan:    200_000, japanLabel: '約 6.8 万人 (指定難病) + 潜在 10-30 万人', japanSource: '指定難病受給 + 潜在推計' },
+    adrenal:            { world:     2_500_000, label: '約 250 万人 (推計)',       tier: 3, density: 'high',   source: '300/100万外挿',
+                          japan:     10_000, japanLabel: '約 1 万人 (推計)',       japanSource: '指定難病含む粗推計' },
+    eds:                { world:    12_500_000, label: '約 900〜1,600 万人 (推計)', tier: 3, density: 'high',   source: '1/900-1/500', note: '診断基準ゆれ大',
+                          japan:    150_000, japanLabel: '約 10-15 万人 (推計)',  japanSource: '1/500-1/900 を人口比外挿' },
+    myasthenia:         { world:     1_000_000, label: '約 100 万人 (推計)',       tier: 3, density: 'high',   source: '12.4/10万外挿',
+                          japan:     23_000, japanLabel: '約 2.3 万人',           japanSource: '指定難病' },
+    als:                { world:       370_000, label: '約 37 万人 (推計)',        tier: 3, density: 'high',   source: '4.5/10万外挿',
+                          japan:     10_000, japanLabel: '約 1 万人',             japanSource: '指定難病' },
 
     // ─── Tier 0: 単一世界人数を置きにくい群 (numeric null) ───
-    pots:               { world: null, label: '世界推計は策定中 (米国で 0.1-1.0%)', tier: 0, density: 'high' },
-    mcas:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    dysautonomia:       { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    cptsd:              { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    adhd:               { world: null, label: '世界推計は策定中 (児童青年のみ 4,689 万人)', tier: 0, density: 'medium' },
-    hashimoto:          { world: null, label: '世界推計は策定中 (甲状腺低下と別計)', tier: 0, density: 'medium' },
-    thyroid_hyper:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    crohns:             { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high' },
-    uc:                 { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high' },
-    immunodeficiency:   { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    allergy:            { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low' },
-    sibo:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    gastroparesis:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    polymyalgia:        { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    dissociative:       { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    mcs:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    emf:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low' },
-    lyme:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    mold:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    hsd:                { world: null, label: '世界推計は策定中 (EDS と重なる)',   tier: 0, density: 'high' },
-    tbi:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium' },
-    burnout:            { world: null, label: 'WHO 定義では疾患ではなく職業上現象', tier: 0, density: 'medium' },
-    chemo_side:         { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    cancer_fatigue:     { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
-    substance:          { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high' },
+    pots:               { world: null, label: '世界推計は策定中 (米国で 0.1-1.0%)', tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中', japanSource: '研究ベース' },
+    mcas:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中', japanSource: '診断基準未確定' },
+    dysautonomia:       { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    cptsd:              { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    adhd:               { world: null, label: '世界推計は策定中 (児童青年のみ 4,689 万人)', tier: 0, density: 'medium',
+                          japan: 2_000_000, japanLabel: '約 100-300 万人 (推計)', japanSource: '成人有病率 2-4%' },
+    hashimoto:          { world: null, label: '世界推計は策定中 (甲状腺低下と別計)', tier: 0, density: 'medium',
+                          japan: 2_000_000, japanLabel: '診断済 約 200 万人、潜在含め 1,000 万人超', japanSource: '日本甲状腺学会' },
+    thyroid_hyper:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan:    400_000, japanLabel: '約 30-50 万人',         japanSource: 'バセドウ病主体' },
+    crohns:             { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
+                          japan:     70_000, japanLabel: '約 7 万人',             japanSource: '指定難病' },
+    uc:                 { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
+                          japan:    220_000, japanLabel: '約 22 万人',            japanSource: '指定難病' },
+    immunodeficiency:   { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan:     30_000, japanLabel: '数千〜数万人',          japanSource: '原発性免疫不全症' },
+    allergy:            { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low',
+                          japan: 50_000_000, japanLabel: '花粉症のみで 約 5,000 万人', japanSource: '国民健康栄養調査' },
+    sibo:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan: null, japanLabel: '国内推計策定中' },
+    gastroparesis:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    polymyalgia:        { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan:    150_000, japanLabel: '約 10-20 万人 (推計)',  japanSource: '日本リウマチ学会' },
+    dissociative:       { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    mcs:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan:    850_000, japanLabel: '約 70-100 万人 (推計)', japanSource: '国内調査' },
+    emf:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low',
+                          japan: null, japanLabel: '国内推計策定中' },
+    lyme:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan: null, japanLabel: '極めて稀' },
+    mold:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan: null, japanLabel: '国内推計策定中' },
+    hsd:                { world: null, label: '世界推計は策定中 (EDS と重なる)',   tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    tbi:                { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan:    300_000, japanLabel: '後遺症で 数十万人',      japanSource: '推計' },
+    burnout:            { world: null, label: 'WHO 定義では疾患ではなく職業上現象', tier: 0, density: 'medium',
+                          japan: null, japanLabel: '疾患として未計上' },
+    chemo_side:         { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    cancer_fatigue:     { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
+    substance:          { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan: null, japanLabel: '国内推計策定中' },
   },
 
   // Disease-specific monitoring metrics (定点観測項目)
@@ -2465,6 +2535,8 @@ var PROMPT_HEADER = `【最優先事項 — 応答言語・共感・新しい打
 {{USER_PROFILE}}
 
 【選択疾患】{{SELECTED_DISEASES}}
+
+{{EPIDEMIOLOGY_CONTEXT}}
 
 【ユーザーの健康データ】
 {{USER_DATA}}
@@ -4191,6 +4263,45 @@ var AIEngine = class AIEngine {
     return m[userLang] || m.en;
   }
 
+  // Build an epidemiology context block for AI prompts. Given the
+  // user's selected disease ids, returns a multi-line string with
+  // world / Japan patient counts for each condition, plus a
+  // directive instructing the AI to use these numbers naturally to
+  // reinforce "you are not alone" messaging where appropriate.
+  //
+  // Returns an empty string if no selected disease has epidemiology
+  // data, so prompt templates that reference {{EPIDEMIOLOGY_CONTEXT}}
+  // degrade gracefully.
+  _buildEpidemiologyContext(selectedDiseaseIds) {
+    if (!Array.isArray(selectedDiseaseIds) || selectedDiseaseIds.length === 0) return '';
+    const epi = (typeof CONFIG !== 'undefined' && CONFIG.DISEASE_EPIDEMIOLOGY) || {};
+    const lines = [];
+    selectedDiseaseIds.forEach(id => {
+      const data = epi[id];
+      if (!data) return;
+      // Skip tier-0 rows (no numeric data at all) to avoid polluting
+      // the prompt with "策定中" placeholders.
+      const hasWorld = data.label && !/策定中/.test(data.label);
+      const hasJapan = data.japanLabel && !/策定中|未計上/.test(data.japanLabel);
+      if (!hasWorld && !hasJapan) return;
+      const name = (CONFIG.DISEASE_CATEGORIES
+        .flatMap(c => c.diseases).find(d => d.id === id) || {}).name || id;
+      const parts = [];
+      if (hasWorld) parts.push(`世界患者数 ${data.label}`);
+      if (hasJapan) parts.push(`日本患者数 ${data.japanLabel}`);
+      lines.push(`- ${name}: ${parts.join(' / ')}`);
+    });
+    if (lines.length === 0) return '';
+    return [
+      '【疾患規模の参考情報】',
+      'ユーザーが選択している疾患の患者数は以下の通りです:',
+      ...lines,
+      '',
+      '【この情報の使い方】',
+      'ユーザーが孤独を感じていそうなとき、あるいは適切な文脈で、上記の患者数に自然に触れて「同じ症状と向き合っている方が世界/日本にこれだけいらっしゃいます」という寄り添いの一言を添えてください。ただし数字の列挙や押し付けは避け、寄り添う会話の中に自然に織り込むこと。'
+    ].join('\n');
+  }
+
   interpolatePrompt(template, data) {
     const profile = store.get('userProfile') || {};
     const userLang = profile.language || (typeof i18n !== 'undefined' && i18n.currentLang) || 'ja';
@@ -4237,12 +4348,20 @@ var AIEngine = class AIEngine {
     });
     const diseasesStr = diseaseNames.join('、') || (store.get('selectedDisease')?.fullName || '未設定');
 
+    // Epidemiology context — lets the AI reference how large the
+    // patient community is for the user's selected condition(s).
+    // Surfaces world + Japan patient counts so the AI can naturally
+    // reinforce "あなたは一人ではない" messaging without us having
+    // to hardcode those numbers into every prompt template.
+    const epidemiologyContext = this._buildEpidemiologyContext(selectedDiseases);
+
     let prompt = template
       .replace(/\{\{RESPOND_LANGUAGE_INSTRUCTION\}\}/g, respondLanguageInstruction)
       .replace(/\{\{USER_LANGUAGE\}\}/g, userLang)
       .replace(/\{\{DATE\}\}/g, today)
       .replace(/\{\{USER_PROFILE\}\}/g, profileStr)
       .replace(/\{\{SELECTED_DISEASES\}\}/g, diseasesStr)
+      .replace(/\{\{EPIDEMIOLOGY_CONTEXT\}\}/g, epidemiologyContext)
       .replace(/\{\{LOCATION\}\}/g, profile.location || 'Worldwide')
       .replace(/\{\{USER_DATA\}\}/g, JSON.stringify(data.current || {}, null, 2))
       .replace(/\{\{WEEKLY_DATA\}\}/g, JSON.stringify(data.weekly || {}, null, 2))
@@ -8019,6 +8138,12 @@ var App = class App {
   }
 
   afterRender(page) {
+    // Populate the "選択疾患の規模" banner on the login page when it
+    // first mounts — otherwise a user returning with diseases already
+    // cached in localStorage sees an empty box until they click a tag.
+    if (page === 'login') {
+      try { this.updateSelectedDiseaseScale(); } catch (_) {}
+    }
     if (page === 'dashboard') {
       this.initDashboardCharts();
       setTimeout(() => this.initNutritionCharts(), 100);
@@ -10419,6 +10544,46 @@ ${titles}`;
   }
 
   // ---- Guest Mode (no registration) ----
+  // Update the "選択疾患の規模" badge when the user ticks disease
+  // checkboxes in the login-screen disease picker. Emits both the
+  // world and Japan patient counts so the user can see immediately
+  // that they are part of a larger community. Silently no-ops if
+  // no container exists (e.g. on pages that don't show the picker).
+  updateSelectedDiseaseScale() {
+    const el = document.getElementById('selected-disease-scale');
+    if (!el) return;
+    const selectedIds = Array.from(document.querySelectorAll('.disease-checkbox:checked'))
+      .map(c => c.value);
+    if (selectedIds.length === 0) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    const parts = selectedIds.slice(0, 4).map(id => {
+      const epi = (CONFIG.DISEASE_EPIDEMIOLOGY || {})[id];
+      if (!epi) return null;
+      const name = (CONFIG.DISEASE_CATEGORIES
+        .flatMap(c => c.diseases).find(d => d.id === id) || {}).name || id;
+      const parts2 = [];
+      if (epi.label && epi.label !== '世界推計は策定中') parts2.push(`世界 ${epi.label}`);
+      if (epi.japanLabel && epi.japanLabel !== '国内推計策定中') parts2.push(`国内 ${epi.japanLabel}`);
+      if (parts2.length === 0) return null;
+      return `<div style="margin-bottom:4px"><strong style="color:#3730a3">${Components.escapeHtml(name)}</strong>: ${Components.escapeHtml(parts2.join(' / '))}</div>`;
+    }).filter(Boolean);
+    if (parts.length === 0) {
+      el.style.display = 'none';
+      return;
+    }
+    const overflowNote = selectedIds.length > 4
+      ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px">…他 ${selectedIds.length - 4} 件</div>`
+      : '';
+    el.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#3730a3;margin-bottom:6px">📊 あなたは決して一人ではありません</div>
+      <div style="font-size:11px;color:#4338ca;line-height:1.7">${parts.join('')}${overflowNote}</div>
+    `;
+    el.style.display = '';
+  }
+
   // Update the "あなただけじゃない" scale message below the guest
   // disease tag row. Called by each tag's onclick handler so the
   // user sees the world-scale number for their selected condition
@@ -11210,7 +11375,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
 
     const tabs = document.querySelectorAll('#admin-tabs .tab');
     // Must match the order of <div class="tab"> in render_admin.
-    const tabNames = ['prompts', 'models', 'api', 'usage', 'users', 'affiliate', 'firebase', 'data'];
+    const tabNames = ['prompts', 'models', 'api', 'usage', 'users', 'priority', 'affiliate', 'firebase', 'data'];
     const idx = tabNames.indexOf(tabId);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
 
@@ -11219,6 +11384,7 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     if (tabId === 'firebase') this.loadFirebaseConfigFields();
     if (tabId === 'usage') setTimeout(() => this.initUsageCharts(), 50);
     if (tabId === 'users') this.loadUsersDashboard();
+    if (tabId === 'priority') setTimeout(() => this.loadPriorityMatrix(), 50);
   }
 
   // ---- API Usage Dashboard (admin) ----
@@ -11453,6 +11619,200 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
   //     /users/{*} and /users/{*}/{**}/{*}.
   //   - FirebaseBackend.touchUserMetadata writes email/lastSeenAt to
   //     each users/{uid} document on every sign-in.
+  // ---- Business Priority Matrix (admin) ----
+  // Renders a 2D plot of CARES diseases where the X axis is world
+  // patient count (log scale, volume → SEO/marketing reach) and the
+  // Y axis is management density (low/medium/high, LTV / retention
+  // potential). The four quadrants correspond to the strategic
+  // tiers described in docs/世界患者数一覧.md §事業戦略:
+  //   Q-TL (low volume, high density):  Tier A — ME/CFS, Long COVID, FM
+  //   Q-TR (high volume, high density): Tier A+ / massive impact
+  //   Q-BL (low volume, low density):   Tier D — niche, low priority
+  //   Q-BR (high volume, low density):  Tier C — mass SEO play
+  loadPriorityMatrix() {
+    const container = document.getElementById('priority-matrix-container');
+    if (!container) return;
+    if (!this.isAdmin || !this.isAdmin()) {
+      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;text-align:center;color:var(--text-muted)">管理者権限が必要です</div></div>`;
+      return;
+    }
+    const epi = CONFIG.DISEASE_EPIDEMIOLOGY || {};
+
+    // Collect only diseases that have a numeric world patient count
+    // (we can't plot NULL tier-0 entries on a log axis). Fall back to
+    // Japan count for diseases where world is null but Japan isn't.
+    const diseaseNameById = {};
+    CONFIG.DISEASE_CATEGORIES.forEach(cat => {
+      cat.diseases.forEach(d => { diseaseNameById[d.id] = d.name; });
+    });
+
+    const densityToY = { low: 1, medium: 2, high: 3 };
+    const tierColor = {
+      1: { bg: 'rgba(16,185,129,0.45)',  border: '#059669' },  // tier 1 = green
+      2: { bg: 'rgba(99,102,241,0.45)',  border: '#4f46e5' },  // tier 2 = indigo
+      3: { bg: 'rgba(245,158,11,0.45)',  border: '#d97706' },  // tier 3 = amber
+      0: { bg: 'rgba(148,163,184,0.35)', border: '#64748b' }   // tier 0 = slate
+    };
+    const points = [];
+    Object.entries(epi).forEach(([id, data]) => {
+      const world = data.world;
+      const japan = data.japan;
+      // Require SOME numeric scale to plot. Prefer world, fall back to
+      // japan × 50 as a rough substitute so domestic-only entries show
+      // up somewhere on the chart.
+      const xRaw = world || (japan ? japan * 50 : null);
+      if (!xRaw) return;
+      const y = densityToY[data.density] || 2;
+      const color = tierColor[data.tier || 0] || tierColor[0];
+      points.push({
+        x: xRaw,
+        y,
+        r: world ? Math.min(18, Math.max(6, Math.log10(world) - 4)) : 6,
+        label: diseaseNameById[id] || id,
+        id,
+        tier: data.tier,
+        density: data.density,
+        worldLabel: data.label,
+        japanLabel: data.japanLabel || '',
+        bgColor: color.bg,
+        borderColor: color.border
+      });
+    });
+
+    // Sort the strategic-tier list for the table beneath the chart.
+    const tiers = { A: [], B: [], C: [], D: [] };
+    points.forEach(p => {
+      const isVolume = p.x >= 100_000_000;   // ≥1 億人 = volume
+      const isDeep   = p.density === 'high';
+      if (isDeep && !isVolume) tiers.A.push(p);
+      else if (isDeep && isVolume) tiers.B.push(p);
+      else if (isVolume && !isDeep) tiers.C.push(p);
+      else tiers.D.push(p);
+    });
+
+    const tierBox = (label, color, desc, items) => `
+      <div style="padding:14px 16px;background:${color};border-radius:10px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">${label}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${desc}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${items.length === 0
+            ? '<span style="font-size:11px;color:var(--text-muted)">該当なし</span>'
+            : items.slice(0, 20).map(p => `<span title="${Components.escapeHtml('世界: '+(p.worldLabel||'')+(p.japanLabel?' ／ 国内: '+p.japanLabel:''))}" style="padding:3px 10px;background:#fff;border:1px solid var(--border);border-radius:14px;font-size:11px">${Components.escapeHtml(p.label)}</span>`).join('')
+          }
+        </div>
+      </div>`;
+
+    container.innerHTML = `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">散布図: 患者数 × 管理密度</span></div>
+        <div class="card-body" style="padding:14px;height:460px;position:relative">
+          <canvas id="priority-matrix-chart"></canvas>
+        </div>
+        <div style="padding:0 16px 14px;font-size:10px;color:var(--text-muted);line-height:1.7">
+          横軸: 世界患者数 (対数スケール) ・ 縦軸: 管理密度 (low=1 / medium=2 / high=3) ・
+          バブルサイズ: 相対的な患者数規模 ・
+          色: <span style="color:#059669">■ Tier 1 固い数字</span>
+              <span style="color:#4f46e5">■ Tier 2 数千万規模</span>
+              <span style="color:#d97706">■ Tier 3 粗推計</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">戦略的分類 (ボリューム × 管理密度)</span></div>
+        <div class="card-body" style="padding:14px">
+          ${tierBox('🎯 Tier A (最優先: 深エンゲージ中心)', '#fef3c7',
+            '管理密度 高 × 世界患者数 < 1 億人。1 人あたり LTV 高、ニッチ専門性で差別化。', tiers.A)}
+          ${tierBox('💫 Tier B (高優先: スケール + エンゲージ)', '#dbeafe',
+            '管理密度 高 × 世界患者数 ≥ 1 億人。到達数も LTV も大きい最有力ゾーン。', tiers.B)}
+          ${tierBox('📢 Tier C (ボリュームで稼ぐ)', '#f0fdf4',
+            '管理密度 中-低 × 世界患者数 ≥ 1 億人。SEO 流入・マス認知で使う。', tiers.C)}
+          ${tierBox('🗂 Tier D (副次)', '#f8fafc',
+            '管理密度 中-低 × 世界患者数 < 1 億人。併発記録として価値。', tiers.D)}
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text-muted);padding:0 4px;line-height:1.7">
+        ※ 散布図は numeric な世界患者数がある疾患のみプロット。POTS / MCAS / EDS など
+        「世界推計策定中」の tier 0 疾患は表示対象外です。詳細は
+        <a href="https://github.com/agewaller/stock-screener/blob/main/docs/世界患者数一覧.md" target="_blank" rel="noopener" style="color:#6366f1">docs/世界患者数一覧.md</a>
+        を参照してください。
+      </div>
+    `;
+
+    // Initialize Chart.js scatter. Chart.js is already loaded in
+    // <head> so no external dependency needed.
+    setTimeout(() => {
+      if (typeof Chart === 'undefined') return;
+      const canvas = document.getElementById('priority-matrix-chart');
+      if (!canvas) return;
+      if (this.chartInstances?.priorityMatrix) {
+        try { this.chartInstances.priorityMatrix.destroy(); } catch(_) {}
+      }
+      this.chartInstances = this.chartInstances || {};
+      this.chartInstances.priorityMatrix = new Chart(canvas, {
+        type: 'bubble',
+        data: {
+          datasets: [{
+            label: '疾患',
+            data: points.map(p => ({ x: p.x, y: p.y, r: p.r, _label: p.label, _worldLabel: p.worldLabel, _japanLabel: p.japanLabel })),
+            backgroundColor: points.map(p => p.bgColor),
+            borderColor: points.map(p => p.borderColor),
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const d = ctx.raw;
+                  const densityLabel = { 1: 'low', 2: 'medium', 3: 'high' }[d.y] || '';
+                  return [
+                    d._label,
+                    '世界: ' + d._worldLabel,
+                    d._japanLabel ? '国内: ' + d._japanLabel : '',
+                    '管理密度: ' + densityLabel
+                  ].filter(Boolean);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'logarithmic',
+              title: { display: true, text: '世界患者数 (対数スケール)', color: '#64748b', font: { size: 11 } },
+              ticks: {
+                color: '#8896b0',
+                font: { size: 10 },
+                callback: (v) => {
+                  if (v >= 1e9) return (v/1e9).toFixed(0) + '億';
+                  if (v >= 1e8) return (v/1e8).toFixed(0) + '億';
+                  if (v >= 1e6) return (v/1e6).toFixed(0) + '百万';
+                  if (v >= 1e4) return (v/1e4).toFixed(0) + '万';
+                  return v;
+                }
+              }
+            },
+            y: {
+              min: 0.5,
+              max: 3.5,
+              title: { display: true, text: '管理密度 (LTV ポテンシャル)', color: '#64748b', font: { size: 11 } },
+              ticks: {
+                stepSize: 1,
+                color: '#8896b0',
+                font: { size: 10 },
+                callback: (v) => ({ 1: 'low', 2: 'medium', 3: 'high' }[v] || '')
+              }
+            }
+          }
+        }
+      });
+    }, 0);
+  }
+
   async loadUsersDashboard() {
     const container = document.getElementById('users-dashboard-content');
     if (!container) return;
@@ -12369,15 +12729,37 @@ App.prototype.render_login = function() {
         <span style="font-size:10px;color:var(--text-muted)">(${cat.diseases.length})</span>
       </div>
       <div style="display:none;flex-wrap:wrap;gap:6px;padding-left:22px">
-        ${cat.diseases.map(d => `
-          <label style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:${selected.includes(d.id)?'var(--accent-bg)':'var(--bg-tertiary)'};border:1px solid ${selected.includes(d.id)?'var(--accent-border)':'transparent'};border-radius:20px;cursor:pointer;font-size:12px;color:${selected.includes(d.id)?'var(--accent)':'var(--text-secondary)'};transition:all 0.15s">
+        ${cat.diseases.map(d => {
+          // Surface world/Japan patient counts as a tooltip + a small
+          // inline "世界 X・国内 Y" badge. Desktop users see the tooltip
+          // on hover, mobile users see the inline badge. Tags without
+          // epidemiology data fall back to the original display.
+          const epi = CONFIG.DISEASE_EPIDEMIOLOGY?.[d.id];
+          const tooltip = epi
+            ? `世界: ${epi.label}${epi.japanLabel ? ` ／ 国内: ${epi.japanLabel}` : ''}${epi.source ? ` (${epi.source})` : ''}`
+            : '';
+          const badge = epi
+            ? `<span style="font-size:9px;color:var(--text-muted);margin-left:4px">${Components.escapeHtml(
+                epi.world ? '世 ' + (epi.world >= 1e9 ? (epi.world/1e9).toFixed(1) + '億'
+                                  : epi.world >= 1e8 ? (epi.world/1e8).toFixed(1) + '億'
+                                  : epi.world >= 1e4 ? (epi.world/1e4).toFixed(0) + '万' : '')
+                : ''
+              )}${epi.japan ? ' ／ 国 ' + Components.escapeHtml(
+                epi.japan >= 1e8 ? (epi.japan/1e8).toFixed(1) + '億'
+                : epi.japan >= 1e4 ? (epi.japan/1e4).toFixed(0) + '万' : ''
+              ) : ''}</span>`
+            : '';
+          return `
+          <label title="${Components.escapeHtml(tooltip)}"
+            style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:${selected.includes(d.id)?'var(--accent-bg)':'var(--bg-tertiary)'};border:1px solid ${selected.includes(d.id)?'var(--accent-border)':'transparent'};border-radius:20px;cursor:pointer;font-size:12px;color:${selected.includes(d.id)?'var(--accent)':'var(--text-secondary)'};transition:all 0.15s">
             <input type="checkbox" class="disease-checkbox" value="${d.id}" data-name="${d.name}"
               ${selected.includes(d.id) ? 'checked' : ''}
-              onchange="app.toggleDiseaseSelection(this);var l=this.closest('label');if(this.checked){l.style.background='var(--accent-bg)';l.style.border='1px solid var(--accent-border)';l.style.color='var(--accent)'}else{l.style.background='var(--bg-tertiary)';l.style.border='1px solid transparent';l.style.color='var(--text-secondary)'}"
+              onchange="app.toggleDiseaseSelection(this);var l=this.closest('label');if(this.checked){l.style.background='var(--accent-bg)';l.style.border='1px solid var(--accent-border)';l.style.color='var(--accent)'}else{l.style.background='var(--bg-tertiary)';l.style.border='1px solid transparent';l.style.color='var(--text-secondary)'}app.updateSelectedDiseaseScale&&app.updateSelectedDiseaseScale();"
               style="display:none">
-            ${d.name}
+            ${d.name}${badge}
           </label>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `).join('');
@@ -12583,6 +12965,12 @@ App.prototype.render_login = function() {
           <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
             oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
           ${categoryHtml}
+          <!-- Scale-of-community reassurance. Populated dynamically by
+               app.updateSelectedDiseaseScale() whenever the user ticks
+               a checkbox above. Shows the world + Japan patient counts
+               for the selected conditions so the visitor immediately
+               sees they are not alone. -->
+          <div id="selected-disease-scale" style="display:none;margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 8px 8px 0"></div>
         </div>
       </div>
 
@@ -14387,6 +14775,7 @@ App.prototype.render_admin = function() {
     <div class="tab" onclick="app.switchAdminTab('api')">APIキー</div>
     <div class="tab" onclick="app.switchAdminTab('usage')">📊 使用量</div>
     <div class="tab" onclick="app.switchAdminTab('users')">👥 ユーザ管理</div>
+    <div class="tab" onclick="app.switchAdminTab('priority')">📈 事業優先度</div>
     <div class="tab" onclick="app.switchAdminTab('affiliate')">アフィリエイト</div>
     <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
     <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
@@ -14549,6 +14938,21 @@ App.prototype.render_admin = function() {
       <p style="font-size:12px;color:var(--text-muted)">登録ユーザー数とそれぞれの利用状況を把握し、サービス改善に活用します。</p>
     </div>
     <div id="users-dashboard-content">
+      <div class="card"><div class="card-body" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">
+        タブを開くと読み込みます…
+      </div></div>
+    </div>
+  </div>
+
+  <!-- TAB: Business Priority Matrix -->
+  <div class="admin-tab-content" id="admin-tab-priority" style="display:none">
+    <div style="margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">📈 事業優先度マトリクス</h3>
+      <p style="font-size:12px;color:var(--text-muted)">
+        対応疾患を <strong>患者数ボリューム（横軸）</strong> × <strong>管理密度（縦軸）</strong> で 2 次元プロットし、事業投資の優先順位を判断するツールです。
+      </p>
+    </div>
+    <div id="priority-matrix-container">
       <div class="card"><div class="card-body" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">
         タブを開くと読み込みます…
       </div></div>
