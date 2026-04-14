@@ -83,12 +83,13 @@ export default {
 
       // 2. メール本文を読む。multipart の場合は text/plain パートを優先
       const raw = await new Response(message.raw).text();
-      const text = extractTextBody(raw);
+      const extracted = extractTextBody(raw);
+      const text = (extracted?.text || '').trim();
       const subject = message.headers.get('subject') || '(件名なし)';
       const from = message.from || '';
 
-      if (!text || text.trim().length < 10) {
-        console.warn('[plaud-inbox] empty body, ignoring');
+      if (!text || text.length < 10) {
+        console.warn('[plaud-inbox] empty body, ignoring. extractor path:', extracted?.path || '(none)', 'raw length:', raw?.length || 0);
         return;
       }
 
@@ -112,7 +113,11 @@ export default {
           subject:    { stringValue: subject },
           text:       { stringValue: text.substring(0, 100000) },
           receivedAt: { timestampValue: new Date().toISOString() },
-          processed:  { booleanValue: false }
+          processed:  { booleanValue: false },
+          // Trail of which parser branch found the body. Written
+          // into Firestore so the admin diagnostic panel can surface
+          // "we received the email and parsed it as X" to the user.
+          parsePath:  { stringValue: extracted?.path || '' }
         }
       };
 
@@ -135,46 +140,157 @@ export default {
   }
 };
 
-// Extract a usable text body from a raw RFC 822 message. Prefers
-// text/plain parts; falls back to stripping HTML tags from text/html.
-// Not a full MIME parser — covers the common cases (plain, multipart
-// with text/plain section). Plaud's auto-flow sends plain text by
-// default, so this is sufficient for the primary use case.
+// Extract a usable text body from a raw RFC 822 message.
+//
+// Returns { text, path } where `path` is a diagnostic breadcrumb of
+// which branch of the parser reached the result (e.g. "multipart->
+// multipart/alternative->text/plain(base64)"). Plaud's auto-flow
+// typically sends plain text, but depending on the sending client
+// the message can be:
+//   - single-part text/plain (quoted-printable or 7bit)
+//   - multipart/alternative (text/plain + text/html)
+//   - multipart/mixed containing multipart/alternative + attachments
+//   - base64 bodies for non-ASCII languages
+// The old parser only handled the first two cases and always
+// assumed quoted-printable, so Japanese transcripts sent with
+// base64 encoding or nested inside multipart/mixed were silently
+// dropped. This version recursively walks nested multiparts and
+// handles all three common Content-Transfer-Encoding values.
 function extractTextBody(raw) {
-  if (!raw) return '';
-  // Find Content-Type to determine multipart boundary
-  const ctMatch = raw.match(/Content-Type:\s*multipart\/[^;]+;\s*boundary="?([^"\s;]+)"?/i);
-  if (ctMatch) {
-    const boundary = '--' + ctMatch[1];
-    const parts = raw.split(boundary);
-    // Pick the first text/plain part
-    for (const part of parts) {
-      if (/Content-Type:\s*text\/plain/i.test(part)) {
-        // Body is after the blank line that separates headers from content
-        const blank = part.search(/\r?\n\r?\n/);
-        if (blank !== -1) {
-          let body = part.substring(blank).trim();
-          // Strip the trailing -- or -- boundary marker
-          body = body.replace(/--\s*$/, '').trim();
-          return decodeQuotedPrintable(body);
-        }
-      }
+  if (!raw) return { text: '', path: 'empty' };
+
+  // Split the message into headers + body on the first blank line.
+  // RFC 5322: headers and body are separated by CRLF CRLF.
+  const parsed = parseMessagePart(raw);
+  const result = walkPart(parsed, []);
+  return result || { text: '', path: 'no-text-found' };
+}
+
+// Parse an RFC 5322 message part into { headers: {name: value},
+// body: string }. Handles header line folding (continuation lines
+// starting with whitespace).
+function parseMessagePart(raw) {
+  const blank = raw.search(/\r?\n\r?\n/);
+  if (blank === -1) {
+    return { headers: {}, body: raw, rawHeaders: '' };
+  }
+  const rawHeaders = raw.substring(0, blank);
+  // +2 for \n\n, +4 for \r\n\r\n — just skip whichever matched.
+  const bodyStart = raw.substring(blank).match(/^\r?\n\r?\n/)[0].length;
+  const body = raw.substring(blank + bodyStart);
+  // Unfold continuation lines: RFC 5322 allows headers to span
+  // multiple lines if the continuation starts with whitespace.
+  const unfolded = rawHeaders.replace(/\r?\n[ \t]+/g, ' ');
+  const headers = {};
+  unfolded.split(/\r?\n/).forEach(line => {
+    const idx = line.indexOf(':');
+    if (idx === -1) return;
+    const name = line.substring(0, idx).trim().toLowerCase();
+    const value = line.substring(idx + 1).trim();
+    headers[name] = value;
+  });
+  return { headers, body, rawHeaders };
+}
+
+// Recursively walk a (possibly multipart) MIME part and return the
+// best text/plain (preferred) or text/html (fallback) body we can
+// find. Returns { text, path } or null.
+function walkPart(part, trail) {
+  const ct = (part.headers['content-type'] || '').toLowerCase();
+  const enc = (part.headers['content-transfer-encoding'] || '7bit').toLowerCase();
+
+  if (ct.startsWith('multipart/')) {
+    // Extract boundary param from the Content-Type header. Handles
+    // both quoted and unquoted boundary values.
+    const boundaryMatch = ct.match(/boundary="?([^";]+)"?/);
+    if (!boundaryMatch) {
+      return { text: part.body, path: trail.concat('multipart-no-boundary').join('->') };
     }
-    // Fallback: text/html with tag strip
-    for (const part of parts) {
-      if (/Content-Type:\s*text\/html/i.test(part)) {
-        const blank = part.search(/\r?\n\r?\n/);
-        if (blank !== -1) {
-          const html = part.substring(blank).trim().replace(/--\s*$/, '');
-          return decodeQuotedPrintable(html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'));
-        }
-      }
+    const boundary = '--' + boundaryMatch[1];
+    const subparts = part.body.split(boundary)
+      .map(s => s.replace(/^\r?\n/, '').replace(/\r?\n$/, ''))
+      // The first chunk is preamble (before the first boundary),
+      // and the last is the closing boundary marker "--" + epilogue.
+      .filter(s => s && !/^--\s*/.test(s));
+
+    // Recurse into each subpart. Prefer text/plain over text/html.
+    let htmlFallback = null;
+    for (const sub of subparts) {
+      const parsed = parseMessagePart(sub);
+      const subCt = (parsed.headers['content-type'] || '').toLowerCase();
+      const childTrail = trail.concat('multipart(' + ct.split(';')[0].split('/')[1] + ')');
+      const result = walkPart(parsed, childTrail);
+      if (!result) continue;
+      if (subCt.startsWith('text/plain')) return result;
+      if (subCt.startsWith('text/html') && !htmlFallback) htmlFallback = result;
+      // Also walk nested multiparts eagerly — the recursive call
+      // may have found text/plain deeper down.
+      if (subCt.startsWith('multipart/') && result.text) return result;
+    }
+    return htmlFallback;
+  }
+
+  // Leaf part: decode the body according to Content-Transfer-Encoding.
+  let decoded = part.body || '';
+  let encTag = enc;
+  if (enc === 'base64') {
+    decoded = decodeBase64Utf8(decoded);
+  } else if (enc === 'quoted-printable') {
+    decoded = decodeQuotedPrintable(decoded);
+  } else {
+    // 7bit / 8bit / binary / (unknown) — pass through, but still
+    // attempt quoted-printable fallback if the text contains =XX
+    // sequences (some senders label as 7bit but still QP-encode).
+    if (/=[0-9A-Fa-f]{2}/.test(decoded)) {
+      decoded = decodeQuotedPrintable(decoded);
+      encTag = '7bit-as-qp';
     }
   }
-  // Single-part: take everything after the first blank line
-  const blank = raw.search(/\r?\n\r?\n/);
-  if (blank !== -1) return decodeQuotedPrintable(raw.substring(blank).trim());
-  return raw;
+  decoded = decoded.trim();
+
+  if (ct.startsWith('text/plain')) {
+    return { text: decoded, path: trail.concat('text/plain(' + encTag + ')').join('->') };
+  }
+  if (ct.startsWith('text/html')) {
+    // Strip HTML tags + decode common entities for a best-effort
+    // plain-text representation.
+    const plain = decoded
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n[ \t]+/g, '\n')
+      .trim();
+    return { text: plain, path: trail.concat('text/html(' + encTag + ')').join('->') };
+  }
+  // Unknown leaf content-type — return nothing so the caller can
+  // pick the next sibling instead of stuffing binary into Firestore.
+  return null;
+}
+
+// Base64 decoder that tolerates whitespace (RFC 2045 allows CRLF
+// every 76 chars) and decodes the resulting bytes as UTF-8. Used
+// for Content-Transfer-Encoding: base64 which Plaud/macOS Mail
+// sometimes emit for non-ASCII bodies.
+function decodeBase64Utf8(s) {
+  if (!s) return '';
+  try {
+    // Strip whitespace and any stray line endings.
+    const cleaned = s.replace(/[\r\n\s]+/g, '');
+    const binary = atob(cleaned);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  } catch (e) {
+    console.warn('[plaud-inbox] base64 decode failed:', e?.message);
+    return s;
+  }
 }
 
 // Quoted-printable decoder. Plaud often sends UTF-8 quoted-printable

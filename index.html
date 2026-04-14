@@ -6808,6 +6808,49 @@ var FirebaseBackend = {
     }
   },
 
+  // One-shot read of the 10 most recent inbox messages (processed
+  // and unprocessed) for the current user's hash. Used by the
+  // diagnostic panel on the Integrations page to confirm whether
+  // emails are actually arriving at Firestore, independently of
+  // whether the onSnapshot listener has processed them.
+  async fetchRecentInbox(kind = 'plaud', limit = 10) {
+    if (!this.db || !this.userId) return [];
+    const hash = this._userHash();
+    if (!hash) return [];
+    try {
+      // No orderBy() here — ordering requires a composite index
+      // which would have to be created manually in the Firebase
+      // Console. We fetch more than needed, sort client-side, and
+      // then slice to `limit`.
+      const snap = await this.db
+        .collection('inbox').doc(hash).collection(kind)
+        .limit(Math.max(limit * 3, 30))
+        .get();
+      const docs = [];
+      snap.forEach(d => {
+        const data = d.data() || {};
+        docs.push({
+          id: d.id,
+          subject: data.subject || '',
+          from: data.from || '',
+          text: data.text || '',
+          textLength: (data.text || '').length,
+          receivedAt: data.receivedAt?.toMillis?.() || 0,
+          processed: data.processed === true,
+          processedAt: data.processedAt || '',
+          parsePath: data.parsePath || '',
+          error: data.error || '',
+          skipped: data.skipped || ''
+        });
+      });
+      docs.sort((a, b) => b.receivedAt - a.receivedAt);
+      return docs.slice(0, limit);
+    } catch (err) {
+      console.warn('[fetchRecentInbox]', err.code || '', err.message);
+      throw err;
+    }
+  },
+
   // Mirror of Integrations.simpleHash so the inbox subscription uses
   // the exact same hash that's printed on the integrations page.
   _userHash() {
@@ -8811,6 +8854,75 @@ ${titles}`;
     store.set('calendarEvents', []);
     app.navigate('integrations');
     Components.showToast('Googleカレンダー連携を解除しました', 'success');
+  }
+
+  // Diagnostic: list the 10 most recent inbox/{hash}/plaud docs so
+  // the user can confirm whether their Plaud emails are actually
+  // reaching Firestore. This answers the common question
+  // "I sent it but nothing shows up" — without this panel, the
+  // only way to inspect the inbox is via the Firebase Console.
+  async loadPlaudInboxDiagnostic() {
+    const container = document.getElementById('plaud-inbox-diagnostic');
+    if (!container) return;
+    if (!FirebaseBackend.initialized || !FirebaseBackend.userId) {
+      container.innerHTML = `<div style="padding:10px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;font-size:11px;color:#991b1b">Firebase にログインしてから確認してください</div>`;
+      return;
+    }
+    container.innerHTML = `<div style="padding:10px;font-size:11px;color:var(--text-muted)">読み込み中…</div>`;
+    try {
+      const docs = await FirebaseBackend.fetchRecentInbox('plaud', 10);
+      const hash = FirebaseBackend._userHash();
+      if (!docs || docs.length === 0) {
+        container.innerHTML = `
+          <div style="padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;line-height:1.7">
+            <strong>受信箱は空です。</strong><br>
+            Firestore の <code>inbox/${Components.escapeHtml(hash || '?')}/plaud/</code> に 1 件も届いていません。
+            以下を確認してください:<br>
+            ① Plaud のオートフロー宛先が <code>${Components.escapeHtml(Integrations.generatePlaudEmail() || '')}</code> になっているか<br>
+            ② Cloudflare Email Routing が <code>plaud-inbox</code> Worker に紐づいているか<br>
+            ③ Cloudflare Dashboard → Workers → plaud-inbox → Logs で受信ログを確認
+          </div>`;
+        return;
+      }
+      const fmt = (ms) => {
+        if (!ms) return '—';
+        const d = new Date(ms);
+        return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      };
+      const processedCount = docs.filter(d => d.processed).length;
+      const errorCount = docs.filter(d => d.error).length;
+      const rows = docs.map((d, i) => {
+        const statusColor = d.error ? '#ef4444' : (d.processed ? '#16a34a' : '#f59e0b');
+        const statusText = d.error ? 'エラー' : (d.processed ? '処理済' : '未処理');
+        const preview = (d.text || '').replace(/\s+/g, ' ').substring(0, 80);
+        return `
+          <div style="padding:8px 10px;border-top:1px solid var(--border);font-size:11px">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
+              <span style="color:${statusColor};font-weight:700;font-size:10px">●${statusText}</span>
+              <span style="color:var(--text-muted);font-family:monospace;font-size:10px">${fmt(d.receivedAt)}</span>
+              <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px">${Components.escapeHtml(d.subject || '(件名なし)')}</span>
+              <span style="margin-left:auto;color:var(--text-muted);font-size:10px">${d.textLength} 文字</span>
+            </div>
+            <div style="color:var(--text-muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${Components.escapeHtml(preview)}</div>
+            ${d.parsePath ? `<div style="color:#6366f1;font-size:9px;font-family:monospace;margin-top:2px">path: ${Components.escapeHtml(d.parsePath)}</div>` : ''}
+            ${d.error ? `<div style="color:#ef4444;font-size:10px;margin-top:2px">${Components.escapeHtml(d.error)}</div>` : ''}
+            ${d.skipped ? `<div style="color:#f59e0b;font-size:10px;margin-top:2px">skipped: ${Components.escapeHtml(d.skipped)}</div>` : ''}
+          </div>`;
+      }).join('');
+      container.innerHTML = `
+        <div style="background:#fff;border:1px solid var(--border);border-radius:6px">
+          <div style="padding:8px 10px;background:var(--bg-tertiary);font-size:10px;color:var(--text-muted);display:flex;gap:12px;align-items:center">
+            <span>hash: <code>${Components.escapeHtml(hash || '')}</code></span>
+            <span>件数: <strong>${docs.length}</strong></span>
+            <span style="color:#16a34a">処理済: ${processedCount}</span>
+            ${errorCount > 0 ? `<span style="color:#ef4444">エラー: ${errorCount}</span>` : ''}
+          </div>
+          ${rows}
+        </div>`;
+    } catch (err) {
+      console.error('[loadPlaudInboxDiagnostic]', err);
+      container.innerHTML = `<div style="padding:10px;background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;font-size:11px;color:#991b1b">読み込みエラー: ${Components.escapeHtml(err.message || String(err))}</div>`;
+    }
   }
 
   // Copy the user's per-user Plaud receiving email address so they
@@ -13130,6 +13242,18 @@ App.prototype.render_integrations = function() {
             <strong>受信リスナー:</strong> 接続中...
           </div>`;
         })()}
+        <!-- Diagnostic panel: shows the 10 most recent inbox docs
+             regardless of processed state. This is the fastest way
+             to answer "did anything actually arrive?" without going
+             into the Firebase Console. -->
+        <div style="margin-top:10px">
+          <button class="btn btn-outline btn-sm"
+            style="font-size:10px;padding:4px 10px"
+            onclick="app.loadPlaudInboxDiagnostic()">
+            🔍 最近の受信メッセージを確認
+          </button>
+          <div id="plaud-inbox-diagnostic" style="margin-top:8px"></div>
+        </div>
       </div>
 
       <!-- Fallback: manual paste for one-off / older recordings -->
