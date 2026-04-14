@@ -4146,28 +4146,53 @@ var AIEngine = class AIEngine {
   }
 
   // Build the list of providers to try, in order, starting with the
-  // user's preferred model and falling back to the other two. Image
-  // analysis can only use OpenAI (vision), so for those we force the
-  // preferred path first and skip non-vision fallbacks unless they
-  // happen to support the input.
+  // user's preferred model and falling back through alternatives.
+  //
+  // IMPORTANT for guest mode: the shared Cloudflare proxy only works
+  // for Anthropic endpoints, and guests have no API keys for OpenAI
+  // or Google. If we only list one Claude variant and it fails
+  // (model rotation, rate limit, transient 5xx), the whole guest
+  // request dies and they see "サービスを準備中". To make guest mode
+  // resilient, we ALWAYS include Opus + Sonnet + Haiku when the user
+  // prefers any Claude model — that way a Haiku failure naturally
+  // falls through to Sonnet / Opus on the same shared proxy path.
   buildProviderFallbackList(preferredModel) {
-    // Anthropic Opus is our primary provider — billing is not a
-    // constraint and it gives the strongest analysis.
-    const anthropic = { model: 'claude-opus-4-6', callFn: this.callAnthropic };
-    const openai = { model: 'gpt-4o', callFn: this.callOpenAI };
-    const google = { model: 'gemini-2.5-pro', callFn: this.callGoogle };
+    const opus   = { model: 'claude-opus-4-6',   callFn: this.callAnthropic };
+    const sonnet = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
+    const haiku  = { model: 'claude-haiku-4-5',  callFn: this.callAnthropic };
+    const openai = { model: 'gpt-4o',            callFn: this.callOpenAI };
+    const google = { model: 'gemini-2.5-pro',    callFn: this.callGoogle };
+
+    // Dedupe helper so preferredModel isn't listed twice.
+    const uniq = (arr) => {
+      const seen = new Set();
+      return arr.filter(p => (seen.has(p.model) ? false : (seen.add(p.model), true)));
+    };
 
     if (preferredModel?.startsWith('claude-')) {
-      return [{ model: preferredModel, callFn: this.callAnthropic }, openai, google];
+      // Anthropic-preferred: try preferred → other Anthropic variants
+      // (all on the same proxy path) → OpenAI → Google. This is the
+      // guest-mode happy path.
+      return uniq([
+        { model: preferredModel, callFn: this.callAnthropic },
+        opus, sonnet, haiku,
+        openai, google
+      ]);
     }
     if (preferredModel?.startsWith('gpt-')) {
-      return [{ model: preferredModel, callFn: this.callOpenAI }, anthropic, google];
+      return uniq([
+        { model: preferredModel, callFn: this.callOpenAI },
+        opus, sonnet, haiku, google
+      ]);
     }
     if (preferredModel?.startsWith('gemini-')) {
-      return [{ model: preferredModel, callFn: this.callGoogle }, anthropic, openai];
+      return uniq([
+        { model: preferredModel, callFn: this.callGoogle },
+        opus, sonnet, haiku, openai
+      ]);
     }
     // Unknown model — try all in order of reliability, Opus first.
-    return [anthropic, openai, google];
+    return [opus, sonnet, haiku, openai, google];
   }
 
   // Anthropic Claude API (via proxy or direct)
@@ -4176,10 +4201,17 @@ var AIEngine = class AIEngine {
     // the actual API model names. Anthropic rotates model IDs: any
     // hardcoded id eventually returns HTTP 400 once deprecated, which
     // the user sees as "分析の呼び出しに失敗".
+    //
+    // We use the UNDATED aliases (claude-opus-4-6, claude-sonnet-4-6,
+    // claude-haiku-4-5) which Anthropic keeps fresh by pointing them
+    // at the latest dated snapshot. Previously Haiku was pinned to
+    // `claude-haiku-4-5-20251001` which became the root cause of the
+    // "分析サービスに接続できませんでした" error reported in guest mode
+    // once that specific snapshot was rotated out on the API.
     const MODEL_MAP = {
       'claude-sonnet-4-6': 'claude-sonnet-4-6',
       'claude-opus-4-6':   'claude-opus-4-6',
-      'claude-haiku-4-5':  'claude-haiku-4-5-20251001',
+      'claude-haiku-4-5':  'claude-haiku-4-5',
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
@@ -10293,20 +10325,59 @@ ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
     } catch (err) {
       console.warn('[guestAnalyze] Failed:', err?.message || err);
       const isAdmin = this.isAdmin();
+      const errMessage = err?.message || String(err);
+      // Build a user-friendly one-line hint from the error. We surface
+      // enough info for the user to report the issue back (HTTP status,
+      // short reason) without dumping full stack traces onto the UI.
+      let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
+      if (/401/.test(errMessage)) {
+        friendlyHint = '認証エラー (401)。運営者に連絡してください。';
+      } else if (/404|not found|deprecat/i.test(errMessage)) {
+        friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
+      } else if (/429|rate limit/i.test(errMessage)) {
+        friendlyHint = '一時的に混雑しています (429)。30 秒ほど待ってから再度お試しください。';
+      } else if (/Failed to fetch|NetworkError|TypeError/.test(errMessage)) {
+        friendlyHint = 'ネットワーク接続に失敗しました。Wi-Fi または通信状況をご確認ください。';
+      } else if (/500|502|503|504/.test(errMessage)) {
+        friendlyHint = 'AI サービスが一時的に応答していません (5xx)。数分後に再度お試しください。';
+      }
+      // Build a diagnostic string that users can copy back to us when
+      // reporting the issue. Includes browser UA + timestamp so we can
+      // correlate with Worker logs.
+      const diag = [
+        'Timestamp: ' + new Date().toISOString(),
+        'Error: ' + errMessage,
+        'Model requested: ' + (modelId || 'unknown'),
+        'UA: ' + (navigator.userAgent || '')
+      ].join('\n');
+      const diagEscaped = Components.escapeHtml(diag);
       if (resultEl) {
         resultEl.innerHTML = `
           <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
             <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
             <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
-              ${isAdmin
-                ? `<div style="margin-bottom:8px">${Components.escapeHtml(err?.message || String(err))}</div>
-                   <div style="padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.6">
-                     <strong>管理者向け:</strong> ゲストモードには Worker のシークレット設定が必要です:<br>
-                     <code style="background:#fee2e2;padding:1px 6px;border-radius:3px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code>
-                   </div>`
-                : 'ただいまサービスを準備中です。メールアドレスで登録すると、すぐに分析機能をご利用いただけます。'}
+              ${Components.escapeHtml(friendlyHint)}
             </div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button onclick="app.guestAnalyze()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 もう一度試す</button>
+              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:8px 16px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
+            </div>
+            <details style="font-size:11px;color:#7f1d1d;margin-top:6px">
+              <summary style="cursor:pointer;font-weight:600">🔍 詳細（運営者への報告に使えます）</summary>
+              <pre style="margin-top:6px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;white-space:pre-wrap;word-break:break-all;line-height:1.5">${diagEscaped}</pre>
+              <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(diag)}).then(()=>Components.showToast('診断情報をコピーしました。info@bluemarl.in までお送りください','success'))"
+                style="margin-top:6px;padding:6px 12px;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
+              ${isAdmin
+                ? `<div style="margin-top:10px;padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.7">
+                     <strong>管理者向けヒント:</strong><br>
+                     ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
+                     ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
+                     <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
+                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
+                     ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
+                   </div>`
+                : ''}
+            </details>
           </div>`;
       }
     } finally {
