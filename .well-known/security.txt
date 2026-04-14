@@ -1,0 +1,8 @@
+# Security policy for cares.advisers.jp (健康日記 / Health Diary)
+# See https://cares.advisers.jp/#privacy for the full privacy page.
+
+Contact: mailto:info@bluemarl.in
+Preferred-Languages: ja, en
+Canonical: https://cares.advisers.jp/.well-known/security.txt
+Expires: 2027-04-14T00:00:00.000Z
+Policy: https://cares.advisers.jp/#privacy

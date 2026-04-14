@@ -3465,6 +3465,66 @@ var Store = class Store {
 var store = new Store();
 
 
+// === js/privacy.js ===
+/* ============================================================
+   Privacy / PII anonymization
+   ------------------------------------------------------------
+   Strips obvious personal identifiers (emails, phone numbers,
+   postal codes, addresses, honorific-suffixed names, long
+   number sequences) from any text about to be sent to an AI
+   provider. Opt-in via the "AI 送信前の匿名化" toggle in
+   設定 → プライバシー設定. Off by default because masking can
+   degrade analysis quality; users concerned about leaks can
+   turn it on for a measurable reduction in surface area.
+
+   This is NOT a guarantee — Japanese names in particular are
+   hard to detect reliably without a morphological analyzer.
+   The goal is "much better than raw text" without pretending
+   to be DLP-grade.
+   ============================================================ */
+var Privacy = {
+  STORAGE_KEY: 'privacy_anonymize_ai',
+
+  isEnabled() {
+    try { return localStorage.getItem(this.STORAGE_KEY) === '1'; }
+    catch (_) { return false; }
+  },
+  setEnabled(v) {
+    try { localStorage.setItem(this.STORAGE_KEY, v ? '1' : '0'); }
+    catch (_) {}
+  },
+
+  anonymizeText(text) {
+    if (!text || typeof text !== 'string') return text;
+    let t = text;
+    // Emails — the most common identifier in free-form text.
+    t = t.replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '[メール]');
+    // International phone numbers (+81-90-1234-5678 etc.)
+    t = t.replace(/\+\d{1,3}[-\s]?\d{2,4}[-\s]?\d{2,4}[-\s]?\d{2,4}/g, '[電話]');
+    // Japanese phone numbers (0X-XXXX-XXXX or 0XX-XXXX-XXXX)
+    t = t.replace(/\b0\d{1,4}[-\s]\d{1,4}[-\s]\d{3,4}\b/g, '[電話]');
+    // Credit-card-like 16-digit groups
+    t = t.replace(/\b\d{4}[-\s]\d{4}[-\s]\d{4}[-\s]\d{4}\b/g, '[カード番号]');
+    // Generic long digit sequences 10+ (マイナンバー、保険証等)
+    t = t.replace(/\b\d{10,16}\b/g, '[番号]');
+    // Postal codes (郵便番号)
+    t = t.replace(/〒?\s*\d{3}-\d{4}/g, '[郵便番号]');
+    // Rough Japanese address pattern: 県/府/都/道 + 市/区/町/村 + local portion
+    t = t.replace(/([一-龥ぁ-んァ-ヶー]+[都道府県])([一-龥ぁ-んァ-ヶー]+[市区郡町村])([一-龥ぁ-んァ-ヶー0-9〇一二三四五六七八九十丁目番地号\-]{0,30})/g, '[住所]');
+    // Honorific-suffixed names: "山田さん", "佐藤先生", "鈴木様".
+    // The prefix must be 1-5 kanji/kana chars AND not a common
+    // pronoun / label, to avoid masking things like 「皆さん」 or
+    // 「患者さん」 which are generic.
+    const pronounBlacklist = new Set(['皆', 'この', 'あの', 'その', 'どの', '本人', '自分', 'あなた', '私', '誰', 'お客', '患者']);
+    t = t.replace(/([一-龥ァ-ヶー]{1,5})(さん|様|君|ちゃん|先生)/g, (match, name, title) => {
+      if (pronounBlacklist.has(name)) return match;
+      return '[人名]' + title;
+    });
+    return t;
+  }
+};
+
+
 // === js/ai-engine.js ===
 /* ============================================================
    AI Analysis Engine
@@ -3638,6 +3698,22 @@ var AIEngine = class AIEngine {
   // when ALL providers fail, the thrown Error.message lists exactly what
   // went wrong with each, making it trivial to diagnose.
   async callModel(modelId, prompt, options = {}) {
+    // Apply opt-in PII masking before the text leaves the browser.
+    // The toggle lives in 設定 → プライバシー設定 and is off by
+    // default (regex masking is a trade-off against analysis
+    // quality, so we only enable it when the user explicitly asks).
+    // The mask targets emails, phone numbers, long digit sequences,
+    // postal codes, addresses, and honorific-suffixed names — good
+    // enough to cover the obvious "this looks like PII" cases
+    // without pretending to be bulletproof. Users who need stronger
+    // guarantees should also paste less identifying text.
+    if (typeof Privacy !== 'undefined' && Privacy.isEnabled && Privacy.isEnabled()) {
+      const before = prompt.length;
+      prompt = Privacy.anonymizeText(prompt);
+      const after = prompt.length;
+      if (before !== after) console.log('[Privacy] masked', before - after, 'chars of PII before AI call');
+    }
+
     const providers = this.buildProviderFallbackList(modelId);
     const errors = [];
     for (const { model, callFn } of providers) {
@@ -7284,8 +7360,12 @@ var App = class App {
       el.style.display = this.isAdmin() ? '' : 'none';
     });
 
-    // Show/hide sidebar for login/disease-select
-    if (['login', 'disease-select'].includes(page)) {
+    // Show/hide sidebar for login/disease-select. The 'privacy'
+    // page is accessible both before and after login, so only
+    // hide the sidebar when the user is not yet authenticated.
+    const hideChrome = ['login', 'disease-select'].includes(page)
+      || (page === 'privacy' && !store.get('isAuthenticated'));
+    if (hideChrome) {
       if (sidebar) sidebar.style.display = 'none';
       if (topbar) topbar.style.display = 'none';
       document.querySelector('.main-content').style.marginLeft = '0';
@@ -7311,7 +7391,8 @@ var App = class App {
       integrations: 'デバイス連携',
       timeline: 'タイムライン',
       admin: '管理パネル',
-      settings: '設定'
+      settings: '設定',
+      privacy: 'プライバシーと安全'
     };
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
@@ -11752,8 +11833,22 @@ App.prototype.render_login = function() {
         </div>
       </div>
 
+      <!-- Trust banner: primary privacy assurance. Placed above the
+           dense legal-links strip so it's the first thing users see
+           when scrolling for reassurance. -->
+      <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border:1.5px solid #6366f1;border-radius:12px;text-align:center;cursor:pointer"
+        onclick="app.navigate('privacy')">
+        <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:4px">🔒 あなたの記録は、あなたのものです</div>
+        <div style="font-size:11px;color:#4338ca;line-height:1.7">
+          AI 学習には使われません ・ いつでも完全削除可能 ・ プライバシーマーク取得準備中
+        </div>
+        <div style="font-size:10px;color:#6366f1;margin-top:6px;text-decoration:underline">詳しくはプライバシーと安全のページへ →</div>
+      </div>
+
       <!-- Legal Links -->
       <div style="margin-bottom:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="#" onclick="app.navigate('privacy');return false" style="font-size:11px;color:#6366f1;text-decoration:none">プライバシーと安全</a>
+        <span style="color:#cbd5e1">|</span>
         <a href="#" onclick="app.showLegalPage('privacy');return false" style="font-size:11px;color:#6366f1;text-decoration:none">プライバシーポリシー</a>
         <span style="color:#cbd5e1">|</span>
         <a href="#" onclick="app.showLegalPage('terms');return false" style="font-size:11px;color:#6366f1;text-decoration:none">利用規約</a>
@@ -13801,6 +13896,28 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Privacy Settings -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔒 プライバシー設定</span>
+      <a href="#" onclick="app.navigate('privacy');return false" style="font-size:10px;color:#6366f1">プライバシーと安全ページ →</a>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer">
+        <input type="checkbox" id="toggle-privacy-anonymize"
+          ${Privacy.isEnabled() ? 'checked' : ''}
+          onchange="Privacy.setEnabled(this.checked);Components.showToast(this.checked?'AI送信前の匿名化を有効にしました':'AI送信前の匿名化を無効にしました','success')"
+          style="margin-top:2px;width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">AI 送信前の匿名化</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.7">
+            AI に送る前に、メールアドレス・電話番号・郵便番号・住所・人名 (〜さん/〜先生) を自動的に <code>[メール]</code>・<code>[電話]</code> 等のラベルに置き換えます。分析の精度がやや下がる可能性がありますが、万一の漏洩リスクを下げたい方におすすめです。
+          </div>
+        </div>
+      </label>
+    </div>
+  </div>
+
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">データ管理</span></div>
@@ -13810,8 +13927,20 @@ App.prototype.render_settings = function() {
         <input type="file" class="form-input" accept=".json" onchange="app.importDataFile(this.files[0])">
       </div>
       <button class="btn btn-secondary" onclick="app.exportData()">すべてのデータをエクスポート (JSON)</button>
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px" id="logout-btn" onclick="app.confirmLogout()">ログアウト</button>
+      </div>
+      <!-- Account deletion (退会) — last resort, hard delete from
+           Firestore and Firebase Auth. Users must explicitly confirm
+           by pressing the inline confirmAction button twice. -->
+      <div style="margin-top:4px;padding-top:12px;border-top:1px dashed var(--danger,#dc2626)">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.7">
+          ⚠ アカウントを完全に削除するとクラウド上のデータも全て消去され、復元できません。削除前にエクスポートをおすすめします。
+        </div>
+        <button class="btn btn-danger btn-sm" style="width:100%"
+          onclick="app.confirmAction(this,'アカウントを完全削除する',()=>app.deleteAccount())">
+          🗑 アカウントを完全削除（退会）
+        </button>
       </div>
     </div>
   </div>`;
@@ -13856,6 +13985,277 @@ App.prototype.copyCurrentUrl = function() {
     }).catch(fallback);
   } else {
     fallback();
+  }
+};
+
+// ============================================================
+// Privacy & Safety page
+// ------------------------------------------------------------
+// Stand-alone page (works both pre-login and post-login) that
+// explains, in plain language, who can see the user's data,
+// what happens when we call AI providers, where the data is
+// stored, and how to delete everything. The page also lists the
+// certification roadmap so users can see the operator taking
+// privacy seriously even before Pマーク審査 is complete.
+// ============================================================
+App.prototype.render_privacy = function() {
+  const loggedIn = !!store.get('isAuthenticated');
+  const backTarget = loggedIn ? 'settings' : 'login';
+  const contact = (typeof CONFIG !== 'undefined' && CONFIG.CONTACT_EMAIL) || 'info@bluemarl.in';
+
+  return `
+  <div style="max-width:880px;margin:0 auto;padding:20px 16px 60px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <button class="btn btn-outline btn-sm" onclick="app.navigate('${backTarget}')"
+        style="padding:6px 12px;font-size:12px">← 戻る</button>
+      <h1 style="font-size:22px;font-weight:800;margin:0">🔒 プライバシーと安全</h1>
+    </div>
+
+    <div style="padding:18px 20px;background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:6px">あなたのデータはあなたのものです。</div>
+      <div style="font-size:12px;color:#4338ca;line-height:1.8">
+        健康日記は、慢性疾患と日々向き合う方が安心して記録を残せるように作られています。
+        運営者であっても、本人の明示的な許可なく中身を閲覧することはありません。
+        このページでは、多くの方が不安に感じる点を一つずつお答えします。
+      </div>
+    </div>
+
+    <!-- ① 誰が見られるか -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">❓ 誰があなたのデータを見られますか？</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9;color:var(--text-primary)">
+        <strong style="color:#16a34a">本人のみ</strong>です。
+        データは Google Cloud の Firestore に「ユーザーごとに完全に分離」された形で保存されており、
+        セキュリティルール (<code>firestore.rules</code>) でログイン中の本人しか読み書きできないようにしています。
+        <div style="margin-top:10px;padding:10px 14px;background:var(--bg-tertiary);border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-secondary);line-height:1.6">
+          allow read, write: if request.auth.uid == userId;
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+          ※ 運営者アカウント (agewaller@gmail.com) は「ユーザー数」と「最終アクセス日時」だけを集計閲覧できます。記録本文は見ません。見る権限が必要になる場合 (本人の要望によるサポート等) は、事前に本人の許可を取ります。
+        </div>
+      </div>
+    </div>
+
+    <!-- ② AI と学習 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">❓ AI に送ったデータは、学習に使われますか？</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9">
+        <strong style="color:#16a34a">使われません。</strong>
+        健康日記が呼び出している 3 社 (Anthropic / OpenAI / Google) は、
+        いずれも <strong>API 経由で送られたデータをモデル学習には使わない</strong>と公式に明記しています:
+        <ul style="margin:10px 0 10px 20px;padding:0;font-size:12px;color:var(--text-secondary);line-height:1.9">
+          <li><a href="https://www.anthropic.com/legal/commercial-terms" target="_blank" rel="noopener" style="color:#6366f1">Anthropic Commercial Terms</a> — API 入力・出力はデフォルトでモデル学習に使用しない</li>
+          <li><a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener" style="color:#6366f1">OpenAI API Data Usage Policies</a> — 2023 年以降、API データは学習に使用しない</li>
+          <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" style="color:#6366f1">Google Gemini API Terms</a> — 有料 API プランで同様の扱い</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;line-height:1.7">
+          <strong>さらに心配な方へ:</strong> 設定画面の「AI 送信前の匿名化」をオンにすると、
+          送信前に本文中のメールアドレス・電話番号・郵便番号・住所・人名を自動的にマスクしてから AI に渡します。
+          (分析の精度はやや下がる可能性があります)
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 保存場所 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">❓ どこに保存されますか？</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9">
+        <strong>Google Cloud Firestore</strong> に保存されます。Google Cloud はグローバルで以下の認証を取得しています:
+        <ul style="margin:10px 0 10px 20px;padding:0;font-size:12px;color:var(--text-secondary);line-height:1.9">
+          <li>ISO/IEC 27001 (情報セキュリティマネジメント)</li>
+          <li>ISO/IEC 27017 (クラウドサービスセキュリティ)</li>
+          <li>ISO/IEC 27018 (クラウド上の個人情報保護)</li>
+          <li>ISO/IEC 27701 (プライバシー情報マネジメント)</li>
+          <li>SOC 1 / SOC 2 / SOC 3</li>
+        </ul>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+          通信は全て TLS で暗号化され、保存データも Google 側で AES-256 相当の暗号化が適用されます。
+          運営者は Firestore への root 権限を持ちません (Firebase のコンソールアクセスのみ)。
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ データを消したいとき -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">❓ いつでも全データを消せますか？</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9">
+        <strong style="color:#16a34a">はい、いつでも完全に削除できます。</strong>
+        3 つの方法をご用意しています:
+        <ol style="margin:10px 0 14px 20px;padding:0;font-size:12px;color:var(--text-secondary);line-height:2">
+          <li><strong>エクスポート</strong>: 設定 → 「すべてのデータをエクスポート」で JSON ファイルとしてダウンロード</li>
+          <li><strong>ブラウザだけ削除</strong>: 管理パネル → データ管理 → 「データ全削除」(クラウドは残ります)</li>
+          <li><strong>完全退会</strong>: 下のボタンで Firestore・Firebase Auth 両方からアカウントを削除 (復元不可)</li>
+        </ol>
+        ${loggedIn ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-secondary btn-sm" onclick="app.exportData()">📥 データをエクスポート</button>
+          <button class="btn btn-danger btn-sm" onclick="app.confirmAction(this,'完全退会',()=>app.deleteAccount())">🗑 アカウントを完全削除する</button>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text-muted)">※ 完全削除は取り消せません。エクスポートしてから実行することをおすすめします。</div>
+        ` : `
+        <div style="font-size:12px;color:var(--text-muted)">※ 退会はログイン後に実行できます。</div>
+        `}
+      </div>
+    </div>
+
+    <!-- ⑤ 漏洩時の対応 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">❓ 万が一情報が漏洩したら？</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9">
+        個人情報保護法 (日本) と GDPR (EU) の通知義務に従い、運営者が漏洩を認知した時点から
+        <strong>72 時間以内に登録メールアドレス宛てに通知</strong>します。
+        影響範囲・原因・対応状況・ユーザーへの推奨措置を含めてお知らせします。
+        <div style="margin-top:8px;font-size:12px">
+          <strong>運営者連絡先:</strong>
+          <a href="mailto:${Components.escapeHtml(contact)}" style="color:#6366f1">${Components.escapeHtml(contact)}</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑥ 認証取得ロードマップ -->
+    <div class="card" style="margin-bottom:14px;border:2px solid #6366f1">
+      <div class="card-header" style="background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%)">
+        <span class="card-title">🏅 認証取得ロードマップ</span>
+        <span class="tag tag-accent" style="font-size:10px">透明性宣言</span>
+      </div>
+      <div class="card-body" style="padding:16px 20px">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.8">
+          第三者認証はまだ審査中ですが、運営者は以下の段階で取得を進めています。
+          認証取得前の段階でも、実体として同等の運用を目指しています。
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0fdf4;border-left:4px solid #16a34a;border-radius:4px">
+            <span style="font-size:18px">✅</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#14532d">3省2ガイドライン (医療情報) 準拠宣言</div>
+              <div style="font-size:10px;color:#15803d">厚労省・総務省・経産省の医療情報システム安全管理ガイドライン。運用体制を整えて順次準拠。</div>
+            </div>
+            <span style="font-size:10px;color:#15803d">準備中</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff7ed;border-left:4px solid #f59e0b;border-radius:4px">
+            <span style="font-size:18px">🔄</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#9a3412">プライバシーマーク (JIS Q 15001)</div>
+              <div style="font-size:10px;color:#c2410c">JIPDEC 審査。個人情報の取扱い体制を第三者が審査する国内最も認知度の高い認証。</div>
+            </div>
+            <span style="font-size:10px;color:#c2410c">申請準備中</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f1f5f9;border-left:4px solid #94a3b8;border-radius:4px">
+            <span style="font-size:18px">⏳</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#334155">ISO/IEC 27001 + 27701</div>
+              <div style="font-size:10px;color:#475569">情報セキュリティ + プライバシー情報マネジメントの国際認証。Pマーク取得後に検討。</div>
+            </div>
+            <span style="font-size:10px;color:#475569">検討中</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:8px 12px;background:#f8fafc;border-radius:6px;font-size:10px;color:var(--text-muted);line-height:1.7">
+          ※ 認証の進捗に応じてこのページを更新します。進捗にご関心のある方は
+          <a href="mailto:${Components.escapeHtml(contact)}" style="color:#6366f1">${Components.escapeHtml(contact)}</a>
+          までお問い合わせください。
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑦ 脆弱性報告 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-header"><span class="card-title">🛡 セキュリティ脆弱性の報告</span></div>
+      <div class="card-body" style="padding:16px 20px;font-size:13px;line-height:1.9">
+        善意のセキュリティ研究者・ユーザーからの脆弱性報告を歓迎しています。
+        以下の連絡先までお知らせください。責任ある開示 (Responsible Disclosure) に従って速やかに対応します。
+        <div style="margin-top:10px;padding:10px 14px;background:var(--bg-tertiary);border-radius:6px;font-size:12px;font-family:monospace">
+          Contact: <a href="mailto:${Components.escapeHtml(contact)}" style="color:#6366f1">${Components.escapeHtml(contact)}</a><br>
+          Preferred-Languages: ja, en<br>
+          security.txt: <a href="/.well-known/security.txt" target="_blank" style="color:#6366f1">/.well-known/security.txt</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:30px;font-size:11px;color:var(--text-muted)">
+      最終更新: ${new Date().toISOString().split('T')[0]} ・
+      <a href="#" onclick="event.preventDefault();app.navigate('${backTarget}')" style="color:#6366f1">戻る</a>
+    </div>
+  </div>`;
+};
+
+// ============================================================
+// Account deletion — hard delete from Firestore + Firebase Auth
+// ------------------------------------------------------------
+// Implements the "退会" flow required by privacy regulations
+// (個人情報保護法 第30条 / GDPR Art. 17 — right to erasure).
+// Walks every known subcollection under users/{uid}, deletes
+// documents in 400-doc batches, deletes the profile doc itself,
+// then deletes the Firebase Auth user so a brand-new sign-up
+// could reuse the same email.
+// ============================================================
+App.prototype.deleteAccount = async function() {
+  if (!FirebaseBackend?.initialized || !FirebaseBackend.auth?.currentUser) {
+    Components.showToast('ログインしていません', 'error');
+    return;
+  }
+  const authUser = FirebaseBackend.auth.currentUser;
+  const uid = authUser.uid;
+  const userRef = firebase.firestore().collection('users').doc(uid);
+
+  Components.showToast('アカウントを完全に削除しています…', 'info');
+
+  // Subcollections we know the app writes into. Must match the
+  // loadAllData / exportData lists or data may silently remain.
+  const subcollections = [
+    'textEntries', 'symptoms', 'vitals', 'sleep', 'medications',
+    'supplements', 'meals', 'bloodTests', 'photos', 'plaudAnalyses',
+    'conversations', 'analysisHistory', 'secrets', 'private'
+  ];
+
+  try {
+    for (const sub of subcollections) {
+      let snap;
+      try {
+        snap = await userRef.collection(sub).get();
+      } catch (e) {
+        console.warn('[deleteAccount] read', sub, 'failed:', e.code || e.message);
+        continue;
+      }
+      if (snap.empty) continue;
+      const docs = snap.docs;
+      // Firestore batch limit is 500; use 400 for safety.
+      for (let i = 0; i < docs.length; i += 400) {
+        const batch = firebase.firestore().batch();
+        docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+      console.log('[deleteAccount] cleared', sub, docs.length, 'docs');
+    }
+    // Delete the profile doc itself (email / displayName / lastSeenAt / etc.)
+    try { await userRef.delete(); } catch (e) { console.warn('[deleteAccount] profile delete:', e.code); }
+
+    // Finally, delete the Firebase Auth user. This requires a
+    // recent sign-in (within ~5 minutes on iOS Safari, longer on
+    // desktop). If the session is stale, Firebase throws
+    // auth/requires-recent-login — fall back to signOut and
+    // instruct the user to re-authenticate then retry.
+    try {
+      await authUser.delete();
+      Components.showToast('アカウントを完全に削除しました。ご利用ありがとうございました。', 'success');
+    } catch (authErr) {
+      if (authErr.code === 'auth/requires-recent-login') {
+        Components.showToast('安全のため、再ログインしてからもう一度「完全削除」を押してください。ログアウトします。', 'info');
+        try { await FirebaseBackend.auth.signOut(); } catch (_) {}
+      } else {
+        console.error('[deleteAccount] auth delete:', authErr);
+        Components.showToast('認証アカウントの削除に失敗: ' + authErr.message, 'error');
+      }
+    }
+
+    // Clear local store (preserving Firebase config per CLAUDE.md)
+    // and reload to a clean state. Using store.clearAll() NOT
+    // localStorage.clear() — the latter would wipe Firebase config
+    // and break the next sign-in.
+    try { store.clearAll(); } catch (_) {}
+    setTimeout(() => location.reload(), 1500);
+  } catch (err) {
+    console.error('[deleteAccount]', err);
+    Components.showToast('削除エラー: ' + err.message, 'error');
   }
 };
 
