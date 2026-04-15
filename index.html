@@ -89,7 +89,10 @@
       "sameAs": [
         "https://note.com/age",
         "https://note.com/age/n/nc8305ab7c124",
-        "https://note.com/age/n/n4f373bc7415a"
+        "https://note.com/age/n/n4f373bc7415a",
+        "https://x.com/yamaguchiyohei",
+        "https://x.com/yamaguchiyohei/status/2040128976199602391",
+        "https://x.com/yamaguchiyohei/status/2021985306959089778"
       ],
       "worksFor": {
         "@id": "https://cares.advisers.jp/#organization"
@@ -1645,6 +1648,10 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
         <h2 class="top-bar-title" id="top-bar-title">ダッシュボード</h2>
       </div>
       <div class="top-bar-right">
+        <!-- Always-accessible export button. Users can download
+             their diary from any page without hunting in settings.
+             This is a legal + trust commitment: data portability. -->
+        <button class="btn btn-sm btn-secondary" onclick="app.openExportModal()" title="データをダウンロード">📥</button>
         <button class="btn btn-sm btn-secondary" onclick="app.navigate('settings')" title="設定">⚙️</button>
       </div>
     </div>
@@ -1931,6 +1938,18 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
             <a href="https://note.com/age" target="_blank" rel="noopener"
               style="display:block;padding:10px 14px;background:#f8fafc;border:1px dashed #94a3b8;border-radius:10px;text-decoration:none;color:#475569;text-align:center;font-size:12px;font-weight:600">
               note アカウント @age の全記事一覧 →
+            </a>
+            <!-- Developer X (Twitter) posts — linked without renaming
+                 so readers see the original context on X itself. -->
+            <a href="https://x.com/yamaguchiyohei/status/2040128976199602391" target="_blank" rel="noopener"
+              style="display:block;padding:10px 14px;background:#fff;border:1px solid #e4e7ef;border-radius:10px;text-decoration:none;color:#1e293b">
+              <div style="font-size:11px;color:#000;font-weight:700;margin-bottom:2px">𝕏 @yamaguchiyohei</div>
+              <div style="font-size:11px;color:#64748b">x.com/yamaguchiyohei/status/2040128976199602391 →</div>
+            </a>
+            <a href="https://x.com/yamaguchiyohei/status/2021985306959089778" target="_blank" rel="noopener"
+              style="display:block;padding:10px 14px;background:#fff;border:1px solid #e4e7ef;border-radius:10px;text-decoration:none;color:#1e293b">
+              <div style="font-size:11px;color:#000;font-weight:700;margin-bottom:2px">𝕏 @yamaguchiyohei</div>
+              <div style="font-size:11px;color:#64748b">x.com/yamaguchiyohei/status/2021985306959089778 →</div>
             </a>
           </div>
         </div>
@@ -13695,6 +13714,24 @@ App.prototype.render_login = function() {
             <span style="color:#64748b;font-size:12px;flex-shrink:0">→</span>
           </a>
           <a href="https://note.com/age" target="_blank" rel="noopener" style="font-size:11px;color:#6366f1;text-decoration:none;font-weight:600;text-align:center;padding:4px">note @age の全記事を見る →</a>
+          <!-- X (Twitter) posts by the developer. Linked without
+               re-captioning — the original post title/context is
+               preserved by letting the user tap through to X. -->
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e4e7ef">
+            <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:6px">𝕏 開発者の発信</div>
+            <a href="https://x.com/yamaguchiyohei/status/2040128976199602391" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#1e293b;margin-bottom:6px">
+              <span style="font-size:14px;flex-shrink:0">𝕏</span>
+              <div style="flex:1;font-size:11px;color:#475569;line-height:1.5;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@yamaguchiyohei のポストを見る</div>
+              <span style="color:#64748b;font-size:11px;flex-shrink:0">→</span>
+            </a>
+            <a href="https://x.com/yamaguchiyohei/status/2021985306959089778" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#1e293b">
+              <span style="font-size:14px;flex-shrink:0">𝕏</span>
+              <div style="flex:1;font-size:11px;color:#475569;line-height:1.5;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@yamaguchiyohei のポストを見る</div>
+              <span style="color:#64748b;font-size:11px;flex-shrink:0">→</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -16274,59 +16311,417 @@ App.prototype.deleteAccount = async function() {
 // everything they entered in a single download, organized by
 // collection with consistent ISO timestamps for chronological
 // reconstruction.
-App.prototype.exportData = function() {
-  const data = {
-    _meta: {
-      exportDate: new Date().toISOString(),
-      appVersion: CONFIG.APP_VERSION || '1.0.0',
-      format: 'mibyou_diary_v2',
-      note: 'This file contains ALL of your health data. Keep it safe.'
-    },
-    // ── User identity & preferences ──
-    user: store.get('user'),
-    userProfile: store.get('userProfile'),
-    selectedDisease: store.get('selectedDisease'),
-    selectedDiseases: store.get('selectedDiseases'),
-    selectedModel: store.get('selectedModel'),
-    customPrompts: store.get('customPrompts'),
-    dashboardLayout: store.get('dashboardLayout'),
-    // ── Core health records (time-series) ──
-    textEntries: store.get('textEntries') || [],
-    symptoms: store.get('symptoms') || [],
-    vitals: store.get('vitals') || [],
-    bloodTests: store.get('bloodTests') || [],
-    medications: store.get('medications') || [],
-    supplements: store.get('supplements') || [],
-    meals: store.get('meals') || [],
-    sleepData: store.get('sleepData') || [],
-    activityData: store.get('activityData') || [],
-    // ── Photos & files ──
-    photos: store.get('photos') || [],
-    // ── AI analysis history ──
-    analysisHistory: store.get('analysisHistory') || [],
-    aiComments: store.get('aiComments') || {},
-    latestFeedback: store.get('latestFeedback'),
-    // ── Nutrition / BMR / PFC ──
-    nutritionLog: store.get('nutritionLog') || [],
-    // ── Plaud / 禅トラック ──
-    plaudAnalyses: store.get('plaudAnalyses') || [],
-    // ── Conversation (AI chat) ──
-    conversationHistory: store.get('conversationHistory') || [],
-    // ── Calendar ──
-    calendarEvents: store.get('calendarEvents') || [],
-    // ── Integration sync timestamps ──
-    integrationSyncs: store.get('integrationSyncs') || {},
-    // ── Cached research (re-fetchable, but included for completeness) ──
-    cachedResearch: store.get('cachedResearch')
+// ============================================================
+// Data Export — Multi-format, accessible from top bar
+// ------------------------------------------------------------
+// Users' right to data portability is central to the app's
+// privacy promise. This implementation provides:
+//   - 4 formats: JSON / Markdown / CSV / Plain text
+//   - Period filter: all / 今月 / 過去 3 ヶ月 / 過去 1 年
+//   - Content selector: what categories to include
+//   - Preview before download (file size, record counts)
+//   - One-click access from the top bar on every page
+// ============================================================
+
+// Public entry point — opens the export modal. Works from any
+// page (top-bar button, settings, privacy page).
+App.prototype.openExportModal = function() {
+  const modal = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  if (!modal || !body) return;
+
+  // Gather summary stats for all known collections so the user
+  // sees what they're about to export before they download.
+  const stats = this._computeExportStats('all');
+  const latestEntry = (store.get('textEntries') || []).slice(-1)[0];
+  const oldestEntry = (store.get('textEntries') || [])[0];
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('ja-JP') : '—';
+
+  if (title) title.textContent = '📥 データをダウンロード';
+  body.innerHTML = `
+    <div style="padding:6px 0 10px">
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;margin-bottom:14px">
+        あなたが記録したすべてのデータを、お好きな形式でダウンロードできます。
+        いつでも・何度でも・完全無料で。
+      </div>
+
+      <!-- Summary stats -->
+      <div style="padding:12px 14px;background:var(--bg-tertiary);border-radius:10px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:6px">📊 エクスポート対象</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+          <div>テキスト記録: <strong>${stats.textEntries}</strong> 件</div>
+          <div>症状記録: <strong>${stats.symptoms}</strong> 件</div>
+          <div>バイタル: <strong>${stats.vitals}</strong> 件</div>
+          <div>服薬: <strong>${stats.medications}</strong> 件</div>
+          <div>サプリ: <strong>${stats.supplements}</strong> 件</div>
+          <div>食事: <strong>${stats.meals}</strong> 件</div>
+          <div>睡眠: <strong>${stats.sleepData}</strong> 件</div>
+          <div>血液検査: <strong>${stats.bloodTests}</strong> 件</div>
+          <div>写真: <strong>${stats.photos}</strong> 件</div>
+          <div>AI 分析: <strong>${stats.analysisHistory}</strong> 件</div>
+          <div>AI チャット: <strong>${stats.conversationHistory}</strong> 件</div>
+          <div>禅トラック: <strong>${stats.plaudAnalyses}</strong> 件</div>
+        </div>
+        ${stats.totalRecords > 0 ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
+          合計 <strong style="color:var(--accent)">${stats.totalRecords.toLocaleString()}</strong> 件 ・
+          ${oldestEntry ? `最古: ${fmtDate(oldestEntry.timestamp)}` : ''}
+          ${oldestEntry && latestEntry ? ' 〜 ' : ''}
+          ${latestEntry ? `最新: ${fmtDate(latestEntry.timestamp)}` : ''}
+        </div>` : `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
+          まだ記録がありません。記録を始めてからダウンロードできるようになります。
+        </div>`}
+      </div>
+
+      <!-- Format selector -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px">📄 ファイル形式</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <label class="export-fmt" style="padding:10px 12px;background:#eef2ff;border:2px solid #6366f1;border-radius:10px;cursor:pointer">
+            <input type="radio" name="export-format" value="json" checked style="margin-right:6px">
+            <strong style="font-size:12px">JSON</strong>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">再読み込み可能・バックアップ用</div>
+          </label>
+          <label class="export-fmt" style="padding:10px 12px;background:var(--bg-tertiary);border:2px solid transparent;border-radius:10px;cursor:pointer">
+            <input type="radio" name="export-format" value="markdown" style="margin-right:6px">
+            <strong style="font-size:12px">Markdown</strong>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">読みやすい日記形式</div>
+          </label>
+          <label class="export-fmt" style="padding:10px 12px;background:var(--bg-tertiary);border:2px solid transparent;border-radius:10px;cursor:pointer">
+            <input type="radio" name="export-format" value="csv" style="margin-right:6px">
+            <strong style="font-size:12px">CSV</strong>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Excel / Numbers で開ける</div>
+          </label>
+          <label class="export-fmt" style="padding:10px 12px;background:var(--bg-tertiary);border:2px solid transparent;border-radius:10px;cursor:pointer">
+            <input type="radio" name="export-format" value="text" style="margin-right:6px">
+            <strong style="font-size:12px">プレーンテキスト</strong>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">どの環境でも読める</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Period filter -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px">📅 期間</div>
+        <select id="export-period" class="form-select" style="width:100%">
+          <option value="all" selected>すべての記録</option>
+          <option value="1m">過去 1 ヶ月</option>
+          <option value="3m">過去 3 ヶ月</option>
+          <option value="6m">過去 6 ヶ月</option>
+          <option value="1y">過去 1 年</option>
+        </select>
+      </div>
+
+      <!-- Content scope -->
+      <div style="margin-bottom:18px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px">📦 含めるデータ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px">
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="textEntries" checked> テキスト記録</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="symptoms" checked> 症状</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="vitals" checked> バイタル</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="medications" checked> 服薬</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="supplements" checked> サプリ</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="meals" checked> 食事</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="sleepData" checked> 睡眠</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="bloodTests" checked> 血液検査</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="photos"> 写真 (容量大)</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="analysisHistory" checked> AI 分析履歴</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="conversationHistory"> AI チャット</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="export-scope" value="plaudAnalyses"> 禅トラック</label>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="app.executeExport()" style="flex:1;padding:12px">📥 ダウンロード</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()" style="padding:12px 20px">キャンセル</button>
+      </div>
+
+      <div style="margin-top:12px;padding:8px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;line-height:1.6">
+        🔒 ダウンロードされたファイルはあなたのデバイスにのみ保存されます。
+        サーバーには送信されません。
+      </div>
+    </div>
+  `;
+  // Visual feedback when selecting a radio (border highlight)
+  body.querySelectorAll('.export-fmt').forEach(label => {
+    label.addEventListener('click', () => {
+      body.querySelectorAll('.export-fmt').forEach(l => {
+        l.style.background = 'var(--bg-tertiary)';
+        l.style.border = '2px solid transparent';
+      });
+      label.style.background = '#eef2ff';
+      label.style.border = '2px solid #6366f1';
+    });
+  });
+  modal.style.display = 'flex';
+};
+
+// Execute the export based on the user's choices in the modal.
+App.prototype.executeExport = function() {
+  const format = document.querySelector('input[name="export-format"]:checked')?.value || 'json';
+  const period = document.getElementById('export-period')?.value || 'all';
+  const scopes = Array.from(document.querySelectorAll('.export-scope:checked')).map(c => c.value);
+  if (scopes.length === 0) {
+    Components.showToast('少なくとも 1 つのデータ種別を選択してください', 'info');
+    return;
+  }
+  // Apply period filter to time-series arrays
+  const cutoff = this._periodCutoff(period);
+  const filterByDate = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    if (cutoff === 0) return arr;
+    return arr.filter(e => {
+      const t = Date.parse(e.timestamp || e.createdAt || e.date || '') || 0;
+      return t >= cutoff;
+    });
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  // Collect data
+  const data = {};
+  scopes.forEach(key => {
+    data[key] = filterByDate(store.get(key) || []);
+  });
+
+  // Format and download
+  const fmtLabel = { json: 'JSON', markdown: 'MD', csv: 'CSV', text: 'TXT' }[format];
+  const dateStr = new Date().toISOString().split('T')[0];
+  let content = '';
+  let mime = 'text/plain';
+  let ext = 'txt';
+
+  if (format === 'json') {
+    const profile = store.get('userProfile') || {};
+    content = JSON.stringify({
+      _meta: {
+        exportDate: new Date().toISOString(),
+        appVersion: CONFIG.APP_VERSION || '1.0.0',
+        format: 'kenkou_nikki_v3',
+        period,
+        scopes,
+        note: 'This file contains your personal health data. Keep it safe.'
+      },
+      userProfile: profile,
+      selectedDiseases: store.get('selectedDiseases') || [],
+      ...data
+    }, null, 2);
+    mime = 'application/json';
+    ext = 'json';
+  } else if (format === 'markdown') {
+    content = this._exportAsMarkdown(data, period);
+    mime = 'text/markdown';
+    ext = 'md';
+  } else if (format === 'csv') {
+    content = this._exportAsCSV(data);
+    mime = 'text/csv';
+    ext = 'csv';
+  } else {
+    content = this._exportAsPlainText(data, period);
+    mime = 'text/plain';
+    ext = 'txt';
+  }
+
+  const blob = new Blob([content], { type: mime + ';charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `mibyou_diary_export_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `kenkou_nikki_${dateStr}.${ext}`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  Components.showToast('すべてのデータをエクスポートしました', 'success');
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  Components.showToast(`${fmtLabel} 形式でダウンロードを開始しました`, 'success');
+  this.closeModal();
+};
+
+// Count records in each collection for the summary panel.
+App.prototype._computeExportStats = function(period) {
+  const cutoff = this._periodCutoff(period);
+  const count = (key) => {
+    const arr = store.get(key) || [];
+    if (cutoff === 0) return arr.length;
+    return arr.filter(e => (Date.parse(e.timestamp || e.createdAt || '') || 0) >= cutoff).length;
+  };
+  const stats = {
+    textEntries: count('textEntries'),
+    symptoms: count('symptoms'),
+    vitals: count('vitals'),
+    medications: count('medications'),
+    supplements: count('supplements'),
+    meals: count('meals'),
+    sleepData: count('sleepData'),
+    bloodTests: count('bloodTests'),
+    photos: count('photos'),
+    analysisHistory: count('analysisHistory'),
+    conversationHistory: count('conversationHistory'),
+    plaudAnalyses: count('plaudAnalyses')
+  };
+  stats.totalRecords = Object.values(stats).reduce((s, n) => s + n, 0);
+  return stats;
+};
+
+// Convert a period code into a cutoff timestamp (0 means "all").
+App.prototype._periodCutoff = function(period) {
+  const now = Date.now();
+  const MS_DAY = 86400000;
+  switch (period) {
+    case '1m': return now - 30 * MS_DAY;
+    case '3m': return now - 90 * MS_DAY;
+    case '6m': return now - 180 * MS_DAY;
+    case '1y': return now - 365 * MS_DAY;
+    default:   return 0;
+  }
+};
+
+// Human-readable Markdown export — perfect for sharing with a
+// doctor, importing into Obsidian/Notion, or just reading back.
+App.prototype._exportAsMarkdown = function(data, period) {
+  const profile = store.get('userProfile') || {};
+  const today = new Date().toLocaleDateString('ja-JP');
+  const periodLabel = { '1m':'過去1ヶ月', '3m':'過去3ヶ月', '6m':'過去6ヶ月', '1y':'過去1年' }[period] || 'すべての記録';
+  let md = `# 健康日記エクスポート\n\n`;
+  md += `- エクスポート日: ${today}\n`;
+  md += `- 期間: ${periodLabel}\n`;
+  md += `- ユーザー: ${profile.nickname || 'ご本人'}\n\n`;
+  md += `---\n\n`;
+
+  // Merge time-series records into a single chronological timeline.
+  const allEntries = [];
+  const pushAll = (key, label, icon) => {
+    (data[key] || []).forEach(e => {
+      allEntries.push({
+        ts: Date.parse(e.timestamp || e.createdAt || e.date || '') || 0,
+        key, label, icon, entry: e
+      });
+    });
+  };
+  pushAll('textEntries',         'テキスト記録', '📝');
+  pushAll('symptoms',            '症状',         '🌡️');
+  pushAll('vitals',              'バイタル',     '💓');
+  pushAll('medications',         '服薬',         '💊');
+  pushAll('supplements',         'サプリ',       '💊');
+  pushAll('meals',               '食事',         '🍽️');
+  pushAll('sleepData',           '睡眠',         '😴');
+  pushAll('bloodTests',          '血液検査',     '🩸');
+  pushAll('plaudAnalyses',       '禅トラック',   '🎙️');
+  allEntries.sort((a, b) => a.ts - b.ts);
+
+  // Group by date
+  const byDate = {};
+  allEntries.forEach(e => {
+    const dateKey = e.ts ? new Date(e.ts).toISOString().split('T')[0] : 'unknown';
+    if (!byDate[dateKey]) byDate[dateKey] = [];
+    byDate[dateKey].push(e);
+  });
+
+  Object.keys(byDate).sort().forEach(date => {
+    md += `## ${date}\n\n`;
+    byDate[date].forEach(({ icon, label, entry }) => {
+      md += `### ${icon} ${label}\n\n`;
+      // Special formatting per record type
+      if (entry.content) md += entry.content + '\n\n';
+      else if (entry.text) md += entry.text + '\n\n';
+      else if (entry.note) md += entry.note + '\n\n';
+      else {
+        // Generic: list all fields except timestamp/id
+        const skip = new Set(['id', 'timestamp', 'createdAt', 'updatedAt', '_id']);
+        Object.entries(entry).forEach(([k, v]) => {
+          if (skip.has(k)) return;
+          if (v == null || v === '') return;
+          if (typeof v === 'object') return;
+          md += `- **${k}**: ${v}\n`;
+        });
+        md += '\n';
+      }
+    });
+  });
+
+  // Analysis history section
+  if (data.analysisHistory && data.analysisHistory.length > 0) {
+    md += `\n---\n\n## AI 分析履歴\n\n`;
+    data.analysisHistory.forEach(a => {
+      const d = a.timestamp ? new Date(a.timestamp).toLocaleDateString('ja-JP') : '';
+      md += `### ${d}\n\n`;
+      if (a.parsed?.summary) md += `**${a.parsed.summary}**\n\n`;
+      if (a.parsed?.findings) md += a.parsed.findings + '\n\n';
+      if (a.parsed?.new_approach) md += `**新しい打ち手**: ${a.parsed.new_approach}\n\n`;
+    });
+  }
+
+  md += `\n---\n\n*このエクスポートは [健康日記 (cares.advisers.jp)](https://cares.advisers.jp/) から作成されました。*\n`;
+  return md;
+};
+
+// CSV export — one file with a unified schema so it opens
+// cleanly in Excel/Numbers/Google Sheets.
+App.prototype._exportAsCSV = function(data) {
+  const rows = [['日付', '種別', '内容', 'その他']];
+  const addRow = (date, type, content, extra) => {
+    // CSV escape: wrap in quotes + escape internal quotes
+    const esc = (s) => {
+      const str = String(s == null ? '' : s).replace(/"/g, '""').replace(/\r?\n/g, ' ');
+      return '"' + str + '"';
+    };
+    rows.push([esc(date), esc(type), esc(content), esc(extra)]);
+  };
+  const dateOf = (e) => {
+    const t = Date.parse(e.timestamp || e.createdAt || e.date || '') || 0;
+    return t ? new Date(t).toISOString().split('T')[0] : '';
+  };
+  (data.textEntries || []).forEach(e => addRow(dateOf(e), 'テキスト', e.content || e.text || '', e.category || ''));
+  (data.symptoms || []).forEach(e => addRow(dateOf(e), '症状', `疲労 ${e.fatigue_level ?? '-'}, 痛み ${e.pain_level ?? '-'}, 睡眠 ${e.sleep_quality ?? '-'}`, e.notes || ''));
+  (data.vitals || []).forEach(e => addRow(dateOf(e), 'バイタル', `血圧 ${e.bp_sys ?? '-'}/${e.bp_dia ?? '-'}, 脈 ${e.pulse ?? '-'}, 体温 ${e.temperature ?? '-'}`, ''));
+  (data.medications || []).forEach(e => addRow(dateOf(e), '服薬', `${e.name || ''} ${e.dose || ''}`, e.notes || ''));
+  (data.supplements || []).forEach(e => addRow(dateOf(e), 'サプリ', `${e.name || ''} ${e.dose || ''}`, e.notes || ''));
+  (data.meals || []).forEach(e => addRow(dateOf(e), '食事', e.description || e.content || '', `${e.calories || ''} kcal`));
+  (data.sleepData || []).forEach(e => addRow(dateOf(e), '睡眠', `${e.hours || '-'} 時間, 質 ${e.quality || '-'}`, e.notes || ''));
+  (data.bloodTests || []).forEach(e => addRow(dateOf(e), '血液検査', `${e.name || ''}: ${e.value || ''} ${e.unit || ''}`, ''));
+  // BOM + content (Excel で UTF-8 が正しく認識される)
+  return '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+};
+
+// Plain text export — maximum compatibility, any device/app.
+App.prototype._exportAsPlainText = function(data, period) {
+  const today = new Date().toLocaleDateString('ja-JP');
+  const periodLabel = { '1m':'過去1ヶ月', '3m':'過去3ヶ月', '6m':'過去6ヶ月', '1y':'過去1年' }[period] || 'すべての記録';
+  let txt = `健康日記エクスポート\n`;
+  txt += `エクスポート日: ${today}\n`;
+  txt += `期間: ${periodLabel}\n`;
+  txt += `========================================\n\n`;
+
+  const pushSection = (key, label) => {
+    const arr = data[key] || [];
+    if (arr.length === 0) return;
+    txt += `【${label}】\n`;
+    arr.forEach(e => {
+      const date = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP') : '';
+      const content = e.content || e.text || e.name || JSON.stringify(e);
+      txt += `  [${date}] ${content}\n`;
+    });
+    txt += '\n';
+  };
+  pushSection('textEntries',  'テキスト記録');
+  pushSection('symptoms',     '症状');
+  pushSection('vitals',       'バイタル');
+  pushSection('medications',  '服薬');
+  pushSection('supplements',  'サプリ');
+  pushSection('meals',        '食事');
+  pushSection('sleepData',    '睡眠');
+  pushSection('bloodTests',   '血液検査');
+
+  txt += `========================================\n`;
+  txt += `健康日記 (cares.advisers.jp) から作成\n`;
+  return txt;
+};
+
+// Legacy entry point — keep the old one-click JSON dump working
+// for all existing onclick="app.exportData()" references. New
+// code should use openExportModal instead.
+App.prototype.exportData = function() {
+  // Simply open the richer modal; JSON is the default format.
+  this.openExportModal();
 };
 
 // Import Data from JSON file

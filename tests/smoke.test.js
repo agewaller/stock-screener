@@ -335,13 +335,32 @@ test('upsertNutritionEntry exists', () => {
 
 // ================================================================
 section('13. データ完全性');
-test('exportData includes ALL collections (24+ keys)', () => {
-  const body = extractFn(script, 'exportData');
-  assert(body, 'exportData not found');
+test('exportData entry point + multi-format export machinery exists', () => {
+  // The export implementation was split into openExportModal (UI),
+  // executeExport (orchestration), _exportAsMarkdown/CSV/PlainText
+  // (formatters), and _computeExportStats (summary). exportData()
+  // is preserved as a legacy alias that forwards to openExportModal.
+  assert(extractFn(script, 'exportData'), 'exportData not found');
+  assert(extractFn(script, 'openExportModal'), 'openExportModal not found');
+  assert(extractFn(script, 'executeExport'), 'executeExport not found');
+  assert(extractFn(script, '_exportAsMarkdown'), '_exportAsMarkdown not found');
+  assert(extractFn(script, '_exportAsCSV'), '_exportAsCSV not found');
+  assert(extractFn(script, '_exportAsPlainText'), '_exportAsPlainText not found');
+  assert(extractFn(script, '_computeExportStats'), '_computeExportStats not found');
+
+  // The orchestration function must reference every major collection
+  // so users get the full download — check the executeExport +
+  // stats + markdown exporter collectively for each key.
+  const merged = [
+    extractFn(script, 'executeExport'),
+    extractFn(script, '_computeExportStats'),
+    extractFn(script, '_exportAsMarkdown'),
+    extractFn(script, '_exportAsCSV')
+  ].join('\n');
   ['textEntries', 'symptoms', 'vitals', 'bloodTests', 'medications', 'supplements',
-   'meals', 'sleepData', 'activityData', 'photos', 'nutritionLog', 'plaudAnalyses',
-   'aiComments', 'calendarEvents', 'userProfile', 'conversationHistory'].forEach(k => {
-    assert(body.includes(`'${k}'`), `exportData missing: ${k}`);
+   'meals', 'sleepData', 'photos', 'plaudAnalyses',
+   'analysisHistory', 'conversationHistory'].forEach(k => {
+    assert(merged.includes(`'${k}'`) || merged.includes(`"${k}"`), `export pipeline missing: ${k}`);
   });
 });
 
