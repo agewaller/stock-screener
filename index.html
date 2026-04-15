@@ -3874,6 +3874,328 @@ var INLINE_PROMPTS = {
 ※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。`,
 
 
+  // ============================================================
+  // Pass 1: Image Classifier — fast prompt that returns only the
+  // image_type so the caller can route to a specialized deep
+  // analyzer. Designed to use Haiku for speed/cost (runs in ~2 sec).
+  // ============================================================
+  image_classify: `{{RESPOND_LANGUAGE_INSTRUCTION}}
+
+画像を見て、以下のカテゴリから 1 つだけ選んでください。
+画像分析はこの後の Pass 2 で専用プロンプトが行いますので、
+ここでは分類だけに集中してください。
+
+カテゴリ (image_type):
+  "food"          — 料理・飲み物・食材・食事シーン・デザート・スイーツ
+  "medication"    — 処方箋・お薬手帳・薬のパッケージ・錠剤の実物
+  "blood_test"    — 血液検査・尿検査・ホルモン検査等の数値表
+  "medical_doc"   — 診断書・紹介状・退院サマリー・MRI/CT 報告書
+  "supplement"    — サプリメントのボトルやパッケージ
+  "device"        — 血圧計・体重計・ウェアラブル等の表示
+  "body"          — 皮膚・傷・腫れ・舌・爪など身体の一部
+  "other"         — 上記に該当しない健康関連画像
+
+判断のヒント:
+  ・料理・飲み物・デザート・スイーツ・お菓子はすべて "food"
+  ・薬の錠剤実物の写真は "medication" (not supplement)
+  ・検査結果の用紙 + 数値表は "blood_test"
+  ・医師の診断書・紹介状・退院サマリー・CT/MRI レポートは "medical_doc"
+
+【出力形式】純粋な JSON のみ (前置き・後書き・コードブロックなし):
+{
+  "image_type": "food|medication|blood_test|medical_doc|supplement|device|body|other",
+  "confidence": 0.0-1.0,
+  "brief_description": "画像に写っているものを 20 字以内で"
+}`,
+
+
+  // ============================================================
+  // Pass 2a: Food Deep Analysis — called when Pass 1 returns
+  // image_type="food". Deeper and more specific than the generic
+  // image_analysis prompt because it only has to handle one type.
+  // ============================================================
+  image_food: `${PROMPT_HEADER}
+
+あなたは栄養学・臨床栄養の専門家です。ユーザーが食事の写真を投稿しました。
+以下の 5 段階で徹底的に分析し、構造化 JSON で返してください。
+
+━━━━━ 第1段階: 料理・食材の完全同定 ━━━━━
+・写真に写っているすべての料理名・食材を具体的に特定
+・ブランド・メーカーが見える場合は記載
+・調理法 (焼き・揚げ・蒸し・生・冷凍・発酵)
+・量の推定 (g、ml、個数など、根拠を併記)
+・盛り付けやタイミング (朝食・昼食・夕食・間食)
+
+━━━━━ 第2段階: 栄養成分の完全推定 ━━━━━
+・総カロリー (内訳も示す)
+・タンパク質 (g、推奨との比較)
+・脂質 (g、飽和脂肪酸 / 不飽和 / トランス脂肪酸)
+・炭水化物 (g、糖質 / 食物繊維)
+・食物繊維 (g、可溶性 / 不溶性)
+・塩分 (g、1 日基準 7 g に対する比率)
+・主要ビタミン (A, B 群, C, D, E, K)
+・主要ミネラル (Ca, Fe, Mg, Zn, K, Se)
+・抗炎症スコア (0-10、根拠)
+・GI 値と血糖スパイクリスク
+・PFC バランス (P:F:C %)
+
+━━━━━ 第3段階: ユーザーの疾患・体質との関連 ━━━━━
+・【良い点】疾患別に具体的に (例: ME/CFS ならミトコンドリア基質供給)
+・【注意点】疾患別に具体的に (例: IBS なら FODMAP 該当)
+・併発疾患への配慮 (POTS なら塩分・水分、MCAS ならヒスタミン)
+・アレルギー・不耐症の照合
+・服薬との相互作用チェック (グレープフルーツ等)
+
+━━━━━ 第4段階: 今日から実行できる改善提案 3 つ ━━━━━
+1. 追加すると良いもの (具体的な食材・量・期待効果・根拠)
+2. 置き換えると良いもの (代替食材・GI/栄養の違い・根拠)
+3. 次回試したい新しい組み合わせ (something new — 研究引用付き)
+
+━━━━━ 第5段階: 1 週間のトラッキング提案 ━━━━━
+・この食事を続けた場合の予想される変化
+・次に記録すべき項目 (食後の体調・便通・エネルギー)
+・「1 週間続けると◯◯」という期待値
+
+【出力形式】純粋な JSON のみ (前置き・コードブロックなし):
+{
+  "image_type": "food",
+  "identified_items": "料理名・食材リスト (具体的に)",
+  "summary": "温かい共感の一言から始まる要約 (2-3 行)",
+  "findings": "第1-2 段階の内容を構造化 (マークダウン可、15-25 行)",
+  "details": "第3 段階の疾患関連分析 (15-30 行)",
+  "actions": ["改善提案 1 (今日)", "改善提案 2 (今週)", "改善提案 3 (主治医相談用)"],
+  "new_approach": "新しい組み合わせ or food hack (研究引用含む、3-5 行)",
+  "next_check": "次に記録すると良いこと",
+  "nutrition": {
+    "calories": 数値,
+    "protein_g": 数値,
+    "fat_g": 数値,
+    "carb_g": 数値,
+    "fiber_g": 数値,
+    "salt_g": 数値,
+    "anti_inflammatory_score": 0-10
+  }
+}
+
+{{USER_DATA}}
+
+※本情報は参考情報です。健康上の判断は必ず医師・栄養士にご相談ください。`,
+
+
+  // ============================================================
+  // Pass 2b: Medication Deep Analysis — called when Pass 1 returns
+  // image_type="medication". Full 4-stage drug analysis.
+  // ============================================================
+  image_medication: `${PROMPT_HEADER}
+
+あなたは薬剤師・臨床薬理学の専門家です。ユーザーが薬の写真を投稿しました。
+処方箋・お薬手帳・薬のパッケージ・錠剤の実物のいずれかです。
+以下の 4 段階で徹底的に解析してください。
+
+━━━━━ 第1段階: 薬の完全同定 ━━━━━
+・写真から読み取れるすべての薬剤名・用量・用法を列挙
+・錠剤の実物なら、刻印・色・形状から候補を特定 (確度も記載)
+・後発品・先発品の区別
+・日本の保険適用の有無
+・処方箋なら処方医・医療機関・処方日の記載を抽出
+
+━━━━━ 第2段階: 各薬剤の深い解説 (7 観点) ━━━━━
+
+(A) 【作用機序】中学生にもわかる言葉で
+  例: 「血管をゆるめて血圧を下げる薬です」「脳内のセロトニンを増やして気分を安定させる薬です」
+
+(B) 【効果発現の時間軸】
+  ・即効性か (数時間) / 遅効性か (数週間)
+  ・血中濃度のピーク時間
+  ・定常状態到達まで
+
+(C) 【副作用を頻度別 4 段階で完全リスト】
+  よくある (10% 以上): …
+  ときどき (1-10%): …
+  まれ (0.1-1%): …
+  長期服用で注意: …
+  → 各副作用に対する対処法も
+
+(D) 【飲み方の最適化と理由】
+  ・食前 / 食後 / 空腹時 / 就寝前の理由
+  ・水 or お湯 vs. グレープフルーツジュース NG
+  ・噛んでよい / 丸呑みのみ
+
+(E) 【食品・飲料との相互作用】全列挙
+  ・グレープフルーツ、納豆 (ビタミン K)、アルコール、カフェイン、乳製品
+  ・注意が必要なサプリ (セントジョーンズワート等)
+
+(F) 【サプリメントとの相互作用】
+  ・併用注意なもの
+  ・薬で不足しがちな栄養を補充する提案 (例: スタチン + CoQ10)
+
+(G) 【他の薬との相互作用】
+  ・併用禁忌
+  ・用量調整が必要な薬
+  ・OTC や漢方薬との組み合わせ
+
+━━━━━ 第3段階: 処方全体の評価 ━━━━━
+・重複チェック (似た作用の薬が複数?)
+・ポリファーマシーリスク (5 剤以上で増加)
+・減薬の可能性
+・ジェネリック情報と先発品との効果差
+・主治医への相談ポイント 3 つ (具体的な質問文で)
+
+━━━━━ 第4段階: something new ━━━━━
+・最新の治療薬 (承認済み or 治験中)
+・薬以外のアプローチ (生活療法・サプリ・理学療法)
+・副作用軽減の生活の工夫
+・この薬が今もベストな選択かを見直す視点
+
+【出力形式】純粋な JSON のみ:
+{
+  "image_type": "medication",
+  "identified_items": "読み取った薬剤名・用量のリスト",
+  "summary": "温かい共感 + 服薬継続を労う一言 (2-3 行)",
+  "findings": "第1 段階 + 第 2 段階 A-C (20-40 行)",
+  "details": "第2 段階 D-G + 第 3 段階 (20-40 行)",
+  "actions": [
+    "今日確認すべきこと",
+    "今週試せる工夫",
+    "主治医に確認するとよい質問"
+  ],
+  "new_approach": "新しい選択肢 (3-5 行、根拠引用付き)",
+  "next_check": "次に記録すべき副作用・効果指標"
+}
+
+{{USER_DATA}}
+
+※本情報は参考情報です。薬の変更・中止は必ず主治医・薬剤師にご相談ください。`,
+
+
+  // ============================================================
+  // Pass 2c: Diagnostic Document Deep Analysis — for medical_doc
+  // (診断書・紹介状・退院サマリー・CT/MRI レポート等)
+  // ============================================================
+  image_diagnosis: `${PROMPT_HEADER}
+
+あなたは医療文書を平易に翻訳する専門家です。ユーザーが診断書・紹介状・退院
+サマリー・CT/MRI レポート等の医療文書の写真を投稿しました。以下の 6 段階で
+徹底的に読解・解説してください。
+
+━━━━━ 第1段階: 完全テキスト抽出 ━━━━━
+・医療機関名・担当医・日付
+・患者氏名・生年月日 (見えるもの、プライバシー配慮の上)
+・診断名 (主病名・副病名・疑い病名を分けて)
+・所見 (現病歴・既往歴・家族歴・身体所見)
+・検査結果の要約
+・処方・治療経過
+・今後の方針
+
+━━━━━ 第2段階: 専門用語の翻訳 ━━━━━
+・ICD コード → 日本語診断名 + 解説
+・略語展開 (DM → 糖尿病、HT → 高血圧、CKD → 慢性腎臓病、CHF → 心不全、
+  RA → 関節リウマチ、SLE → 全身性エリテマトーデス、ME/CFS → 筋痛性脳脊髄炎
+  /慢性疲労症候群 等)
+・検査値 (CRP、WBC、Cre、eGFR、HbA1c、TSH、FT4 等) を中学生レベルで
+・専門的な所見表現 (「高吸収域」「浮腫性変化」等) を平易に
+
+━━━━━ 第3段階: 文書の意味を体系的に解釈 ━━━━━
+・3 行要約
+・✅ 良いニュース (改善・安定)
+・⚠ 注意点 (悪化・要経過観察)
+・❓ 不明点・主治医に聞くべきこと
+・ユーザーの既存記録との照合 (もし過去データがあれば)
+・重症度の位置づけ (軽度 / 中等度 / 重度)
+
+━━━━━ 第4段階: 取るべき次のアクション ━━━━━
+(a) 今すぐ (24 時間以内): …
+(b) 1 週間以内: …
+(c) 1 ヶ月以内: …
+(d) 主治医への質問 5 つ (具体的な質問文)
+
+━━━━━ 第5段階: セカンドオピニオン・追加情報 ━━━━━
+・この診断について信頼できる情報源 (日本語)
+・関連する最新治療法
+・セカンドオピニオンを受ける価値の有無
+・患者会・支援団体の紹介
+
+━━━━━ 第6段階: 文書の保管とトラッキング提案 ━━━━━
+・この文書で追跡すべき数値・項目
+・次回の診察までに記録しておくべき情報
+・経過を追うためのチェックリスト
+
+【出力形式】純粋な JSON のみ:
+{
+  "image_type": "medical_doc",
+  "identified_items": "文書の種類 + 主要な診断名・日付",
+  "summary": "温かい共感 + 3 行要約 (結論ファースト)",
+  "findings": "第1-2 段階の内容 (20-40 行、構造化)",
+  "details": "第3-4 段階の解釈とアクション (20-50 行)",
+  "actions": [
+    "今すぐ行うべきこと",
+    "1 週間以内にすべきこと",
+    "主治医への質問"
+  ],
+  "new_approach": "セカンドオピニオン・最新治療・関連情報 (3-5 行)",
+  "next_check": "次回の診察までに追跡すべき項目"
+}
+
+{{USER_DATA}}
+
+※本情報は参考情報です。診断・治療の判断は必ず主治医にご相談ください。`,
+
+
+  // ============================================================
+  // Pass 2d: Blood Test Deep Analysis — for blood_test
+  // ============================================================
+  image_blood_test: `${PROMPT_HEADER}
+
+あなたは臨床検査を平易に解説する専門家です。ユーザーが血液検査・尿検査・
+ホルモン検査等の結果の写真を投稿しました。以下の 5 段階で徹底的に読み取り・
+解説してください。
+
+━━━━━ 第1段階: すべての数値を OCR で読み取り ━━━━━
+表形式で出力:
+| 項目 | 数値 | 単位 | 基準値 | 判定 (H/L/正常) |
+
+━━━━━ 第2段階: 異常値の臨床的意味を平易に説明 ━━━━━
+・高値 / 低値それぞれについて:
+  - 意味 (何を示すか)
+  - 考えられる原因 3 つ
+  - 心配度 (軽度 / 中等度 / 重度)
+  - 対処法 (食事・生活・追加検査)
+・基準値内でも注目すべき項目 (トレンドが大事)
+
+━━━━━ 第3段階: ユーザーに重要な TOP 3 を選定 ━━━━━
+・疾患歴を踏まえて、最も重要な項目を 3 つ選ぶ
+・それぞれの改善で何がどう変わるか
+・前回データがあれば改善 / 悪化の方向性
+
+━━━━━ 第4段階: 改善プラン ━━━━━
+(a) サプリメント (商品名・用量・エビデンス PMID)
+(b) 食事の変更 (具体的な食材と量)
+(c) 生活習慣 (運動・睡眠・ストレス管理)
+(d) 次回の追加検査提案 (何をいつ測るべきか)
+
+━━━━━ 第5段階: 主治医への質問テンプレート 3 つ ━━━━━
+
+【出力形式】純粋な JSON のみ:
+{
+  "image_type": "blood_test",
+  "identified_items": "検査項目数 + 日付",
+  "summary": "温かい共感 + 結論の一言",
+  "findings": "第1-2 段階の表と異常値解説 (20-50 行)",
+  "details": "第3-4 段階の TOP 3 と改善プラン (20-40 行)",
+  "actions": [
+    "今日できる改善",
+    "今週できる改善",
+    "主治医に相談すべきこと"
+  ],
+  "new_approach": "追加検査や最新マーカーの提案 (3-5 行)",
+  "next_check": "次回の検査まで追跡すべき項目と頻度"
+}
+
+{{USER_DATA}}
+
+※本情報は参考情報です。検査結果の解釈は必ず主治医にご相談ください。`,
+
+
   // Conversation/Plaud transcript analysis
   conversation_analysis: `${PROMPT_HEADER}
 以下はユーザーの会話の文字起こしです。健康状態とストレスを分析してください。
@@ -10527,6 +10849,89 @@ ${titles}`;
         // Image analysis responses can be long (10+ sections), so
         // give the model more room than the default 4096.
         modelOptions.maxTokens = 6000;
+
+        // ═══════════════════════════════════════════════════
+        // 2-Pass Image Analysis
+        // ───────────────────────────────────────────────────
+        // Pass 1 (image_classify): a lightweight Haiku call that
+        // only returns the image_type (~1 sec). Pass 2 then routes
+        // to a specialized deep analyzer: image_food /
+        // image_medication / image_diagnosis / image_blood_test.
+        // Falls back to the legacy single-pass image_analysis
+        // prompt if the classifier fails or returns an unknown type.
+        // This gives each route more depth per category than the
+        // old "one-prompt-handles-all" approach could reach.
+        // ═══════════════════════════════════════════════════
+        try {
+          const classifyTemplate = INLINE_PROMPTS.image_classify;
+          const classifyPrompt = aiEngine.injectLanguageDirective(classifyTemplate);
+          // Use Haiku for the fast classifier step. Classifier
+          // output is tiny (~80 tokens).
+          const classifyResponse = await aiEngine.callModel('claude-haiku-4-5', classifyPrompt, {
+            imageBase64: options.imageBase64,
+            maxTokens: 200,
+            temperature: 0.1,
+            systemPrompt: '画像を見て JSON で image_type を返してください。前置きなし。'
+          });
+          const classifyText = typeof classifyResponse === 'string' ? classifyResponse : JSON.stringify(classifyResponse);
+          let classified;
+          try { classified = this.parseAIResponse(classifyText); } catch (_) { classified = null; }
+          const imgType = classified?.image_type;
+          console.log('[image-analysis] Pass 1 classified as:', imgType, '(confidence', classified?.confidence || '?)');
+
+          // Map classified type to specialized Pass 2 prompt.
+          const specialized = {
+            food:        'image_food',
+            medication:  'image_medication',
+            medical_doc: 'image_diagnosis',
+            blood_test:  'image_blood_test'
+          }[imgType];
+
+          if (specialized && INLINE_PROMPTS[specialized]) {
+            // Re-interpolate the specialized prompt with full user data
+            // (it inherits PROMPT_HEADER which needs all the usual vars).
+            const specializedTemplate = INLINE_PROMPTS[specialized];
+            const specializedPrompt = aiEngine.interpolatePrompt(specializedTemplate, {
+              current: store.get('symptoms'),
+              weekly: store.get('symptoms')?.slice?.(-7) || [],
+              bloodTests: store.get('bloodTests'),
+              supplements: store.get('supplements'),
+              symptoms: store.get('symptoms')
+            }).replace(/\{\{INPUT\}\}/g, (input || '').substring(0, 8000));
+
+            console.log('[image-analysis] Pass 2: routing to', specialized);
+            // Use Opus for the deep analysis (default selectedModel).
+            const deepResponse = await aiEngine.callModel(store.get('selectedModel'), specializedPrompt, {
+              ...modelOptions,
+              maxTokens: 6000
+            });
+            const deepText = typeof deepResponse === 'string' ? deepResponse : JSON.stringify(deepResponse);
+            const deepParsed = this.parseAIResponse(deepText);
+
+            if (deepParsed && typeof deepParsed === 'object') {
+              // Store the result and short-circuit the generic path.
+              const analysis = {
+                id: this.generateId(),
+                timestamp: new Date().toISOString(),
+                type,
+                parsed: deepParsed,
+                _raw: deepText,
+                _specializedBy: specialized
+              };
+              const history = store.get('analysisHistory') || [];
+              history.push(analysis);
+              store.set('analysisHistory', history);
+              store.set('latestAnalysis', analysis);
+              return { ...analysis, result: deepParsed };
+            }
+            // Fall through to legacy single-pass on parse failure
+            console.warn('[image-analysis] Pass 2 parse failed, falling back to legacy image_analysis');
+          } else {
+            console.log('[image-analysis] No specialized prompt for', imgType, '— using legacy prompt');
+          }
+        } catch (classifyErr) {
+          console.warn('[image-analysis] 2-pass failed, falling back to legacy:', classifyErr.message);
+        }
       }
 
       const response = await aiEngine.callModel(store.get('selectedModel'), prompt, modelOptions);

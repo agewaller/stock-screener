@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Long COVID（コロナ後遺症）完全ガイド｜症状・治療・記録アプリ - 健康日記</title>
+<meta name="description" content="Long COVID（コロナ後遺症・PASC）の症状・診断・治療（LDN / BC007 / HBOT）・ME/CFS との共通機序・ペーシング戦略を当事者開発者がまとめた完全ガイド。日次症状記録・AI 個別分析が無料で使える健康日記。日本 700 万人・世界 6,500 万人以上の患者を支えるツール。">
+<meta name="keywords" content="Long COVID,コロナ後遺症,PASC,新型コロナ後遺症,Long COVID 症状,Long COVID 治療,Long COVID 記録,Long COVID アプリ,LDN,低用量ナルトレキソン,BC007,HBOT,高気圧酸素療法,マイクロクロット,ペーシング,ME/CFS,PEM,健康日記">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://cares.advisers.jp/long-covid.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Long COVID（コロナ後遺症）完全ガイド｜症状・治療・記録アプリ">
+<meta property="og:description" content="Long COVID の症状管理・LDN・BC007 最新研究・ME/CFS との共通機序を当事者が解説。無料 AI 記録アプリ。">
+<meta property="og:url" content="https://cares.advisers.jp/long-covid.html">
+<meta property="og:image" content="https://cares.advisers.jp/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3Cpath d='M16 11L16 20M12 15.5L16 20L20 15.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "MedicalWebPage",
+      "@id": "https://cares.advisers.jp/long-covid.html#webpage",
+      "name": "Long COVID（コロナ後遺症）完全ガイド",
+      "description": "Long COVID の症状・診断・治療・ME/CFS との共通機序を当事者開発者がまとめた完全ガイド",
+      "url": "https://cares.advisers.jp/long-covid.html",
+      "inLanguage": "ja",
+      "about": { "@id": "https://cares.advisers.jp/long-covid.html#condition" },
+      "audience": { "@type": "MedicalAudience", "audienceType": "Patient" },
+      "lastReviewed": "2026-04-14"
+    },
+    {
+      "@type": "MedicalCondition",
+      "@id": "https://cares.advisers.jp/long-covid.html#condition",
+      "name": "Long COVID (コロナ後遺症)",
+      "alternateName": ["Long COVID", "コロナ後遺症", "PASC", "Post-Acute Sequelae of COVID-19"],
+      "code": { "@type": "MedicalCode", "code": "RA02", "codingSystem": "ICD-11" },
+      "epidemiology": "世界で少なくとも 6,500 万人、日本で推定 700 万人 (厚労省研究班推計)",
+      "signOrSymptom": [
+        {"@type": "MedicalSignOrSymptom", "name": "慢性疲労"},
+        {"@type": "MedicalSignOrSymptom", "name": "PEM (労作後倦怠感)"},
+        {"@type": "MedicalSignOrSymptom", "name": "ブレインフォグ"},
+        {"@type": "MedicalSignOrSymptom", "name": "起立不耐症"},
+        {"@type": "MedicalSignOrSymptom", "name": "呼吸困難"},
+        {"@type": "MedicalSignOrSymptom", "name": "頭痛・筋肉痛・関節痛"},
+        {"@type": "MedicalSignOrSymptom", "name": "味覚・嗅覚障害"},
+        {"@type": "MedicalSignOrSymptom", "name": "睡眠障害"},
+        {"@type": "MedicalSignOrSymptom", "name": "心拍異常 (POTS)"}
+      ],
+      "possibleTreatment": [
+        {"@type": "MedicalTherapy", "name": "ペーシング (エネルギーエンベロープ)"},
+        {"@type": "DrugLegalStatus", "name": "LDN (低用量ナルトレキソン)"},
+        {"@type": "MedicalTherapy", "name": "HBOT (高気圧酸素療法)"},
+        {"@type": "MedicalTherapy", "name": "HELP アフェレシス (マイクロクロット除去)"}
+      ]
+    }
+  ]
+}
+</script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans','ヒラギノ角ゴ ProN',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}
+.container{max-width:820px;margin:0 auto;padding:20px}
+header{padding:16px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px}
+header a{display:inline-flex;align-items:center;gap:8px;color:#6366f1;text-decoration:none;font-weight:700;font-size:14px}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#1e293b}
+h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef;color:#1e293b}
+h3{font-size:16px;font-weight:700;margin:18px 0 8px;color:#4338ca}
+p{margin-bottom:12px}
+ul{margin:8px 0 14px 22px}
+li{margin-bottom:4px}
+.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}
+.hero h1{margin-top:0;color:#3730a3}
+.cta{display:inline-block;padding:14px 28px;background:#6366f1;color:#fff;border-radius:24px;text-decoration:none;font-weight:700;font-size:14px;margin-top:12px}
+.cta:hover{background:#4f46e5}
+.box{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 10px 10px 0;margin-bottom:14px}
+.box-title{font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+.stat-card{padding:14px;background:#fff;border:1px solid #e4e7ef;border-radius:10px}
+.stat-num{font-size:22px;font-weight:800;color:#4338ca}
+.stat-label{font-size:11px;color:#64748b;margin-top:2px}
+footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:36px;text-align:center;font-size:12px;color:#64748b;line-height:2}
+footer a{color:#6366f1;text-decoration:none;margin:0 6px}
+.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:14px 0}
+.related a{padding:8px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#4338ca;font-size:12px;font-weight:600;text-align:center}
+.related a:hover{background:#eef2ff;border-color:#6366f1}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<a href="https://cares.advisers.jp/">← 健康日記トップ</a>
+</header>
+
+<div class="hero">
+<h1>Long COVID（コロナ後遺症）完全ガイド</h1>
+<p style="color:#4338ca;font-size:13px">症状・治療・ME/CFS との共通機序・記録の重要性を当事者開発者がまとめました。<br>世界で <strong>少なくとも 6,500 万人</strong>、日本で <strong>推定 700 万人</strong> の Long COVID 患者のための実践ガイド。</p>
+<a class="cta" href="https://cares.advisers.jp/?d=long-covid">無料で記録を始める →</a>
+</div>
+
+<div class="stat-grid">
+<div class="stat-card"><div class="stat-num">6,500 万人+</div><div class="stat-label">世界の患者数 (グローバル推計)</div></div>
+<div class="stat-card"><div class="stat-num">約 700 万人</div><div class="stat-label">日本の推定患者数 (厚労省)</div></div>
+<div class="stat-card"><div class="stat-num">60%+</div><div class="stat-label">IOM ME/CFS 基準を満たす割合</div></div>
+</div>
+
+<h2>Long COVID（コロナ後遺症）とは何か</h2>
+<p>Long COVID（ロング・コビッド）は、新型コロナウイルス感染症（COVID-19）の急性期（発症から 4 週間）を過ぎてからも、様々な症状が 12 週間以上続く状態を指します。正式な医学用語では <strong>PASC（Post-Acute Sequelae of SARS-CoV-2 infection）</strong>とも呼ばれ、WHO は <strong>ICD-11 コード RA02</strong> として分類しています。</p>
+<p>日本では厚生労働省の研究班が推計を出しており、累積感染者数と有病率から <strong>約 700 万人</strong>が罹患している可能性があるとされています。世界では少なくとも 6,500 万人、無症状を含めればより多い可能性があります。</p>
+
+<h2>Long COVID と ME/CFS の深い関係</h2>
+<p>Long COVID 患者の多くは、<strong>ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の IOM 2015 診断基準を満たす</strong>ことが複数の研究で示されています。両者は以下の共通機序を持つと考えられています:</p>
+<ul>
+<li><strong>微小循環障害 / マイクロクロット</strong>: 南アフリカ Stellenbosch 大学の Resia Pretorius 教授チームが異常な微小血栓を発見 (2022-2024)</li>
+<li><strong>ミトコンドリア機能障害</strong>: 2-day CPET (運動負荷試験) で嫌気性閾値の顕著な低下</li>
+<li><strong>自己抗体産生</strong>: Anti-GPCR（β2 アドレナリン受容体・M3/M4 ムスカリン受容体）への自己抗体</li>
+<li><strong>慢性炎症と自律神経障害</strong>: 脳内ミクログリア活性化、交感神経優位</li>
+<li><strong>腸内細菌叢異常</strong>: Faecalibacterium prausnitzii 等の減少</li>
+</ul>
+<p>このため Long COVID の治療アプローチは ME/CFS と多くの共通点を持ちます。</p>
+
+<h2>Long COVID の主な症状</h2>
+<ul>
+<li><strong>慢性疲労</strong>（睡眠で回復しない深い疲労）</li>
+<li><strong>PEM（労作後倦怠感）</strong>— 軽い活動でも数日〜数週間の症状悪化</li>
+<li><strong>ブレインフォグ</strong>（集中力低下・言葉が出にくい・短期記憶の低下）</li>
+<li><strong>起立不耐症 / POTS</strong>（立位で脈拍が 30+ 上昇、めまい、失神寸前）</li>
+<li><strong>呼吸困難・動悸・胸痛</strong>（心肺機能の軽度障害）</li>
+<li><strong>味覚・嗅覚障害</strong>（パロスミア含む）</li>
+<li><strong>頭痛・筋肉痛・関節痛</strong>（線維筋痛症様）</li>
+<li><strong>睡眠障害</strong>（非回復性睡眠）</li>
+<li><strong>消化器症状</strong>（IBS 様、食物不耐症）</li>
+<li><strong>不安・抑うつ</strong>（二次的な心理症状）</li>
+</ul>
+
+<h2>Long COVID の治療選択肢（2026 年時点）</h2>
+<p>根治療法はまだありませんが、以下が試されています。すべて主治医との相談が必要です。</p>
+<div class="box">
+<div class="box-title">💊 LDN（低用量ナルトレキソン、1.5-4.5 mg/日）</div>
+<p>神経炎症の抑制と内因性エンドルフィン増加により、疲労・疼痛・ブレインフォグに改善報告。Long COVID への観察研究が蓄積中。日本でも自費処方可能。</p>
+</div>
+<div class="box">
+<div class="box-title">💊 ピリドスチグミン（メストイノン）</div>
+<p>POTS / 起立不耐症を併発する場合に有効。30-60 mg × 3/日から。</p>
+</div>
+<div class="box">
+<div class="box-title">🫁 HBOT（高気圧酸素療法）</div>
+<p>組織の低酸素状態を改善。イスラエルの複数の RCT で Long COVID の認知機能改善報告あり（2022-2023）。</p>
+</div>
+<div class="box">
+<div class="box-title">💉 BC007（ベルリン Cures 社、治験中）</div>
+<p>自己抗体を中和する核酸医薬品。Long COVID・ME/CFS への臨床試験が進行中。</p>
+</div>
+<div class="box">
+<div class="box-title">🧬 HELP アフェレシス（ドイツ）</div>
+<p>マイクロクロットを物理的に除去する血液浄化療法。欧州で自費実施可能。</p>
+</div>
+<div class="box">
+<div class="box-title">🧘 ペーシング + ミトコンドリアサポート</div>
+<p>Energy Envelope Theory に基づく活動制御 + CoQ10・L-カルニチン・D-リボース・B 複合体の補充。</p>
+</div>
+
+<h2>なぜ毎日の記録が重要なのか</h2>
+<p>Long COVID は症状が多系統にわたり、日々変動します。毎日記録することで以下が見えてきます:</p>
+<ul>
+<li><strong>PEM のトリガー</strong> — どの活動が何日後の悪化を引き起こすか（24-48 時間の遅延がある）</li>
+<li><strong>治療の効果判定</strong> — LDN や HBOT で実際に何がどう変わったか</li>
+<li><strong>自分だけのパターン</strong> — 食事・睡眠・ストレスとの相関</li>
+<li><strong>主治医への情報提供</strong> — 短い診療時間で正確に症状を伝えるための根拠</li>
+</ul>
+<p>健康日記は、これらの記録に特化して設計されています。毎日の症状・活動量・服薬・食事を記録すると、AI が前 24-48 時間のデータから個別の Long COVID トリガーを相関分析します。</p>
+
+<h2>健康日記で記録できること</h2>
+<ul>
+<li>PEM 発生頻度と誘因の追跡</li>
+<li>1 日の活動可能時間 (ペーシング実施度)</li>
+<li>疲労度・ブレインフォグ・疼痛の 10 段階スコア</li>
+<li>HRV（心拍変動）・起立時脈拍の変化</li>
+<li>LDN・HBOT・CoQ10 等の服薬履歴と効果</li>
+<li>食事・水分・塩分の記録と栄養分析</li>
+<li>血液検査結果（D-ダイマー、CRP、フェリチン等）の写真取り込み</li>
+<li>最新 AI による個別化フィードバック</li>
+</ul>
+
+<div class="hero" style="text-align:center;margin-top:24px">
+<h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から記録を始めましょう</h2>
+<p style="color:#4338ca;font-size:13px">完全無料・広告なし・本人のみアクセス可能。登録 30 秒。</p>
+<a class="cta" href="https://cares.advisers.jp/?d=long-covid">健康日記を開く →</a>
+</div>
+
+<h2>関連疾患ガイド</h2>
+<div class="related">
+<a href="/">ME/CFS 完全ガイド</a>
+<a href="/fibromyalgia.html">線維筋痛症</a>
+<a href="/pots.html">POTS</a>
+<a href="/mcas.html">MCAS</a>
+<a href="/eds.html">EDS</a>
+<a href="/depression.html">うつ病</a>
+<a href="/insomnia.html">不眠症</a>
+</div>
+
+<footer>
+<div>
+<a href="https://cares.advisers.jp/">健康日記トップ</a>・
+<a href="https://cares.advisers.jp/#privacy">プライバシーと安全</a>・
+<a href="https://note.com/age">開発者 note</a>・
+<a href="mailto:info@bluemarl.in">お問い合わせ</a>
+</div>
+<div style="margin-top:8px;font-size:11px">
+本情報は参考情報です。健康上の判断は必ず医師にご相談ください。<br>
+© 2026 シェアーズ株式会社 / 健康日記
+</div>
+</footer>
+
+</div>
+</body>
+</html>

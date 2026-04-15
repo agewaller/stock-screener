@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#fafaff" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="80" fill="#ffffff" opacity="0.08"/>
+  <circle cx="1100" cy="530" r="120" fill="#ffffff" opacity="0.08"/>
+  <circle cx="1050" cy="80" r="40" fill="#ffffff" opacity="0.1"/>
+
+  <!-- Main content card -->
+  <rect x="80" y="120" width="1040" height="390" rx="32" fill="url(#cardGrad)" filter="url(#shadow)"/>
+
+  <!-- Logo: droplet icon -->
+  <g transform="translate(120, 160)">
+    <rect width="80" height="80" rx="20" fill="#6366f1"/>
+    <path d="M40 18 C40 18, 22 38, 22 55 A18 18 0 0 0 58 55 C58 38, 40 18, 40 18 Z" fill="white" fill-opacity="0.25"/>
+    <path d="M40 28 L40 58 M32 48 L40 58 L48 48" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- App name (Japanese) -->
+  <text x="220" y="205" font-family="'Hiragino Sans', 'Noto Sans JP', sans-serif" font-size="52" font-weight="800" fill="#1e293b">健康日記</text>
+  <text x="220" y="240" font-family="-apple-system, sans-serif" font-size="22" font-weight="600" fill="#6366f1">Health Diary</text>
+
+  <!-- Main headline -->
+  <text x="120" y="320" font-family="'Hiragino Sans', 'Noto Sans JP', sans-serif" font-size="40" font-weight="800" fill="#1e293b">ME/CFS・Long COVID・慢性疾患の</text>
+  <text x="120" y="370" font-family="'Hiragino Sans', 'Noto Sans JP', sans-serif" font-size="40" font-weight="800" fill="#1e293b">症状記録 &amp; AI 分析アプリ</text>
+
+  <!-- Stats row -->
+  <g transform="translate(120, 410)">
+    <rect width="280" height="70" rx="14" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="20" y="30" font-family="'Hiragino Sans', sans-serif" font-size="14" font-weight="700" fill="#6366f1">対応疾患</text>
+    <text x="20" y="57" font-family="'Hiragino Sans', sans-serif" font-size="26" font-weight="800" fill="#3730a3">80+ 疾患</text>
+  </g>
+
+  <g transform="translate(420, 410)">
+    <rect width="280" height="70" rx="14" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="20" y="30" font-family="'Hiragino Sans', sans-serif" font-size="14" font-weight="700" fill="#6366f1">世界 ME/CFS 患者数</text>
+    <text x="20" y="57" font-family="'Hiragino Sans', sans-serif" font-size="26" font-weight="800" fill="#3730a3">6,700 万人</text>
+  </g>
+
+  <g transform="translate(720, 410)">
+    <rect width="280" height="70" rx="14" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="20" y="30" font-family="'Hiragino Sans', sans-serif" font-size="14" font-weight="700" fill="#6366f1">利用料</text>
+    <text x="20" y="57" font-family="'Hiragino Sans', sans-serif" font-size="26" font-weight="800" fill="#16a34a">完全無料</text>
+  </g>
+
+  <!-- URL at bottom -->
+  <rect x="80" y="555" width="1040" height="48" rx="24" fill="#ffffff" opacity="0.18"/>
+  <text x="600" y="588" text-anchor="middle" font-family="'SF Mono', Menlo, monospace" font-size="22" font-weight="600" fill="#ffffff">cares.advisers.jp</text>
+</svg>

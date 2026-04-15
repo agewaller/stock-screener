@@ -3,13 +3,14 @@
   Sitemap for https://cares.advisers.jp/
   健康日記 (Health Diary) — ME/CFS・Long COVID・慢性疾患の症状記録 & AI 分析
 
-  Single-page app hosted at GitHub Pages: all routes resolve to /
-  (SPA hash-based routing). Distinct URLs here mainly serve as
-  canonical anchors for different topical sections that the crawler
-  can use to understand site structure.
+  Root page is the ME/CFS-focused landing. Disease-specific
+  sub-pages target individual conditions for SEO long-tail
+  queries; each has its own Canonical URL and SEO content.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Main landing: ME/CFS completeness guide -->
   <url>
     <loc>https://cares.advisers.jp/</loc>
     <lastmod>2026-04-14</lastmod>
@@ -19,16 +20,56 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://cares.advisers.jp/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/"/>
   </url>
+
+  <!-- Disease-specific landing pages (SEO long-tail coverage) -->
+  <url>
+    <loc>https://cares.advisers.jp/long-covid.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/fibromyalgia.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/pots.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/mcas.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/eds.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/depression.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/insomnia.html</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
     <lastmod>2026-04-14</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://cares.advisers.jp/#login</loc>
-    <lastmod>2026-04-14</lastmod>
-    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
