@@ -2555,6 +2555,266 @@ var CONFIG = {
     { id: 'autoantibody', name: '自己抗体パネル', description: 'ANA, 抗dsDNA, GPCR自己抗体等', price: '¥15,000〜¥30,000', where: '専門病院', url: '' }
   ],
 
+  // ============================================================
+  // 遠隔診療・オンライン診療プロバイダー
+  // ------------------------------------------------------------
+  // 慢性疾患患者が在宅でアクセスできる日本のオンライン診療サービス
+  // を curated し、疾患タグでマッチングするためのデータ。各 entry は
+  // 公式サイトへのリンクを持ち、推奨ではなく「選択肢の提示」として
+  // 表示される (医療行為の推奨は避ける)。
+  //
+  // 掲載基準:
+  //   1. 公式サイトが実在し、現在も運営中
+  //   2. 保険 or 自費で明示的な料金体系がある
+  //   3. 初診対応が可能
+  //   4. 慢性疾患患者に関連する専門領域
+  //
+  // フィールド:
+  //   categories: 疾患タグ (DISEASE_CATEGORIES の id を参照)
+  //   specialty: 診療科
+  //   format: 'video' (ビデオ通話), 'chat' (テキスト), 'phone'
+  //   payment: 'insurance' (保険適用), 'private' (自費), 'both'
+  //   price: 目安料金
+  // ============================================================
+  TELEHEALTH_PROVIDERS: [
+    // ─── 総合オンライン診療プラットフォーム ───
+    {
+      id: 'clinics',
+      name: 'CLINICS オンライン診療',
+      provider: '株式会社メドレー',
+      specialty: '総合内科・皮膚科・精神科・小児科 等',
+      format: 'video',
+      payment: 'both',
+      price: '保険診療 or 自費 (診察料+システム利用料 330 円)',
+      description: 'メドレーが運営する日本最大級のオンライン診療プラットフォーム。全国 6,000+ の医療機関と連携。アプリ or Web から予約・ビデオ診察・決済まで完結。',
+      url: 'https://clinics.medley.life/',
+      categories: ['neuro', 'immune', 'mental', 'endocrine', 'cardiovascular', 'respiratory', 'digestive', 'connective', 'other']
+    },
+    {
+      id: 'curon',
+      name: 'curon (クロン)',
+      provider: '株式会社 MICIN',
+      specialty: '総合内科・小児科・精神科・糖尿病 等',
+      format: 'video',
+      payment: 'insurance',
+      price: '保険診療 (システム利用料 360 円)',
+      description: 'MICIN 社のオンライン診療サービス。全国の医療機関と連携、処方箋もオンライン発行可能。アプリでビデオ診察・薬の配送まで一貫。',
+      url: 'https://curon.co/',
+      categories: ['neuro', 'mental', 'endocrine', 'cardiovascular', 'respiratory', 'digestive', 'immune']
+    },
+    {
+      id: 'yadoc',
+      name: 'YaDoc (ヤードック)',
+      provider: '株式会社インテグリティ・ヘルスケア',
+      specialty: '総合・慢性疾患・生活習慣病',
+      format: 'video',
+      payment: 'insurance',
+      price: '保険診療',
+      description: '慢性疾患の通院継続に強いオンライン診療アプリ。血圧・血糖などのバイタルデータ連携が特徴。',
+      url: 'https://www.yadoc.jp/',
+      categories: ['endocrine', 'cardiovascular', 'respiratory', 'digestive']
+    },
+    {
+      id: 'line_doctor',
+      name: 'LINEドクター',
+      provider: 'LINE ヘルスケア株式会社',
+      specialty: '総合内科・皮膚科・耳鼻科 等',
+      format: 'video',
+      payment: 'insurance',
+      price: '保険診療',
+      description: 'LINE アプリから予約・診察。アプリインストール不要で最も敷居が低い。',
+      url: 'https://line-doctor.line.me/',
+      categories: ['neuro', 'mental', 'endocrine', 'cardiovascular', 'respiratory', 'digestive', 'immune']
+    },
+    // ─── 心療内科・精神科 ───
+    {
+      id: 'welby_psy',
+      name: 'いしゃまち (精神科オンライン)',
+      provider: '株式会社ウェブドクター',
+      specialty: '精神科・心療内科',
+      format: 'video',
+      payment: 'both',
+      price: '初診 5,000 円〜、再診 3,000 円〜',
+      description: 'うつ・不安障害・PTSD・ADHD 等のオンライン診療。処方箋発行可能。',
+      url: 'https://www.ishamachi.com/',
+      categories: ['mental']
+    },
+    {
+      id: 'mentalclinic_online',
+      name: '心療内科・精神科オンライン診療 (poco-a-poco クリニック等)',
+      provider: '各クリニック',
+      specialty: '精神科・心療内科',
+      format: 'video',
+      payment: 'insurance',
+      price: '保険診療',
+      description: '全国の心療内科・精神科クリニックがオンライン診療を提供。SSRI・SNRI 等の処方継続が可能。',
+      url: 'https://clinics.medley.life/searches?q=%E5%BF%83%E7%99%82%E5%86%85%E7%A7%91',
+      categories: ['mental']
+    },
+    // ─── 慢性疲労・自律神経・統合医療 ───
+    {
+      id: 'hedsuma',
+      name: '青山・原宿 統合医療クリニック',
+      provider: '各医療機関',
+      specialty: '慢性疲労・LDN 処方・自律神経失調',
+      format: 'video',
+      payment: 'private',
+      price: '自費診療 (初診 15,000-30,000 円)',
+      description: 'LDN (低用量ナルトレキソン) 等の自費処方に対応する統合医療クリニックが増加中。ME/CFS・Long COVID の相談に応じる医師も。事前に各クリニックに連絡して対応可否を確認してください。',
+      url: 'https://www.google.com/search?q=LDN+低用量ナルトレキソン+オンライン+クリニック+日本',
+      categories: ['neuro']
+    },
+    {
+      id: 'long_covid_clinic',
+      name: 'Long COVID 専門外来 (地域別)',
+      provider: '各医療機関',
+      specialty: 'コロナ後遺症・Long COVID',
+      format: 'video',
+      payment: 'insurance',
+      price: '保険診療',
+      description: '厚労省が公開している Long COVID 対応医療機関リストから、お住まいの地域で探すことができます。',
+      url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000121431_00413.html',
+      categories: ['immune']
+    },
+    // ─── 女性専門 ───
+    {
+      id: 'pill_online',
+      name: 'ピルオンライン・女性ヘルスケア (mederi / スマルナ 等)',
+      provider: '複数サービス',
+      specialty: '婦人科・PMS・PCOS',
+      format: 'video',
+      payment: 'private',
+      price: '自費 (月額 2,500 円〜)',
+      description: 'PMS/PCOS/月経困難症/ホルモン関連の不調に対応するオンライン婦人科サービス。',
+      url: 'https://smaluna.com/',
+      categories: ['endocrine']
+    },
+    // ─── セカンドオピニオン ───
+    {
+      id: 'second_opinion',
+      name: 'メディカルノート セカンドオピニオン',
+      provider: 'メディカルノート株式会社',
+      specialty: '全診療科セカンドオピニオン',
+      format: 'video',
+      payment: 'private',
+      price: '自費 30,000 円〜',
+      description: '専門医によるセカンドオピニオン相談。難治性疾患・診断に悩む方向け。',
+      url: 'https://medicalnote.jp/consultation',
+      categories: ['neuro', 'immune', 'mental', 'endocrine', 'cardiovascular', 'connective', 'other', 'cancer']
+    },
+    // ─── AI 症状チェック (診察前の整理) ───
+    {
+      id: 'ubie',
+      name: 'ユビー AI 症状検索',
+      provider: 'Ubie 株式会社',
+      specialty: '症状入力から関連疾患・受診先の案内',
+      format: 'chat',
+      payment: 'private',
+      price: '無料',
+      description: '20 問程度の質問に答えるだけで、関連する病気と受診科の目安が分かる無料 AI サービス。診察の前段階整理に。',
+      url: 'https://ubie.app/',
+      categories: ['neuro', 'immune', 'mental', 'endocrine', 'cardiovascular', 'respiratory', 'digestive', 'connective', 'other']
+    }
+  ],
+
+  // ============================================================
+  // オンラインカウンセリング・心理サポート
+  // ------------------------------------------------------------
+  // 医療行為ではない心理カウンセリング・メンタルヘルスサポート。
+  // 慢性疾患に伴う心理的負担・孤独感・鬱状態への対応。
+  // ============================================================
+  COUNSELING_PROVIDERS: [
+    {
+      id: 'cotree',
+      name: 'cotree (コトリー)',
+      provider: '株式会社 cotree',
+      format: 'video',
+      price: '1 回 5,000 円〜',
+      description: '国内最大級のオンラインカウンセリング。200 名以上の公認心理師・臨床心理士が在籍。初回マッチングあり。',
+      url: 'https://cotree.jp/'
+    },
+    {
+      id: 'uraraka',
+      name: 'うららか相談室',
+      provider: '株式会社 うらら',
+      format: 'video',
+      price: '1 回 4,400 円〜',
+      description: '220 名以上のカウンセラーと面談可能。メッセージ or ビデオ or 対面を選択可。慢性疾患の相談経験あるカウンセラー多数。',
+      url: 'https://www.uraraka-soudan.com/'
+    },
+    {
+      id: 'kimochi',
+      name: 'Kimochi',
+      provider: '株式会社 Kimochi',
+      format: 'video',
+      price: 'サブスク 8,800 円/月 (カウンセリング 4 回 + チャット無制限)',
+      description: '定額制オンラインカウンセリング。毎週 1 回の定期カウンセリングを続けやすい料金体系。',
+      url: 'https://kimochi-online.com/'
+    },
+    {
+      id: 'mezzanine',
+      name: 'メザニン (メンタル心理カウンセリング)',
+      provider: '株式会社 メザニン',
+      format: 'video',
+      price: '1 回 5,500 円〜',
+      description: '慢性疾患・難病に関する心理サポートの実績あり。ビデオ/電話/対面を選択可。',
+      url: 'https://mezzanine.co.jp/'
+    },
+    {
+      id: 'betterhelp',
+      name: 'BetterHelp (英語)',
+      provider: 'BetterHelp Inc. (米国)',
+      format: 'video',
+      price: '$65-100/週 (8,000-13,000 円)',
+      description: '世界最大のオンラインカウンセリング。英語のセラピストのみ。ME/CFS・Long COVID の経験豊富なセラピストを指名可能。海外在住 or 英語希望者向け。',
+      url: 'https://www.betterhelp.com/'
+    }
+  ],
+
+  // ============================================================
+  // 緊急時・無料相談窓口
+  // ------------------------------------------------------------
+  // 24 時間対応の公的ホットライン。希死念慮・緊急時に必ず表示する。
+  // ============================================================
+  EMERGENCY_LINES: [
+    {
+      id: 'yorisoi',
+      name: 'よりそいホットライン',
+      phone: '0120-279-338',
+      hours: '24 時間 365 日',
+      price: '無料',
+      description: '厚生労働省支援の電話相談。暮らし・こころ・外国語・性・DV 等すべての悩みに対応。',
+      url: 'https://www.since2011.net/yorisoi/'
+    },
+    {
+      id: 'inochi_denwa',
+      name: 'いのちの電話',
+      phone: '0570-783-556 (ナビダイヤル) / 0120-783-556 (フリーダイヤル、毎月 10 日 8:00-翌朝 8:00)',
+      hours: '毎日 10:00-22:00 ほか',
+      price: '無料 (ナビダイヤルは通話料)',
+      description: '日本いのちの電話連盟。こころの悩み・自殺予防相談。',
+      url: 'https://www.inochinodenwa.org/'
+    },
+    {
+      id: 'kokoro',
+      name: 'こころの健康相談統一ダイヤル',
+      phone: '0570-064-556',
+      hours: '都道府県により異なる',
+      price: '通話料のみ',
+      description: '各都道府県の精神保健福祉センターに繋がる。精神科受診前の相談にも。',
+      url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/hukushi_kaigo/shougaishahukushi/kokoro/'
+    },
+    {
+      id: 'tell_lifeline',
+      name: 'TELL Lifeline (英語)',
+      phone: '03-5774-0992',
+      hours: '毎日 9:00-23:00',
+      price: '通話料のみ',
+      description: '在日外国人向けの英語電話カウンセリング。',
+      url: 'https://telljp.com/lifeline/'
+    }
+  ],
+
   // Legacy single-disease selection (kept for backward compat)
   DISEASES: [
     { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎 / 慢性疲労症候群', icon: '🧠', color: '#6C63FF' },
@@ -10787,6 +11047,7 @@ ${titles}`;
     const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
     const isGuestContext = !store.get('isAuthenticated');
     const isFastGuestText = isGuestContext && options.fastGuest === true && type === 'text_analysis';
+    console.log('[analyzeViaAPI] type=' + type + ' model=' + store.get('selectedModel') + ' hasKey=' + !!apiKey + ' isGuest=' + isGuestContext);
 
     // Select prompt template
     let promptTemplate = isFastGuestText
@@ -11937,8 +12198,10 @@ ${axisHint}
 
     // ALL analysis via API prompt — save result with the entry.
     const entryId = entry.id;
+    console.log('[dashQuickSubmit] calling analyzeViaAPI type=text_analysis len=' + content.length);
     this.analyzeViaAPI(content, 'text_analysis')
       .then(result => {
+        console.log('[dashQuickSubmit] analyzeViaAPI resolved, _fromAPI=' + (result?._fromAPI) + ' has_summary=' + !!result?.summary);
         store.set('isAnalyzing', false);
         // analyzeViaAPI swallows model errors and returns a fallback
         // object with _fromAPI:false. We treat that as an error so the
@@ -11947,7 +12210,13 @@ ${axisHint}
         // result.
         if (result && result._fromAPI === false) {
           const errText = result._error || result.findings || '分析に失敗しました';
+          console.warn('[dashQuickSubmit] API returned error:', errText);
           store.set('latestFeedbackError', errText);
+          return;
+        }
+        if (!result) {
+          console.warn('[dashQuickSubmit] null result returned');
+          store.set('latestFeedbackError', '応答が空でした。もう一度お試しください。');
           return;
         }
         store.set('latestFeedback', result);
@@ -11956,7 +12225,8 @@ ${axisHint}
       .catch(err => {
         console.error('[dashQuickSubmit] analyzeViaAPI failed:', err);
         store.set('isAnalyzing', false);
-        store.set('latestFeedbackError', err?.message || String(err));
+        const msg = err?.message || String(err) || '不明なエラー';
+        store.set('latestFeedbackError', msg);
       });
   }
 
@@ -15156,6 +15426,41 @@ App.prototype.render_analysis = function() {
 };
 
 // Action Center
+// Match telehealth providers to the user's selected diseases.
+// Returns an array of provider entries whose `categories` field
+// overlaps with any of the selectedDiseases' parent category ids.
+// If no match, returns an empty array so the caller falls back to
+// a general list. Always deduplicates and caps at 6 entries to
+// avoid overwhelming the UI.
+App.prototype.matchTelehealthToDiseases = function() {
+  const providers = CONFIG.TELEHEALTH_PROVIDERS || [];
+  const selected = store.get('selectedDiseases') || [];
+  if (selected.length === 0) return [];
+
+  // Build a map from disease id → parent category id.
+  const diseaseToCat = {};
+  (CONFIG.DISEASE_CATEGORIES || []).forEach(cat => {
+    (cat.diseases || []).forEach(d => { diseaseToCat[d.id] = cat.id; });
+  });
+  const userCats = new Set(selected.map(id => diseaseToCat[id]).filter(Boolean));
+  if (userCats.size === 0) return [];
+
+  const matched = providers.filter(p => {
+    if (!Array.isArray(p.categories) || p.categories.length === 0) return false;
+    return p.categories.some(c => userCats.has(c));
+  });
+  // Return unique, capped at 6
+  const seen = new Set();
+  const unique = [];
+  for (const p of matched) {
+    if (seen.has(p.id)) continue;
+    seen.add(p.id);
+    unique.push(p);
+    if (unique.length >= 6) break;
+  }
+  return unique;
+};
+
 App.prototype.render_actions = function() {
   const recs = store.get('recommendations') || [];
   const analysis = store.get('latestAnalysis');
@@ -15179,12 +15484,111 @@ App.prototype.render_actions = function() {
       </div>`;
   });
 
+  // Match telehealth providers to user's selected diseases
+  const telehealthMatched = this.matchTelehealthToDiseases();
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">アクションセンター</h2>
     <p style="font-size:13px;color:var(--text-secondary)">ワンクリックで健康改善のアクションを実行</p>
   </div>
   ${sections || ''}
+
+  <!-- 🏥 遠隔診療・オンライン診療 -->
+  <!-- Matched to user's selected diseases. Shows only providers
+       that match at least one of the user's conditions. If none,
+       a full general list is shown. Each entry links directly to
+       the official provider site so users can verify and book. -->
+  <div style="margin-top:24px;margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:6px">🏥 オンライン診療で医師に相談する</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
+      家から受けられるオンライン診療サービス。あなたの疾患に対応した選択肢を表示しています。
+      ${telehealthMatched.length > 0 ? '疾患に合わせてマッチしたプロバイダー' : '代表的な総合オンライン診療'}。
+    </p>
+    <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+      ${(telehealthMatched.length > 0 ? telehealthMatched : CONFIG.TELEHEALTH_PROVIDERS.slice(0, 4)).map(tp => {
+        const paymentBadge = { insurance: '保険適用', private: '自費', both: '保険＋自費' }[tp.payment] || tp.payment;
+        const formatIcon = { video: '📹', chat: '💬', phone: '📞' }[tp.format] || '📹';
+        return `
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-body" style="padding:14px;flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:6px">
+              <div class="action-card-title" style="font-size:13px;font-weight:700;line-height:1.4">${formatIcon} ${Components.escapeHtml(tp.name)}</div>
+              <span class="tag ${tp.payment === 'insurance' ? 'tag-success' : 'tag-info'}" style="font-size:9px;white-space:nowrap;flex-shrink:0">${paymentBadge}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${Components.escapeHtml(tp.provider || '')}</div>
+            <div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:4px">${Components.escapeHtml(tp.specialty || '')}</div>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px">${Components.escapeHtml(tp.description || '')}</p>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:8px">${Components.escapeHtml(tp.price || '')}</div>
+          </div>
+          <div style="padding:10px 14px 14px">
+            <a href="${tp.url}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="width:100%;text-align:center">公式サイトで予約・相談 →</a>
+          </div>
+        </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="margin-top:10px;padding:10px 14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;line-height:1.7">
+      ⚠ <strong>選択肢の提示であり推奨ではありません。</strong>各サービスの最新料金・対応範囲は公式サイトでご確認ください。オンライン診療は対面診療の補完であり、急性症状・重症時は必ず対面受診してください。
+    </div>
+  </div>
+
+  <!-- 🧘 オンラインカウンセリング -->
+  <!-- Not medical treatment. Psychological counseling for chronic
+       illness loneliness, stress, adjustment disorder. Important
+       because chronic disease patients often experience isolation
+       that compounds physical symptoms. -->
+  <div style="margin-top:24px;margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:6px">🧘 オンラインカウンセリング</h3>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">
+      慢性疾患と向き合う日々の心理的負担・孤独・不安に寄り添うカウンセラー。
+      医療行為ではなく、専門家との対話による心理サポートです。
+    </p>
+    <div class="grid-auto" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+      ${CONFIG.COUNSELING_PROVIDERS.map(cp => `
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-body" style="padding:14px;flex:1">
+            <div class="action-card-title" style="font-size:13px;font-weight:700;line-height:1.4;margin-bottom:4px">${Components.escapeHtml(cp.name)}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${Components.escapeHtml(cp.provider)}</div>
+            <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px">${Components.escapeHtml(cp.description)}</p>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent)">${Components.escapeHtml(cp.price)}</div>
+          </div>
+          <div style="padding:10px 14px 14px">
+            <a href="${cp.url}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" style="width:100%;text-align:center">公式サイトへ →</a>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>
+
+  <!-- 🆘 緊急時の相談窓口 (常時表示) -->
+  <!-- 24-hour hotlines shown unconditionally. Critical for users
+       experiencing suicidal ideation, acute crisis, or severe
+       mental distress. Kept compact but always visible. -->
+  <div class="card" style="margin-top:24px;margin-bottom:24px;border:2px solid #fca5a5;background:#fef2f2">
+    <div class="card-header" style="background:#fef2f2">
+      <span class="card-title" style="color:#991b1b">🆘 つらいとき・死にたい気持ちがあるとき — 無料相談窓口</span>
+    </div>
+    <div class="card-body" style="padding:14px">
+      <p style="font-size:11px;color:#7f1d1d;line-height:1.7;margin-bottom:12px">
+        一人で抱え込まないでください。以下の窓口はすべて無料で、専門の相談員があなたの話を聴きます。
+        命の危険がある場合は <strong>119 番</strong> にすぐ連絡してください。
+      </p>
+      <div style="display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+        ${CONFIG.EMERGENCY_LINES.map(el => `
+          <div style="padding:12px 14px;background:#fff;border:1px solid #fecaca;border-radius:10px">
+            <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:4px">${Components.escapeHtml(el.name)}</div>
+            <div style="font-size:15px;font-weight:800;color:#dc2626;font-family:'JetBrains Mono',monospace;margin-bottom:3px">
+              <a href="tel:${el.phone.split(/\s|\(/)[0]}" style="color:#dc2626;text-decoration:none">${Components.escapeHtml(el.phone)}</a>
+            </div>
+            <div style="font-size:10px;color:#7f1d1d">${Components.escapeHtml(el.hours)} ・ ${Components.escapeHtml(el.price)}</div>
+            <div style="font-size:10px;color:#7f1d1d;line-height:1.5;margin-top:4px">${Components.escapeHtml(el.description)}</div>
+            ${el.url ? `<a href="${el.url}" target="_blank" rel="noopener" style="font-size:10px;color:#dc2626;font-weight:600;text-decoration:underline;display:inline-block;margin-top:4px">詳細 →</a>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </div>
 
   <!-- Live Clinic/Workshop/Event Recommendations -->
   <div class="card" style="margin-bottom:24px">
