@@ -2099,6 +2099,47 @@ var CONFIG = {
                           japan: null, japanLabel: '国内推計策定中' },
   },
 
+  // ============================================================
+  // 新処方ローテーション軸 (Prescription Rotation Axes)
+  // ------------------------------------------------------------
+  // 14 の独立した「処方箋の軸」。毎日、dayOfYear % 14 で 1 軸が
+  // 機械的に選ばれ、AI はその日その軸から具体的な処方を出すよう
+  // 強制される。これにより「同じ助言が続く」問題を根本解決。
+  //
+  // 軸の順序はランダムではなく、隣接する日が大きく異なる角度に
+  // なるよう意図的にインターリーブしてある (食事→身体→精神 等)。
+  // ============================================================
+  PRESCRIPTION_AXES: [
+    { id: 'nutrition',   icon: '🌿', name: '食事・栄養の新戦略',
+      desc: '抗炎症食・低FODMAP・ファスティング・間欠的断食・地中海食・ケトジェニック・腸活食材 (発酵食品、プレバイオティクス)' },
+    { id: 'body',        icon: '🏃', name: '身体的アプローチ',
+      desc: '運動処方 (MET-基準、ペーシング)、ストレッチ、理学療法、ヨガ、呼吸法 (4-7-8、box breathing)、姿勢' },
+    { id: 'mind',        icon: '🧘', name: '精神・認知・瞑想',
+      desc: 'マインドフルネス、CBT、ACT、アート療法、表現療法、ジャーナリング、思考の再構成' },
+    { id: 'supplement',  icon: '💊', name: 'サプリメント・栄養素',
+      desc: 'NMN、CoQ10、マグネシウム L-スレオン酸、PQQ、D-リボース、グリシン、タウリン、5-ALA、L-テアニン' },
+    { id: 'sleep',       icon: '😴', name: '睡眠・回復',
+      desc: '睡眠衛生プロトコル、戦略的昼寝、冷暗環境、睡眠時 HRV、入眠ルーチン、日光曝露タイミング' },
+    { id: 'test',        icon: '🧬', name: '検査・モニタリング',
+      desc: 'CRP・フェリチン・ビタミンD・ホルモン・HRV・CGM・有機酸検査・GI-MAP・DUTCH検査・NK 細胞活性' },
+    { id: 'hydration',   icon: '💧', name: '水分・電解質・入浴',
+      desc: '塩分 + カリウム補給 (POTS 対策)、エプソムソルト入浴、温冷交代浴、サウナ、経口補水液' },
+    { id: 'light',       icon: '🌞', name: '光・温度・環境',
+      desc: '赤色光・近赤外光療法、朝の日光曝露、ブルーライト遮断、冷水シャワー、炎症抑制環境' },
+    { id: 'frontline',   icon: '💉', name: '先端医療・臨床試験',
+      desc: 'LDN (低用量ナルトレキソン)、BC007、免疫吸着、JAK 阻害薬、TMS、ケタミン、HBOT、CAR-T、FMT' },
+    { id: 'community',   icon: '🤝', name: 'コミュニティ・つながり',
+      desc: '患者会、オンラインコミュニティ、Peatix イベント、Zoom 交流会、Discord サーバー、note 購読' },
+    { id: 'specialist',  icon: '🏥', name: '専門医・セカンドオピニオン',
+      desc: '専門医リスト、セカンドオピニオン、遠隔診療、海外クリニック、難病指定申請、社会資源' },
+    { id: 'biohack',     icon: '🛠', name: 'バイオハック・デバイス',
+      desc: 'Oura, Garmin, WHOOP, Nurosym (迷走神経刺激), gammaCore, CGM, Muse (脳波), Apollo Neuro' },
+    { id: 'eastern',     icon: '🌱', name: '東洋医学・伝統療法',
+      desc: '漢方薬 (ツムラ・クラシエ)、鍼灸、ツボ刺激、経絡マッサージ、温泉療法、森林浴 (Shinrin-yoku)、薬膳' },
+    { id: 'knowledge',   icon: '📚', name: '情報・学習・研究',
+      desc: 'PubMed 論文、ClinicalTrials.gov 治験登録、患者会ウェビナー、医学書、同病者の note 記事' },
+  ],
+
   // Disease-specific monitoring metrics (定点観測項目)
   // Used by AI prompts to track progress over time
   DISEASE_METRICS: {
@@ -2374,13 +2415,17 @@ var PROMPT_HEADER = `【最優先事項 — 応答言語・共感・新しい打
     ・国際的には WHO も慢性疾患の Self-management に希望の維持が重要と位置づけている。
       励ましを義務として扱う。
 
-(3) 【毎回必ず "SOMETHING NEW" を 1 つ以上提示】 ★最重要★
-    ・前回までに提案・記録された打ち手とは異なる、ユーザーがまだ試していない
-      新しい打ち手を 1 つは必ず提示する。
+(3) 【毎回必ず "SOMETHING NEW" — 今日の新処方を提示】 ★最重要★
+    ・前回までに提案・記録された打ち手とは必ず具体的に異なる、新しい処方を 1 つは提示する。
+    ・**下の「本日の新処方プロトコル」ブロックが指定軸を機械的に決めている**。
+      本日はその指定軸から処方を出すこと。既に試している場合のみ別軸に切り替え可。
     ・同じ提案の繰り返しは、ユーザーの離脱と絶望感を生む。これは不可逆な機会損失。
-    ・下記「新しい打ち手を探索する 7 つの軸」から、毎回異なる軸を選ぶこと。
-    ・「**今日の新しい一歩**：◯◯を試してみませんか」という形で明示的にラベル付けして
-      提示する（ユーザーが見逃さないように）。
+    ・「過去 14 日間に既に提案された打ち手」のリストに載っているものとは
+      具体的に異なる施策（商品名・用量・方法のいずれかが違う）を選ぶこと。
+    ・処方は「╔══ 今日の新処方 ══」ブロック形式で最後に必ず出力する。
+    ・「**今日の新しい一歩**」「**今日の新処方**」という形で明示的にラベル付けする。
+    ・処方箋は情報量でマウントせず、**1 つに絞って深く** 書くこと（用量・期間・効果指標・
+      エビデンス・費用まで揃える）。
 
 (4) 【プロアクティブ — 聞かれていないことも先回りして提案】
     ・ユーザーが質問していないことでも、記録から読み取れる課題や機会は先回りして
@@ -2537,6 +2582,8 @@ var PROMPT_HEADER = `【最優先事項 — 応答言語・共感・新しい打
 【選択疾患】{{SELECTED_DISEASES}}
 
 {{EPIDEMIOLOGY_CONTEXT}}
+
+{{PRESCRIPTION_PROTOCOL}}
 
 【ユーザーの健康データ】
 {{USER_DATA}}
@@ -4302,6 +4349,121 @@ var AIEngine = class AIEngine {
     ].join('\n');
   }
 
+  // Return a 1-based "day of year" integer for a given Date (defaults
+  // to today). Used as a deterministic seed so that every user sees
+  // the same "today's prescription axis" — which changes daily.
+  _getDayOfYear(date) {
+    const d = date || new Date();
+    const start = new Date(d.getFullYear(), 0, 0);
+    const diff = (d - start) + ((start.getTimezoneOffset() - d.getTimezoneOffset()) * 60 * 1000);
+    return Math.floor(diff / 86400000);
+  }
+
+  // Pick today's prescription axis from CONFIG.PRESCRIPTION_AXES.
+  // dayOfYear % 14 produces a stable rotation: every 14 days all
+  // axes are covered exactly once. Returns the full axis object
+  // including id/icon/name/desc so the prompt can reference all
+  // fields.
+  _getTodayPrescriptionAxis(date) {
+    const axes = (typeof CONFIG !== 'undefined' && CONFIG.PRESCRIPTION_AXES) || [];
+    if (axes.length === 0) return null;
+    const idx = this._getDayOfYear(date) % axes.length;
+    return axes[idx];
+  }
+
+  // Build a text block listing recent AI suggestions so the next
+  // prompt can explicitly avoid repeating them. Walks analysisHistory
+  // (last N days), extracts actionItems + new_approach fields, dedupes
+  // by the first 40 chars of each string, and returns a markdown list.
+  //
+  // Also looks at actionItems stored separately (set by analyze() on
+  // each successful call) to cover the case where analysisHistory was
+  // wiped or is shorter than the lookback window.
+  _getRecentProposals(days) {
+    const lookback = days || 14;
+    const cutoff = Date.now() - lookback * 86400000;
+    const history = (typeof store !== 'undefined' && store.get('analysisHistory')) || [];
+    const extraActions = (typeof store !== 'undefined' && store.get('actionItems')) || [];
+    const seen = new Set();
+    const out = [];
+    const push = (s) => {
+      if (!s || typeof s !== 'string') return;
+      const trimmed = s.trim();
+      if (!trimmed) return;
+      const key = trimmed.substring(0, 40);
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(trimmed.substring(0, 160));
+    };
+    // Recent analyses first (reverse chronological)
+    for (const analysis of history.slice(-50).reverse()) {
+      const ts = Date.parse(analysis.timestamp || '') || 0;
+      if (ts && ts < cutoff) continue;
+      const parsed = analysis.parsed || {};
+      if (Array.isArray(parsed.actionItems)) parsed.actionItems.forEach(a => push(typeof a === 'string' ? a : a?.title || a?.content));
+      if (parsed.new_approach) push(parsed.new_approach);
+      if (Array.isArray(parsed.actions)) parsed.actions.forEach(push);
+    }
+    // Extras (not tied to analysisHistory, e.g. old schema)
+    if (Array.isArray(extraActions)) extraActions.forEach(a => push(typeof a === 'string' ? a : a?.title || a?.content));
+    return out.slice(0, 20);
+  }
+
+  // Build the "今日の新処方プロトコル" prompt block. Combines
+  // today's axis + recent proposals + day-of-year seed so the AI
+  // receives a concrete, varied, non-repeating prescription brief.
+  // Returns '' when no axes are defined so prompts degrade safely.
+  _buildPrescriptionProtocol() {
+    const axis = this._getTodayPrescriptionAxis();
+    if (!axis) return '';
+    const dayOfYear = this._getDayOfYear();
+    const recent = this._getRecentProposals(14);
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    const avoidBlock = recent.length === 0
+      ? '（過去 14 日の提案履歴はまだありません。初回は自由に提案してください。）'
+      : recent.map((s, i) => `  ${i + 1}. ${s}`).join('\n');
+
+    return `
+【本日の新処方プロトコル — 毎日違う打ち手を】
+
+本日 ${dateStr} の指定軸: ${axis.icon} 「${axis.name}」
+  └ 候補例: ${axis.desc}
+
+この軸は「${dayOfYear} 日目」というシードから機械的に決まっており、
+毎日自動的に別の軸が選ばれるため、ユーザーは 14 日で全ての軸を体験します。
+本日の応答では、**必ずこの軸から最低 1 つの具体的な新処方** を提示してください。
+
+【過去 14 日間に既に提案された打ち手（重複禁止）】
+${avoidBlock}
+
+【今日の新処方の出力形式】
+応答の最後に必ず以下の形式で「今日の処方箋」ブロックを出してください。
+これは情報量が多い箇条書きではなく、1 つの具体的な処方として提示します。
+
+╔══ 今日の新処方 (${axis.icon} ${axis.name}) ══
+║ ■ 内容: （具体的な施策名 — 商品名/手法名/治療名）
+║ ■ 用量・頻度: （例: 夕食後 20 分、週 3 回、または 1 回 100 mg）
+║ ■ 試行期間: （例: まず 7 日間続けてみる、2 週間後に効果判定）
+║ ■ 期待される効果: （何がどう変わる可能性があるか、2-3 行）
+║ ■ 効果判定の指標: （記録して見る値 — 例: 疲労度、睡眠時間、HRV）
+║ ■ 注意点・副作用: （既知のリスク、禁忌、相互作用）
+║ ■ エビデンス: （RCT / メタ分析 / 症例報告 / 前臨床、論文 PMID があれば併記）
+║ ■ 入手方法と費用: （処方 / OTC / 個人輸入 / 費用の目安）
+║ ■ なぜ今日これを勧めるか: （ユーザーの記録と指定軸を結ぶ 1 行の理由）
+╚════════════════════════════════
+
+【重要ルール】
+1. 指定軸から選ぶこと。ユーザーが既に指定軸の施策を試している場合のみ、
+   別軸から選んで良い (その場合はその旨を明記)
+2. 上の「過去 14 日の提案リスト」にあるものとは必ず具体的に異なる処方にする
+3. 「漠然と瞑想しましょう」等の抽象表現ではなく、
+   「Headspace の朝 5 分瞑想、朝食前に実施」のような具体性で書く
+4. 今日の処方箋は "新しい" ものだが、**無理に最先端である必要はない**。
+   身近で安価な改善 (例: 朝日を 10 分浴びる) も立派な処方
+5. 処方として出せない日 (例: 内容が足りない) は、「今日は仮の処方箋として○○を試しながら、もう 1 日記録を待ちましょう」と誠実に伝える`;
+  }
+
   interpolatePrompt(template, data) {
     const profile = store.get('userProfile') || {};
     const userLang = profile.language || (typeof i18n !== 'undefined' && i18n.currentLang) || 'ja';
@@ -4355,6 +4517,16 @@ var AIEngine = class AIEngine {
     // to hardcode those numbers into every prompt template.
     const epidemiologyContext = this._buildEpidemiologyContext(selectedDiseases);
 
+    // New-prescription protocol — today's rotating axis + the list
+    // of past 14 days of AI suggestions so the model can avoid
+    // repetition and deliver a genuinely new prescription daily.
+    const prescriptionProtocol = this._buildPrescriptionProtocol();
+    const todayAxis = this._getTodayPrescriptionAxis();
+    const todayAxisLabel = todayAxis ? (todayAxis.icon + ' ' + todayAxis.name) : '';
+    const dayOfYear = this._getDayOfYear();
+    const recentProposalsList = this._getRecentProposals(14)
+      .map((s, i) => `  ${i + 1}. ${s}`).join('\n');
+
     let prompt = template
       .replace(/\{\{RESPOND_LANGUAGE_INSTRUCTION\}\}/g, respondLanguageInstruction)
       .replace(/\{\{USER_LANGUAGE\}\}/g, userLang)
@@ -4362,6 +4534,10 @@ var AIEngine = class AIEngine {
       .replace(/\{\{USER_PROFILE\}\}/g, profileStr)
       .replace(/\{\{SELECTED_DISEASES\}\}/g, diseasesStr)
       .replace(/\{\{EPIDEMIOLOGY_CONTEXT\}\}/g, epidemiologyContext)
+      .replace(/\{\{PRESCRIPTION_PROTOCOL\}\}/g, prescriptionProtocol)
+      .replace(/\{\{TODAY_PRESCRIPTION_AXIS\}\}/g, todayAxisLabel)
+      .replace(/\{\{DAY_OF_YEAR\}\}/g, String(dayOfYear))
+      .replace(/\{\{RECENT_PROPOSALS\}\}/g, recentProposalsList)
       .replace(/\{\{LOCATION\}\}/g, profile.location || 'Worldwide')
       .replace(/\{\{USER_DATA\}\}/g, JSON.stringify(data.current || {}, null, 2))
       .replace(/\{\{WEEKLY_DATA\}\}/g, JSON.stringify(data.weekly || {}, null, 2))
@@ -10641,6 +10817,15 @@ ${titles}`;
       const diseaseLabel = diseases.length > 0 ? diseases.join('・') : '';
       const profile = store.get('userProfile') || {};
       const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
+      // Guest mode uses a compact prompt (no full PROMPT_HEADER) to
+      // hit the 10-second target. We still want the "today's new
+      // prescription axis" behavior though, so we inject JUST the
+      // axis (not the full recent-proposals block, which would bloat
+      // tokens and slow the response).
+      const todayAxis = aiEngine._getTodayPrescriptionAxis();
+      const axisHint = todayAxis
+        ? `\n【本日の新処方の指定軸】${todayAxis.icon} ${todayAxis.name}\n  候補例: ${todayAxis.desc}\n  → new_approach の内容はこの軸から具体的に 1 つ選んでください。`
+        : '';
       const compactPrompt = `${langDirective}
 
 あなたは慢性疾患患者の伴走パートナーです。初めて訪れたユーザーの相談に
@@ -10649,20 +10834,22 @@ ${titles}`;
 【ユーザーの相談】
 ${text.substring(0, 1500)}
 ${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
+${axisHint}
 
 【応答ルール】
 1. 必ず共感の言葉から始める（「その症状、つらいですね」等）
 2. 考えられる原因や状態を 2-3 行で簡潔に解説
 3. 今日から試せる具体的な一歩を 1 つ提示
-4. 「もっと詳しく知りたい場合は登録して継続記録すると追跡できます」と添える
-5. 命令形を使わず、選択肢として提示する
+4. new_approach には指定軸 (${todayAxis ? todayAxis.name : '新しい打ち手'}) から具体的な処方を書く
+5. 「もっと詳しく知りたい場合は登録して継続記録すると追跡できます」と添える
+6. 命令形を使わず、選択肢として提示する
 
 【出力形式】純粋な JSON のみ（前置き・後書き・コードブロックなし）:
 {
   "summary": "共感の一言（30文字以内）",
   "findings": "考えられる状態・原因の解説（80-120文字）",
   "actions": ["今日から試せる一歩（30-50文字）"],
-  "new_approach": "新しい打ち手の提案（40-60文字）"
+  "new_approach": "今日の新処方: ${todayAxis ? todayAxis.name + 'から' : ''}具体的な提案（用量・頻度・期待効果を 40-80 文字）"
 }`;
 
       // Try Haiku first for speed; if no key/proxy, fall back to
