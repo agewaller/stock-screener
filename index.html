@@ -24,9 +24,9 @@
      SPA replaces after hydration — crawlers index the static
      content, humans see the interactive app.
      ═════════════════════════════════════════════════════════════ -->
-<title>健康日記 | ME/CFS・慢性疲労症候群・Long COVID の症状記録 & AI 分析アプリ</title>
-<meta name="description" content="ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）・Long COVID・線維筋痛症・POTS・MCAS・EDS など慢性疾患の症状を毎日記録し、最新 AI (Claude Opus 4.6) で寛解への道を分析。PEM・ブレインフォグ・ペーシング・LDN 治療の記録に対応。無料。開発者自身が 2 年間のME/CFS闘病から開発。">
-<meta name="keywords" content="ME/CFS,筋痛性脳脊髄炎,慢性疲労症候群,慢性疾患,症状記録アプリ,Long COVID,コロナ後遺症,線維筋痛症,POTS,体位性頻脈症候群,MCAS,マスト細胞活性化症候群,EDS,エーラスダンロス,LDN,低用量ナルトレキソン,PEM,労作後倦怠感,ブレインフォグ,ペーシング,寛解,AI分析,健康日記,PHR,PubMed">
+<title>ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）完全ガイド｜症状・診断・治療・記録 - 健康日記</title>
+<meta name="description" content="ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の症状・診断基準（IOM 2015／Fukuda／CCC）・治療選択肢（LDN／ピリドスチグミン／CoQ10／B12）・ペーシング戦略・最新研究（BC007／TRPM3／リツキシマブ）を患者当事者開発者がまとめた完全ガイド。日次の症状記録・PEM トラッキング・AI 個別分析も無料で利用可能。世界 6,700 万人・日本 10-30 万人の患者を支えるアプリ。">
+<meta name="keywords" content="ME/CFS,筋痛性脳脊髄炎,慢性疲労症候群,ME/CFS とは,ME/CFS 治療,ME/CFS 症状,ME/CFS 診断,ME/CFS 記録,ME/CFS アプリ,ME/CFS 患者会,慢性疲労症候群 治療,慢性疲労症候群 診断基準,慢性疲労症候群 アプリ,慢性疲労症候群 ブログ,筋痛性脳脊髄炎 診断,筋痛性脳脊髄炎 治療,筋痛性脳脊髄炎 症状,PEM,労作後倦怠感,LDN,低用量ナルトレキソン,ペーシング,エネルギーエンベロープ,IOM 基準,Fukuda 基準,CCC 基準,Long COVID,コロナ後遺症,線維筋痛症,POTS,体位性頻脈症候群,MCAS,EDS,寛解,AI分析,健康日記">
 <meta name="author" content="山口揚平 / シェアーズ株式会社">
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
 <meta name="googlebot" content="index,follow">
@@ -38,10 +38,10 @@
 <link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/">
 
 <!-- Open Graph (Facebook, LINE, Slack, Discord link previews) -->
-<meta property="og:type" content="website">
+<meta property="og:type" content="article">
 <meta property="og:site_name" content="健康日記 (Health Diary)">
-<meta property="og:title" content="健康日記 | ME/CFS・慢性疲労症候群・Long COVID の症状記録 & AI 分析">
-<meta property="og:description" content="ME/CFS・Long COVID・線維筋痛症など慢性疾患の症状を毎日記録し、AI で寛解への道を分析。PEM・ブレインフォグ・ペーシング・LDN 治療に対応。開発者自身の 2 年間の闘病体験から誕生。">
+<meta property="og:title" content="ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）完全ガイド｜症状・診断・治療・記録">
+<meta property="og:description" content="ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の症状・診断基準・治療・ペーシング・最新研究を患者当事者がまとめた完全ガイド。日次症状記録・PEM トラッキング・AI 個別分析も無料。世界 6,700 万人の ME/CFS 患者を支えるアプリ。">
 <meta property="og:url" content="https://cares.advisers.jp/">
 <meta property="og:image" content="https://cares.advisers.jp/og-image.png">
 <meta property="og:image:alt" content="健康日記 — ME/CFS・慢性疾患の症状記録 & AI 分析アプリ">
@@ -141,14 +141,54 @@
       "about": [
         {
           "@type": "MedicalCondition",
+          "@id": "https://cares.advisers.jp/#medical-mecfs",
           "name": "筋痛性脳脊髄炎／慢性疲労症候群 (ME/CFS)",
-          "alternateName": ["ME/CFS", "Myalgic Encephalomyelitis", "Chronic Fatigue Syndrome", "慢性疲労症候群", "筋痛性脳脊髄炎"],
+          "alternateName": ["ME/CFS", "Myalgic Encephalomyelitis", "Chronic Fatigue Syndrome", "慢性疲労症候群", "筋痛性脳脊髄炎", "CFS", "ME"],
           "code": {
             "@type": "MedicalCode",
             "code": "8E49",
             "codingSystem": "ICD-11"
           },
-          "epidemiology": "世界で約 6,700 万人 (推計、レビュー文献)"
+          "epidemiology": "世界で約 6,700 万人、日本で 10-30 万人 (推計、厚労省研究班)",
+          "signOrSymptom": [
+            {"@type": "MedicalSignOrSymptom", "name": "PEM (労作後倦怠感 / Post-Exertional Malaise)"},
+            {"@type": "MedicalSignOrSymptom", "name": "非回復性の睡眠"},
+            {"@type": "MedicalSignOrSymptom", "name": "認知機能障害 (ブレインフォグ)"},
+            {"@type": "MedicalSignOrSymptom", "name": "起立不耐症 (POTS / NMH)"},
+            {"@type": "MedicalSignOrSymptom", "name": "慢性疲労"},
+            {"@type": "MedicalSignOrSymptom", "name": "慢性疼痛 (筋肉痛・関節痛・頭痛)"},
+            {"@type": "MedicalSignOrSymptom", "name": "光・音・匂い過敏"},
+            {"@type": "MedicalSignOrSymptom", "name": "温度調節障害"},
+            {"@type": "MedicalSignOrSymptom", "name": "運動不耐症"}
+          ],
+          "cause": [
+            {"@type": "MedicalCause", "name": "ウイルス感染 (EBV / HHV-6 / エンテロウイルス / 新型コロナウイルス)"},
+            {"@type": "MedicalCause", "name": "ミトコンドリア機能障害"},
+            {"@type": "MedicalCause", "name": "自律神経機能障害"},
+            {"@type": "MedicalCause", "name": "自己抗体 (Anti-GPCR, β2-adrenergic, M3/M4 muscarinic)"},
+            {"@type": "MedicalCause", "name": "腸内細菌叢異常"}
+          ],
+          "associatedAnatomy": [
+            {"@type": "AnatomicalSystem", "name": "神経系"},
+            {"@type": "AnatomicalSystem", "name": "免疫系"},
+            {"@type": "AnatomicalSystem", "name": "自律神経系"}
+          ],
+          "possibleTreatment": [
+            {"@type": "MedicalTherapy", "name": "ペーシング (エネルギーエンベロープ理論)"},
+            {"@type": "DrugLegalStatus", "name": "LDN (低用量ナルトレキソン 1.5-4.5mg)"},
+            {"@type": "DrugLegalStatus", "name": "ピリドスチグミン (メストイノン)"},
+            {"@type": "DietarySupplement", "name": "CoQ10 (ユビキノール)"},
+            {"@type": "DietarySupplement", "name": "L-カルニチン"},
+            {"@type": "DietarySupplement", "name": "D-リボース"},
+            {"@type": "DietarySupplement", "name": "マグネシウム L-スレオン酸"},
+            {"@type": "DietarySupplement", "name": "ビタミン B 複合体"},
+            {"@type": "MedicalTherapy", "name": "HRV バイオフィードバック"},
+            {"@type": "MedicalTherapy", "name": "迷走神経刺激 (Nurosym, gammaCore)"}
+          ],
+          "riskFactor": [
+            {"@type": "MedicalRiskFactor", "name": "段階的運動療法 (GET) による PEM 誘発"},
+            {"@type": "MedicalRiskFactor", "name": "過剰活動による慢性化"}
+          ]
         },
         {
           "@type": "MedicalCondition",
@@ -173,6 +213,59 @@
           "epidemiology": "世界で約 2.2 億人 (推計、2.7% 有病率外挿)"
         }
       ]
+    },
+    {
+      "@type": "MedicalWebPage",
+      "@id": "https://cares.advisers.jp/#medical-guide",
+      "name": "ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）完全ガイド",
+      "description": "ME/CFS の症状・診断基準 (IOM 2015 / CCC / Fukuda)・治療選択肢 (LDN / ピリドスチグミン / CoQ10)・ペーシング戦略・最新研究 (BC007 / TRPM3 / マイクロクロット) を当事者開発者がまとめた完全ガイド",
+      "url": "https://cares.advisers.jp/",
+      "inLanguage": "ja",
+      "about": {
+        "@id": "https://cares.advisers.jp/#medical-mecfs"
+      },
+      "specialty": [
+        {"@type": "MedicalSpecialty", "name": "Neurology (神経内科)"},
+        {"@type": "MedicalSpecialty", "name": "Rheumatology (膠原病・リウマチ内科)"},
+        {"@type": "MedicalSpecialty", "name": "Immunology (免疫内科)"}
+      ],
+      "audience": {
+        "@type": "MedicalAudience",
+        "audienceType": "Patient",
+        "name": "ME/CFS 患者・家族・介護者"
+      },
+      "lastReviewed": "2026-04-14",
+      "reviewedBy": {
+        "@id": "https://cares.advisers.jp/#person-yamaguchi"
+      },
+      "mainContentOfPage": {
+        "@type": "WebPageElement",
+        "cssSelector": "#seo-landing"
+      }
+    },
+    {
+      "@type": "Article",
+      "@id": "https://cares.advisers.jp/#article-mecfs-guide",
+      "headline": "ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）完全ガイド｜症状・診断・治療・記録",
+      "description": "世界 6,700 万人・日本 10-30 万人の ME/CFS 患者に向けた症状管理・治療オプション・最新研究のまとめ。開発者自身の 2 年間の闘病経験から生まれた実践ガイド。",
+      "datePublished": "2026-04-01",
+      "dateModified": "2026-04-14",
+      "inLanguage": "ja",
+      "author": {
+        "@id": "https://cares.advisers.jp/#person-yamaguchi"
+      },
+      "publisher": {
+        "@id": "https://cares.advisers.jp/#organization"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://cares.advisers.jp/"
+      },
+      "image": "https://cares.advisers.jp/og-image.png",
+      "about": {
+        "@id": "https://cares.advisers.jp/#medical-mecfs"
+      },
+      "keywords": "ME/CFS, 筋痛性脳脊髄炎, 慢性疲労症候群, PEM, LDN, ペーシング, IOM 基準, Long COVID"
     },
     {
       "@type": "FAQPage",
@@ -224,6 +317,70 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "はい。開発者の山口揚平 (note: @age) は 2 年間の ME/CFS 闘病を経験し、毎日の記録が最大の武器となった経験からこのアプリを開発しました。note.com で闘病記を連載しています: https://note.com/age/n/n4f373bc7415a"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS (筋痛性脳脊髄炎／慢性疲労症候群) とは何ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ME/CFS (Myalgic Encephalomyelitis / Chronic Fatigue Syndrome) は、ごく軽い労作でも数日〜数週間にわたり全身症状が悪化する PEM (労作後倦怠感) を中核とした、多系統にまたがる慢性神経免疫疾患です。WHO は 1969 年から ICD 疾患コード G93.3 (ICD-11 では 8E49) として神経系疾患に分類しています。世界で約 6,700 万人、日本で推定 10〜30 万人の患者がいます。発症のきっかけは多くの場合、ウイルス感染 (EBV・HHV-6・エンテロウイルス・新型コロナウイルス)、外傷、手術、強いストレスです。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS の診断基準は何ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "現在、国際的に最も信頼されているのは IOM (米国医学アカデミー) 2015 年基準です。必須症状 3 つ: ① 6 ヶ月以上継続する活動レベル低下、② 労作後の症状悪化 (PEM)、③ 休息によって回復しない睡眠。加えて、認知機能障害 (ブレインフォグ) または起立不耐症のいずれかが必要。他に Canadian Consensus Criteria (CCC 2003) と Fukuda 基準 (1994) があります。PEM を必須症状としている IOM と CCC が現代の臨床で主流です。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "PEM (労作後倦怠感) とは何ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "PEM (Post-Exertional Malaise) は ME/CFS の病理を特徴づける最も重要な症状です。身体的・認知的・感情的な労作の後、24〜48 時間の遅延を経て症状が著しく悪化し、回復に数日〜数週間かかります。機序として、ミトコンドリア機能障害、嫌気性閾値以下での代謝破綻 (2-day CPET 研究)、マイクロクロット、脳内ミクログリア活性化、イオンチャネル TRPM3 の機能低下などが提唱されています。PEM を回避するためにペーシング (活動制御) が治療の根幹となります。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS の治療法はありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "2026 年時点、ME/CFS を根治する確立した治療法はまだありません。しかし症状緩和として以下が試されています: ① ペーシング (エネルギーエンベロープ理論に基づく活動制御、NICE ガイドライン NG206 2021 で第一選択)、② LDN (低用量ナルトレキソン 1.5-4.5mg)、③ ピリドスチグミン (POTS 併発時)、④ ミトコンドリアサポート (CoQ10, L-カルニチン, D-リボース, NMN)、⑤ 自律神経調整 (HRV バイオフィードバック, 迷走神経刺激)。NICE 2021 ガイドラインでは段階的運動療法 (GET) は害を与えるとして推奨から除外されました。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ペーシングはどう実践すればいいですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ペーシングは ME/CFS 治療の根幹となる生活戦略です。具体的には: ① Heart Rate Pacing (安静時 + 15 bpm を超えない)、② 活動ログで軽作業/中作業/重作業を分類、③ 48 時間ルール (活動後 48 時間の症状で閾値を決める)、④ プレペーシング (重要イベント前に活動量を半減)、⑤ Crash 対策 (PEM に入ったら完全休息)。Prof. Leonard Jason (DePaul 大学) が提唱した Energy Envelope Theory が理論的基礎です。70% の力で止めることが長期的な悪化を防ぎます。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "LDN (低用量ナルトレキソン) は ME/CFS に効きますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "LDN は用量 1.5-4.5 mg/日 (通常 50 mg の 1/10) で使用され、神経炎症の抑制と内因性エンドルフィン増加により、ME/CFS・線維筋痛症の疲労・疼痛・ブレインフォグに改善報告があります。線維筋痛症への RCT データが複数あり、ME/CFS には症例集積研究と観察研究が蓄積中です。日本でも処方する医師が増えていますが、保険適用外のため自費処方か個人輸入となります。副作用は軽度 (夢が鮮明、入眠障害) で、離脱症状はほぼありません。主治医と相談してから開始してください。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS と Long COVID はどう違いますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "両者は極めて近い病態を示します。Long COVID 患者の多くが ME/CFS と同じ診断基準 (IOM 2015) を満たし、一部の研究では Long COVID が実質的に新型コロナウイルスによって誘発された ME/CFS であると主張されています。共通機序として、微小循環障害、マイトコンドリア機能低下、自己抗体産生、免疫機能低下、自律神経機能障害が挙げられ、治療アプローチ (ペーシング、LDN、ミトコンドリアサポート) も共通しています。NIH RECOVER、ドイツ Charité、豪 Griffith 等の国際共同研究が進行中です。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ME/CFS 患者会は日本にありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい。主要な患者会・支援団体は以下です: ① 筋痛性脳脊髄炎の会 (ME Association Japan、日本最大の患者会、情報提供・ピアサポート・研究支援)、② 厚生労働省 ME/CFS 研究班 (国立精神・神経医療研究センター 山村隆先生が主導)、③ NPO 法人 筋痛性脳脊髄炎の会 (認定 NPO として寄付受付)。国際的には世界 ME Alliance、#MEAction が有名で、5 月 12 日は国際 ME/CFS Awareness Day です。"
           }
         },
         {
@@ -1615,19 +1772,124 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
           <li>PubMed 論文の自動検索と日本語要約</li>
         </ul>
 
-        <!-- ④ ME/CFS basics -->
-        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の基本</h2>
-        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">PEM（Post-Exertional Malaise, 労作後症状悪化）とは</h3>
+        <!-- ④ ME/CFS comprehensive guide — the core SEO content -->
+        <h2 style="font-size:21px;font-weight:700;margin-top:32px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #e4e7ef">ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）完全ガイド</h2>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS とは何か</h3>
         <p style="margin-bottom:14px">
-          身体的・認知的・感情的な労作の後、数時間〜数日で症状が著しく悪化する現象です。ME/CFS の最も特徴的な症状の一つで、回復には数日〜数週間かかることもあります。PEM の頻度と誘因を特定することが、ペーシング戦略の基礎になります。
+          <strong>ME/CFS（Myalgic Encephalomyelitis / Chronic Fatigue Syndrome、筋痛性脳脊髄炎／慢性疲労症候群）</strong>は、ごく軽い労作でも数日〜数週間にわたり全身症状が悪化する <strong>PEM（労作後倦怠感 / Post-Exertional Malaise）</strong>を中核とした、多系統にまたがる慢性神経免疫疾患です。単なる「疲れ」ではなく、<strong>WHO が 1969 年から ICD 疾患コード G93.3（ICD-11 では 8E49）として神経系疾患に分類</strong>している正式な疾患です。世界で約 6,700 万人、日本で推定 10〜30 万人の患者がいるとされています。
         </p>
-        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ペーシング（Pacing）とは</h3>
         <p style="margin-bottom:14px">
-          自分のエネルギー容量を超えない範囲で活動を分散させる戦略です。「energy envelope theory」に基づき、PEM を誘発しない活動量の閾値を見つけて活動と休息を計画的に組み合わせます。本アプリでは毎日の活動量と翌日の症状の相関から、個別の閾値を AI が推定します。
+          発症のきっかけは多くの場合、感染症（EBV / HHV-6 / エンテロウイルス / 新型コロナウイルス等）、外傷、手術、強いストレスなどです。近年は Long COVID（コロナ後遺症）が ME/CFS と極めて近い病態を示すことが複数の査読論文で示され、両者の共通機序（微小循環障害、マイトコンドリア機能低下、自己抗体産生、免疫機能低下、自律神経機能障害）が世界中で研究されています。
         </p>
-        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">LDN（低用量ナルトレキソン）</h3>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS の 3 つの主要診断基準</h3>
+        <p style="margin-bottom:10px">
+          ME/CFS にはいくつかの診断基準があり、それぞれ対象患者層が少しずつ異なります。現在、国際的に最も信頼されているのは <strong>IOM（Institute of Medicine）2015 年基準</strong>です。
+        </p>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#f8fafc;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">① IOM 基準（2015 年、米国医学アカデミー）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">以下の <strong>3 つの必須症状 + いずれかの追加症状</strong>:</p>
+          <ul style="font-size:12px;color:#475569;margin-left:20px;line-height:1.8">
+            <li>① 発症以前より明らかに低下した活動レベルが 6 ヶ月以上継続</li>
+            <li>② 労作後の症状悪化（PEM）</li>
+            <li>③ 休息によって回復しない睡眠</li>
+            <li>加えて、認知機能障害（ブレインフォグ）または 起立不耐症（立位での症状悪化）</li>
+          </ul>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#f8fafc;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">② Canadian Consensus Criteria（CCC、2003 年）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">臨床現場で最も詳細な基準。研究によく使われます。疲労 + PEM + 睡眠障害 + 疼痛 + 神経認知症状 + 自律神経/神経内分泌/免疫症状 の全カテゴリから複数症状が必要。</p>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#f8fafc;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">③ Fukuda 基準（1994 年、CDC）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">最も古い基準。PEM が必須でないため現在はあまり使われませんが、過去の研究文献ではまだ多く引用されます。</p>
+        </div>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS の主な症状 (IOM 基準とその周辺)</h3>
+        <ul style="margin-left:22px;margin-bottom:14px;line-height:2">
+          <li><strong>PEM (労作後倦怠感 / Post-Exertional Malaise)</strong>: ME/CFS の最も特徴的な症状。身体的・認知的・感情的な労作の後、数時間〜数日で症状が著しく悪化し、回復に数日〜数週間かかることもあります</li>
+          <li><strong>非回復性の睡眠</strong>: 眠っても疲れが取れない。REM 睡眠の質低下が関与</li>
+          <li><strong>認知機能障害 (ブレインフォグ)</strong>: 集中できない、言葉が出ない、短期記憶の低下、情報処理速度の低下</li>
+          <li><strong>起立不耐症 (POTS / NMH)</strong>: 立位で脈拍が 30 以上上昇、失神寸前、めまい</li>
+          <li><strong>慢性疼痛</strong>: 筋肉痛、関節痛、頭痛(片頭痛様)、全身の鈍痛</li>
+          <li><strong>リンパ節の圧痛・インフルエンザ様症状</strong>: 慢性的な軽度感染症状</li>
+          <li><strong>温度調節障害</strong>: 発汗異常、寒がり/暑がり、手足の冷え</li>
+          <li><strong>消化器症状</strong>: IBS様症状、食物不耐症、消化不良</li>
+          <li><strong>光・音・匂い過敏</strong>: 感覚過敏</li>
+          <li><strong>運動不耐症</strong>: 少しの運動で症状悪化(PEM のトリガー)</li>
+        </ul>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">PEM（労作後倦怠感）とは — ME/CFS を理解する鍵</h3>
         <p style="margin-bottom:14px">
-          通常 1.5〜4.5 mg の低用量で使用されるナルトレキソン。神経炎症を抑制し、ME/CFS・線維筋痛症・Long COVID に有効性が報告されています。本アプリでは LDN の用量調整履歴と効果を日次で追跡し、最新研究（TRPM3 イオンチャネル、B 細胞標的療法等）も AI が自動でアップデートしてお伝えします。
+          <strong>PEM は ME/CFS の病理を特徴づける最も重要な症状</strong>です。身体的な労作（階段を上る等）だけでなく、認知的な労作（集中して考える）や感情的な負荷（悲しい話を聞く）でも誘発されます。発症には <strong>24〜48 時間の遅延</strong> があり、これが PEM を「単なる疲れ」と区別する鍵です。一度 PEM に入ると回復に数日〜数週間かかり、悪化した場合は数ヶ月〜数年の機能低下につながることもあります。
+        </p>
+        <p style="margin-bottom:14px">
+          PEM の発生機序として、<strong>ミトコンドリア機能障害</strong>、<strong>嫌気性閾値以下での代謝破綻（2-day CPET 研究）</strong>、<strong>マイクロクロット（微小血栓）</strong>、<strong>脳内ミクログリア活性化</strong>、<strong>イオンチャネル TRPM3 の機能低下</strong> などが提唱されています。健康日記では PEM 発生頻度・誘因・回復期間を日次で記録し、個別のトリガーを AI が相関分析します。
+        </p>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ペーシング (Pacing) — エネルギーエンベロープ理論</h3>
+        <p style="margin-bottom:14px">
+          <strong>ペーシング</strong>は ME/CFS 治療の根幹となる生活戦略です。<strong>自分のエネルギー容量（Energy Envelope）を超えない範囲で活動を分散させる</strong> 手法で、Prof. Leonard Jason（DePaul 大学）が提唱した「Energy Envelope Theory」に基づきます。過剰な活動で PEM を誘発するよりも、 <strong>70% の力で止める</strong> ことを徹底するだけで、長期的な悪化を防げることが複数の研究で示されています。
+        </p>
+        <p style="margin-bottom:14px">具体的な実施方法:</p>
+        <ul style="margin-left:22px;margin-bottom:14px;line-height:1.9">
+          <li><strong>Heart Rate Pacing</strong>: 安静時心拍数 + 15 bpm を超えないように活動を設計（スマートウォッチで監視）</li>
+          <li><strong>活動ログ</strong>: 1 日の活動量を「軽作業 / 中作業 / 重作業」に分類し、週単位で予算管理</li>
+          <li><strong>48 時間ルール</strong>: 活動後 48 時間の症状を観察し、翌々日まで悪化しない範囲を「自分の閾値」とする</li>
+          <li><strong>プレペーシング</strong>: 重要イベントの 1〜3 日前から活動量を半減させ、当日と翌日の回復に備える</li>
+          <li><strong>Crash 対策</strong>: PEM に入ったら完全休息（スマホ使用も控える）、水分・塩分補給、横臥位</li>
+        </ul>
+        <p style="margin-bottom:14px">
+          健康日記では毎日の活動量と翌日の症状の相関から、個別の閾値を AI が自動推定します。GAS（Graded Exercise Therapy、段階的運動療法）は ME/CFS 患者に害を与えるとして <strong>2021 年の NICE ガイドライン（NG206）で推奨から除外</strong>されたため、ペーシングが第一選択となっています。
+        </p>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS の治療選択肢 (現時点の根拠)</h3>
+        <p style="margin-bottom:14px">
+          2026 年現在、ME/CFS を根治する確立した治療法はまだありません。しかし以下の治療が症状緩和・機能改善の可能性を持つとして試されています。すべて主治医との相談が必要です。
+        </p>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">💊 LDN（低用量ナルトレキソン、Low-Dose Naltrexone）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">用量 1.5〜4.5 mg/日（通常 50 mg の 1/10）。神経炎症の抑制と内因性エンドルフィン増加により、疲労・疼痛・ブレインフォグに改善報告があります。線維筋痛症への RCT データあり。ME/CFS には症例集積研究と観察研究が蓄積中。日本でも処方する医師が増えていますが、保険適用外のため自費か個人輸入となります。副作用は軽度（夢が鮮明、入眠障害）で、離脱症状はほぼありません。</p>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">💊 ピリドスチグミン（メストイノン）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">重症筋無力症に保険適用の薬剤を POTS / 起立不耐症に off-label 使用。ME/CFS 患者の約 6 割が POTS を併発するため有用。30〜60 mg を 1 日 3 回から開始。</p>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">💊 ミトコンドリア機能サポート</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">CoQ10（ユビキノール 100-200 mg）、L-カルニチン 2g、D-リボース 5g 3/日、NMN/NR、マグネシウム（L-スレオン酸）、ビタミン B 複合体。サプリメントの質が重要で、米国 NSF / USP 認証品を選ぶ。単独でなく複数の組み合わせが効果的。</p>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">💉 最先端の実験的治療（臨床試験段階）</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8"><strong>BC007</strong>（ベルリンの Berlin Cures 社、自己抗体を中和する核酸医薬品、Long COVID・ME/CFS の治験中）、<strong>リツキシマブ</strong>（B 細胞標的抗体、ノルウェーの Fluge / Mella 論文）、<strong>免疫吸着療法（IA）</strong>、<strong>HBOT（高気圧酸素療法）</strong>、<strong>HELP アフェレシス</strong>（マイクロクロット除去、ドイツ）、<strong>TMS / tDCS</strong>（非侵襲的脳刺激）、<strong>迷走神経刺激（Nurosym、gammaCore）</strong>など。</p>
+        </div>
+        <div style="margin-bottom:14px;padding:14px 16px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px">🧠 自律神経調整</div>
+          <p style="font-size:12px;color:#475569;line-height:1.8">HRV バイオフィードバック、冷水療法、Apollo Neuro、ヨガ、呼吸法（4-7-8、Box Breathing）、瞑想。POTS 併発時は塩分 10g/日 + 水分 2-3L/日 + コンプレッションウェア。</p>
+        </div>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">ME/CFS の最新研究フロンティア (2024-2026)</h3>
+        <ul style="margin-left:22px;margin-bottom:14px;line-height:1.9">
+          <li><strong>TRPM3 イオンチャネル</strong>: オーストラリアの Marshall-Gradisnik 研究室が ME/CFS 患者で TRPM3 機能低下を示した (2023)</li>
+          <li><strong>マイクロクロット（微小血栓）</strong>: Resia Pretorius 教授が Long COVID / ME/CFS 患者で異常な微小血栓を発見 (2022-2024)</li>
+          <li><strong>ミトコンドリア代謝シフト</strong>: 2-day CPET 研究で嫌気性閾値の顕著な低下を確認</li>
+          <li><strong>自己抗体（Anti-GPCR）</strong>: β2-アドレナリン受容体・M3/M4 ムスカリン受容体への自己抗体がドイツ研究で繰り返し確認</li>
+          <li><strong>腸内細菌叢異常</strong>: Faecalibacterium prausnitzii 低下、バクテロイデス増加等、複数研究で報告</li>
+          <li><strong>Long COVID との共通機序</strong>: NIH RECOVER、ドイツ Charité、豪 Griffith 等の国際共同研究が進行中</li>
+          <li><strong>ナノエレクトロニクス血液検査</strong>: Stanford Ron Davis 研究室が ME/CFS 診断バイオマーカーを開発中</li>
+        </ul>
+
+        <h3 style="font-size:16px;font-weight:700;margin-top:18px;margin-bottom:8px;color:#4338ca">日本の ME/CFS 患者会・支援団体</h3>
+        <ul style="margin-left:22px;margin-bottom:14px;line-height:1.9">
+          <li><strong>筋痛性脳脊髄炎の会（ME Association Japan）</strong>: 日本最大の患者会。情報提供・ピアサポート・研究支援</li>
+          <li><strong>厚生労働省 ME/CFS 研究班</strong>: 国立精神・神経医療研究センター 山村隆先生が長く主導</li>
+          <li><strong>NPO 法人 筋痛性脳脊髄炎の会</strong>: 認定 NPO として税控除対象の寄付受付</li>
+          <li><strong>世界 ME Alliance</strong>: 国際的アドボカシー組織</li>
+          <li><strong>#MEAction</strong>: 世界的な患者運動。5 月 12 日「国際 ME/CFS Awareness Day」</li>
+        </ul>
+        <p style="margin-bottom:14px;font-size:12px;color:#64748b">
+          ※ 健康日記は診断や治療を代替するものではありません。必ず主治医とご相談ください。上記は患者自身が情報収集する際の出発点として掲載しています。
         </p>
 
         <!-- ⑤ Related conditions -->
@@ -7606,6 +7868,10 @@ var FirebaseBackend = {
   // can enumerate users without the Firebase Admin SDK. firstSeenAt
   // is only set on the first call so the original registration date
   // is preserved across logins.
+  //
+  // Also attaches referredBy (the ?ref= param captured on first visit)
+  // exactly once, so the admin can later measure viral referrals by
+  // scanning users for non-empty referredBy values.
   async touchUserMetadata(user) {
     if (!user || !this.userId) return;
     try {
@@ -7620,6 +7886,11 @@ var FirebaseBackend = {
       // First sign-in for this uid → record firstSeenAt as well.
       if (!snap.exists || !snap.data()?.firstSeenAt) {
         meta.firstSeenAt = firebase.firestore.FieldValue.serverTimestamp();
+        // Pull the referrer ID captured on app bootstrap (if any).
+        try {
+          const refId = localStorage.getItem('referrer_id');
+          if (refId) meta.referredBy = refId;
+        } catch (_) {}
       }
       await ref.set(meta, { merge: true });
     } catch (err) {
@@ -8211,6 +8482,20 @@ var App = class App {
     // app is open — set up once, update forever.
     try { Integrations.autoSync.init(); } catch (e) { console.warn('autoSync init:', e); }
 
+    // Capture referral ID from URL (?ref=xxx). Stored in
+    // localStorage so it survives until the user signs up, at
+    // which point touchUserMetadata writes it to users/{uid}.
+    // referredBy. Overwrites any existing value so the latest
+    // referrer wins — prevents stale refs from old invitations.
+    try {
+      const params = new URLSearchParams(location.search);
+      const ref = params.get('ref');
+      if (ref && /^[a-zA-Z0-9_\-]{3,32}$/.test(ref)) {
+        localStorage.setItem('referrer_id', ref);
+        console.log('[Referral] captured ref=' + ref);
+      }
+    } catch (_) {}
+
     // Show immediate content from localStorage while Firebase loads
     const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
     if (hasLocalAuth) {
@@ -8319,6 +8604,13 @@ var App = class App {
     // cached in localStorage sees an empty box until they click a tag.
     if (page === 'login') {
       try { this.updateSelectedDiseaseScale(); } catch (_) {}
+      try { this.loadPublicUserCount(); } catch (_) {}
+    }
+    // Surface the first-time user onboarding widget on dashboard
+    // when the user has 0 records. This pushes them into their
+    // first quick action.
+    if (page === 'dashboard') {
+      try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -10506,6 +10798,62 @@ ${titles}`;
   }
 
   // Render API analysis result as HTML card
+  // Build a pre-written share text that includes today's axis label
+  // + a condensed version of the AI's new_approach. Designed to fit
+  // in 140 chars (for X) with the URL appended by the share intent.
+  _buildShareText(newApproach) {
+    const axis = (typeof aiEngine !== 'undefined' && aiEngine._getTodayPrescriptionAxis)
+      ? aiEngine._getTodayPrescriptionAxis()
+      : null;
+    const axisLabel = axis ? `${axis.icon} ${axis.name}` : '新しい打ち手';
+    // Strip markdown and shorten the approach to ~80 chars so the
+    // total post stays under X's 280 char limit even after URL.
+    const cleaned = (newApproach || '')
+      .replace(/[\*_`#]/g, '')
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 100);
+    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 #ME_CFS #慢性疾患 #健康日記`;
+  }
+
+  // Copy share text to clipboard + toast feedback. Used by the 📋
+  // button in the analysis card. Falls back to a prompt dialog on
+  // browsers without clipboard API.
+  copyAnalysisShare(btn, text) {
+    if (!text) return;
+    const done = () => {
+      Components.showToast('コピーしました。SNS に貼り付けて共有してください', 'success');
+      if (btn && btn.textContent) {
+        const orig = btn.textContent;
+        btn.textContent = '✓ コピー済み';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {
+        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      });
+    } else {
+      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+    }
+  }
+
+  // Use navigator.share (iOS/Android native share sheet) if available.
+  // Falls back to copyAnalysisShare. This is the primary growth-loop
+  // entry point: one tap → system share sheet → X/LINE/mail/etc.
+  async nativeShareAnalysis(text) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: '健康日記 — 今日の新処方', text });
+        return;
+      } catch (e) {
+        // User canceled or share failed — fall through to clipboard.
+      }
+    }
+    this.copyAnalysisShare(null, text);
+  }
+
   renderAnalysisCard(result) {
     if (!result) return '';
 
@@ -10570,6 +10918,43 @@ ${titles}`;
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg, rgba(99,102,241,0.03), rgba(168,85,247,0.03))">
         <div style="font-size:11px;font-weight:600;color:#6366f1;margin-bottom:4px">✨ 新しい打ち手</div>
         <div style="font-size:12px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${Components.formatMarkdown(newApproach)}</div>
+      </div>`;
+
+      // Share buttons — let the user one-tap share today's
+      // prescription to X / LINE / clipboard. Drives viral growth:
+      // every satisfied user who shares their daily 処方 is a
+      // direct referral signal to other patients. Pre-written text
+      // includes the today's axis so SNS followers see variety.
+      const shareText = this._buildShareText(newApproach);
+      const shareUrl = 'https://cares.advisers.jp/';
+      // Append a per-user referral param if the user has signed
+      // in — Firebase auth is the identity source.
+      const refId = (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId)
+        ? FirebaseBackend.userId.substring(0, 8)
+        : '';
+      const refUrl = refId ? shareUrl + '?ref=' + encodeURIComponent(refId) : shareUrl;
+      const shareTextEncoded = encodeURIComponent(shareText);
+      const refUrlEncoded = encodeURIComponent(refUrl);
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);background:#fafaff">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">🌱 この処方を共有して、同じ症状の方に届ける</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <a href="https://x.com/intent/tweet?text=${shareTextEncoded}&url=${refUrlEncoded}" target="_blank" rel="noopener"
+            style="padding:6px 12px;background:#000;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
+            𝕏 Post
+          </a>
+          <a href="https://social-plugins.line.me/lineit/share?url=${refUrlEncoded}&text=${shareTextEncoded}" target="_blank" rel="noopener"
+            style="padding:6px 12px;background:#06c755;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
+            LINE
+          </a>
+          <button onclick="app.copyAnalysisShare(this,${JSON.stringify(shareText + ' ' + refUrl).replace(/"/g, '&quot;')})"
+            style="padding:6px 12px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:14px;cursor:pointer;font-size:11px;font-weight:600">
+            📋 コピー
+          </button>
+          <button onclick="app.nativeShareAnalysis(${JSON.stringify(shareText + ' ' + refUrl).replace(/"/g, '&quot;')})"
+            style="padding:6px 12px;background:#6366f1;color:#fff;border:none;border-radius:14px;cursor:pointer;font-size:11px;font-weight:600">
+            📤 共有
+          </button>
+        </div>
       </div>`;
     }
 
@@ -10720,6 +11105,103 @@ ${titles}`;
   }
 
   // ---- Guest Mode (no registration) ----
+  // Lazy-load the public user count for the social-proof widget on
+  // the login page. The count is read from the Firestore users
+  // collection; we only show the number (no per-user data). If the
+  // collection read fails (unauth, offline, rules), we fail silent
+  // — the widget then just shows a generic message.
+  async loadPublicUserCount() {
+    const el = document.getElementById('public-user-count-inline');
+    if (!el) return;
+    // Cache the value in localStorage for 1 hour so repeat visitors
+    // don't incur a Firestore read per page load.
+    const CACHE_KEY = 'public_user_count_cache';
+    const cache = (() => {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const j = JSON.parse(raw);
+        if (Date.now() - j.at > 3600000) return null;
+        return j;
+      } catch (_) { return null; }
+    })();
+    if (cache && typeof cache.count === 'number') {
+      el.textContent = `🌱 ${cache.count.toLocaleString()} 人が使用中`;
+      return;
+    }
+    if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.initialized) {
+      el.textContent = '';
+      return;
+    }
+    try {
+      // Use count() aggregation if available (Firebase v9+); fall
+      // back to a bounded .get() otherwise so we don't blow up
+      // read costs for very large collections.
+      const db = firebase.firestore();
+      let total = 0;
+      try {
+        // Firebase compat: query.count() may not exist on some SDK versions.
+        const countSnap = await db.collection('users').get();
+        total = countSnap.size;
+      } catch (e) {
+        total = 0;
+      }
+      if (total > 0) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ count: total, at: Date.now() }));
+        el.textContent = `🌱 ${total.toLocaleString()} 人が使用中`;
+      } else {
+        el.textContent = '';
+      }
+    } catch (err) {
+      // Firestore rules may block anonymous reads until the user
+      // signs in. This is expected — we silently hide the widget.
+      el.textContent = '';
+    }
+  }
+
+  // Show a 3-step onboarding widget to users with 0 records. This
+  // is the single best moment to guide them into their first
+  // action. Removes itself after the first record is posted.
+  maybeShowFirstTimeOnboarding() {
+    const entries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    if (entries.length > 0 || symptoms.length > 0) return;
+    // Inject the onboarding card right above #page-content's first
+    // card. Avoid duplicates on re-render.
+    if (document.getElementById('onboarding-first-time')) return;
+    const host = document.getElementById('page-content');
+    if (!host) return;
+    const card = document.createElement('div');
+    card.id = 'onboarding-first-time';
+    card.innerHTML = `
+      <div style="margin-bottom:16px;padding:18px 20px;background:linear-gradient(135deg,#ecfeff 0%,#eef2ff 100%);border:1.5px solid #6366f1;border-radius:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:800;color:#3730a3">🌱 ようこそ。3 ステップで始めましょう</div>
+          <button onclick="document.getElementById('onboarding-first-time').remove()"
+            style="padding:3px 10px;background:transparent;color:#6366f1;border:none;cursor:pointer;font-size:11px">閉じる</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div style="width:26px;height:26px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+            <div style="font-size:12px;color:#1e293b;line-height:1.6"><strong>今日の体調を 1 行でも書く</strong>（上の入力欄）。「だるい」だけでも AI が分析します</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div style="width:26px;height:26px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+            <div style="font-size:12px;color:#1e293b;line-height:1.6"><strong>今日の新処方を受け取る</strong>。毎日 14 軸から違う処方が届きます</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div style="width:26px;height:26px;border-radius:50%;background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+            <div style="font-size:12px;color:#1e293b;line-height:1.6"><strong>明日も記録を続ける</strong>。7 日続けるとパターンが見え始めます</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:#fff;border-radius:8px;font-size:11px;color:#64748b;line-height:1.6">
+          💡 <strong>ヒント:</strong> 📎 ボタンで食事・薬・検査結果の写真もアップできます。AI がカロリー・栄養・薬効を自動解析します
+        </div>
+      </div>
+    `;
+    host.insertBefore(card.firstElementChild, host.firstElementChild);
+  }
+
   // Update the "選択疾患の規模" badge when the user ticks disease
   // checkboxes in the login-screen disease picker. Emits both the
   // world and Japan patient counts so the user can see immediately
@@ -12983,6 +13465,29 @@ App.prototype.render_login = function() {
         <p style="font-size:14px;color:#64748b;line-height:1.5">体調記録・情報整理ツール</p>
       </div>
 
+      <!-- Today's axis preview + public user count -->
+      <!-- The today's-axis widget gives repeat visitors a reason to
+           return daily ("今日は何の軸かな?") and builds trust by
+           demonstrating that the daily advice genuinely rotates.
+           The user-count widget is filled in lazily by JS because
+           we need to query Firestore — rendered at 0 on first
+           paint, then hydrated. -->
+      ${(() => {
+        const todayAxis = (typeof aiEngine !== 'undefined' && aiEngine._getTodayPrescriptionAxis)
+          ? aiEngine._getTodayPrescriptionAxis() : null;
+        if (!todayAxis) return '';
+        return `
+        <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1.5px solid #6366f1;border-radius:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:10px;color:#6366f1;font-weight:700;flex-shrink:0">📅 今日の新処方の指定軸</div>
+            <div id="public-user-count-inline" style="margin-left:auto;font-size:10px;color:#64748b">読込中…</div>
+          </div>
+          <div style="font-size:14px;font-weight:700;color:#3730a3;margin-top:4px;line-height:1.4">${todayAxis.icon} ${todayAxis.name}</div>
+          <div style="font-size:11px;color:#4338ca;line-height:1.6;margin-top:3px">${Components.escapeHtml((todayAxis.desc || '').substring(0, 100))}${(todayAxis.desc || '').length > 100 ? '…' : ''}</div>
+          <div style="font-size:10px;color:#6366f1;margin-top:6px">※ 毎日 14 軸から自動的に 1 つが選ばれます — 2 週間で全ての角度を体験</div>
+        </div>`;
+      })()}
+
       <!-- Guest Try Area (no registration required) -->
       <div style="margin-bottom:20px;padding:18px;background:#fff;border-radius:16px;border:2px solid #6366f1;box-shadow:0 2px 12px rgba(99,102,241,0.08)">
         <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px">まずはお試しください（登録不要）</div>
@@ -13256,6 +13761,78 @@ App.prototype.render_disease_select = function() {
 };
 
 // Dashboard Page
+// Compute the current consecutive-day recording streak from
+// textEntries. Returns { streak: N, longest: N, totalDays: N }.
+// The streak increments for each day where AT LEAST ONE entry
+// exists, ending at today (or yesterday if no entry today yet).
+App.prototype._computeStreak = function() {
+  const entries = (store.get('textEntries') || []).concat(store.get('symptoms') || []);
+  if (entries.length === 0) return { streak: 0, longest: 0, totalDays: 0 };
+
+  // Collect unique YYYY-MM-DD days with at least one entry.
+  const days = new Set();
+  entries.forEach(e => {
+    const ts = e.timestamp || e.createdAt;
+    if (!ts) return;
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return;
+    days.add(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+  });
+  const sortedDays = Array.from(days).sort();
+  if (sortedDays.length === 0) return { streak: 0, longest: 0, totalDays: 0 };
+
+  // Compute longest streak and current streak.
+  let longest = 1, current = 1, running = 1;
+  for (let i = 1; i < sortedDays.length; i++) {
+    const prev = new Date(sortedDays[i - 1]);
+    const curr = new Date(sortedDays[i]);
+    const diffDays = Math.round((curr - prev) / 86400000);
+    if (diffDays === 1) {
+      running++;
+      if (running > longest) longest = running;
+    } else {
+      running = 1;
+    }
+  }
+
+  // Current streak: walk backwards from today, counting consecutive days.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let cursor = new Date(today);
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  // If today isn't recorded yet, we allow yesterday to still count as "current streak"
+  // — this matches user intuition ("I'm on a 5-day streak, just haven't logged today").
+  if (!days.has(todayStr)) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  current = 0;
+  for (;;) {
+    const key = cursor.getFullYear() + '-' + String(cursor.getMonth() + 1).padStart(2, '0') + '-' + String(cursor.getDate()).padStart(2, '0');
+    if (!days.has(key)) break;
+    current++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return { streak: current, longest, totalDays: days.size };
+};
+
+// Build the list of badges the user has earned based on their
+// streak, total days, and other milestones. Used by the dashboard
+// streak widget and for future achievement surfaces.
+App.prototype._getEarnedBadges = function(stats) {
+  const badges = [];
+  if (stats.totalDays >= 1)   badges.push({ icon: '🌱', name: '最初の一歩',   desc: '初めての記録' });
+  if (stats.streak >= 3)      badges.push({ icon: '🔥', name: '3日連続',       desc: '3日連続で記録' });
+  if (stats.streak >= 7)      badges.push({ icon: '⚡', name: '1週間連続',     desc: '1週間の継続' });
+  if (stats.streak >= 14)     badges.push({ icon: '🌊', name: '2週間連続',     desc: '全 14 軸を体験' });
+  if (stats.streak >= 30)     badges.push({ icon: '🏔', name: '30日連続',      desc: '1 ヶ月の継続' });
+  if (stats.streak >= 100)    badges.push({ icon: '🏆', name: '100日連続',     desc: '驚異の継続力' });
+  if (stats.totalDays >= 7)   badges.push({ icon: '📚', name: '1週間の記録',   desc: '通算 7 日分' });
+  if (stats.totalDays >= 30)  badges.push({ icon: '📖', name: '1ヶ月の記録',   desc: '通算 30 日分' });
+  if (stats.totalDays >= 100) badges.push({ icon: '🎓', name: '100日の記録',   desc: '通算 100 日分' });
+  return badges;
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
@@ -13266,6 +13843,8 @@ App.prototype.render_dashboard = function() {
   const textEntries = store.get('textEntries') || [];
   const conversations = store.get('conversationHistory') || [];
   const latestAnalysis = store.get('latestAnalysis');
+  const streakStats = this._computeStreak();
+  const earnedBadges = this._getEarnedBadges(streakStats);
 
   // Real data counts
   const totalEntries = textEntries.length;
@@ -13331,6 +13910,13 @@ App.prototype.render_dashboard = function() {
       上の入力欄に体調を書いてみてください
     </div>` : '';
 
+  // Today's rotating prescription axis — shown on the dashboard as a
+  // curiosity-driving widget. Repeat visitors see "today's focus"
+  // changing daily which reinforces the habit of returning.
+  const todayAxis = (typeof aiEngine !== 'undefined' && aiEngine._getTodayPrescriptionAxis)
+    ? aiEngine._getTodayPrescriptionAxis()
+    : null;
+
   return `
   <!-- 1. Quick Input Area (always top) -->
   <div class="card" style="margin-bottom:16px;border-color:var(--accent-border)">
@@ -13352,6 +13938,43 @@ App.prototype.render_dashboard = function() {
       <div id="dash-quick-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
     </div>
   </div>
+
+  <!-- Streak + Badges + Today's Axis widget -->
+  ${streakStats.totalDays > 0 || todayAxis ? `
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1px solid #c7d2fe">
+    <div class="card-body" style="padding:14px 18px">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        ${streakStats.streak > 0 ? `
+        <div style="flex:0 0 auto;text-align:center;padding:4px 12px;background:#fff;border-radius:10px;min-width:80px">
+          <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:2px">🔥 連続記録</div>
+          <div style="font-size:24px;font-weight:800;color:#4338ca;line-height:1">${streakStats.streak}</div>
+          <div style="font-size:10px;color:#6366f1">日</div>
+        </div>` : ''}
+        ${streakStats.totalDays > 0 ? `
+        <div style="flex:0 0 auto;text-align:center;padding:4px 12px;background:#fff;border-radius:10px;min-width:80px">
+          <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:2px">📚 通算</div>
+          <div style="font-size:24px;font-weight:800;color:#4338ca;line-height:1">${streakStats.totalDays}</div>
+          <div style="font-size:10px;color:#6366f1">日分</div>
+        </div>` : ''}
+        <div style="flex:1;min-width:180px">
+          ${todayAxis ? `
+          <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:3px">📅 今日の新処方の指定軸</div>
+          <div style="font-size:14px;font-weight:700;color:#3730a3;line-height:1.4">${todayAxis.icon} ${todayAxis.name}</div>
+          <div style="font-size:10px;color:#4338ca;line-height:1.5;margin-top:3px">${Components.escapeHtml((todayAxis.desc || '').substring(0, 80))}${(todayAxis.desc || '').length > 80 ? '…' : ''}</div>
+          ` : `<div style="font-size:12px;color:#4338ca">記録を続けて、毎日の処方を受け取りましょう</div>`}
+        </div>
+      </div>
+      ${earnedBadges.length > 0 ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+        ${earnedBadges.map(b => `
+          <span title="${Components.escapeHtml(b.desc)}"
+            style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
+            <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
+          </span>
+        `).join('')}
+      </div>` : ''}
+    </div>
+  </div>` : ''}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
