@@ -4680,47 +4680,7 @@ TRANSCRIPT_END>>>
 
 ユーザーの以下の記録に対して、1行の温かく励ますような健康アドバイスを返してください（50文字以内、上記の応答言語ディレクティブに従う）。必ず寄り添いの言葉を添え、可能であれば「今日の小さな一歩」を示してください。
 記録: {{INPUT}}
-1行のアドバイス：`,
-
-  // Pre-login (guest) first-impression consultation. Tuned for SPEED
-  // and DETAIL simultaneously: small system prompt (no full
-  // PROMPT_HEADER), focused JSON schema, ~10-15 second response time
-  // with 5 structured sections so the user gets a rich first
-  // experience without waiting forever.
-  guest_first_consultation: `{{RESPOND_LANGUAGE_INSTRUCTION}}
-
-あなたは慢性疾患患者の生活を支える伴走パートナーです。ユーザーは
-健康日記を初めて訪れた方で、ログイン前にちょっと相談しています。
-入力が短くても、その人の不安に寄り添い、価値ある初回診断を返してください。
-
-【姿勢】
-・冒頭は必ず共感の言葉から始める（「その症状、つらいですね」等）
-・否定しない、命令しない、医療行為と誤解されない言葉を使う
-・励ましと希望を必ず含める
-・「今日の新しい一歩」を 1 つ必ず提示（ユーザーがまだ試していなさそうな具体策）
-・主治医・専門家への相談の重要性も自然に伝える
-
-【ユーザー入力】
-{{INPUT}}
-
-【選択疾患（任意）】
-{{SELECTED_DISEASES}}
-
-【出力形式】以下の JSON で返してください（マークダウンや前置きなし、JSON のみ）:
-{
-  "summary": "1-2 行の温かい共感メッセージ + 状況の簡潔な認識",
-  "findings": "ユーザーの入力から読み取れる体調・心理状態の解釈（3-5 行）。考えられる原因を 2-3 個列挙し、それぞれ 1 行で説明",
-  "actions": [
-    "今日できる具体的な小さな一歩 1（理由付き、20-40 文字）",
-    "今週中に試せること 2（理由付き、20-40 文字）",
-    "次の診察で主治医に確認するとよいこと 3（20-40 文字）"
-  ],
-  "new_approach": "**今日の新しい一歩**: ユーザーがまだ試していなさそうな新しい選択肢を 1 つ。具体的な商品名・方法・参考研究を含めて 2-4 行で",
-  "next_check": "次に健康日記に記録するとよいこと 1-2 項目（症状の数値化方法など）",
-  "deeper_prompt": "登録すれば、毎日の変化を追跡してより的確なアドバイスを継続的にお届けできます。"
-}
-
-※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。`
+1行のアドバイス：`
 };
 
 
@@ -11375,36 +11335,21 @@ ${titles}`;
   async analyzeViaAPI(input, type, options = {}) {
     const apiKey = aiEngine.getApiKey(store.get('selectedModel'));
     const isGuestContext = !store.get('isAuthenticated');
-    const isFastGuestText = isGuestContext && options.fastGuest === true && type === 'text_analysis';
     console.log('[analyzeViaAPI] type=' + type + ' model=' + store.get('selectedModel') + ' hasKey=' + !!apiKey + ' isGuest=' + isGuestContext);
 
-    // Select prompt template
-    let promptTemplate = isFastGuestText
-      ? (INLINE_PROMPTS.timeline_insight || INLINE_PROMPTS.text_analysis)
-      : (INLINE_PROMPTS[type] || INLINE_PROMPTS.text_analysis);
+    // Select prompt template (same template for guest and logged-in)
+    const promptTemplate = INLINE_PROMPTS[type] || INLINE_PROMPTS.text_analysis;
     let prompt = promptTemplate
       .replace(/\{\{INPUT\}\}/g, (input || '').substring(0, 8000))
       .replace(/\{\{SEED\}\}/g, Math.floor(Date.now() / 86400000).toString());
 
-    // Fast path for pre-login quick comments: keep the prompt tiny and
-    // skip heavy context interpolation so the first response returns in
-    // a few seconds instead of waiting for full-schema generation.
-    if (!isFastGuestText) {
-      // Interpolate standard variables. In guest mode (pre-login), use a
-      // much smaller context window to avoid slow prompt assembly when
-      // localStorage already contains many historical records.
-      prompt = aiEngine.interpolatePrompt(
-        prompt,
-        aiEngine.collectCurrentUserData({ guest: isGuestContext })
-      );
-    } else {
-      // Fast guest path still needs the response-language directive so
-      // pre-login users whose selected language is en/zh/ko/etc. get a
-      // reply in their own language instead of Japanese. Skip the full
-      // interpolatePrompt (too heavy) but apply the lightweight
-      // language directive helper.
-      prompt = aiEngine.injectLanguageDirective(prompt);
-    }
+    // Interpolate standard variables. In guest mode (pre-login), use a
+    // smaller context window to avoid slow prompt assembly when
+    // localStorage already contains many historical records.
+    prompt = aiEngine.interpolatePrompt(
+      prompt,
+      aiEngine.collectCurrentUserData({ guest: isGuestContext })
+    );
 
     // NOTE: we intentionally do NOT short-circuit here on `!apiKey`.
     // aiEngine.callModel has its own shared-proxy fallback (the
@@ -11427,8 +11372,8 @@ ${titles}`;
       // garbled text or "generic" responses because only the fallback
       // plain-text branch fired.
       const modelOptions = {
-        maxTokens: isFastGuestText ? 220 : 4096,
-        temperature: isFastGuestText ? 0.2 : 0.3
+        maxTokens: 4096,
+        temperature: 0.3
       };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
       if (type === 'image_analysis') {
@@ -11596,16 +11541,6 @@ ${titles}`;
       }
 
       // Plain-text response (no JSON detected even after repair)
-      if (isFastGuestText) {
-        return {
-          summary: 'かんたんアドバイス',
-          findings: responseText.trim(),
-          actions: [],
-          products: [],
-          _fromAPI: true,
-          _fastGuest: true
-        };
-      }
       return {
         summary: '',
         findings: responseText,
@@ -12342,76 +12277,26 @@ ${titles}`;
       subtext: 'まもなくアドバイスが届きます'
     });
 
-    // Collect selected diseases from guest tags
+    // Pull the disease(s) the user tagged in the pre-login picker so the
+    // analysis is tuned to those conditions. Restored in `finally` to
+    // avoid persisting guest-side selections into a later logged-in
+    // session on the same device.
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
     const diseases = Array.from(selectedTags).map(t => t.dataset.id);
     const prevDiseases = store.get('selectedDiseases');
     if (diseases.length > 0) store.set('selectedDiseases', diseases);
 
     try {
-      // Speed/empathy balance: use Claude Haiku 4.5 (2-3x faster than
-      // Opus) + compact warm prompt (~400 chars, no PROMPT_HEADER) +
-      // small maxTokens (600) to deliver a structured empathetic
-      // response in ~5-10 seconds. This satisfies both:
-      //   "簡易分析に戻して" (fast)
-      //   "寄り添い分析できるように" (empathetic)
-      const diseaseLabel = diseases.length > 0 ? diseases.join('・') : '';
-      const profile = store.get('userProfile') || {};
-      const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
-      // Guest mode uses a compact prompt (no full PROMPT_HEADER) to
-      // hit the 10-second target. We still want the "today's new
-      // prescription axis" behavior though, so we inject JUST the
-      // axis (not the full recent-proposals block, which would bloat
-      // tokens and slow the response).
-      const todayAxis = aiEngine._getTodayPrescriptionAxis();
-      const axisHint = todayAxis
-        ? `\n【本日の新処方の指定軸】${todayAxis.icon} ${todayAxis.name}\n  候補例: ${todayAxis.desc}\n  → new_approach の内容はこの軸から具体的に 1 つ選んでください。`
-        : '';
-      const compactPrompt = `${langDirective}
-
-あなたは慢性疾患患者の伴走パートナーです。初めて訪れたユーザーの相談に
-温かく寄り添って、短くても希望のあるアドバイスを返してください。
-
-【ユーザーの相談】
-${text.substring(0, 1500)}
-${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
-${axisHint}
-
-【応答ルール】
-1. 必ず共感の言葉から始める（「その症状、つらいですね」等）
-2. 考えられる原因や状態を 2-3 行で簡潔に解説
-3. 今日から試せる具体的な一歩を 1 つ提示
-4. new_approach には指定軸 (${todayAxis ? todayAxis.name : '新しい打ち手'}) から具体的な処方を書く
-5. 「もっと詳しく知りたい場合は登録して継続記録すると追跡できます」と添える
-6. 命令形を使わず、選択肢として提示する
-
-【出力形式】純粋な JSON のみ（前置き・後書き・コードブロックなし）:
-{
-  "summary": "共感の一言（30文字以内）",
-  "findings": "考えられる状態・原因の解説（80-120文字）",
-  "actions": ["今日から試せる一歩（30-50文字）"],
-  "new_approach": "今日の新処方: ${todayAxis ? todayAxis.name + 'から' : ''}具体的な提案（用量・頻度・期待効果を 40-80 文字）"
-}`;
-
-      // Try Haiku first for speed; if no key/proxy, fall back to
-      // whatever the user has configured.
-      let modelId = 'claude-haiku-4-5';
-      const haveHaikuKey = !!aiEngine.getApiKey(modelId);
-      const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
-      if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-6';
+      // Unified pipeline: guests go through the SAME analyzeViaAPI path
+      // as logged-in users so the response quality is identical. The
+      // shared Cloudflare proxy (Anthropic-only) backs the call when no
+      // user-supplied API key is available, and analyzeViaAPI handles
+      // model fallback, refusal retry, timeout, and error formatting.
+      const result = await this.analyzeViaAPI(text, 'text_analysis');
+      if (!result || result._fromAPI === false) {
+        const errText = result?._error || result?.findings || '分析できませんでした';
+        throw new Error(errText);
       }
-
-      const rawResponse = await aiEngine.callModel(modelId, compactPrompt, {
-        maxTokens: 600,
-        temperature: 0.5
-      });
-      const responseText = typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse);
-      let result = this.parseAIResponse(responseText);
-      if (!result || (typeof result !== 'object')) {
-        result = { summary: 'アドバイス', findings: responseText, actions: [] };
-      }
-      result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
           `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
@@ -12445,7 +12330,7 @@ ${axisHint}
       const diag = [
         'Timestamp: ' + new Date().toISOString(),
         'Error: ' + errMessage,
-        'Model requested: ' + (modelId || 'unknown'),
+        'Model requested: ' + (store.get('selectedModel') || 'unknown'),
         'UA: ' + (navigator.userAgent || '')
       ].join('\n');
       const diagEscaped = Components.escapeHtml(diag);
