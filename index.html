@@ -8585,6 +8585,17 @@ var FirebaseBackend = {
       // Listen for auth state changes
       this.auth.onAuthStateChanged(user => {
         if (user) {
+          // Anonymous guest users: sign them in just to read admin/config
+          // (the API keys). Don't treat them as a real authenticated
+          // session — no navigation, no Plaud subscription, no user
+          // doc loading. The guest stays on the login page and can use
+          // the "試してみる" box immediately.
+          if (user.isAnonymous) {
+            console.log('[auth] anonymous guest session started');
+            this.userId = null; // block all user-scoped writes
+            this._loadGlobalConfigOnly().catch(e => console.warn('guest config load:', e));
+            return;
+          }
           this.handleSignedInUser(user);
         } else {
           this.userId = null;
@@ -8913,6 +8924,63 @@ var FirebaseBackend = {
     } catch (err) {
       console.warn('Load global config:', err.message);
       return {};
+    }
+  },
+
+  // Lightweight version of loadAllData for anonymous guest sessions —
+  // only pulls the global admin config (API keys, selected model,
+  // proxy URL, anthropic mode) and skips all per-user collections.
+  // This is what makes guest mode's "試してみる" box actually reach
+  // the AI instead of hitting the "no API key" fallback every time.
+  async _loadGlobalConfigOnly() {
+    try {
+      const globalConfig = await this.loadGlobalConfig();
+      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
+      if (hasGlobalKeys) {
+        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
+        if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
+        if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
+        console.log('[auth] loaded global API keys for guest session');
+      }
+      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
+      if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
+      if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
+        localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
+      }
+    } catch (e) {
+      console.warn('[auth] guest config load failed:', e.message);
+    }
+  },
+
+  // Sign in anonymously if there is no current auth session. Used by
+  // guestAnalyze / guestFileAnalyze so guests can read admin/config
+  // and inherit the shared API keys. Returns true when keys become
+  // available, false if the operation can't complete in time.
+  async ensureGuestAuth() {
+    if (!this.initialized || !this.auth) return false;
+    // Already signed in (real or anonymous): make sure keys are loaded
+    if (this.auth.currentUser) {
+      if (!localStorage.getItem('apikey_anthropic') &&
+          !localStorage.getItem('apikey_openai') &&
+          !localStorage.getItem('apikey_google')) {
+        await this._loadGlobalConfigOnly();
+      }
+      return true;
+    }
+    try {
+      await this.auth.signInAnonymously();
+      // onAuthStateChanged will fire and call _loadGlobalConfigOnly.
+      // Wait up to 3s for at least one API key to land in localStorage.
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 250));
+        if (localStorage.getItem('apikey_anthropic') ||
+            localStorage.getItem('apikey_openai') ||
+            localStorage.getItem('apikey_google')) return true;
+      }
+      return true; // signed in but keys still empty (admin hasn't set any)
+    } catch (err) {
+      console.warn('[auth] anonymous sign-in failed:', err.message);
+      return false;
     }
   },
 
@@ -11443,6 +11511,7 @@ ${titles}`;
         temperature: isFastGuestText ? 0.2 : 0.3
       };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
+      if (typeof options.temperature === 'number') modelOptions.temperature = options.temperature;
       if (type === 'image_analysis') {
         // Force strict JSON-only output for image analysis. The model
         // historically would occasionally return prose for food photos,
@@ -12354,6 +12423,12 @@ ${titles}`;
       subtext: 'まもなくアドバイスが届きます'
     });
 
+    // Ensure the guest has an anonymous Firebase session so they can
+    // read admin/config (the shared API keys). Without this the API
+    // call always falls back to "ただいま詳細分析をご用意できません"
+    // and every guest query returns the same canned message.
+    await FirebaseBackend.ensureGuestAuth();
+
     // Collect selected diseases from guest tags
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
     const diseases = Array.from(selectedTags).map(t => t.dataset.id);
@@ -12506,13 +12581,22 @@ ${axisHint}
     const resultEl = document.getElementById('guest-result');
     if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
 
+    // Same anonymous-auth bootstrapping as guestAnalyze — without
+    // this the API falls back to a canned message every time.
+    await FirebaseBackend.ensureGuestAuth();
+
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
         const isImage = file.type.startsWith('image/');
         const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        // Bump temperature for guest file uploads so identical images
+        // don't always yield the same canned output. Also stamp the
+        // filename caption with a timestamp to break any request-level
+        // cache on upstream providers.
+        imgOpts.temperature = 0.6;
         const result = await this.analyzeViaAPI(
-          `[写真: ${file.name}]`,
+          `[写真: ${file.name} · ${new Date().toLocaleString('ja-JP')}]`,
           isImage ? 'image_analysis' : 'text_analysis',
           imgOpts
         );
