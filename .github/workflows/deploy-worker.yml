@@ -7,6 +7,7 @@ on:
       - "worker/**"
       - "wrangler.toml"
       - "wrangler.plaud-inbox.toml"
+      - "wrangler.professional-mailer.toml"
   workflow_dispatch:
 
 jobs:
@@ -31,3 +32,14 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: "."
           command: deploy --config wrangler.plaud-inbox.toml
+
+  deploy-professional-mailer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy professional mailer Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --config wrangler.professional-mailer.toml

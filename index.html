@@ -2863,6 +2863,303 @@ var CONFIG = {
     { id: 'manual', name: 'マニュアル作成', icon: '📋', color: '#64748b' }
   ],
 
+  // ════════════════════════════════════════════════════════════════
+  // FINANCIAL_SUPPORT
+  // 慢性疾患・障害に関する公的な金銭的サポート・医療費助成・税制優遇
+  // の一覧。`applicable` は疾患 id 配列 ('*' で全疾患)。`form_fields`
+  // は申請エントリで聞く質問のセット。`professional` は相談すべき
+  // 専門家タイプ (admin が登録したリストから該当者を選択)。
+  // ════════════════════════════════════════════════════════════════
+  FINANCIAL_SUPPORT: [
+    {
+      id: 'jiritsu_shien',
+      name: '自立支援医療（精神通院）',
+      icon: '💊',
+      category: 'medical',
+      amount: '通院医療費の自己負担が1割に（上限あり）',
+      eligibility: '精神疾患の通院治療を継続的に受けている方',
+      applicable: ['depression', 'bipolar', 'ptsd', 'adhd', 'gad', 'ocd', 'schizophrenia', 'autism', 'panic'],
+      professional: 'sharoushi',
+      urls: [{ label: '制度概要（厚労省）', url: 'https://www.mhlw.go.jp/bunya/shougaihoken/jiritsu/seishin.html' }],
+      form_fields: ['current_hospital', 'current_doctor', 'monthly_cost', 'income', 'household_size'],
+      description: '精神科・心療内科の通院医療費（診察・薬・デイケア等）が1割負担になる制度。所得により月額上限が設定されます。'
+    },
+    {
+      id: 'nanbyou_jyosei',
+      name: '指定難病 医療費助成制度',
+      icon: '🏥',
+      category: 'medical',
+      amount: '医療費自己負担2割（所得により月額上限 2,500〜30,000円）',
+      eligibility: '国の指定難病（341疾患）の患者で、重症度基準を満たす方',
+      applicable: ['mecfs', 'fibromyalgia', 'sle', 'ra', 'crohns', 'uc', 'parkinson', 'pss', 'ms', 'als', 'pots'],
+      professional: 'sharoushi',
+      urls: [
+        { label: '難病情報センター', url: 'https://www.nanbyou.or.jp/' },
+        { label: '指定難病一覧', url: 'https://www.nanbyou.or.jp/entry/5461' }
+      ],
+      form_fields: ['diagnosis_date', 'specialist_hospital', 'severity', 'monthly_cost', 'income'],
+      description: '指定難病と診断された方の医療費負担を軽減する制度。都道府県に申請します。ME/CFSは未指定ですが類縁疾患は対象。'
+    },
+    {
+      id: 'shougai_nenkin',
+      name: '障害年金（厚生年金・国民年金）',
+      icon: '🧓',
+      category: 'income',
+      amount: '月額 約6.5万円〜20万円（等級・加入年金による）',
+      eligibility: '初診日から1年6か月経過後、かつ日常生活に著しい支障がある方',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '日本年金機構', url: 'https://www.nenkin.go.jp/service/jukyu/shougainenkin/' }],
+      form_fields: ['first_visit_date', 'diagnosis', 'symptoms_daily', 'work_status', 'adl_level', 'insurance_type'],
+      description: '病気やケガで日常生活・仕事に支障が出ている方に支給される年金。初診から1年6か月経過が必要。書類作成が複雑なので社労士推奨。'
+    },
+    {
+      id: 'shoubyou_teate',
+      name: '傷病手当金（健康保険）',
+      icon: '💰',
+      category: 'income',
+      amount: '月収の約3分の2（最長1年6か月）',
+      eligibility: '健康保険加入者で、病気・けがで連続3日以上仕事を休んだ方',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '協会けんぽ', url: 'https://www.kyoukaikenpo.or.jp/g3/cat320/sb3150/sb3160/r151' }],
+      form_fields: ['employer', 'last_work_date', 'doctor_name', 'expected_recovery', 'monthly_salary'],
+      description: '病気で働けない期間の所得補償。会社の健康保険・協会けんぽに加入していれば対象。退職後も条件を満たせば継続可。'
+    },
+    {
+      id: 'kougaku_ryouyou',
+      name: '高額療養費制度',
+      icon: '🧾',
+      category: 'medical',
+      amount: '月の医療費自己負担が限度額超過分を還付',
+      eligibility: '健康保険加入者で、月の医療費自己負担が所得別の限度額を超えた方',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '厚労省 高額療養費', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryouhoken/juuyou/kougakuiryou/index.html' }],
+      form_fields: ['insurance_type', 'monthly_cost', 'income_bracket'],
+      description: '医療費の月額負担上限を設ける制度。自動還付か申請制か保険により異なる。限度額適用認定証を事前取得で窓口負担軽減。'
+    },
+    {
+      id: 'seishin_techou',
+      name: '精神障害者保健福祉手帳',
+      icon: '🎗️',
+      category: 'identity',
+      amount: '税制優遇・公共料金割引・就労支援',
+      eligibility: '精神疾患で初診から6か月経過、日常生活に制約がある方',
+      applicable: ['depression', 'bipolar', 'ptsd', 'adhd', 'schizophrenia', 'autism', 'panic'],
+      professional: 'sharoushi',
+      urls: [{ label: '制度概要（厚労省）', url: 'https://www.mhlw.go.jp/kokoro/support/level.html' }],
+      form_fields: ['diagnosis_date', 'doctor_name', 'daily_impact'],
+      description: '精神障害のある方が各種支援を受けるための手帳（1〜3級）。2年更新。'
+    },
+    {
+      id: 'shintai_techou',
+      name: '身体障害者手帳',
+      icon: '♿',
+      category: 'identity',
+      amount: '税制優遇・医療費助成・交通機関割引・福祉用具支給',
+      eligibility: '身体の永続的な障害（肢体・内部障害等）',
+      applicable: ['pots', 'als', 'parkinson', 'ms', 'rheumatoid'],
+      professional: 'sharoushi',
+      urls: [{ label: '制度概要', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/hukushi_kaigo/shougaishahukushi/shougaishatechou/index.html' }],
+      form_fields: ['disability_type', 'doctor_name', 'daily_impact'],
+      description: '身体障害を認定する手帳（1〜6級）。等級により医療費・税制・交通の優遇。'
+    },
+    {
+      id: 'tokubetsu_shougai_teate',
+      name: '特別障害者手当',
+      icon: '💴',
+      category: 'income',
+      amount: '月額 約28,840円',
+      eligibility: '20歳以上で、著しく重度の障害があり常時特別な介護が必要な方',
+      applicable: ['mecfs', 'als', 'parkinson', 'ms', 'severe_mental'],
+      professional: 'sharoushi',
+      urls: [{ label: '厚労省 特別障害者手当', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000123257.html' }],
+      form_fields: ['severity', 'adl_level', 'caregiver', 'monthly_income'],
+      description: '重度の障害を持つ方への在宅手当。在宅かつ介護状態が要件。所得制限あり。'
+    },
+    {
+      id: 'iryouhi_koujo',
+      name: '医療費控除（確定申告）',
+      icon: '📄',
+      category: 'tax',
+      amount: '年10万円超の医療費が所得から控除（最大200万円）',
+      eligibility: '1年間の医療費が10万円または所得の5%を超える方',
+      applicable: ['*'],
+      professional: 'tax_accountant',
+      urls: [{ label: '国税庁', url: 'https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1120.htm' }],
+      form_fields: ['total_medical_cost', 'annual_income', 'insurance_reimbursement'],
+      description: '世帯で年10万円超（または所得5%超）の医療費を所得控除できる制度。交通費・市販薬も対象。'
+    },
+    {
+      id: 'shougai_koujo',
+      name: '障害者控除（税制）',
+      icon: '🏛️',
+      category: 'tax',
+      amount: '所得税27万円・住民税26万円の控除（特別障害者は40万/30万）',
+      eligibility: '障害者手帳保持者、または要介護認定で障害者に準ずる方',
+      applicable: ['*'],
+      professional: 'tax_accountant',
+      urls: [{ label: '国税庁 障害者控除', url: 'https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1160.htm' }],
+      form_fields: ['certificate_type', 'dependent'],
+      description: '障害者手帳や要介護認定を受けている方の所得控除。家族の扶養控除でも利用可。'
+    },
+    {
+      id: 'rousai',
+      name: '労災保険給付',
+      icon: '⚒️',
+      category: 'work',
+      amount: '療養給付（無料）＋休業給付（賃金の80%）',
+      eligibility: '業務が原因で疾病を発症した方（長時間労働・ハラスメント等）',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '労災保険制度', url: 'https://www.mhlw.go.jp/bunya/roudoukijun/rousaihoken01/index.html' }],
+      form_fields: ['employer', 'work_conditions', 'onset_date', 'causal_evidence'],
+      description: '仕事が原因の疾病（過労・精神障害等）に対する労災認定。医療費全額＋休業補償。社労士の支援推奨。'
+    },
+    {
+      id: 'juukyo_kakuho',
+      name: '住居確保給付金',
+      icon: '🏠',
+      category: 'housing',
+      amount: '家賃相当額（地域別上限、最長9か月）',
+      eligibility: '離職・収入減少で家賃支払が困難な方',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '厚労省', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000090859.html' }],
+      form_fields: ['rent_amount', 'household_income', 'savings', 'employment_status'],
+      description: '離職・廃業2年以内、または収入減少で家賃支払困難な方への家賃補助。自治体窓口。'
+    },
+    {
+      id: 'seikatsu_hogo',
+      name: '生活保護',
+      icon: '🛟',
+      category: 'welfare',
+      amount: '最低生活費との差額（地域・世帯による）',
+      eligibility: '資産・能力を活用しても最低生活費に満たない方',
+      applicable: ['*'],
+      professional: 'sharoushi',
+      urls: [{ label: '厚労省', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/hukushi_kaigo/seikatsuhogo/seikatuhogo/index.html' }],
+      form_fields: ['household_income', 'savings', 'support_family', 'rent_amount'],
+      description: '最低限度の生活を保障する制度。医療費も原則無料。自治体福祉事務所に申請。'
+    },
+    {
+      id: 'kaigo_hoken',
+      name: '介護保険サービス',
+      icon: '🤝',
+      category: 'care',
+      amount: '介護費用の1〜3割負担（要介護度により上限）',
+      eligibility: '65歳以上、または40〜64歳で特定疾病の方',
+      applicable: ['parkinson', 'als', 'ra', 'ms'],
+      professional: 'sharoushi',
+      urls: [{ label: '厚労省', url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/hukushi_kaigo/kaigo_koureisha/index.html' }],
+      form_fields: ['age', 'adl_level', 'living_situation'],
+      description: '介護サービス利用時の費用補助。要介護認定の申請が必要。'
+    },
+    {
+      id: 'koutsuhi_jyosei',
+      name: '通院交通費助成（自治体）',
+      icon: '🚆',
+      category: 'local',
+      amount: '月額 上限 5,000〜20,000円（自治体により異なる）',
+      eligibility: '難病・指定疾患で遠方の専門医に通院する方（自治体による）',
+      applicable: ['mecfs', 'fibromyalgia', 'sle', 'ra', 'als', 'ms', 'parkinson'],
+      professional: 'sharoushi',
+      urls: [{ label: '自治体サイトで確認', url: 'https://www.google.com/search?q=%E9%9B%A3%E7%97%85+%E9%80%9A%E9%99%A2%E4%BA%A4%E9%80%9A%E8%B2%BB%E5%8A%A9%E6%88%90' }],
+      form_fields: ['residence', 'hospital', 'transport_cost', 'visit_frequency'],
+      description: '自治体独自の通院費助成制度。対象疾患・金額は自治体ごとに大きく異なる。居住地の保健所に確認。'
+    }
+  ],
+
+  // Professional types the admin can register contacts for. Each
+  // financial support program references one of these via its
+  // `professional` field so we can pick the right expert when the
+  // user files an application.
+  PROFESSIONAL_TYPES: [
+    { id: 'sharoushi',      name: '社会保険労務士 (社労士)', icon: '📋', desc: '年金・労災・傷病手当金・障害者手続きの専門家' },
+    { id: 'tax_accountant', name: '税理士',                 icon: '🧮', desc: '医療費控除・障害者控除・確定申告の専門家' },
+    { id: 'lawyer',         name: '弁護士',                 icon: '⚖️', desc: '労災認定・労働問題・不服申立ての専門家' },
+    { id: 'counselor',      name: '医療ソーシャルワーカー',  icon: '🤝', desc: '医療費・福祉制度全般の相談' },
+    { id: 'financial_planner', name: 'ファイナンシャルプランナー', icon: '💼', desc: '家計・保険・生活設計の相談' }
+  ],
+
+  // ════════════════════════════════════════════════════════════════
+  // FINANCIAL_SUPPORT_FIELDS
+  // 各 form_fields の ID → 表示ラベル・プレースホルダ・type のマッピング。
+  // 制度ごとに form_fields の集合が違うので、ここに未知の ID を書き足すだけで
+  // 新しい質問がフォームに出るようになる。
+  // ════════════════════════════════════════════════════════════════
+  FINANCIAL_SUPPORT_FIELDS: {
+    current_hospital:     { label: '通院中の医療機関', placeholder: '〇〇クリニック・〇〇病院', type: 'text' },
+    current_doctor:       { label: '主治医の氏名（任意）', placeholder: '山田先生', type: 'text' },
+    monthly_cost:         { label: '1か月の医療費（自己負担・目安）', placeholder: '15000', type: 'number', unit: '円' },
+    income:               { label: '世帯の年収（目安）', placeholder: '4000000', type: 'number', unit: '円' },
+    household_size:       { label: '世帯人数', placeholder: '2', type: 'number', unit: '人' },
+    diagnosis_date:       { label: '診断を受けた日', placeholder: '', type: 'date' },
+    specialist_hospital:  { label: '専門医療機関・指定医', placeholder: '', type: 'text' },
+    severity:             { label: '症状の重症度（自己評価）', placeholder: '軽度/中等度/重度', type: 'select', options: ['軽度', '中等度', '重度', '最重度'] },
+    first_visit_date:     { label: '初診日', placeholder: '', type: 'date' },
+    diagnosis:            { label: '診断名', placeholder: 'うつ病、線維筋痛症 等', type: 'text' },
+    symptoms_daily:       { label: '日常生活での困りごと（具体的に）', placeholder: '朝起きられない、家事が困難、外出に介助が必要…', type: 'textarea' },
+    work_status:          { label: '就労状況', placeholder: '', type: 'select', options: ['就労中（フルタイム）', '就労中（短時間）', '休職中', '退職済', '就労経験なし'] },
+    adl_level:            { label: '日常生活動作（ADL）自立度', placeholder: '', type: 'select', options: ['自立', '一部介助', '全介助'] },
+    insurance_type:       { label: '加入している年金・保険', placeholder: '', type: 'select', options: ['国民年金', '厚生年金', '協会けんぽ', '健康保険組合', '国民健康保険', '共済組合', 'その他'] },
+    employer:             { label: '勤務先（任意）', placeholder: '', type: 'text' },
+    last_work_date:       { label: '最後に出勤した日', placeholder: '', type: 'date' },
+    doctor_name:          { label: '主治医・診断医の氏名', placeholder: '', type: 'text' },
+    expected_recovery:    { label: '復職可能時期の見込み', placeholder: '3か月/6か月/不明', type: 'text' },
+    monthly_salary:       { label: '月収（手取り目安）', placeholder: '250000', type: 'number', unit: '円' },
+    income_bracket:       { label: '所得区分', placeholder: '', type: 'select', options: ['住民税非課税', '年収370万未満', '年収370〜770万', '年収770万〜1160万', '年収1160万以上', '不明'] },
+    daily_impact:         { label: '日常生活への影響（具体的に）', placeholder: '食事・入浴・外出がどれだけ困難か', type: 'textarea' },
+    disability_type:      { label: '身体障害の種類', placeholder: '心臓機能障害、肢体不自由 等', type: 'text' },
+    caregiver:            { label: '介護者の有無', placeholder: '', type: 'select', options: ['同居家族', '別居家族', 'ヘルパー', 'なし'] },
+    monthly_income:       { label: '月の収入（本人）', placeholder: '0', type: 'number', unit: '円' },
+    total_medical_cost:   { label: '1年間の医療費合計', placeholder: '180000', type: 'number', unit: '円' },
+    annual_income:        { label: '年間所得（給与所得等）', placeholder: '3500000', type: 'number', unit: '円' },
+    insurance_reimbursement: { label: '保険金・高額療養費等の受給額', placeholder: '20000', type: 'number', unit: '円' },
+    certificate_type:     { label: '保有している手帳・認定', placeholder: '', type: 'select', options: ['精神障害者保健福祉手帳 1級','精神障害者保健福祉手帳 2級','精神障害者保健福祉手帳 3級','身体障害者手帳 1-2級','身体障害者手帳 3-6級','要介護認定','その他'] },
+    dependent:            { label: '扶養している家族の有無', placeholder: '', type: 'select', options: ['なし', '配偶者', '子', '配偶者+子', 'その他'] },
+    work_conditions:      { label: '業務内容・労働時間', placeholder: '平均残業時間、業務内容', type: 'textarea' },
+    onset_date:           { label: '発症した日（目安）', placeholder: '', type: 'date' },
+    causal_evidence:      { label: '業務との関連性（具体的に）', placeholder: '長時間労働、ハラスメント 等', type: 'textarea' },
+    rent_amount:          { label: '家賃（月額）', placeholder: '80000', type: 'number', unit: '円' },
+    household_income:     { label: '世帯月収', placeholder: '200000', type: 'number', unit: '円' },
+    savings:              { label: '預貯金（世帯合計）', placeholder: '500000', type: 'number', unit: '円' },
+    employment_status:    { label: '就労状況', placeholder: '', type: 'select', options: ['離職中', '休職中', '収入減少', '就労中'] },
+    support_family:       { label: '援助可能な親族', placeholder: 'なし / 親 / 兄弟 等', type: 'text' },
+    age:                  { label: '年齢', placeholder: '65', type: 'number', unit: '歳' },
+    living_situation:     { label: '同居家族', placeholder: '独居 / 配偶者と / 子と 等', type: 'text' },
+    residence:            { label: '居住地（市区町村）', placeholder: '神奈川県秦野市', type: 'text' },
+    hospital:             { label: '通院先', placeholder: '', type: 'text' },
+    transport_cost:       { label: '1回の通院交通費', placeholder: '3000', type: 'number', unit: '円' },
+    visit_frequency:      { label: '通院頻度（月）', placeholder: '2', type: 'number', unit: '回' }
+  },
+
+  // ════════════════════════════════════════════════════════════════
+  // FINANCIAL_SUPPORT_EMAIL_PROMPT
+  // 利用者が入力した申請情報から、社労士・税理士宛の「丁寧で簡潔な」
+  // 依頼メール本文を AI に生成させるためのシステムプロンプト。
+  // 出力は JSON 形式で { subject, body } を返す。
+  // ════════════════════════════════════════════════════════════════
+  FINANCIAL_SUPPORT_EMAIL_PROMPT: `あなたは慢性疾患を抱える利用者の依頼を受けて、社会保険労務士・税理士などの専門家に対して、「丁寧で簡潔な依頼メール」を日本語で書く補助AIです。
+
+### 制約
+- 宛名は「{{PROFESSIONAL_NAME}} 様」（指定がなければ「{{PROFESSIONAL_TYPE}} 御中」）
+- 差出人として利用者の氏名・メール・連絡先をメール末尾に記載
+- 敬体（です・ます調）、ビジネス文書として違和感ない丁寧さ
+- 過度に堅苦しい表現（拝啓・敬具）は避け、現代的で読みやすい文面
+- 冒頭に制度名と依頼の要点を明示
+- 利用者の入力情報を箇条書きで整理して載せる（プライバシー配慮として不要な情報は含めない）
+- 依頼の最後に「初回相談の日程調整をお願いしたい」「見積りが可能か教えていただきたい」という具体的な次のステップを必ず入れる
+- 医学的診断や法的助言は AI として提示しない。あくまで専門家への依頼の文面として書く
+
+### 出力形式（必ず JSON のみ、前後の説明なし）
+{
+  "subject": "【申請相談】{{PROGRAM_NAME}}について",
+  "body": "メール本文全文（改行含む）"
+}`,
+
+
   // Affiliate networks
   AFFILIATE_NETWORKS: [
     { id: 'amazon_jp', name: 'Amazon.co.jp', tag: 'chroniccare-22' },
@@ -8947,6 +9244,10 @@ var FirebaseBackend = {
       if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
         localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
       }
+      // Professional-registry bits (global, read by everyone, written by admin).
+      if (Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
+      if (typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
+      if (typeof globalConfig.mailerSenderName === 'string') store.set('mailerSenderName', globalConfig.mailerSenderName);
     } catch (e) {
       console.warn('[auth] guest config load failed:', e.message);
     }
@@ -9162,6 +9463,10 @@ var FirebaseBackend = {
         if (globalConfig && (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy')) {
           localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
         }
+        // Professional-registry bits (global, read by everyone, written by admin).
+        if (globalConfig && Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
+        if (globalConfig && typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
+        if (globalConfig && typeof globalConfig.mailerSenderName === 'string') store.set('mailerSenderName', globalConfig.mailerSenderName);
       } catch (e) {
         console.warn('[Firebase] Early globalConfig load failed:', e?.message || e);
       }
@@ -13230,7 +13535,7 @@ ${axisHint}
 
     const tabs = document.querySelectorAll('#admin-tabs .tab');
     // Must match the order of <div class="tab"> in render_admin.
-    const tabNames = ['prompts', 'models', 'api', 'usage', 'users', 'priority', 'affiliate', 'firebase', 'data'];
+    const tabNames = ['prompts', 'models', 'api', 'usage', 'users', 'priority', 'affiliate', 'professionals', 'firebase', 'data'];
     const idx = tabNames.indexOf(tabId);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
 
@@ -13240,6 +13545,7 @@ ${axisHint}
     if (tabId === 'usage') setTimeout(() => this.initUsageCharts(), 50);
     if (tabId === 'users') this.loadUsersDashboard();
     if (tabId === 'priority') setTimeout(() => this.loadPriorityMatrix(), 50);
+    if (tabId === 'professionals') this.renderProfessionalsList();
   }
 
   // ---- API Usage Dashboard (admin) ----
@@ -14046,6 +14352,589 @@ ${axisHint}
       }
     });
     Components.showToast('アフィリエイト設定を保存しました', 'success');
+  }
+
+  // ---- Professional registration (admin) ----
+  // Professionals are stored in admin/config.professionals (global doc).
+  // Each entry: { id, type, name, email, phone, region, notes }
+  // `type` references CONFIG.PROFESSIONAL_TYPES[].id (sharoushi, tax_accountant, etc.)
+
+  _getProfessionals() {
+    return store.get('globalProfessionals') || [];
+  }
+
+  async renderProfessionalsList() {
+    const container = document.getElementById('professionals-list');
+    if (!container) return;
+
+    // Load from Firestore if available (admin only)
+    if (FirebaseBackend.initialized) {
+      try {
+        const cfg = await FirebaseBackend.loadGlobalConfig();
+        if (cfg && Array.isArray(cfg.professionals)) {
+          store.set('globalProfessionals', cfg.professionals);
+        }
+        if (cfg && cfg.mailerUrl !== undefined) {
+          const el = document.getElementById('input-mailer-url');
+          if (el) el.value = cfg.mailerUrl || '';
+        }
+        if (cfg && cfg.mailerSenderName !== undefined) {
+          const el = document.getElementById('input-mailer-sender-name');
+          if (el) el.value = cfg.mailerSenderName || '';
+        }
+      } catch (e) {
+        console.warn('load professionals failed:', e.message);
+      }
+    }
+
+    const pros = this._getProfessionals();
+    if (!pros.length) {
+      container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--bg-tertiary);border-radius:var(--radius-sm)">
+        まだ登録された専門家はいません。「＋ 追加」で登録してください。
+      </div>`;
+      return;
+    }
+
+    const typeOptions = CONFIG.PROFESSIONAL_TYPES.map(t =>
+      `<option value="${t.id}">${t.icon} ${t.name}</option>`
+    ).join('');
+
+    container.innerHTML = pros.map((p, idx) => `
+      <div class="card" data-pro-row="${idx}" style="margin-bottom:10px">
+        <div class="card-body" style="padding:12px 14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">専門家の種類</label>
+              <select class="form-select" data-pro-field="type" data-pro-idx="${idx}" style="padding:6px 10px;font-size:12px">
+                ${CONFIG.PROFESSIONAL_TYPES.map(t =>
+                  `<option value="${t.id}" ${p.type===t.id?'selected':''}>${t.icon} ${t.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">氏名（事務所名）</label>
+              <input class="form-input" data-pro-field="name" data-pro-idx="${idx}" value="${Components.escapeHtml(p.name || '')}" placeholder="山田太郎（〇〇社労士事務所）" style="padding:6px 10px;font-size:12px">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">メールアドレス *</label>
+              <input type="email" class="form-input" data-pro-field="email" data-pro-idx="${idx}" value="${Components.escapeHtml(p.email || '')}" placeholder="pro@example.com" style="padding:6px 10px;font-size:12px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">電話番号</label>
+              <input class="form-input" data-pro-field="phone" data-pro-idx="${idx}" value="${Components.escapeHtml(p.phone || '')}" placeholder="03-0000-0000" style="padding:6px 10px;font-size:12px">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:8px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">対応地域</label>
+              <input class="form-input" data-pro-field="region" data-pro-idx="${idx}" value="${Components.escapeHtml(p.region || '')}" placeholder="全国 / 神奈川県 / 関東圏" style="padding:6px 10px;font-size:12px">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:10px">紹介文・得意分野</label>
+              <input class="form-input" data-pro-field="notes" data-pro-idx="${idx}" value="${Components.escapeHtml(p.notes || '')}" placeholder="障害年金が得意 / 初回相談無料 など" style="padding:6px 10px;font-size:12px">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-sm btn-danger" onclick="app.removeProfessionalRow(${idx})" style="font-size:11px;padding:3px 10px">削除</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  addProfessionalRow() {
+    const pros = this._getProfessionals().slice();
+    pros.push({
+      id: 'pro_' + Date.now().toString(36),
+      type: 'sharoushi',
+      name: '',
+      email: '',
+      phone: '',
+      region: '',
+      notes: ''
+    });
+    store.set('globalProfessionals', pros);
+    this.renderProfessionalsList();
+  }
+
+  removeProfessionalRow(idx) {
+    const pros = this._getProfessionals().slice();
+    if (idx < 0 || idx >= pros.length) return;
+    pros.splice(idx, 1);
+    store.set('globalProfessionals', pros);
+    this.renderProfessionalsList();
+  }
+
+  _collectProfessionalsFromUI() {
+    const container = document.getElementById('professionals-list');
+    if (!container) return this._getProfessionals();
+    const rows = container.querySelectorAll('[data-pro-row]');
+    const existing = this._getProfessionals();
+    const out = [];
+    rows.forEach((row, idx) => {
+      const getVal = (field) => {
+        const el = row.querySelector(`[data-pro-field="${field}"]`);
+        return el ? el.value.trim() : '';
+      };
+      out.push({
+        id: existing[idx]?.id || ('pro_' + Date.now().toString(36) + '_' + idx),
+        type: getVal('type') || 'sharoushi',
+        name: getVal('name'),
+        email: getVal('email'),
+        phone: getVal('phone'),
+        region: getVal('region'),
+        notes: getVal('notes')
+      });
+    });
+    return out;
+  }
+
+  async saveProfessionalsFromUI() {
+    if (!this.isAdmin()) {
+      Components.showToast('管理者のみが保存できます', 'error');
+      return;
+    }
+    const pros = this._collectProfessionalsFromUI();
+    const invalid = pros.find(p => p.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email));
+    if (invalid) {
+      Components.showToast(`メール形式が不正です: ${invalid.email}`, 'error');
+      return;
+    }
+    const missingEmail = pros.find(p => !p.email);
+    if (missingEmail) {
+      Components.showToast('メールアドレスは必須です', 'error');
+      return;
+    }
+    store.set('globalProfessionals', pros);
+    if (FirebaseBackend.initialized) {
+      const ok = await FirebaseBackend.saveGlobalConfig({ professionals: pros });
+      if (!ok) return;
+    }
+    Components.showToast(`${pros.length}件の専門家情報を保存しました`, 'success');
+  }
+
+  async saveMailerConfig() {
+    if (!this.isAdmin()) {
+      Components.showToast('管理者のみが保存できます', 'error');
+      return;
+    }
+    const urlEl = document.getElementById('input-mailer-url');
+    const nameEl = document.getElementById('input-mailer-sender-name');
+    const mailerUrl = urlEl ? urlEl.value.trim() : '';
+    const mailerSenderName = nameEl ? nameEl.value.trim() : '';
+    if (mailerUrl && !/^https?:\/\//.test(mailerUrl)) {
+      Components.showToast('URL は http(s):// で始まる必要があります', 'error');
+      return;
+    }
+    if (FirebaseBackend.initialized) {
+      const ok = await FirebaseBackend.saveGlobalConfig({ mailerUrl, mailerSenderName });
+      if (!ok) return;
+    }
+    store.set('mailerUrl', mailerUrl);
+    store.set('mailerSenderName', mailerSenderName);
+    Components.showToast('メール送信設定を保存しました', 'success');
+  }
+
+  // ---- Financial support application flow (user-facing) ----
+  // 1. openFinancialSupportForm(programId): opens a modal with a form
+  //    built from CONFIG.FINANCIAL_SUPPORT[programId].form_fields, plus
+  //    the user's contact info and a choice of registered専門家.
+  // 2. submitFinancialApplication(): collects the form, generates a
+  //    polite email via AI, sends via Cloudflare Worker (or mailto: as
+  //    fallback), and writes an audit-log entry to Firestore.
+
+  openFinancialSupportForm(programId) {
+    const program = (CONFIG.FINANCIAL_SUPPORT || []).find(p => p.id === programId);
+    if (!program) {
+      Components.showToast('制度情報が見つかりません', 'error');
+      return;
+    }
+    const user = store.get('user') || {};
+    if (!user.uid || user.isAnonymous) {
+      Components.showToast('申請サポートを使うにはサインインが必要です', 'warning');
+      return;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const title = document.getElementById('modal-title');
+    if (!overlay || !body) return;
+
+    const pros = (store.get('globalProfessionals') || []).filter(p =>
+      !program.professional || p.type === program.professional || !p.type
+    );
+    const proTypeMap = {};
+    (CONFIG.PROFESSIONAL_TYPES || []).forEach(t => { proTypeMap[t.id] = t; });
+    const proType = proTypeMap[program.professional] || {};
+
+    title.textContent = `${program.icon} ${program.name} — 申請サポート`;
+
+    const fieldLabels = CONFIG.FINANCIAL_SUPPORT_FIELDS || {};
+    const userProfile = store.get('userProfile') || {};
+
+    const renderField = (fieldId) => {
+      const meta = fieldLabels[fieldId] || { label: fieldId, type: 'text', placeholder: '' };
+      const unit = meta.unit ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px">${meta.unit}</span>` : '';
+      if (meta.type === 'textarea') {
+        return `<div class="form-group">
+          <label class="form-label">${Components.escapeHtml(meta.label)}</label>
+          <textarea class="form-textarea" data-fs-field="${fieldId}" rows="3" placeholder="${Components.escapeHtml(meta.placeholder || '')}"></textarea>
+        </div>`;
+      }
+      if (meta.type === 'select') {
+        return `<div class="form-group">
+          <label class="form-label">${Components.escapeHtml(meta.label)}</label>
+          <select class="form-select" data-fs-field="${fieldId}">
+            <option value="">選択してください</option>
+            ${(meta.options || []).map(o => `<option value="${Components.escapeHtml(o)}">${Components.escapeHtml(o)}</option>`).join('')}
+          </select>
+        </div>`;
+      }
+      return `<div class="form-group">
+        <label class="form-label">${Components.escapeHtml(meta.label)}${unit}</label>
+        <input type="${meta.type || 'text'}" class="form-input" data-fs-field="${fieldId}" placeholder="${Components.escapeHtml(meta.placeholder || '')}">
+      </div>`;
+    };
+
+    const formFields = (program.form_fields || []).map(renderField).join('');
+
+    const proOptions = pros.length > 0 ? `
+      <div class="form-group">
+        <label class="form-label">依頼する専門家 ${proType.name ? `（${proType.icon} ${Components.escapeHtml(proType.name)}）` : ''}</label>
+        <select class="form-select" id="fs-professional-select">
+          <option value="auto">自動で最適な担当者に依頼（推奨）</option>
+          ${pros.map((p, i) => `<option value="${i}">${Components.escapeHtml(p.name || p.email)} ${p.region ? '／' + Components.escapeHtml(p.region) : ''}</option>`).join('')}
+        </select>
+      </div>` : `
+      <div style="padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;margin-bottom:10px">
+        現在、提携する${proType.name || '専門家'}が登録されていません。管理者が専門家を登録するまで、下書きのみ保存できます。
+      </div>`;
+
+    body.innerHTML = `
+      <div style="padding:0">
+        <div style="background:#f0fdf4;padding:12px 14px;border-left:3px solid #059669;border-radius:6px;font-size:12px;color:#065f46;line-height:1.7;margin-bottom:14px">
+          <strong>${Components.escapeHtml(program.amount || '')}</strong><br>
+          <span style="color:#047857">${Components.escapeHtml(program.description || '')}</span>
+        </div>
+
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)">■ 申請に必要な情報</div>
+        ${formFields}
+
+        <div style="font-size:12px;font-weight:600;margin:16px 0 8px;color:var(--text-secondary)">■ あなたの連絡先（専門家からの返信に使われます）</div>
+        <div class="form-group">
+          <label class="form-label">氏名</label>
+          <input type="text" class="form-input" data-fs-field="_user_name" value="${Components.escapeHtml(user.displayName || '')}" placeholder="山田花子">
+        </div>
+        <div class="form-group">
+          <label class="form-label">メールアドレス</label>
+          <input type="email" class="form-input" data-fs-field="_user_email" value="${Components.escapeHtml(user.email || '')}" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">電話番号（任意）</label>
+          <input type="tel" class="form-input" data-fs-field="_user_phone" placeholder="090-0000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">連絡希望時間帯</label>
+          <input type="text" class="form-input" data-fs-field="_user_contact_time" placeholder="平日 10-17時 等">
+        </div>
+        <div class="form-group">
+          <label class="form-label">補足メモ（任意）</label>
+          <textarea class="form-textarea" data-fs-field="_user_notes" rows="3" placeholder="その他、専門家に伝えたいこと"></textarea>
+        </div>
+
+        ${proOptions}
+
+        <div style="padding:10px 12px;background:var(--bg-tertiary);border-radius:6px;font-size:11px;color:var(--text-muted);line-height:1.7;margin-bottom:14px">
+          🔒 送信内容は専門家のみに届きます。管理者・第三者には共有されません。申請履歴は後から「マイページ」で確認できます。
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+          <button class="btn btn-primary" onclick="app.submitFinancialApplication('${programId}')" style="background:#059669;border-color:#047857">
+            丁寧なメールを作成して専門家に送る
+          </button>
+        </div>
+      </div>
+    `;
+    overlay.classList.add('active');
+  }
+
+  async submitFinancialApplication(programId) {
+    const program = (CONFIG.FINANCIAL_SUPPORT || []).find(p => p.id === programId);
+    if (!program) { Components.showToast('制度情報が見つかりません', 'error'); return; }
+    const user = store.get('user') || {};
+    if (!user.uid || user.isAnonymous) {
+      Components.showToast('申請サポートを使うにはサインインが必要です', 'warning');
+      return;
+    }
+
+    const body = document.getElementById('modal-body');
+    if (!body) return;
+
+    // Collect all form values
+    const inputs = body.querySelectorAll('[data-fs-field]');
+    const values = {};
+    inputs.forEach(el => { values[el.dataset.fsField] = (el.value || '').trim(); });
+
+    if (!values._user_name || !values._user_email) {
+      Components.showToast('氏名とメールアドレスは必須です', 'error');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values._user_email)) {
+      Components.showToast('メールアドレスの形式が不正です', 'error');
+      return;
+    }
+
+    // Pick professional
+    const pros = store.get('globalProfessionals') || [];
+    const filtered = pros.filter(p => !program.professional || p.type === program.professional || !p.type);
+    const selEl = document.getElementById('fs-professional-select');
+    let professional = null;
+    if (selEl) {
+      const v = selEl.value;
+      if (v === 'auto') {
+        professional = filtered[0] || null;
+      } else {
+        const idx = parseInt(v, 10);
+        if (!isNaN(idx) && filtered[idx]) professional = filtered[idx];
+      }
+    } else {
+      professional = filtered[0] || null;
+    }
+
+    const fieldLabels = CONFIG.FINANCIAL_SUPPORT_FIELDS || {};
+    const proTypeMap = {};
+    (CONFIG.PROFESSIONAL_TYPES || []).forEach(t => { proTypeMap[t.id] = t; });
+    const proType = proTypeMap[program.professional] || {};
+
+    // Build a nice human-readable structured summary for the AI prompt
+    const formDetails = (program.form_fields || [])
+      .map(f => {
+        const meta = fieldLabels[f] || { label: f };
+        const v = values[f];
+        if (!v) return null;
+        return `- ${meta.label}: ${v}${meta.unit ? meta.unit : ''}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    const contactDetails = [
+      `- 氏名: ${values._user_name}`,
+      `- メール: ${values._user_email}`,
+      values._user_phone ? `- 電話: ${values._user_phone}` : null,
+      values._user_contact_time ? `- 連絡希望時間帯: ${values._user_contact_time}` : null,
+      values._user_notes ? `- 補足: ${values._user_notes}` : null
+    ].filter(Boolean).join('\n');
+
+    Components.showToast('AIが丁寧な依頼メールを作成しています…', 'info');
+
+    // Build AI prompt using CONFIG template
+    const tpl = CONFIG.FINANCIAL_SUPPORT_EMAIL_PROMPT || '';
+    const proName = professional?.name || '';
+    const systemPrompt = tpl
+      .replace(/{{PROFESSIONAL_NAME}}/g, proName)
+      .replace(/{{PROFESSIONAL_TYPE}}/g, proType.name || '専門家')
+      .replace(/{{PROGRAM_NAME}}/g, program.name);
+
+    const userMessage = `【制度】${program.name}
+【制度概要】${program.description || ''}
+【申請金額・効果】${program.amount || ''}
+
+【利用者からの申請情報】
+${formDetails || '（特記事項なし）'}
+
+【利用者連絡先】
+${contactDetails}
+
+上記を踏まえて、${proType.name || '専門家'}宛の丁寧な依頼メール（subject と body の JSON）を作成してください。`;
+
+    let emailSubject = `【申請相談】${program.name}について`;
+    let emailBody = '';
+    let aiSucceeded = false;
+    try {
+      const modelId = store.get('selectedModel') || 'claude-opus-4-6';
+      const raw = await aiEngine.callModel(modelId, userMessage, {
+        systemPrompt,
+        maxTokens: 1500,
+        temperature: 0.4
+      });
+      const text = typeof raw === 'string' ? raw : String(raw || '');
+      // Accept either pure JSON or fenced ```json blocks
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch (_) {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }
+      }
+      if (parsed && parsed.body && typeof parsed.body === 'string') {
+        if (parsed.subject) emailSubject = parsed.subject;
+        emailBody = parsed.body;
+        aiSucceeded = true;
+      }
+    } catch (err) {
+      console.warn('[financial] AI email generation failed:', err.message);
+    }
+
+    // Fallback template if AI didn't produce a usable body
+    if (!aiSucceeded) {
+      emailBody = this._buildFallbackEmailBody(program, proType, professional, values, formDetails, contactDetails);
+    }
+
+    // Attempt to send the email
+    const mailerUrl = store.get('mailerUrl') || '';
+    const senderName = store.get('mailerSenderName') || '健康日記 申請サポート';
+    const appId = 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    let deliveryStatus = 'pending';
+    let deliveryError = '';
+    let deliveryPath = '';
+
+    if (professional && mailerUrl) {
+      try {
+        const res = await fetch(mailerUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: professional.email,
+            toName: professional.name || '',
+            replyTo: values._user_email,
+            replyToName: values._user_name,
+            from: null,
+            fromName: senderName,
+            subject: emailSubject,
+            text: emailBody,
+            meta: {
+              programId: program.id,
+              programName: program.name,
+              applicationId: appId,
+              userUid: user.uid
+            }
+          })
+        });
+        if (res.ok) {
+          deliveryStatus = 'sent';
+          deliveryPath = 'worker';
+        } else {
+          deliveryStatus = 'failed';
+          deliveryError = `worker http ${res.status}`;
+        }
+      } catch (e) {
+        deliveryStatus = 'failed';
+        deliveryError = 'worker fetch error: ' + e.message;
+      }
+    } else if (!professional) {
+      deliveryStatus = 'draft_saved';
+      deliveryError = '登録された専門家がいません';
+    } else {
+      // No worker → open mailto: as fallback
+      deliveryPath = 'mailto';
+      deliveryStatus = 'mailto_opened';
+      const mailtoHref = `mailto:${encodeURIComponent(professional.email)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      try {
+        const a = document.createElement('a');
+        a.href = mailtoHref;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (e) { /* ignore */ }
+    }
+
+    // Write audit log to Firestore (always, even if send failed).
+    // users/{uid}/applications/{appId}
+    const auditEntry = {
+      id: appId,
+      programId: program.id,
+      programName: program.name,
+      professionalId: professional?.id || null,
+      professionalName: professional?.name || null,
+      professionalEmail: professional?.email || null,
+      professionalType: program.professional || null,
+      subject: emailSubject,
+      body: emailBody,
+      fieldValues: values,
+      deliveryStatus,
+      deliveryPath,
+      deliveryError,
+      aiGenerated: aiSucceeded,
+      createdAt: new Date().toISOString()
+    };
+    try {
+      if (FirebaseBackend.initialized && FirebaseBackend.userId) {
+        await firebase.firestore()
+          .collection('users').doc(FirebaseBackend.userId)
+          .collection('applications').doc(appId)
+          .set(auditEntry);
+      } else {
+        // Fallback to localStorage audit log
+        const log = store.get('applicationLog') || [];
+        log.push(auditEntry);
+        store.set('applicationLog', log);
+      }
+    } catch (e) {
+      console.warn('[financial] audit log save failed:', e.message);
+    }
+
+    // User feedback + show generated email for verification
+    const escapedSubject = Components.escapeHtml(emailSubject);
+    const escapedBody = Components.escapeHtml(emailBody);
+    const escapedTo = Components.escapeHtml(professional?.email || '');
+    const statusMsg = {
+      'sent': `✅ ${professional?.name || '専門家'} 様宛にメールを送信しました`,
+      'mailto_opened': `📧 メールクライアントを開きました。送信ボタンを押してください。`,
+      'draft_saved': `📝 下書きを保存しました。管理者が専門家を登録すると送信されます。`,
+      'failed': `⚠ 送信に失敗しました: ${deliveryError}。下書きは保存されました。`
+    }[deliveryStatus] || deliveryStatus;
+    const statusColor = deliveryStatus === 'sent' ? '#059669' : deliveryStatus === 'failed' ? '#dc2626' : '#d97706';
+    body.innerHTML = `
+      <div style="padding:4px">
+        <div style="padding:12px 14px;background:#f0fdf4;border-left:3px solid ${statusColor};border-radius:6px;font-size:13px;color:${statusColor};font-weight:600;margin-bottom:14px">
+          ${statusMsg}
+        </div>
+        ${professional ? `
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">
+            <strong>宛先:</strong> ${escapedTo}${professional.name ? '（' + Components.escapeHtml(professional.name) + '）' : ''}
+          </div>
+        ` : ''}
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">件名</div>
+        <div style="padding:8px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:10px">${escapedSubject}</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">本文 ${aiSucceeded ? '<span style="font-weight:400;font-size:10px;color:#059669">（AI生成）</span>' : '<span style="font-weight:400;font-size:10px;color:#d97706">（テンプレート）</span>'}</div>
+        <pre style="padding:12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:inherit;max-height:300px;overflow-y:auto">${escapedBody}</pre>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+          <button class="btn btn-secondary" onclick="app.closeModal()">閉じる</button>
+        </div>
+      </div>
+    `;
+    Components.showToast(statusMsg, deliveryStatus === 'sent' || deliveryStatus === 'mailto_opened' ? 'success' : 'warning');
+  }
+
+  _buildFallbackEmailBody(program, proType, professional, values, formDetails, contactDetails) {
+    const greetingName = professional?.name ? `${professional.name} 様` : `${proType.name || '専門家'} 御中`;
+    return `${greetingName}
+
+お世話になっております。
+${values._user_name} と申します。
+
+このたび、以下の制度について申請を検討しており、手続きについてご相談させていただきたくご連絡いたしました。
+
+【対象制度】${program.name}
+【制度概要】${program.description || ''}
+【想定される支給内容】${program.amount || ''}
+
+■ 現状の情報
+${formDetails || '（後日お伝えします）'}
+
+■ 連絡先
+${contactDetails}
+
+つきましては、初回のご相談の日程調整、および費用のお見積りをいただけますと幸いです。
+ご多忙のところ恐れ入りますが、ご返信をお待ちしております。
+
+何卒よろしくお願い申し上げます。
+${values._user_name}
+`;
   }
 
   // ---- Dashboard Charts ----
@@ -15929,6 +16818,23 @@ App.prototype.render_analysis = function() {
 };
 
 // Action Center
+// Match financial support programs to the user's selected diseases.
+// A program is matched when either:
+//   • its `applicable` array contains '*' (everyone qualifies), or
+//   • at least one of the user's selectedDiseases appears in `applicable`.
+// When the user has no disease selected, only universal ('*') programs
+// are shown so we don't advertise irrelevant disease-specific subsidies.
+App.prototype.matchFinancialSupport = function() {
+  const programs = CONFIG.FINANCIAL_SUPPORT || [];
+  const selected = store.get('selectedDiseases') || [];
+  const selSet = new Set(selected);
+  return programs.filter(p => {
+    const app = p.applicable || [];
+    if (app.includes('*')) return true;
+    return app.some(id => selSet.has(id));
+  });
+};
+
 // Match telehealth providers to the user's selected diseases.
 // Returns an array of provider entries whose `categories` field
 // overlaps with any of the selectedDiseases' parent category ids.
@@ -15990,11 +16896,77 @@ App.prototype.render_actions = function() {
   // Match telehealth providers to user's selected diseases
   const telehealthMatched = this.matchTelehealthToDiseases();
 
+  // 💴 Financial support programs matched to user's selected diseases.
+  // Requires authenticated user (programs are sensitive and need a logged-in
+  // identity to file an application + receive the professional's email back).
+  const user = store.get('user') || {};
+  const isLoggedIn = !!(user.uid && !user.isAnonymous);
+  const financialPrograms = this.matchFinancialSupport();
+  const proTypeMap = {};
+  (CONFIG.PROFESSIONAL_TYPES || []).forEach(t => { proTypeMap[t.id] = t; });
+
+  const financialSupportHtml = (isLoggedIn && financialPrograms.length > 0) ? `
+  <div class="card" style="margin-bottom:24px;border:1.5px solid #059669;background:linear-gradient(180deg,#f0fdf4 0%, #ffffff 60%)">
+    <div class="card-header" style="background:linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)">
+      <span class="card-title" style="color:#065f46">💴 あなたが受けられる可能性のある金銭的サポート</span>
+      <span class="tag tag-success" style="font-size:10px">${financialPrograms.length}件</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <p style="font-size:12px;color:#047857;line-height:1.7;margin-bottom:12px">
+        選択された疾患に基づき、国・自治体の補助金・年金・税制優遇の候補を表示しています。<br>
+        「申請に必要な情報を入力する」ボタンから必要事項を入力すると、
+        登録済みの <strong>社労士・税理士</strong> に直接丁寧なメールが届き、手続きのサポートを受けられます。
+      </p>
+      <div class="grid-auto" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+        ${financialPrograms.map(p => {
+          const proType = proTypeMap[p.professional] || {};
+          return `
+          <div class="card" style="background:#fff;border:1px solid #a7f3d0">
+            <div class="card-body" style="padding:12px 14px">
+              <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;margin-bottom:6px">
+                <div style="font-size:13px;font-weight:700;line-height:1.4">${p.icon} ${Components.escapeHtml(p.name)}</div>
+                <span class="tag" style="font-size:9px;background:#d1fae5;color:#065f46;white-space:nowrap;flex-shrink:0">${Components.escapeHtml(p.category || '')}</span>
+              </div>
+              <div style="font-size:11px;color:#047857;font-weight:600;margin-bottom:4px">💰 ${Components.escapeHtml(p.amount || '')}</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px"><strong>対象:</strong> ${Components.escapeHtml(p.eligibility || '')}</div>
+              <p style="font-size:11px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px">${Components.escapeHtml(p.description || '')}</p>
+              ${Array.isArray(p.urls) && p.urls.length > 0 ? `
+                <div style="font-size:10px;margin-bottom:8px">
+                  ${p.urls.map(u => `<a href="${u.url}" target="_blank" rel="noopener" style="color:#059669;text-decoration:underline;margin-right:8px">${Components.escapeHtml(u.label)} →</a>`).join('')}
+                </div>
+              ` : ''}
+              ${proType.name ? `<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">🧑‍💼 相談専門家: ${proType.icon} ${Components.escapeHtml(proType.name)}</div>` : ''}
+              <button class="btn btn-sm btn-primary" style="width:100%;background:#059669;border-color:#047857" onclick="app.openFinancialSupportForm('${p.id}')">申請に必要な情報を入力する →</button>
+            </div>
+          </div>
+          `;
+        }).join('')}
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;line-height:1.7">
+        ⚠ <strong>金額・対象は目安です。</strong>実際の受給可否は個別審査です。申請書類の記入・医師の証明・審査には時間がかかるため、早めの相談をおすすめします。
+      </div>
+    </div>
+  </div>` : (financialPrograms.length > 0 ? `
+  <div class="card" style="margin-bottom:24px;border:1px dashed #9ca3af">
+    <div class="card-body" style="padding:14px 16px;text-align:center">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">💴 金銭的サポート申請機能</div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:10px">
+        疾患に応じた補助金・年金・傷病手当金などの申請サポート機能は、<br>
+        サインイン後にご利用いただけます。
+      </p>
+      <button class="btn btn-primary btn-sm" onclick="app.navigate('login')">サインインして申請サポートを見る</button>
+    </div>
+  </div>
+  ` : '');
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">アクションセンター</h2>
     <p style="font-size:13px;color:var(--text-secondary)">ワンクリックで健康改善のアクションを実行</p>
   </div>
+
+  ${financialSupportHtml}
+
   ${sections || ''}
 
   <!-- 🏥 遠隔診療・オンライン診療 -->
@@ -16936,6 +17908,7 @@ App.prototype.render_admin = function() {
     <div class="tab" onclick="app.switchAdminTab('users')">👥 ユーザ管理</div>
     <div class="tab" onclick="app.switchAdminTab('priority')">📈 事業優先度</div>
     <div class="tab" onclick="app.switchAdminTab('affiliate')">アフィリエイト</div>
+    <div class="tab" onclick="app.switchAdminTab('professionals')">👔 専門家登録</div>
     <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
     <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
   </div>
@@ -17129,6 +18102,51 @@ App.prototype.render_admin = function() {
       </form>
     </div>
   </div>
+  </div>
+
+  <!-- TAB: Professionals -->
+  <div class="admin-tab-content" id="admin-tab-professionals" style="display:none">
+    <div style="margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">👔 専門家登録</h3>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.7">
+        利用者が自立支援・障害年金・傷病手当金などの金銭的サポートを申請する際、入力された内容がここで登録された専門家（社労士・税理士・弁護士・医療ソーシャルワーカー・FP）へ直接メールで送信されます。<br>
+        各制度に対応する専門家を1名以上登録してください。
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">メール送信設定</span></div>
+      <div class="card-body" style="padding:14px 16px">
+        <div class="form-group">
+          <label class="form-label">メール送信Worker URL（任意）</label>
+          <input type="text" class="form-input" id="input-mailer-url" placeholder="https://professional-mailer.your-account.workers.dev" autocomplete="off">
+          <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">
+            未設定の場合は利用者の端末の mailto: リンクが開きます。Worker を設定すると Resend 等を経由して自動送信されます。
+          </span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">差出人表示名</label>
+          <input type="text" class="form-input" id="input-mailer-sender-name" placeholder="健康日記 申請サポート" autocomplete="off">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.saveMailerConfig()">メール設定を保存</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">登録済み専門家</span>
+        <button class="btn btn-primary btn-sm" onclick="app.addProfessionalRow()">＋ 追加</button>
+      </div>
+      <div class="card-body" style="padding:14px 16px">
+        <div id="professionals-list">
+          <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">タブを開くと読み込みます…</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary btn-sm" onclick="app.saveProfessionalsFromUI()">すべての専門家を保存</button>
+          <span style="font-size:11px;color:var(--text-muted);align-self:center">保存すると全利用者の「サポート申請」画面に反映されます</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TAB: Firebase -->
