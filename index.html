@@ -32,6 +32,12 @@
 <meta name="googlebot" content="index,follow">
 <meta name="theme-color" content="#6C63FF">
 <meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="健康日記">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 <link rel="canonical" href="https://cares.advisers.jp/">
 <link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/">
 <link rel="alternate" hreflang="en" href="https://cares.advisers.jp/">
@@ -10086,7 +10092,7 @@ var App = class App {
           type: 'file_upload',
           title: `📸 ${file.name}`,
           content: `写真をアップロードしました（${(file.size / 1024).toFixed(0)}KB）`,
-          dataUrl: ev.target.result.substring(0, 500),
+          dataUrl: ev.target.result,
           source: 'photo_modal'
         };
         const textEntries = store.get('textEntries') || [];
@@ -10098,7 +10104,7 @@ var App = class App {
           filename: file.name,
           type: file.type,
           size: file.size,
-          dataUrl: ev.target.result.substring(0, 500),
+          dataUrl: ev.target.result,
           category: '写真'
         });
 
@@ -14953,6 +14959,126 @@ App.prototype._getEarnedBadges = function(stats) {
   return badges;
 };
 
+App.prototype.openDoctorReport = function() {
+  const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
+  const selectedDiseases = store.get('selectedDiseases') || [];
+  const diseaseNames = [];
+  selectedDiseases.forEach(id => {
+    if (id === 'custom') { diseaseNames.push(store.get('customDiseaseName') || 'その他'); return; }
+    for (const cat of CONFIG.DISEASE_CATEGORIES) {
+      const found = cat.diseases.find(d => d.id === id);
+      if (found) { diseaseNames.push(found.name); break; }
+    }
+  });
+  const diseaseLabel = diseaseNames.length ? diseaseNames.join('・') : disease.name;
+
+  // Gather last 30 days
+  const cutoff = Date.now() - 30 * 86400000;
+  const symptoms = (store.get('symptoms') || []).filter(s => new Date(s.timestamp) >= cutoff);
+  const textEntries = (store.get('textEntries') || []).filter(e => new Date(e.timestamp) >= cutoff);
+  const latestAnalysis = store.get('latestAnalysis');
+
+  const avg = (arr, field) => {
+    const vals = arr.map(s => s[field]).filter(v => v != null && !isNaN(v));
+    return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null;
+  };
+  const fatigueAvg = avg(symptoms, 'fatigue_level');
+  const painAvg = avg(symptoms, 'pain_level');
+  const fogAvg = avg(symptoms, 'brain_fog');
+  const sleepAvg = avg(symptoms, 'sleep_quality');
+
+  const recentEntries = textEntries.slice(-10).reverse();
+  const analysisText = (() => {
+    if (!latestAnalysis) return '';
+    const p = latestAnalysis.parsed || latestAnalysis.result || {};
+    const t = p.summary || p.findings || p._raw || '';
+    return typeof t === 'string' ? t.substring(0, 600) : '';
+  })();
+
+  const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  const periodStart = new Date(cutoff).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+  const userName = (store.get('userProfile') || {}).displayName || '患者';
+
+  const reportHtml = `
+  <div id="doctor-report-print" style="font-family:'Hiragino Sans','Yu Gothic',sans-serif;color:#111;background:#fff;padding:24px 28px;max-width:680px;margin:0 auto">
+    <div style="border-bottom:2px solid #15803d;padding-bottom:10px;margin-bottom:16px">
+      <div style="font-size:11px;color:#6b7280;margin-bottom:2px">受診前健康日記サマリー</div>
+      <h1 style="font-size:18px;font-weight:800;margin:0 0 4px">${Components.escapeHtml(userName)} さんの記録</h1>
+      <div style="font-size:12px;color:#374151">${periodStart}〜${today} の30日間 ／ 記録数: ${textEntries.length}件</div>
+      <div style="font-size:12px;color:#374151">疾患: ${Components.escapeHtml(diseaseLabel)}</div>
+    </div>
+
+    <!-- 症状平均 -->
+    <h2 style="font-size:14px;font-weight:700;color:#15803d;margin:0 0 8px">症状の平均値（1〜10）</h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px">
+      <tr>
+        ${[['倦怠感', fatigueAvg], ['痛み', painAvg], ['ブレインフォグ', fogAvg], ['睡眠の質', sleepAvg]].map(([label, val]) => `
+          <td style="border:1px solid #d1d5db;padding:8px 12px;text-align:center;background:${val == null ? '#f9fafb' : parseFloat(val) >= 7 ? '#fef2f2' : '#f0fdf4'}">
+            <div style="font-size:10px;color:#6b7280;margin-bottom:2px">${label}</div>
+            <div style="font-size:20px;font-weight:700">${val != null ? val : '—'}</div>
+          </td>
+        `).join('')}
+      </tr>
+    </table>
+
+    <!-- 最近の記録 -->
+    ${recentEntries.length > 0 ? `
+    <h2 style="font-size:14px;font-weight:700;color:#15803d;margin:0 0 8px">最近の記録（直近10件）</h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px">
+      <tr style="background:#f3f4f6">
+        <th style="border:1px solid #d1d5db;padding:5px 8px;text-align:left;font-weight:600;width:110px">日時</th>
+        <th style="border:1px solid #d1d5db;padding:5px 8px;text-align:left;font-weight:600">内容</th>
+      </tr>
+      ${recentEntries.map(e => `
+        <tr>
+          <td style="border:1px solid #d1d5db;padding:5px 8px;color:#6b7280;white-space:nowrap">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          <td style="border:1px solid #d1d5db;padding:5px 8px">${Components.escapeHtml((e.content || e.title || '').substring(0, 120))}</td>
+        </tr>
+      `).join('')}
+    </table>` : ''}
+
+    <!-- AI分析 -->
+    ${analysisText ? `
+    <h2 style="font-size:14px;font-weight:700;color:#15803d;margin:0 0 8px">最新の分析コメント</h2>
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px;font-size:12px;line-height:1.7;margin-bottom:16px;white-space:pre-wrap">${Components.escapeHtml(analysisText)}</div>
+    ` : ''}
+
+    <div style="border-top:1px solid #d1d5db;padding-top:10px;font-size:10px;color:#9ca3af;text-align:center">
+      健康日記 (https://cares.advisers.jp) で作成 — ${today}
+    </div>
+  </div>`;
+
+  // Show in modal using the standard overlay pattern
+  const modal = document.getElementById('modal-overlay');
+  const body  = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  if (!modal || !body) return;
+
+  if (title) title.textContent = '🩺 受診前まとめ';
+  body.innerHTML = `
+    <div style="margin-bottom:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨️ 印刷・PDF保存</button>
+      <button class="btn btn-outline btn-sm" onclick="app.shareDoctorReport()">共有リンクをコピー</button>
+    </div>
+    <style id="print-style">@media print{body>*:not(.modal-overlay){display:none!important}.modal-overlay,.modal-overlay *{display:block!important}.modal-overlay{position:static!important}.modal{box-shadow:none!important;max-width:100%!important}#doctor-report-print{max-width:100%!important}.modal-close,.modal-header button{display:none!important}}</style>
+    ${reportHtml}`;
+  modal.classList.add('active');
+};
+
+App.prototype.shareDoctorReport = function() {
+  if (navigator.share) {
+    navigator.share({
+      title: '受診前健康日記サマリー',
+      text: 'このページのPDFを医師に共有してください: https://cares.advisers.jp',
+      url: 'https://cares.advisers.jp',
+    }).catch(() => {});
+  } else {
+    navigator.clipboard && navigator.clipboard.writeText('https://cares.advisers.jp').then(() => {
+      Components.toast('URLをコピーしました');
+    });
+  }
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
@@ -15306,6 +15432,19 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>`;
     }).join('')}
+  </div>` : ''}
+
+  <!-- 受診前まとめ CTA -->
+  ${hasData ? `
+  <div style="margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%);border:1px solid #86efac;border-radius:var(--radius)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#15803d;margin-bottom:2px">🩺 受診前まとめ</div>
+        <div style="font-size:11px;color:#166534;line-height:1.5">この30日間の記録をまとめて、お医者さんに見せましょう</div>
+      </div>
+      <button class="btn btn-sm" onclick="app.openDoctorReport()"
+        style="background:#16a34a;color:#fff;border:none;white-space:nowrap;flex-shrink:0">印刷・共有 →</button>
+    </div>
   </div>` : ''}
 
   <!-- 4. Calendar Widget -->
@@ -16333,7 +16472,7 @@ App.prototype.render_timeline = function() {
         <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
-          <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
+          <span style="font-size:12px;flex:1">${safeFileName} (${Components.escapeHtml(e.type || '')}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
         </div>`;
     }
@@ -18019,6 +18158,13 @@ App.prototype.importDataFile = function(file) {
 
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });
+
+// PWA: register service worker for offline support and "Add to Home Screen"
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

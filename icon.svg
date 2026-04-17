@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#6C63FF"/>
+  <!-- Heart pulse line -->
+  <polyline points="80,256 160,256 200,180 240,320 280,200 320,256 432,256"
+    fill="none" stroke="white" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Small heart -->
+  <path d="M320 140 c0-20 15-36 34-36 s34 16 34 36 c0 40-34 60-34 60 s-34-20-34-60z"
+    fill="white" opacity="0.85"/>
+</svg>

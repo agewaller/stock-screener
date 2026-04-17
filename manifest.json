@@ -1,0 +1,35 @@
+{
+  "name": "健康日記 — 慢性疾患の記録 & AI分析",
+  "short_name": "健康日記",
+  "description": "ME/CFS・線維筋痛症・Long COVID など慢性疾患の症状記録と AI 個別分析",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6C63FF",
+  "lang": "ja",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "健康日記 ダッシュボード"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "text": "text"
+    }
+  }
+}
