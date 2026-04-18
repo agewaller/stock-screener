@@ -6020,8 +6020,7 @@ ${avoidBlock}
         ? 'timeout (30s)'
         : (fetchErr.message || fetchErr.name || 'unknown');
       throw new Error(
-        (isDirect ? 'Anthropicに直接接続できません' : 'プロキシに接続できません') +
-        ` (${reason}) URL: ${url}`
+        `プロキシに接続できません (${reason}) URL: ${url}`
       );
     }
 
@@ -6035,11 +6034,10 @@ ${avoidBlock}
 
     const data = await response.json();
     console.log('[Anthropic] Success');
-    // Record token usage for the admin dashboard. Anthropic returns
-    // `usage.input_tokens` and `usage.output_tokens` on every response.
+    // Record token usage for the admin dashboard.
     try {
       const u = data.usage || {};
-      const source = !apiKey && useSharedProxy ? 'guest' : 'auth';
+      const source = !apiKey ? 'guest' : 'auth';
       store.recordApiUsage(modelId, u.input_tokens, u.output_tokens, source);
     } catch (e) { console.warn('[usage track]', e.message); }
     return data.content?.[0]?.text || JSON.stringify(data);
