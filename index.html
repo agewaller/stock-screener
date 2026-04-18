@@ -5125,33 +5125,38 @@ var Store = class Store {
   }
 
   // Persistence
+  static PERSIST_KEYS = [
+    'user', 'isAuthenticated',
+    'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
+    'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
+    'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
+    'activityData', 'healthScore', 'analysisHistory', 'recommendations',
+    'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases',
+    'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback',
+    'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog',
+    'plaudAnalyses', 'apiUsage', 'photos', 'applicationLog',
+    'globalProfessionals', 'latestFeedbackError'
+  ];
+
   saveToStorage(key, value) {
-    const persistKeys = [
-      'user', 'isAuthenticated',
-      'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
-      'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
-      'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
-      'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses', 'apiUsage'
-    ];
-    if (persistKeys.includes(key)) {
+    if (Store.PERSIST_KEYS.includes(key)) {
       try {
         localStorage.setItem(`cc_${key}`, JSON.stringify(value));
       } catch (e) {
-        console.warn('Storage save failed:', e);
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+          console.error('[Store] localStorage quota exceeded for key:', key);
+          if (typeof Components !== 'undefined' && Components.showToast) {
+            Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
+          }
+        } else {
+          console.warn('Storage save failed:', e);
+        }
       }
     }
   }
 
   loadFromStorage() {
-    const keys = [
-      'user', 'isAuthenticated',
-      'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
-      'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
-      'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
-      'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-      'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases', 'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback', 'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog', 'plaudAnalyses', 'apiUsage'
-    ];
+    const keys = Store.PERSIST_KEYS;
     keys.forEach(key => {
       try {
         const val = localStorage.getItem(`cc_${key}`);
@@ -6523,9 +6528,36 @@ affiliateEngine.loadTracking();
    ============================================================ */
 
 var Components = {
-  // HTML escape — apply to ANY user-supplied text before inserting it
-  // into innerHTML. Without this, malicious HTML/JS in a record could
-  // execute when the dashboard renders it.
+  // Compress image data URL via canvas resize. Returns a Promise that
+  // resolves with a smaller JPEG data URL. maxDim = longest side in px.
+  // Prevents localStorage quota exhaustion from raw phone camera photos.
+  compressImage(dataUrl, maxDim = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+      if (!dataUrl || !dataUrl.startsWith('data:image')) { resolve(dataUrl); return; }
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w <= maxDim && h <= maxDim) {
+          // Small enough — convert to JPEG at quality to save space
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0);
+          resolve(c.toDataURL('image/jpeg', quality));
+          return;
+        }
+        const ratio = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  },
+
   escapeHtml(text) {
     if (text == null) return '';
     if (typeof text !== 'string') text = String(text);
@@ -8565,6 +8597,7 @@ Integrations.autoSync = {
 
       // Aggregate any errors for the console but don't spam toasts
       const errors = results.filter(r => r.status === 'rejected');
+      this._lastErrors = errors;
       if (errors.length > 0) {
         console.warn('[autoSync]', errors.length, 'sync tasks failed:',
           errors.map(e => e.reason?.message).join(', '));
@@ -8597,9 +8630,17 @@ Integrations.autoSync = {
   // Manual "sync now" — bypasses the debounce. Used when the user
   // clicks the refresh button in the integrations page.
   async runNow() {
-    this._lastRunAt = 0; // reset debounce
+    this._lastRunAt = 0;
     await this.runIfNeeded('manual');
-    Components.showToast('連携データを同期しました', 'success');
+    if (this._lastErrors && this._lastErrors.length > 0) {
+      const msgs = this._lastErrors.map(e => e.reason?.message || '不明なエラー').join(', ');
+      Components.showToast('同期に失敗しました: ' + msgs, 'error');
+      if (msgs.includes('401') || msgs.includes('token') || msgs.includes('auth')) {
+        localStorage.removeItem('google_calendar_oauth_connected');
+      }
+    } else {
+      Components.showToast('連携データを同期しました', 'success');
+    }
   }
 };
 
@@ -8884,8 +8925,11 @@ var FirebaseBackend = {
   async saveProfile(data) {
     try {
       await this.userDoc().set(data, { merge: true });
+      return true;
     } catch (err) {
       console.error('Save profile error:', err);
+      Components.showToast('プロフィールの保存に失敗しました。ネットワークを確認してください。', 'error');
+      return false;
     }
   },
 
@@ -8927,8 +8971,11 @@ var FirebaseBackend = {
   // Save health data entry to a subcollection
   async saveHealthEntry(collection, entry) {
     try {
+      const cleaned = { ...entry };
+      delete cleaned.dataUrl;
+      delete cleaned.previewImage;
       const docRef = await this.userCollection(collection).add({
-        ...entry,
+        ...cleaned,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       return docRef.id;
@@ -10199,7 +10246,9 @@ var App = class App {
 
       const reader = new FileReader();
       reader.onload = async (ev) => {
-        // Save photo reference to textEntries for timeline
+        const rawDataUrl = ev.target.result;
+        const compressed = await Components.compressImage(rawDataUrl);
+
         const entry = {
           id: Date.now().toString(36) + Math.random().toString(36).substr(2),
           timestamp: new Date().toISOString(),
@@ -10207,19 +10256,19 @@ var App = class App {
           type: 'file_upload',
           title: `📸 ${file.name}`,
           content: `写真をアップロードしました（${(file.size / 1024).toFixed(0)}KB）`,
-          dataUrl: ev.target.result.substring(0, 500),
+          dataUrl: compressed,
+          previewImage: compressed,
           source: 'photo_modal'
         };
         const textEntries = store.get('textEntries') || [];
         textEntries.push(entry);
         store.set('textEntries', textEntries);
 
-        // Also save to photos collection
         store.addHealthData('photos', {
           filename: file.name,
           type: file.type,
           size: file.size,
-          dataUrl: ev.target.result.substring(0, 500),
+          dataUrl: compressed,
           category: '写真'
         });
 
@@ -10310,6 +10359,10 @@ var App = class App {
   }
 
   submitTextEntry() {
+    if (store.get('isAnalyzing')) {
+      Components.showToast('分析中です。完了までお待ちください。', 'info');
+      return;
+    }
     const category = document.getElementById('text-input-category')?.value || 'other';
     const title = document.getElementById('text-input-title')?.value?.trim() || '';
     const content = document.getElementById('text-input-content')?.value?.trim() || '';
@@ -12677,6 +12730,10 @@ ${axisHint}
 
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
+    if (store.get('isAnalyzing')) {
+      Components.showToast('分析中です。完了までお待ちください。', 'info');
+      return;
+    }
     const input = document.getElementById('dash-quick-input');
     if (!input || !input.value.trim()) {
       Components.showToast('テキストを入力してください', 'error');
@@ -12819,18 +12876,18 @@ ${axisHint}
         analysisPrompt = `[ファイル] ${file.name} (${file.type}) - このファイルの内容を分析してください。`;
       }
 
-      // Save file
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
+        const rawDataUrl = ev.target.result;
+        const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
         const photoId = Date.now().toString(36) + Math.random().toString(36).substr(2);
         store.addHealthData('photos', {
           id: photoId,
           filename: file.name, type: file.type, size: file.size,
-          dataUrl: isImage ? ev.target.result : '',
+          dataUrl: compressed,
           category: category
         });
 
-        // Save to text entries for timeline
         const textEntries = store.get('textEntries') || [];
         textEntries.push({
           id: Date.now().toString(36) + Math.random().toString(36).substr(2),
@@ -12838,7 +12895,7 @@ ${axisHint}
           category: category,
           type: 'file_upload',
           photoId: isImage ? photoId : '',
-          previewImage: isImage ? ev.target.result : '',
+          previewImage: compressed,
           title: `📎 ${file.name}`,
           content: `${category}をアップロードしました（${(file.size/1024).toFixed(0)}KB）`
         });
@@ -12912,16 +12969,16 @@ ${axisHint}
 
       const reader = new FileReader();
       reader.onload = async (ev) => {
+        const rawDataUrl = ev.target.result;
+        const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
         const photoId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        // Save file reference
         store.addHealthData('photos', {
           id: photoId,
           filename: file.name, type: file.type, size: file.size,
-          dataUrl: isImage ? ev.target.result : '',
+          dataUrl: compressed,
           category: isImage ? '写真' : 'ファイル'
         });
 
-        // Save to text entries for timeline
         const entryId = Date.now().toString(36) + Math.random().toString(36).substr(2);
         const textEntries = store.get('textEntries') || [];
         textEntries.push({
@@ -12930,7 +12987,7 @@ ${axisHint}
           category: isImage ? '写真' : 'ファイル',
           type: 'file_upload',
           photoId: isImage ? photoId : '',
-          previewImage: isImage ? ev.target.result : '',
+          previewImage: compressed,
           title: `📎 ${file.name}`,
           content: `${isImage ? '写真' : 'ファイル'}をアップロード（${(file.size/1024).toFixed(0)}KB）`
         });
@@ -13005,7 +13062,7 @@ ${axisHint}
     setTimeout(() => this.navigate('dashboard'), 600);
   }
 
-  saveProfile() {
+  async saveProfile() {
     const profile = {
       age: document.getElementById('profile-age')?.value || '',
       gender: document.getElementById('profile-gender')?.value || '',
@@ -13018,7 +13075,8 @@ ${axisHint}
     };
     store.set('userProfile', profile);
     if (FirebaseBackend.initialized) {
-      FirebaseBackend.saveProfile({ userProfile: profile });
+      const ok = await FirebaseBackend.saveProfile({ userProfile: profile });
+      if (!ok) return;
     }
     Components.showToast('プロフィールを保存しました', 'success');
   }
@@ -15769,7 +15827,7 @@ App.prototype.render_dashboard = function() {
             placeholder="体調・食事・薬・検査結果など何でも記録（📎で写真も添付可）"></textarea>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()">送信</button>
+          <button class="btn btn-primary btn-sm" onclick="app.dashQuickSubmit()" ${store.get('isAnalyzing') ? 'disabled' : ''}>送信</button>
           <label class="btn btn-secondary btn-sm" style="cursor:pointer;text-align:center">
             📎
             <input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt" onchange="app.dashQuickFile(event)">
@@ -16478,7 +16536,7 @@ App.prototype.render_data_input = function() {
         <textarea class="form-textarea" id="text-input-content" rows="6" placeholder="体調や気づきを自由に記録してください..."></textarea>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="app.submitTextEntry()">保存して分析</button>
+        <button class="btn btn-primary" onclick="app.submitTextEntry()" ${store.get('isAnalyzing') ? 'disabled' : ''}>保存して分析</button>
         <label class="btn btn-secondary" style="cursor:pointer">📎 写真・ファイル<input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.dataPageFileUpload(this.files)"></label>
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
@@ -17197,7 +17255,14 @@ App.prototype.render_integrations = function() {
   const syncs = store.get('integrationSyncs') || {};
   const calendarEvents = store.get('calendarEvents') || [];
   const fitbitConnected = Integrations.fitbit.connected;
-  const gcalConnected = !!(localStorage.getItem('ics_calendar_url') || localStorage.getItem('google_calendar_oauth_connected'));
+  const hasIcsUrl = !!localStorage.getItem('ics_calendar_url');
+  const hadOauthOnce = !!localStorage.getItem('google_calendar_oauth_connected');
+  const gcalConnected = hasIcsUrl || hadOauthOnce;
+  // OAuth tokens expire after 1 hour and we don't store them, so
+  // OAuth-only connections are "one-shot" — user must re-authenticate
+  // to sync again. Show a re-auth hint when OAuth was used but no
+  // ICS URL is set (ICS URL is stateless and doesn't expire).
+  const gcalNeedsReauth = hadOauthOnce && !hasIcsUrl;
   const now = Date.now();
 
   const countSource = (s) => textEntries.filter(e => e.source === s).length;
@@ -17487,8 +17552,8 @@ App.prototype.render_integrations = function() {
   <div class="card" style="margin-bottom:20px" id="gcal-section">
     <div class="card-header">
       <span class="card-title">📅 Googleカレンダー</span>
-      <span class="tag ${calendarEvents.length > 0 ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
-        ${gcalConnected ? '✓ 接続済み' : '未接続'}
+      <span class="tag ${gcalNeedsReauth ? 'tag-warning' : (gcalConnected ? 'tag-success' : 'tag-warning')}" style="font-size:10px">
+        ${gcalNeedsReauth ? '⚠ 再認証が必要' : (gcalConnected ? '✓ 接続済み' : '未接続')}
       </span>
     </div>
     <div class="card-body">

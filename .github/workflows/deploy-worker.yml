@@ -2,7 +2,7 @@ name: Deploy Cloudflare Workers
 
 on:
   push:
-    branches: ["main", "work"]
+    branches: ["main"]
     paths:
       - "worker/**"
       - "wrangler.toml"
