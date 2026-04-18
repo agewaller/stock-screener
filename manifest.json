@@ -1,0 +1,64 @@
+{
+  "name": "健康日記 — 体調記録 & AI分析",
+  "short_name": "健康日記",
+  "description": "ME/CFS・Long COVID・慢性疾患の症状を毎日記録し、AI で寛解への道を分析するアプリ",
+  "start_url": "/?utm_source=pwa&utm_medium=homescreen",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#6C63FF",
+  "background_color": "#ffffff",
+  "lang": "ja",
+  "dir": "ltr",
+  "scope": "/",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "今日の体調を記録",
+      "short_name": "記録",
+      "description": "症状・気分・バイタルを記録する",
+      "url": "/?page=data-input&utm_source=pwa_shortcut",
+      "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "ダッシュボード",
+      "short_name": "今日",
+      "description": "今日の処方と分析を確認する",
+      "url": "/?page=dashboard&utm_source=pwa_shortcut",
+      "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "AIに相談",
+      "short_name": "相談",
+      "description": "体調について相談する",
+      "url": "/?page=chat&utm_source=pwa_shortcut",
+      "icons": [{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "健康日記 — ME/CFS・慢性疾患の症状記録 & AI分析"
+    }
+  ]
+}

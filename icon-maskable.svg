@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full bleed background for maskable icon (safe zone = center 80%) -->
+  <rect width="512" height="512" fill="#6C63FF"/>
+  <!-- Heart shape centered in safe zone (102–410) -->
+  <path d="M256 360 C240 345 148 290 148 218 C148 176 182 148 218 156 C236 160 251 173 256 188 C261 173 276 160 294 156 C330 148 364 176 364 218 C364 290 272 345 256 360Z" fill="white"/>
+</svg>

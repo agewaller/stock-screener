@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#6C63FF"/>
+  <!-- Heart shape (health) -->
+  <path d="M256 360 C240 345 140 285 140 210 C140 168 174 140 210 148 C230 152 247 166 256 182 C265 166 282 152 302 148 C338 140 372 168 372 210 C372 285 272 345 256 360Z" fill="white"/>
+  <!-- Pencil/diary line -->
+  <path d="M256 195 L256 330" stroke="white" stroke-width="0" fill="none"/>
+</svg>

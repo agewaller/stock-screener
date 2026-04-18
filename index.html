@@ -56,6 +56,12 @@
 
 <!-- Icons -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3Cpath d='M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z' fill='white' fill-opacity='0.25'/%3E%3Cpath d='M16 11L16 20M12 15.5L16 20L20 15.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<!-- PWA Web App Manifest -->
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="健康日記">
+<link rel="apple-touch-icon" href="/icon.svg">
 
 <!-- ═══ Structured Data (schema.org JSON-LD) ═══ -->
 <!-- Organization + WebSite + WebApplication: identifies the
@@ -2020,7 +2026,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   </div>
 </div>
 <div class="toast-container" id="toast-container"></div>
-<div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
+<div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 Shares Inc. All rights reserved.</div>
 <script>
 // === js/config.js ===
 /* ============================================================
@@ -9504,6 +9510,19 @@ var App = class App {
         localStorage.setItem('referrer_id', ref);
         console.log('[Referral] captured ref=' + ref);
       }
+      // Capture disease pre-selection from URL (?d=long-covid etc).
+      // Disease landing pages link here with ?d=<disease-id> so the
+      // guest analysis box pre-selects the matching tag automatically,
+      // giving arriving visitors a personalised first impression.
+      // Normalise hyphens to underscores to match our internal IDs.
+      const d = params.get('d');
+      if (d && /^[a-z][a-z0-9_\-]{0,30}$/.test(d)) {
+        const normalised = d.replace(/-/g, '_');
+        sessionStorage.setItem('preselect_disease', normalised);
+      }
+      // Capture UTM source so we can personalise the guest message.
+      const utmSource = params.get('utm_source');
+      if (utmSource) sessionStorage.setItem('utm_source', utmSource);
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
@@ -12500,12 +12519,70 @@ ${axisHint}
       }
       result._fromAPI = true;
       if (resultEl) {
+        // Build a disease-specific registration CTA based on what the
+        // guest selected, so the value proposition is personalised.
+        const selTags = Array.from(document.querySelectorAll('.guest-disease-tag.selected'));
+        const selIds = selTags.map(t => t.dataset.id);
+        const diseaseNames = {
+          mecfs: 'ME/CFS（慢性疲労症候群）',
+          long_covid: 'Long COVID（コロナ後遺症）',
+          fibromyalgia: '線維筋痛症',
+          pots: 'POTS（起立性頻脈）',
+          depression: 'うつ',
+          insomnia: '不眠症',
+          ibs: '過敏性腸症候群',
+          hashimoto: '橋本病'
+        };
+        const primaryDisease = selIds.length > 0
+          ? (diseaseNames[selIds[0]] || selIds[0])
+          : null;
+        const ctaTitle = primaryDisease
+          ? `${primaryDisease}の記録を続けると、経過がわかります`
+          : '記録を続けると、さらに詳しい分析ができます';
+        const ctaBody = primaryDisease
+          ? `${primaryDisease}は毎日の体調変化が重要です。登録すると変化パターン・PEM・薬の効果を追跡できます`
+          : '登録すると毎日の変化を追跡し、あなたに合った情報をお届けします';
+
+        // PWA install button — shown only when the browser's install
+        // prompt is available (Android/Chrome). Hidden on iOS and when
+        // already installed. CSS class 'pwa-install-btn' lets the global
+        // beforeinstallprompt handler find and reveal it.
+        const pwaInstallHtml = `
+          <button class="pwa-install-btn"
+            style="display:none;padding:8px 16px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px"
+            onclick="if(window._pwaInstallPrompt){window._pwaInstallPrompt.prompt();window._pwaInstallPrompt.userChoice.then(r=>{if(r.outcome==='accepted')this.style.display='none'});}">
+            📱 ホーム画面に追加（いつでも開ける）
+          </button>`;
+        // iOS Safari doesn't fire beforeinstallprompt; show a manual hint
+        // when running in Safari on iPhone/iPad.
+        const isIosSafari = /iP(hone|ad|od)/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent);
+        const iosHtml = isIosSafari ? `
+          <div style="margin-top:8px;padding:8px 10px;background:#f0f4ff;border-radius:8px;font-size:11px;color:#3730a3;line-height:1.6">
+            📱 ホーム画面に追加するには: Safari の <strong>共有ボタン</strong> → <strong>ホーム画面に追加</strong>
+          </div>` : '';
+
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #bbf7d0;border-radius:12px">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">${Components.escapeHtml(ctaTitle)}</div>
+            <div style="font-size:11px;color:#15803d;margin-bottom:10px;line-height:1.6">${Components.escapeHtml(ctaBody)}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button onclick="document.querySelector('form[onsubmit]')?.querySelector('input[type=email]')?.focus();document.querySelector('form[onsubmit]')?.scrollIntoView({behavior:'smooth',block:'center'})"
+                style="padding:10px 18px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+                無料で記録を始める ↓
+              </button>
+              <button onclick="document.querySelector('.google-btn')?.click()"
+                style="padding:10px 14px;background:#fff;color:#374151;border:1.5px solid #e2e8f0;border-radius:10px;font-size:12px;cursor:pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Google で始める
+              </button>
+            </div>
+            ${pwaInstallHtml}${iosHtml}
           </div>`;
+        // Trigger the disease scale widget if any tags were pre-selected
+        // from the URL param (updateGuestDiseaseScale is idempotent).
+        if (selIds.length > 0) {
+          try { this.updateGuestDiseaseScale(); } catch(_) {}
+        }
       }
     } catch (err) {
       console.warn('[guestAnalyze] Failed:', err?.message || err);
@@ -14700,14 +14777,25 @@ App.prototype.render_login = function() {
         <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:11px;color:#64748b;line-height:1.6">
           お持ちの症状を選ぶと、より的確な情報をお伝えできます（任意）
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px" id="guest-disease-tag-row">
-            ${['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺'].map(item => {
-              const [id, label] = item.split(':');
-              const epi = CONFIG.DISEASE_EPIDEMIOLOGY?.[id];
-              const tooltipLabel = epi ? `世界で ${epi.label}（${epi.source || '統計'}）` : '';
-              return `<span class="guest-disease-tag" data-id="${id}" data-world-label="${Components.escapeHtml(epi?.label || '')}" title="${Components.escapeHtml(tooltipLabel)}"
-                style="padding:3px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;cursor:pointer;font-size:11px;transition:all 0.15s"
-                onclick="this.classList.toggle('selected');if(this.classList.contains('selected')){this.style.background='#ede9fe';this.style.borderColor='#6366f1';this.style.color='#6366f1'}else{this.style.background='#fff';this.style.borderColor='#e2e8f0';this.style.color='#64748b'}app.updateGuestDiseaseScale();">${label}</span>`;
-            }).join('')}
+            ${(() => {
+              // Pre-select disease from URL ?d= param so users arriving
+              // from disease landing pages see a personalised guest box.
+              let preselect = '';
+              try { preselect = sessionStorage.getItem('preselect_disease') || ''; } catch(_) {}
+              return ['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺'].map(item => {
+                const [id, label] = item.split(':');
+                const epi = CONFIG.DISEASE_EPIDEMIOLOGY?.[id];
+                const tooltipLabel = epi ? `世界で ${epi.label}（${epi.source || '統計'}）` : '';
+                const isPreselected = preselect && (id === preselect || preselect.startsWith(id));
+                const selStyle = isPreselected
+                  ? 'background:#ede9fe;border-color:#6366f1;color:#6366f1'
+                  : 'background:#fff;border:1px solid #e2e8f0;color:#64748b';
+                const selClass = isPreselected ? 'selected' : '';
+                return `<span class="guest-disease-tag ${selClass}" data-id="${id}" data-world-label="${Components.escapeHtml(epi?.label || '')}" title="${Components.escapeHtml(tooltipLabel)}"
+                  style="padding:3px 10px;${selStyle};border-radius:14px;cursor:pointer;font-size:11px;transition:all 0.15s"
+                  onclick="this.classList.toggle('selected');if(this.classList.contains('selected')){this.style.background='#ede9fe';this.style.borderColor='#6366f1';this.style.color='#6366f1'}else{this.style.background='#fff';this.style.borderColor='#e2e8f0';this.style.color='#64748b'}app.updateGuestDiseaseScale();">${label}</span>`;
+              }).join('');
+            })()}
           </div>
           <div id="guest-disease-scale" style="margin-top:8px;padding:8px 10px;background:#fafaff;border-left:3px solid #6366f1;border-radius:0 6px 6px 0;font-size:11px;color:#4338ca;line-height:1.6;display:none">
             <strong>あなただけじゃない。</strong>
@@ -14943,7 +15031,7 @@ App.prototype.render_login = function() {
       <div style="text-align:center;padding:0 0 32px;color:#94a3b8;font-size:10px;line-height:2">
         <div>運営: シェアーズ株式会社 &nbsp;·&nbsp; 🇯🇵 Made in Japan</div>
         <div>本サービスは医療機器ではありません &nbsp;·&nbsp; 無料</div>
-        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc. All rights reserved.</div>
+        <div style="margin-top:4px;color:#cbd5e1">&copy; 2026 Shares Inc. All rights reserved.</div>
       </div>
 
     </div>
@@ -18103,6 +18191,29 @@ App.prototype.importDataFile = function(file) {
 
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });
+
+// ── PWA "Add to Home Screen" support ──────────────────────────────────────
+// Capture the browser-generated install prompt so we can trigger it
+// at a contextually relevant moment (e.g. after a successful guest
+// analysis) rather than immediately on page load. Stored globally so
+// any part of the app can call window._pwaInstallPrompt.prompt().
+window._pwaInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window._pwaInstallPrompt = e;
+  // Reveal any install buttons that were hidden pending the prompt.
+  document.querySelectorAll('.pwa-install-btn').forEach(el => {
+    el.style.display = '';
+  });
+});
+window.addEventListener('appinstalled', () => {
+  window._pwaInstallPrompt = null;
+  // Hide install buttons after the user has installed.
+  document.querySelectorAll('.pwa-install-btn').forEach(el => {
+    el.style.display = 'none';
+  });
+  Components.showToast('ホーム画面に追加しました！毎日のケアが続けやすくなります。', 'success');
+});
 </script>
 </body>
 </html>
