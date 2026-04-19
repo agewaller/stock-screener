@@ -4,3 +4,8 @@
 !.dev.vars.example
 .env*
 !.env.example
+
+# scripts
+scripts/node_modules
+scripts/package-lock.json
+scripts/*.serviceaccount.json

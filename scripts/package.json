@@ -1,0 +1,13 @@
+{
+  "name": "personal-learning-companion-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Operational scripts (seed, migrations) for Personal Learning Companion. Kept out of the site root so GitHub Pages remains buildless.",
+  "scripts": {
+    "seed": "node seed-prompts.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
