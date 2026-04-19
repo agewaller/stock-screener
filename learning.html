@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Learning Companion</title>
+<meta name="description" content="不登校・学校に行きづらい小学生・中学生・高校生のためのパーソナル学習伴走サービス。少しずつ、無理なく、あなたのペースで。">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237BA7BC'/%3E%3Cpath d='M10 20C10 14 13 11 16 11C19 11 22 14 22 20' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='20' r='1.5' fill='white'/%3E%3C/svg%3E">
+
+<!-- Firebase (same project as 健康日記: care-14c31) -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import {
+    getAuth, onAuthStateChanged, signInWithPopup, signInWithRedirect,
+    GoogleAuthProvider, signOut, signInAnonymously,
+  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import {
+    getFirestore, doc, getDoc, setDoc, serverTimestamp,
+  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  window.__fb = {
+    initializeApp, getAuth, onAuthStateChanged, signInWithPopup,
+    signInWithRedirect, GoogleAuthProvider, signOut, signInAnonymously,
+    getFirestore, doc, getDoc, setDoc, serverTimestamp,
+  };
+  window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<style>
+  :root {
+    --bg: #FAFBFC;
+    --surface: #FFFFFF;
+    --ink: #1F2937;
+    --ink-soft: #4B5563;
+    --ink-mute: #9CA3AF;
+    --accent: #7BA7BC;
+    --accent-soft: #E6EEF2;
+    --warm: #E8A87C;
+    --good: #A8C8A0;
+    --border: #E5E7EB;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    --max-w: 680px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .wrap { max-width: var(--max-w); margin: 0 auto; padding: 24px 20px 80px; }
+
+  .hero { text-align: center; padding: 56px 16px 32px; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin: 0 0 12px; color: var(--ink); }
+  .hero .lead { font-size: 15px; color: var(--ink-soft); margin: 0 0 24px; }
+  .hero .note { font-size: 13px; color: var(--ink-mute); margin: 32px auto 0; max-width: 480px; background: var(--accent-soft); padding: 14px 18px; border-radius: var(--radius); line-height: 1.6; text-align: left; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 12px 0;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 17px; margin: 0 0 12px; font-weight: 600; }
+  .card p { color: var(--ink-soft); font-size: 14px; margin: 0 0 8px; }
+
+  .btn {
+    display: inline-block;
+    padding: 13px 24px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 44px;
+    text-align: center;
+    transition: transform 0.06s ease, box-shadow 0.12s ease;
+  }
+  .btn:hover { box-shadow: 0 2px 8px rgba(123,167,188,0.35); }
+  .btn:active { transform: translateY(1px); }
+  .btn.secondary { background: var(--surface); color: var(--ink); border-color: var(--border); }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--border); }
+  .btn.block { display: block; width: 100%; margin: 8px 0; }
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row.center { justify-content: center; }
+
+  .muted { color: var(--ink-mute); font-size: 13px; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 500; }
+
+  /* Top bar */
+  header.top {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header.top .brand { font-weight: 600; font-size: 15px; color: var(--ink); }
+  header.top .brand .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: middle; }
+  header.top nav a { margin-left: 16px; font-size: 14px; color: var(--ink-soft); }
+  header.top nav a.active { color: var(--accent); font-weight: 600; }
+
+  /* Chat placeholder */
+  .chat-empty { text-align: center; padding: 48px 20px; color: var(--ink-mute); }
+  .chat-empty .icon { font-size: 24px; opacity: 0.4; margin-bottom: 12px; }
+
+  /* Form controls */
+  .field { margin: 14px 0; }
+  .field label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 500; }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+
+  /* Loader */
+  .loader {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid var(--accent-soft);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Soft error */
+  .error-soft {
+    background: #FFF7F3;
+    color: #A65B30;
+    border: 1px solid #F5D5C0;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Router target -->
+<div id="app"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+ * Personal Learning Companion — SPA shell (Phase 1 skeleton)
+ *
+ * Kept intentionally minimal:
+ *   - Hash-based router
+ *   - Firebase Auth state listener
+ *   - Orchestrator base URL (configurable, never hardcodes a prompt)
+ *   - Admin decision lives in the Worker; the client caches the flag
+ *     from /me but treats it as a UI hint only
+ *
+ * No prompt text lives in this file. Every AI call goes through the
+ * Worker, which composes the system prompt server-side.
+ * ═════════════════════════════════════════════════════════════════ */
+
+const CONFIG = Object.freeze({
+  APP_NAME: 'Personal Learning Companion',
+  FIREBASE: {
+    apiKey: 'AIzaSyDx9ByplxdzaWkLJrHnPhbf13MmUBEmLT8',
+    authDomain: 'care-14c31.firebaseapp.com',
+    projectId: 'care-14c31',
+    storageBucket: 'care-14c31.firebasestorage.app',
+    messagingSenderId: '429015904719',
+    appId: '1:429015904719:web:0b57bb424006e86ab7a2ba',
+  },
+  // Default orchestrator URL. Can be overridden in localStorage for
+  // local development (`localStorage.orchestrator_url = 'http://...'`).
+  ORCHESTRATOR_URL_DEFAULT: 'https://learning-orchestrator.agewaller.workers.dev',
+});
+
+const State = {
+  user: null,         // { uid, email, displayName } or null
+  isAdmin: false,     // confirmed by /me, never trusted from the client alone
+  isBooting: true,
+  auth: null,
+  db: null,
+  listeners: new Set(),
+  set(patch) { Object.assign(this, patch); this.listeners.forEach(l => l()); },
+  on(fn) { this.listeners.add(fn); return () => this.listeners.delete(fn); },
+};
+
+function orchestratorUrl() {
+  try {
+    const override = localStorage.getItem('orchestrator_url');
+    if (override) return override.replace(/\/+$/, '');
+  } catch (_) {}
+  return CONFIG.ORCHESTRATOR_URL_DEFAULT;
+}
+
+async function api(path, { method = 'GET', body = null } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (State.auth?.currentUser) {
+    try {
+      const token = await State.auth.currentUser.getIdToken();
+      headers['Authorization'] = `Bearer ${token}`;
+    } catch (_) {}
+  }
+  const res = await fetch(orchestratorUrl() + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = null;
+  try { data = await res.json(); } catch (_) {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ─── Router ─────────────────────────────────────────────────────── */
+
+const ROUTES = {
+  '/':               { view: viewLanding,       requires: 'none'   },
+  '/auth':           { view: viewAuth,          requires: 'none'   },
+  '/app/chat':       { view: viewChat,          requires: 'user'   },
+  '/app/dashboard':  { view: viewDashboard,     requires: 'user'   },
+  '/admin/login':    { view: viewAdminLogin,    requires: 'none'   },
+  '/admin':          { view: viewAdminHome,     requires: 'admin'  },
+  '/admin/prompts':  { view: viewAdminPrompts,  requires: 'admin'  },
+  '/admin/ai-modes': { view: viewAdminAiModes,  requires: 'admin'  },
+  '/admin/audit':    { view: viewAdminAudit,    requires: 'admin'  },
+};
+
+function currentPath() {
+  const h = (location.hash || '#/').replace(/^#/, '');
+  const clean = h.replace(/\/+$/, '') || '/';
+  return clean;
+}
+
+function navigate(path) {
+  if (currentPath() === path) { render(); return; }
+  location.hash = '#' + path;
+}
+
+function render() {
+  const root = document.getElementById('app');
+  if (State.isBooting) {
+    root.innerHTML = `<div class="wrap"><div class="card"><span class="loader"></span> 準備しています…</div></div>`;
+    return;
+  }
+  const path = currentPath();
+  const route = ROUTES[path] || ROUTES['/'];
+
+  if (route.requires === 'user' && !State.user) {
+    navigate('/auth'); return;
+  }
+  if (route.requires === 'admin' && !State.isAdmin) {
+    navigate('/admin/login'); return;
+  }
+
+  root.innerHTML = topbar(path) + `<div class="wrap" id="view-root"></div>`;
+  const host = document.getElementById('view-root');
+  try {
+    route.view(host);
+  } catch (err) {
+    console.error(err);
+    host.innerHTML = `<div class="error-soft">今は少し調子が悪いみたい。もう一度だけ試してみる？</div>`;
+  }
+
+  // Nav highlight
+  document.querySelectorAll('header.top nav a').forEach(a => {
+    if (a.getAttribute('data-path') === path) a.classList.add('active');
+  });
+}
+
+function topbar(path) {
+  if (path === '/' || path === '/auth' || path === '/admin/login') {
+    return `<header class="top">
+      <div class="brand"><span class="dot"></span>${escapeHtml(CONFIG.APP_NAME)}</div>
+      <nav>
+        ${State.user ? `<a data-path="/app/chat" href="#/app/chat">チャット</a>` : ''}
+      </nav>
+    </header>`;
+  }
+  const isAdmin = State.isAdmin;
+  const isAdminPath = path.startsWith('/admin');
+  return `<header class="top">
+    <div class="brand"><span class="dot"></span>${escapeHtml(CONFIG.APP_NAME)}</div>
+    <nav>
+      ${!isAdminPath ? `
+        <a data-path="/app/chat" href="#/app/chat">チャット</a>
+        <a data-path="/app/dashboard" href="#/app/dashboard">マイページ</a>
+      ` : `
+        <a data-path="/admin" href="#/admin">概要</a>
+        <a data-path="/admin/prompts" href="#/admin/prompts">プロンプト</a>
+        <a data-path="/admin/ai-modes" href="#/admin/ai-modes">AIモード</a>
+        <a data-path="/admin/audit" href="#/admin/audit">監査</a>
+      `}
+      ${isAdmin && !isAdminPath ? `<a href="#/admin">管理</a>` : ''}
+      ${State.user ? `<a href="#" onclick="event.preventDefault();window.__signOut();">ログアウト</a>` : ''}
+    </nav>
+  </header>`;
+}
+
+/* ─── Views ──────────────────────────────────────────────────────── */
+
+function viewLanding(host) {
+  host.innerHTML = `
+    <div class="hero">
+      <h1>少しずつ、自分のペースで。</h1>
+      <p class="lead">
+        学校に行きづらいときも、疲れているときも。<br>
+        ここでは、あなたに合わせて、ほんの少しずつ進みます。
+      </p>
+      <div class="row center">
+        <a class="btn" href="#/auth">はじめる</a>
+        <a class="btn secondary" href="#/auth">ログイン</a>
+      </div>
+      <div class="note">
+        このサービスは、未成年の方の利用を想定しています。<br>
+        安心して使えるように、保護者の方の同意のもとでのご利用をおすすめしています。
+        学習の記録は、あなただけが見られる場所に大切に保管します。
+        成績や偏差値でランク付けすることはありません。
+      </div>
+    </div>
+    <div class="card">
+      <h2>ここでできること</h2>
+      <p>・ AIと、短い会話を1問ずつ。</p>
+      <p>・ 今日の気分に合わせて、やさしい質問から。</p>
+      <p>・ 「わからない」「答えたくない」「今日はここまで」も大切に。</p>
+      <p>・ あなたの歩みが、マイページに少しずつ残ります。</p>
+    </div>
+  `;
+}
+
+function viewAuth(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>はじめる / ログイン</h2>
+      <p>いちばん簡単な方法で始められます。</p>
+      <div class="row" style="margin-top:16px">
+        <button class="btn block" id="btn-google">Googleではじめる</button>
+        <button class="btn secondary block" id="btn-demo">お試しで見てみる</button>
+      </div>
+      <p class="muted" style="margin-top:16px">
+        お試しモードでは、データは端末内だけに残ります。
+      </p>
+      <div id="auth-status"></div>
+    </div>
+  `;
+  document.getElementById('btn-google').onclick = () => doGoogleLogin();
+  document.getElementById('btn-demo').onclick = () => doDemoLogin();
+}
+
+function viewChat(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>チャット</h2>
+      <p class="muted">ここで、AIと1問ずつお話しできます。</p>
+      <div class="chat-empty">
+        <div class="icon">●</div>
+        <div>チャット機能は、もうすぐ使えるようになります。</div>
+        <div class="muted" style="margin-top:8px">最初の質問は、あいさつと気分からです。</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>今日のきもち</h2>
+      <p class="muted">（準備中）</p>
+    </div>
+  `;
+}
+
+function viewDashboard(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>今日の一歩</h2>
+      <p class="muted">ここに、あなたの歩みが少しずつ残っていきます。</p>
+    </div>
+    <div class="card">
+      <h2>最近のきもち</h2>
+      <p class="muted">（準備中）</p>
+    </div>
+    <div class="card">
+      <h2>次のおすすめ</h2>
+      <p class="muted">（準備中）</p>
+    </div>
+  `;
+}
+
+function viewAdminLogin(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>管理者ログイン</h2>
+      <p>管理者メールアドレスに登録済みのGoogleアカウントでログインしてください。</p>
+      <button class="btn block" id="btn-admin-google">Googleでログイン</button>
+      <div id="admin-auth-status" class="muted" style="margin-top:12px"></div>
+    </div>
+  `;
+  document.getElementById('btn-admin-google').onclick = () => doGoogleLogin('/admin');
+}
+
+function viewAdminHome(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>管理者ダッシュボード</h2>
+      <p class="muted">${escapeHtml(State.user?.email || '')} としてログイン中。</p>
+    </div>
+    <div class="card">
+      <h2>概要</h2>
+      <p class="muted">登録ユーザー数 / 今日のチャット数 / アクティブユーザー数 / 安全フラグ件数 は Phase 7 で追加します。</p>
+    </div>
+  `;
+}
+
+function viewAdminPrompts(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>プロンプト管理</h2>
+      <p class="muted">Phase 7 で完成します。ここではプロンプトの一覧、編集、バージョン管理、有効化/無効化を行います。</p>
+      <p class="muted">プロンプト本文はサーバー側にのみ保存され、管理者が編集画面を開いたときだけ復号されて表示されます。</p>
+    </div>
+  `;
+}
+
+function viewAdminAiModes(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>AIモード管理</h2>
+      <p class="muted">Phase 7 で完成します。gentle_onboarding / learning_check / subject_math など、モードごとの active prompts、温度、トークン上限を編集できます。</p>
+    </div>
+  `;
+}
+
+function viewAdminAudit(host) {
+  host.innerHTML = `
+    <div class="card">
+      <h2>監査ログ</h2>
+      <p class="muted">Phase 7 で完成します。プロンプト編集、AIモード変更、権限操作の履歴を確認できます。</p>
+    </div>
+  `;
+}
+
+/* ─── Auth ───────────────────────────────────────────────────────── */
+
+function doGoogleLogin(redirectAfter) {
+  const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect } = window.__fb;
+  const provider = new GoogleAuthProvider();
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  const fn = isMobile ? signInWithRedirect : signInWithPopup;
+  fn(State.auth, provider)
+    .then(() => { if (redirectAfter) navigate(redirectAfter); })
+    .catch(err => {
+      console.error(err);
+      const el = document.getElementById('auth-status') || document.getElementById('admin-auth-status');
+      if (el) el.innerHTML = `<div class="error-soft">うまくログインできなかったみたい。もう一度だけ試してみる？</div>`;
+    });
+}
+
+function doDemoLogin() {
+  const { signInAnonymously } = window.__fb;
+  signInAnonymously(State.auth)
+    .then(() => navigate('/app/chat'))
+    .catch(err => {
+      console.error(err);
+      const el = document.getElementById('auth-status');
+      if (el) el.innerHTML = `<div class="error-soft">お試しモードに入れなかったみたい。もう一度だけ試してみる？</div>`;
+    });
+}
+
+window.__signOut = function () {
+  const { signOut } = window.__fb;
+  signOut(State.auth).then(() => navigate('/'));
+};
+
+/* ─── Boot ───────────────────────────────────────────────────────── */
+
+function boot() {
+  const { initializeApp, getAuth, onAuthStateChanged, getFirestore } = window.__fb;
+  const app = initializeApp(CONFIG.FIREBASE);
+  State.auth = getAuth(app);
+  State.db = getFirestore(app);
+
+  onAuthStateChanged(State.auth, async (user) => {
+    if (user) {
+      State.set({
+        user: {
+          uid: user.uid,
+          email: user.email || null,
+          displayName: user.displayName || null,
+          isAnonymous: user.isAnonymous,
+        },
+      });
+      // Ask the Worker whether this user is admin. Falls back to
+      // false if the Worker is unreachable — admin UI is hidden
+      // until confirmed, which is the safe default.
+      try {
+        const { ok, data } = await api('/me');
+        State.set({ isAdmin: !!(ok && data && data.isAdmin), isBooting: false });
+      } catch (_) {
+        State.set({ isAdmin: false, isBooting: false });
+      }
+    } else {
+      State.set({ user: null, isAdmin: false, isBooting: false });
+    }
+  });
+
+  window.addEventListener('hashchange', render);
+  State.on(render);
+  render();
+}
+
+if (window.__fb) {
+  boot();
+} else {
+  window.addEventListener('fb-ready', boot, { once: true });
+}
+</script>
+
+</body>
+</html>

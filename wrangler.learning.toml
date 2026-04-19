@@ -1,0 +1,14 @@
+name = "learning-orchestrator"
+main = "worker/learning-orchestrator.js"
+compatibility_date = "2026-04-06"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# Secrets (set via `wrangler secret put`, never committed):
+#   ANTHROPIC_API_KEY
+#   FIREBASE_PROJECT_ID
+#   FIREBASE_SERVICE_ACCOUNT_JSON
+#   ADMIN_EMAILS
+#   APP_NAME
