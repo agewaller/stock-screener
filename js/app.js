@@ -2251,7 +2251,13 @@ ${titles}`;
           adminHint = `分析の呼び出しに失敗しました: ${err.message}`;
         }
       } else {
-        adminHint = 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
+        if (/403|Origin|Forbidden/i.test(err.message)) {
+          adminHint = 'このドメインからの接続が許可されていません。本番サイト (cares.advisers.jp) からご利用ください。';
+        } else if (/401|Unauthorized/i.test(err.message)) {
+          adminHint = 'AIサービスの認証に失敗しました。しばらく待ってから再度お試しください。';
+        } else {
+          adminHint = 'ただいま詳細分析をご用意できません。少し時間をおいて再度お試しください。';
+        }
       }
       return {
         summary: '記録を保存しました。',
@@ -2965,10 +2971,13 @@ ${titles}`;
     });
 
     // Ensure the guest has an anonymous Firebase session so they can
-    // read admin/config (the shared API keys). Without this the API
-    // call always falls back to "ただいま詳細分析をご用意できません"
-    // and every guest query returns the same canned message.
-    await FirebaseBackend.ensureGuestAuth();
+    // read admin/config (the shared API keys). If keys fail to load,
+    // we still proceed — the Worker has an env fallback for verified
+    // origins — but we log it for diagnostics.
+    const authOk = await FirebaseBackend.ensureGuestAuth();
+    if (!authOk) {
+      console.warn('[guestAnalyze] ensureGuestAuth returned false — proceeding with Worker env fallback');
+    }
 
     // Collect selected diseases from guest tags
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
@@ -3056,8 +3065,10 @@ ${axisHint}
       // enough info for the user to report the issue back (HTTP status,
       // short reason) without dumping full stack traces onto the UI.
       let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
-      if (/401/.test(errMessage)) {
-        friendlyHint = '認証エラー (401)。運営者に連絡してください。';
+      if (/403|Origin not allowed|Forbidden/i.test(errMessage)) {
+        friendlyHint = 'このドメインからの接続が許可されていません (403)。本番サイト (cares.advisers.jp) からご利用ください。';
+      } else if (/401/.test(errMessage)) {
+        friendlyHint = 'APIキーが設定されていません (401)。管理者に連絡してください。';
       } else if (/404|not found|deprecat/i.test(errMessage)) {
         friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
       } else if (/429|rate limit/i.test(errMessage)) {

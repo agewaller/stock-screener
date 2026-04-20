@@ -435,26 +435,22 @@ var FirebaseBackend = {
   // available, false if the operation can't complete in time.
   async ensureGuestAuth() {
     if (!this.initialized || !this.auth) return false;
-    // Already signed in (real or anonymous): make sure keys are loaded
+    const hasKeys = () => !!(localStorage.getItem('apikey_anthropic') ||
+                             localStorage.getItem('apikey_openai') ||
+                             localStorage.getItem('apikey_google'));
     if (this.auth.currentUser) {
-      if (!localStorage.getItem('apikey_anthropic') &&
-          !localStorage.getItem('apikey_openai') &&
-          !localStorage.getItem('apikey_google')) {
-        await this._loadGlobalConfigOnly();
-      }
-      return true;
+      if (!hasKeys()) await this._loadGlobalConfigOnly();
+      return hasKeys();
     }
     try {
       await this.auth.signInAnonymously();
-      // onAuthStateChanged will fire and call _loadGlobalConfigOnly.
-      // Wait up to 3s for at least one API key to land in localStorage.
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 16; i++) {
         await new Promise(r => setTimeout(r, 250));
-        if (localStorage.getItem('apikey_anthropic') ||
-            localStorage.getItem('apikey_openai') ||
-            localStorage.getItem('apikey_google')) return true;
+        if (hasKeys()) return true;
       }
-      return true; // signed in but keys still empty (admin hasn't set any)
+      // Keys still not loaded — Worker env fallback will handle this
+      // but we return false so callers know keys aren't local.
+      return false;
     } catch (err) {
       console.warn('[auth] anonymous sign-in failed:', err.message);
       return false;

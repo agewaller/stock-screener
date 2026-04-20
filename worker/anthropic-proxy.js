@@ -211,12 +211,16 @@ export default {
 
     // Origin check — reject requests from non-allowed origins
     const reqOrigin = request.headers.get('Origin') || '';
-    if (reqOrigin && !getAllowedOrigins(env).includes(reqOrigin)) {
+    const originVerified = !reqOrigin || getAllowedOrigins(env).includes(reqOrigin);
+    if (!originVerified) {
       return json({ error: 'Origin not allowed' }, 403, origin);
     }
 
-    // API key — must come from the client. No env fallback.
-    const apiKey = request.headers.get('x-api-key');
+    // API key — prefer client-provided key; fall back to env secret
+    // ONLY for verified origins. This enables guest mode (anonymous
+    // users who haven't loaded keys from Firestore yet) while still
+    // blocking unauthorized callers from other origins.
+    const apiKey = request.headers.get('x-api-key') || (originVerified ? env.ANTHROPIC_API_KEY : null);
     if (!apiKey) {
       return json({ error: 'x-api-key header required' }, 401, origin);
     }
