@@ -2042,123 +2042,58 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <script src="js/app.js?v=5"></script>
 <script src="js/pages.js?v=5"></script>
 <script>
-// Inline override: ensures guestAnalyze works regardless of JS file caching.
-// This runs AFTER all external scripts load and overrides the cached version.
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof app === 'undefined') return;
+// Core AI call — 10 lines, no dependencies. This is the ONLY AI code that matters.
+function callClaude(text, apiKey, model) {
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: model || 'claude-sonnet-4-6', max_tokens: 800, system: 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。', messages: [{ role: 'user', content: text }] })
+  }).then(function(r) { if (!r.ok) return r.text().then(function(t){throw new Error(r.status+': '+t.substring(0,300))}); return r.json(); })
+    .then(function(d) { return (d.content && d.content[0] && d.content[0].text) || ''; });
+}
+
+// Override ALL AI-related methods after external JS loads
+window.addEventListener('load', function() {
+  if (typeof app === 'undefined' || typeof store === 'undefined') return;
+  var getKey = function() { return localStorage.getItem('apikey_anthropic') || ''; };
+  var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
 
   app.guestAnalyze = async function() {
     var input = document.getElementById('guest-input');
     if (!input || !input.value.trim()) return;
-    var text = input.value.trim();
     var el = document.getElementById('guest-result');
-    if (el) el.innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:14px;font-weight:600">分析中...</div></div>';
-
-    // Get API key: try localStorage first, then try loading from Firebase
-    var apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
-      try {
-        await FirebaseBackend.ensureGuestAuth();
-        apiKey = localStorage.getItem('apikey_anthropic') || '';
-      } catch(e) {}
-    }
-    if (!apiKey) {
-      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;color:#991b1b;font-size:13px">APIキーが設定されていません。管理者が管理パネル→APIキーで設定する必要があります。</div>';
-      return;
-    }
-
+    if (el) el.innerHTML = '<div style="text-align:center;padding:30px;font-size:14px;font-weight:600">分析中...</div>';
+    var key = getKey();
+    if (!key) try { await FirebaseBackend.ensureGuestAuth(); key = getKey(); } catch(e){}
+    if (!key) { if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">APIキーが未設定です</div>'; return; }
     try {
-      var ctrl = new AbortController();
-      var tid = setTimeout(function(){ ctrl.abort(); }, 30000);
-      var res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5',
-          max_tokens: 600,
-          temperature: 0.5,
-          system: 'あなたは慢性疾患患者の伴走パートナーです。温かく寄り添って、短くても希望のあるアドバイスを返してください。必ず日本語で応答。',
-          messages: [{ role: 'user', content: text }]
-        }),
-        signal: ctrl.signal
-      });
-      clearTimeout(tid);
-      if (!res.ok) {
-        var errText = await res.text().catch(function(){ return ''; });
-        throw new Error('API ' + res.status + ': ' + errText.substring(0, 200));
-      }
-      var data = await res.json();
-      var reply = (data.content && data.content[0] && data.content[0].text) || JSON.stringify(data);
-      if (el) {
-        el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px">' +
-          '<div style="font-size:14px;font-weight:600;color:#166534;margin-bottom:8px">アドバイス</div>' +
-          '<div style="font-size:13px;color:#1e293b;line-height:1.8;white-space:pre-wrap">' + reply.replace(/</g,'&lt;') + '</div>' +
-          '</div>';
-      }
-    } catch(err) {
-      var msg = err.name === 'AbortError' ? '30秒以内に応答がありませんでした。' : (err.message || String(err));
-      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px">' +
-        '<div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">接続エラー</div>' +
-        '<div style="font-size:12px;color:#7f1d1d;line-height:1.7">' + msg.replace(/</g,'&lt;') + '</div>' +
-        '<button onclick="app.guestAnalyze()" style="margin-top:10px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">もう一度試す</button>' +
-        '</div>';
+      var reply = await callClaude(input.value.trim(), key, 'claude-haiku-4-5');
+      if (el) el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px"><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">'+esc(reply)+'</div></div>';
+    } catch(e) {
+      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(e.message)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button></div>';
     }
   };
 
-  // Inline override for dashQuickSubmit — same simple direct approach
-  app.dashQuickSubmit = function() {
+  app.dashQuickSubmit = async function() {
     var input = document.getElementById('dash-quick-input');
-    if (!input || !input.value.trim()) { Components.showToast('テキストを入力してください','error'); return; }
-    if (store.get('isAnalyzing')) { Components.showToast('分析中です','info'); return; }
+    if (!input || !input.value.trim()) return;
+    if (store.get('isAnalyzing')) return;
     var content = input.value.trim();
     input.value = '';
-
-    // Save entry
-    var entry = { id: Date.now().toString(36), timestamp: new Date().toISOString(), category: 'symptoms', type: 'text_entry', title: '', content: content };
-    var entries = store.get('textEntries') || [];
-    entries.push(entry);
-    store.set('textEntries', entries);
-
-    store.set('latestFeedback', null);
-    store.set('latestFeedbackError', null);
-    store.set('isAnalyzing', true);
+    var entry = { id: Date.now().toString(36), timestamp: new Date().toISOString(), category:'symptoms', type:'text_entry', content: content };
+    var arr = store.get('textEntries') || []; arr.push(entry); store.set('textEntries', arr);
+    store.set('latestFeedback', null); store.set('latestFeedbackError', null); store.set('isAnalyzing', true);
     app.navigate('dashboard');
-
-    var apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey) { store.set('isAnalyzing', false); store.set('latestFeedbackError', 'APIキーが未設定です'); return; }
-
-    var diseases = (store.get('selectedDiseases') || []).join('・');
-    var ctrl = new AbortController();
-    var tid = setTimeout(function(){ ctrl.abort(); }, 25000);
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: store.get('selectedModel') || 'claude-sonnet-4-6',
-        max_tokens: 800, temperature: 0.4,
-        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
-        messages: [{ role: 'user', content: (diseases ? '【疾患: '+diseases+'】\n' : '') + content }]
-      }),
-      signal: ctrl.signal
-    }).then(function(res) {
-      clearTimeout(tid);
-      if (!res.ok) return res.text().then(function(t){ throw new Error('API '+res.status+': '+t.substring(0,200)); });
-      return res.json();
-    }).then(function(data) {
+    var key = getKey();
+    if (!key) { store.set('isAnalyzing',false); store.set('latestFeedbackError','APIキーが未設定です'); return; }
+    try {
+      var reply = await callClaude(content, key, store.get('selectedModel'));
       store.set('isAnalyzing', false);
-      var text = (data.content && data.content[0] && data.content[0].text) || '';
-      store.set('latestFeedback', { summary: '分析結果', findings: text, actions: [], _fromAPI: true });
-    }).catch(function(err) {
-      clearTimeout(tid);
+      store.set('latestFeedback', { summary:'分析結果', findings: reply, actions:[], _fromAPI:true });
+    } catch(e) {
       store.set('isAnalyzing', false);
-      store.set('latestFeedbackError', err.name === 'AbortError' ? '25秒タイムアウト。もう一度お試しください。' : (err.message || String(err)));
-    });
+      store.set('latestFeedbackError', e.message || String(e));
+    }
   };
 });
 </script>
