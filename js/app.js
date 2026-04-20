@@ -3050,11 +3050,17 @@ ${responseText.substring(0, 3000)}`;
       subtext: 'まもなくアドバイスが届きます'
     });
 
-    // Ensure the guest has an anonymous Firebase session so they can
-    // read admin/config (the shared API keys). If keys fail to load,
-    // we still proceed — the Worker has an env fallback for verified
-    // origins — but we log it for diagnostics.
-    const authOk = await FirebaseBackend.ensureGuestAuth();
+    // Hard timeout for guest mode — 20s max. Prevents the eternal
+    // spinner when Firebase/Worker/Anthropic is slow or hanging.
+    const GUEST_TIMEOUT = 20000;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('GUEST_TIMEOUT: 20秒以内に応答がありませんでした')), GUEST_TIMEOUT)
+    );
+
+    const authOk = await Promise.race([
+      FirebaseBackend.ensureGuestAuth(),
+      new Promise(resolve => setTimeout(() => resolve(false), 5000))
+    ]);
     if (!authOk) {
       console.warn('[guestAnalyze] ensureGuestAuth returned false — proceeding with Worker env fallback');
     }
@@ -3119,10 +3125,14 @@ ${axisHint}
         modelId = store.get('selectedModel') || 'claude-opus-4-6';
       }
 
-      const rawResponse = await aiEngine.callModel(modelId, compactPrompt, {
-        maxTokens: 600,
-        temperature: 0.5
-      });
+      const rawResponse = await Promise.race([
+        aiEngine.callModel(modelId, compactPrompt, {
+          maxTokens: 600,
+          temperature: 0.5,
+          globalTimeoutMs: 15000
+        }),
+        timeoutPromise
+      ]);
       const responseText = typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse);
       let result = this.parseAIResponse(responseText);
       if (!result || (typeof result !== 'object')) {
