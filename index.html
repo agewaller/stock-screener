@@ -2042,21 +2042,74 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <script src="js/app.js?v=3"></script>
 <script src="js/pages.js?v=3"></script>
 <script>
-// #13 PWA Service Worker registration + #19 cache update notification
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-          if (typeof Components !== 'undefined' && Components.showToast) {
-            Components.showToast('新しいバージョンがあります。ページを再読み込みしてください。', 'info');
-          }
-        }
+// Inline override: ensures guestAnalyze works regardless of JS file caching.
+// This runs AFTER all external scripts load and overrides the cached version.
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof app === 'undefined') return;
+
+  app.guestAnalyze = async function() {
+    var input = document.getElementById('guest-input');
+    if (!input || !input.value.trim()) return;
+    var text = input.value.trim();
+    var el = document.getElementById('guest-result');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:14px;font-weight:600">分析中...</div></div>';
+
+    // Get API key: try localStorage first, then try loading from Firebase
+    var apiKey = localStorage.getItem('apikey_anthropic') || '';
+    if (!apiKey && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
+      try {
+        await FirebaseBackend.ensureGuestAuth();
+        apiKey = localStorage.getItem('apikey_anthropic') || '';
+      } catch(e) {}
+    }
+    if (!apiKey) {
+      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;color:#991b1b;font-size:13px">APIキーが設定されていません。管理者が管理パネル→APIキーで設定する必要があります。</div>';
+      return;
+    }
+
+    try {
+      var ctrl = new AbortController();
+      var tid = setTimeout(function(){ ctrl.abort(); }, 30000);
+      var res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 600,
+          temperature: 0.5,
+          system: 'あなたは慢性疾患患者の伴走パートナーです。温かく寄り添って、短くても希望のあるアドバイスを返してください。必ず日本語で応答。',
+          messages: [{ role: 'user', content: text }]
+        }),
+        signal: ctrl.signal
       });
-    });
-  }).catch(err => console.warn('[SW]', err.message));
-}
+      clearTimeout(tid);
+      if (!res.ok) {
+        var errText = await res.text().catch(function(){ return ''; });
+        throw new Error('API ' + res.status + ': ' + errText.substring(0, 200));
+      }
+      var data = await res.json();
+      var reply = (data.content && data.content[0] && data.content[0].text) || JSON.stringify(data);
+      if (el) {
+        el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px">' +
+          '<div style="font-size:14px;font-weight:600;color:#166534;margin-bottom:8px">アドバイス</div>' +
+          '<div style="font-size:13px;color:#1e293b;line-height:1.8;white-space:pre-wrap">' + reply.replace(/</g,'&lt;') + '</div>' +
+          '</div>';
+      }
+    } catch(err) {
+      var msg = err.name === 'AbortError' ? '30秒以内に応答がありませんでした。' : (err.message || String(err));
+      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:12px">' +
+        '<div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">接続エラー</div>' +
+        '<div style="font-size:12px;color:#7f1d1d;line-height:1.7">' + msg.replace(/</g,'&lt;') + '</div>' +
+        '<button onclick="app.guestAnalyze()" style="margin-top:10px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">もう一度試す</button>' +
+        '</div>';
+    }
+  };
+});
 </script>
 </body>
 </html>
