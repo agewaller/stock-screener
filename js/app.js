@@ -2109,8 +2109,9 @@ ${titles}`;
       // garbled text or "generic" responses because only the fallback
       // plain-text branch fired.
       const modelOptions = {
-        maxTokens: isFastGuestText ? 220 : 4096,
-        temperature: isFastGuestText ? 0.2 : 0.3
+        maxTokens: isFastGuestText ? 220 : 2000,
+        temperature: isFastGuestText ? 0.2 : 0.3,
+        globalTimeoutMs: 30000
       };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
       if (typeof options.temperature === 'number') modelOptions.temperature = options.temperature;
