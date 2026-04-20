@@ -113,11 +113,53 @@ const SAFE_SYSTEM_PROMPT = `あなたは健康日記アプリの「日記分析�
 
 const REFUSAL_PREVENTION = `\n\n【重要】どんな質問でも拒否せず、役立つ一般情報を必ず提供してください。"I'm sorry, I can't assist" 等の定型拒否は絶対に返さないこと。ユーザーの自律的な健康管理を尊重し、温かく寄り添ってください。`;
 
-function buildSystemPrompt(clientSystem) {
-  if (clientSystem && typeof clientSystem === 'string') {
-    return clientSystem + REFUSAL_PREVENTION;
+// #16 Build system prompt with KV-stored research context injection
+async function buildSystemPrompt(clientSystem, env, userMessage) {
+  let base = (clientSystem && typeof clientSystem === 'string')
+    ? clientSystem
+    : SAFE_SYSTEM_PROMPT;
+
+  // Inject latest research from KV if available
+  if (env?.RESEARCH_KV && userMessage) {
+    try {
+      const diseases = extractDiseaseIds(userMessage);
+      const researchBlocks = [];
+      for (const id of diseases.slice(0, 3)) {
+        const data = await env.RESEARCH_KV.get(`research:${id}`);
+        if (data) {
+          const parsed = JSON.parse(data);
+          if (parsed.highlights?.length) {
+            researchBlocks.push(`【${id} 最新研究 (${parsed.updatedAt})】\n` +
+              parsed.highlights.map(h => `・${h}`).join('\n'));
+          }
+        }
+      }
+      if (researchBlocks.length > 0) {
+        base += '\n\n' + researchBlocks.join('\n\n');
+      }
+    } catch (e) {
+      // KV read failure is non-fatal
+    }
   }
-  return SAFE_SYSTEM_PROMPT + REFUSAL_PREVENTION;
+
+  return base + REFUSAL_PREVENTION;
+}
+
+function extractDiseaseIds(text) {
+  const ids = [];
+  const patterns = {
+    mecfs: /ME\/CFS|慢性疲労|筋痛性脳脊髄炎/i,
+    long_covid: /long.?covid|コロナ後遺症/i,
+    fibromyalgia: /fibromyalgia|線維筋痛/i,
+    depression: /うつ|depression|抑うつ/i,
+    pots: /POTS|体位性頻脈/i,
+    diabetes_t2: /糖尿病|diabetes/i,
+    ibs: /IBS|過敏性腸/i,
+  };
+  for (const [id, re] of Object.entries(patterns)) {
+    if (re.test(text)) ids.push(id);
+  }
+  return ids.length > 0 ? ids : ['mecfs'];
 }
 
 // ────────────────────────────────────────────────
@@ -232,8 +274,10 @@ export default {
       return json({ error: 'Invalid JSON' }, 400, origin);
     }
 
-    // Inject server-side system prompt
-    body.system = buildSystemPrompt(body.system);
+    // Inject server-side system prompt + KV research context
+    const userMsg = body.messages?.[0]?.content || '';
+    const msgText = typeof userMsg === 'string' ? userMsg : (Array.isArray(userMsg) ? userMsg.map(b => b.text || '').join(' ') : '');
+    body.system = await buildSystemPrompt(body.system, env, msgText);
 
     // First attempt
     let response;

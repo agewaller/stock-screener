@@ -8,6 +8,7 @@ on:
       - "wrangler.toml"
       - "wrangler.plaud-inbox.toml"
       - "wrangler.professional-mailer.toml"
+      - "wrangler.research-updater.toml"
   workflow_dispatch:
 
 jobs:
@@ -43,3 +44,14 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: "."
           command: deploy --config wrangler.professional-mailer.toml
+
+  deploy-research-updater:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy research updater Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --config wrangler.research-updater.toml

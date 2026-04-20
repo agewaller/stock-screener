@@ -1,3 +1,8 @@
 name = "stock-screener"
 main = "worker/anthropic-proxy.js"
 compatibility_date = "2024-01-01"
+
+# #16 Shared KV namespace for research data (optional — works without it)
+# [[kv_namespaces]]
+# binding = "RESEARCH_KV"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"

@@ -54,15 +54,36 @@ var App = class App {
     // / file imports show up immediately on the home screen without the
     // user having to manually navigate away and back. Debounced so a
     // batch import doesn't trigger N renders.
+    // #12 Diff-based dashboard updates via morphdom. Prevents form
+    // input loss and scroll position reset during auto-refresh.
     let refreshTimer = null;
     const scheduleDashRefresh = () => {
       if (this.currentPage !== 'dashboard') return;
       if (refreshTimer) return;
       refreshTimer = setTimeout(() => {
         refreshTimer = null;
-        if (this.currentPage === 'dashboard') {
-          try { this.navigate('dashboard'); } catch (e) { console.warn('dash refresh:', e); }
-        }
+        if (this.currentPage !== 'dashboard') return;
+        try {
+          const content = document.getElementById('page-content');
+          if (!content) return;
+          const newHtml = this.render_dashboard();
+          if (typeof morphdom !== 'undefined') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = newHtml;
+            morphdom(content, tmp, {
+              childrenOnly: true,
+              onBeforeElUpdated: (from, to) => {
+                if (from.tagName === 'INPUT' || from.tagName === 'TEXTAREA' || from.tagName === 'SELECT') {
+                  if (from === document.activeElement) return false;
+                }
+                return true;
+              }
+            });
+            this.afterRender('dashboard');
+          } else {
+            this.navigate('dashboard');
+          }
+        } catch (e) { console.warn('dash refresh:', e); }
       }, 200);
     };
     // 'latestFeedbackError' was missing from this list, so when an
