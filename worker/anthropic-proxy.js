@@ -25,7 +25,8 @@ export default {
           // now always sends) failed the CORS preflight silently,
           // leaving `fetch()` to reject with a generic network error
           // and the dashboard textbox to appear unresponsive.
-          'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access',
+          'Access-Control-Allow-Headers':
+            'Content-Type, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access',
           'Access-Control-Max-Age': '86400',
         },
       });
