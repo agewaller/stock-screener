@@ -2109,6 +2109,57 @@ document.addEventListener('DOMContentLoaded', function() {
         '</div>';
     }
   };
+
+  // Inline override for dashQuickSubmit — same simple direct approach
+  app.dashQuickSubmit = function() {
+    var input = document.getElementById('dash-quick-input');
+    if (!input || !input.value.trim()) { Components.showToast('テキストを入力してください','error'); return; }
+    if (store.get('isAnalyzing')) { Components.showToast('分析中です','info'); return; }
+    var content = input.value.trim();
+    input.value = '';
+
+    // Save entry
+    var entry = { id: Date.now().toString(36), timestamp: new Date().toISOString(), category: 'symptoms', type: 'text_entry', title: '', content: content };
+    var entries = store.get('textEntries') || [];
+    entries.push(entry);
+    store.set('textEntries', entries);
+
+    store.set('latestFeedback', null);
+    store.set('latestFeedbackError', null);
+    store.set('isAnalyzing', true);
+    app.navigate('dashboard');
+
+    var apiKey = localStorage.getItem('apikey_anthropic') || '';
+    if (!apiKey) { store.set('isAnalyzing', false); store.set('latestFeedbackError', 'APIキーが未設定です'); return; }
+
+    var diseases = (store.get('selectedDiseases') || []).join('・');
+    var ctrl = new AbortController();
+    var tid = setTimeout(function(){ ctrl.abort(); }, 25000);
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: store.get('selectedModel') || 'claude-sonnet-4-6',
+        max_tokens: 800, temperature: 0.4,
+        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
+        messages: [{ role: 'user', content: (diseases ? '【疾患: '+diseases+'】\n' : '') + content }]
+      }),
+      signal: ctrl.signal
+    }).then(function(res) {
+      clearTimeout(tid);
+      if (!res.ok) return res.text().then(function(t){ throw new Error('API '+res.status+': '+t.substring(0,200)); });
+      return res.json();
+    }).then(function(data) {
+      store.set('isAnalyzing', false);
+      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      store.set('latestFeedback', { summary: '分析結果', findings: text, actions: [], _fromAPI: true });
+    }).catch(function(err) {
+      clearTimeout(tid);
+      store.set('isAnalyzing', false);
+      store.set('latestFeedbackError', err.name === 'AbortError' ? '25秒タイムアウト。もう一度お試しください。' : (err.message || String(err)));
+    });
+  };
 });
 </script>
 </body>
