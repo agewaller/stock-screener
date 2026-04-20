@@ -3318,57 +3318,55 @@ ${axisHint}
     // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
 
-    // ALL analysis via API prompt — save result with the entry.
+    // Simple direct API call — no heavy prompt interpolation, no fallback chain.
     const entryId = entry.id;
-    console.log('[dashQuickSubmit] calling analyzeViaAPI type=text_analysis len=' + content.length);
-    this.analyzeViaAPI(content, 'text_analysis')
-      .then(result => {
-        console.log('[dashQuickSubmit] analyzeViaAPI resolved, _fromAPI=' + (result?._fromAPI) + ' has_summary=' + !!result?.summary);
-        store.set('isAnalyzing', false);
-        if (result && result._fromAPI === false) {
-          const errText = result._error || result.findings || '分析に失敗しました';
-          console.warn('[dashQuickSubmit] API returned error:', errText);
-          store.set('latestFeedbackError', errText);
-          return;
-        }
-        if (!result) {
-          console.warn('[dashQuickSubmit] null result returned');
-          store.set('latestFeedbackError', '応答が空でした。もう一度お試しください。');
-          return;
-        }
-        // ── Final scrub before storage ──
-        // Sanitize every text field in the result to ensure no
-        // refusal text gets persisted to latestFeedback or
-        // analysisHistory. This is the last line of defense before
-        // data hits the UI.
-        if (typeof aiEngine !== 'undefined' && aiEngine.isRefusalResponse) {
-          const checkAndScrub = (obj, fields) => {
-            for (const f of fields) {
-              if (typeof obj[f] === 'string' && aiEngine.isRefusalResponse(obj[f])) {
-                console.warn('[dashQuickSubmit] Refusal in result.' + f + ', substituting fallback');
-                const fallback = JSON.parse(aiEngine._gracefulRefusalFallback(content));
-                obj.summary = fallback.summary;
-                obj.findings = fallback.findings;
-                obj.actions = fallback.actions;
-                obj.new_approach = fallback.new_approach;
-                obj.next_check = fallback.next_check;
-                obj._fallback = 'scrubbed_at_dashboard';
-                return true;
-              }
-            }
-            return false;
-          };
-          checkAndScrub(result, ['summary', 'findings', 'details', 'new_approach', '_raw']);
-        }
-        store.set('latestFeedback', result);
-        this.saveAIComment(entryId, result);
-      })
-      .catch(err => {
-        console.error('[dashQuickSubmit] analyzeViaAPI failed:', err);
-        store.set('isAnalyzing', false);
-        const msg = err?.message || String(err) || '不明なエラー';
-        store.set('latestFeedbackError', msg);
-      });
+    const apiKey = localStorage.getItem('apikey_anthropic') || '';
+    if (!apiKey) {
+      store.set('isAnalyzing', false);
+      store.set('latestFeedbackError', 'APIキーが設定されていません。管理パネル→APIキーで設定してください。');
+      return;
+    }
+
+    const diseases = (store.get('selectedDiseases') || []).join('・');
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 25000);
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: store.get('selectedModel') || 'claude-sonnet-4-6',
+        max_tokens: 800,
+        temperature: 0.4,
+        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
+        messages: [{ role: 'user', content: (diseases ? '【疾患: ' + diseases + '】\n' : '') + content }]
+      }),
+      signal: ctrl.signal
+    })
+    .then(res => {
+      clearTimeout(tid);
+      if (!res.ok) return res.text().then(t => { throw new Error('API ' + res.status + ': ' + t.substring(0, 200)); });
+      return res.json();
+    })
+    .then(data => {
+      store.set('isAnalyzing', false);
+      const text = data?.content?.[0]?.text || '';
+      const result = { summary: '分析結果', findings: text, actions: [], _fromAPI: true };
+      try { const p = this.parseAIResponse(text); if (p && p.summary) Object.assign(result, p); } catch(_){}
+      store.set('latestFeedback', result);
+      this.saveAIComment(entryId, result);
+    })
+    .catch(err => {
+      clearTimeout(tid);
+      store.set('isAnalyzing', false);
+      const msg = err.name === 'AbortError' ? '25秒以内に応答がありませんでした。もう一度お試しください。' : (err.message || String(err));
+      store.set('latestFeedbackError', msg);
+    });
   }
 
   // Deep structured analysis of any user input
