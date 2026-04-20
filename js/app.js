@@ -3145,7 +3145,9 @@ ${axisHint}
       // enough info for the user to report the issue back (HTTP status,
       // short reason) without dumping full stack traces onto the UI.
       let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
-      if (/403|Origin not allowed|Forbidden/i.test(errMessage)) {
+      if (/no API key|ALL_PROVIDERS_FAILED.*no API key/i.test(errMessage)) {
+        friendlyHint = 'AIサービスのAPIキーが設定されていません。管理者がAPIキーを設定するまでお待ちください。';
+      } else if (/403|Origin not allowed|Forbidden/i.test(errMessage)) {
         friendlyHint = 'このドメインからの接続が許可されていません (403)。本番サイト (cares.advisers.jp) からご利用ください。';
       } else if (/401/.test(errMessage)) {
         friendlyHint = 'APIキーが設定されていません (401)。管理者に連絡してください。';

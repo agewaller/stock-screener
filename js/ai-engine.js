@@ -412,14 +412,13 @@ ${avoidBlock}
         errors.push(`${model}: ${err.message}`);
       }
     }
-    // All providers refused/errored or we ran out of time. Always
-    // return the graceful disease-aware fallback so the user sees
-    // something useful rather than the error state.
-    if (lastRefusal || errors.length > 0) {
-      console.warn('[AI Engine] Falling back to graceful response. Errors:', errors.join(' | '));
-      return this._gracefulRefusalFallback(prompt);
-    }
-    throw new Error('ALL_PROVIDERS_FAILED: ' + errors.join(' | '));
+    // All providers failed — throw so callers show diagnostic error.
+    // The old code silently returned _gracefulRefusalFallback here,
+    // which masked the real error and showed "AIサービスが混雑" even
+    // when the actual cause was missing API key or CORS rejection.
+    const errDetail = errors.join(' | ');
+    console.error('[AI Engine] ALL_PROVIDERS_FAILED:', errDetail);
+    throw new Error('ALL_PROVIDERS_FAILED: ' + errDetail);
   }
 
   // _wrapAsJournalEntry, _wrapAsResearchSummary, _buildSafeSystemPrompt
