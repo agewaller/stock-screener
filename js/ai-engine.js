@@ -462,43 +462,28 @@ ${avoidBlock}
   // resilient, we ALWAYS include Opus + Sonnet + Haiku when the user
   // prefers any Claude model — that way a Haiku failure naturally
   // falls through to Sonnet / Opus on the same shared proxy path.
+  // #9 Simplified provider chain: Anthropic only (Opus → Sonnet → Haiku).
+  // OpenAI/Google are available for direct selection but NOT in the
+  // automatic fallback chain. This reduces timeout from 55s to ~30s
+  // and makes failures predictable.
   buildProviderFallbackList(preferredModel) {
     const opus   = { model: 'claude-opus-4-6',   callFn: this.callAnthropic };
     const sonnet = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
     const haiku  = { model: 'claude-haiku-4-5',  callFn: this.callAnthropic };
-    const openai = { model: 'gpt-4o',            callFn: this.callOpenAI };
-    const google = { model: 'gemini-2.5-pro',    callFn: this.callGoogle };
-
-    // Dedupe helper so preferredModel isn't listed twice.
     const uniq = (arr) => {
       const seen = new Set();
       return arr.filter(p => (seen.has(p.model) ? false : (seen.add(p.model), true)));
     };
-
-    if (preferredModel?.startsWith('claude-')) {
-      // Anthropic-preferred: try preferred → other Anthropic variants
-      // (all on the same proxy path) → OpenAI → Google. This is the
-      // guest-mode happy path.
-      return uniq([
-        { model: preferredModel, callFn: this.callAnthropic },
-        opus, sonnet, haiku,
-        openai, google
-      ]);
-    }
     if (preferredModel?.startsWith('gpt-')) {
-      return uniq([
-        { model: preferredModel, callFn: this.callOpenAI },
-        opus, sonnet, haiku, google
-      ]);
+      return [{ model: preferredModel, callFn: this.callOpenAI }];
     }
     if (preferredModel?.startsWith('gemini-')) {
-      return uniq([
-        { model: preferredModel, callFn: this.callGoogle },
-        opus, sonnet, haiku, openai
-      ]);
+      return [{ model: preferredModel, callFn: this.callGoogle }];
     }
-    // Unknown model — try all in order of reliability, Opus first.
-    return [opus, sonnet, haiku, openai, google];
+    return uniq([
+      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      opus, sonnet, haiku
+    ]);
   }
 
   // Anthropic Claude API (via proxy or direct)

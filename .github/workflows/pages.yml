@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Cache busting — inject commit hash into SW
+        run: sed -i "s/__COMMIT_HASH__/${GITHUB_SHA::8}/g" sw.js
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

@@ -84,20 +84,47 @@ var Store = class Store {
     Object.keys(updates).forEach(key => this.saveToStorage(key, updates[key]));
   }
 
+  // #11 EventBus with lifecycle management
   on(key, callback) {
     if (!this.listeners.has(key)) {
       this.listeners.set(key, new Set());
     }
     this.listeners.get(key).add(callback);
-    return () => this.listeners.get(key).delete(callback);
+    const unsub = () => this.listeners.get(key)?.delete(callback);
+    if (!this._subscriptions) this._subscriptions = [];
+    this._subscriptions.push(unsub);
+    return unsub;
+  }
+
+  off(key, callback) {
+    this.listeners.get(key)?.delete(callback);
+  }
+
+  once(key, callback) {
+    const unsub = this.on(key, (val, old) => {
+      unsub();
+      callback(val, old);
+    });
+    return unsub;
+  }
+
+  cleanupListeners() {
+    if (this._subscriptions) {
+      this._subscriptions.forEach(u => u());
+      this._subscriptions = [];
+    }
   }
 
   notify(key, value, old) {
     if (this.listeners.has(key)) {
-      this.listeners.get(key).forEach(cb => cb(value, old));
+      this.listeners.get(key).forEach(cb => {
+        try { cb(value, old); } catch (e) { console.error('[Store] listener error for', key, e); }
+      });
     }
     if (this.listeners.has('*')) {
-      this.listeners.get('*').forEach(cb => cb(key, value, old));
+      this.listeners.get('*').forEach(cb => {
+        try { cb(key, value, old); } catch (e) { console.error('[Store] wildcard listener error', e); }
+      });
     }
   }
 
@@ -132,7 +159,11 @@ var Store = class Store {
     }
   }
 
+  // #20 Schema versioning + migration
+  static SCHEMA_VERSION = 2;
+
   loadFromStorage() {
+    const savedVersion = parseInt(localStorage.getItem('cc_schema_version') || '0', 10);
     const keys = Store.PERSIST_KEYS;
     keys.forEach(key => {
       try {
@@ -141,9 +172,39 @@ var Store = class Store {
           this.state[key] = JSON.parse(val);
         }
       } catch (e) {
-        // ignore parse errors
+        console.warn('[Store] corrupt data for', key, '- resetting to default');
+        localStorage.removeItem(`cc_${key}`);
       }
     });
+    if (savedVersion < Store.SCHEMA_VERSION) {
+      this._runMigrations(savedVersion);
+      localStorage.setItem('cc_schema_version', String(Store.SCHEMA_VERSION));
+    }
+  }
+
+  _runMigrations(fromVersion) {
+    console.log('[Store] migrating schema', fromVersion, '→', Store.SCHEMA_VERSION);
+    if (fromVersion < 1) {
+      // v0→v1: ensure arrays are arrays, not null/undefined
+      Store.PERSIST_KEYS.forEach(key => {
+        if (Array.isArray(this.state[key])) return;
+        const defaults = { symptoms:[], vitals:[], bloodTests:[], medications:[],
+          supplements:[], meals:[], sleepData:[], activityData:[], photos:[],
+          conversationHistory:[], analysisHistory:[], recommendations:[],
+          actionItems:[], nutritionLog:[], plaudAnalyses:[], apiUsage:[] };
+        if (key in defaults && !Array.isArray(this.state[key])) {
+          this.state[key] = defaults[key];
+          this.saveToStorage(key, this.state[key]);
+        }
+      });
+    }
+    if (fromVersion < 2) {
+      // v1→v2: photos key now persisted (was missing in v0/v1)
+      const photos = this.state.photos;
+      if (Array.isArray(photos) && photos.length > 0) {
+        this.saveToStorage('photos', photos);
+      }
+    }
   }
 
   // Add health data entry

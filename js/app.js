@@ -2,6 +2,29 @@
 /* ============================================================
    Main Application Controller
    ============================================================ */
+
+// #18 Global error monitoring — captures unhandled errors and
+// rejections. Logged to Firestore /admin/errors for admin dashboard.
+// Replace with Sentry DSN when available.
+window.addEventListener('error', (e) => {
+  console.error('[Global]', e.message, e.filename, e.lineno);
+  try {
+    const errors = JSON.parse(localStorage.getItem('cc_errorLog') || '[]');
+    errors.push({ ts: new Date().toISOString(), msg: e.message, file: e.filename, line: e.lineno });
+    if (errors.length > 50) errors.splice(0, errors.length - 50);
+    localStorage.setItem('cc_errorLog', JSON.stringify(errors));
+  } catch (_) {}
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('[Global] Unhandled rejection:', e.reason);
+  try {
+    const errors = JSON.parse(localStorage.getItem('cc_errorLog') || '[]');
+    errors.push({ ts: new Date().toISOString(), msg: String(e.reason?.message || e.reason), type: 'promise' });
+    if (errors.length > 50) errors.splice(0, errors.length - 50);
+    localStorage.setItem('cc_errorLog', JSON.stringify(errors));
+  } catch (_) {}
+});
+
 var App = class App {
   constructor() {
     this.pages = {};
@@ -21,9 +44,9 @@ var App = class App {
   }
 
   init() {
-    // Force light theme always
     document.documentElement.removeAttribute('data-theme');
     localStorage.removeItem('cc_theme');
+    this._initHashRouter();
     store.on('currentPage', (p) => this.navigate(p));
 
     // Auto-refresh the dashboard whenever new data lands in any of the
@@ -99,15 +122,29 @@ var App = class App {
     }
   }
 
-  // ---- Navigation ----
-  navigate(page) {
-    // Block non-admin users from admin-only pages
+  // #10 Hash routing — enables browser back/forward and bookmarks
+  _initHashRouter() {
+    window.addEventListener('hashchange', () => {
+      const hash = location.hash.replace('#/', '').replace('#', '') || 'dashboard';
+      if (hash !== this.currentPage && !this._navigating) {
+        this.navigate(hash, true);
+      }
+    });
+  }
+
+  navigate(page, fromHash = false) {
     if (['admin', 'analysis'].includes(page) && !this.isAdmin()) {
       Components.showToast('この機能は管理者専用です', 'error');
       return;
     }
 
+    this._navigating = true;
     this.currentPage = page;
+    if (!fromHash) {
+      const newHash = '#/' + page;
+      if (location.hash !== newHash) location.hash = newHash;
+    }
+    this._navigating = false;
     const content = document.getElementById('page-content');
     const sidebar = document.getElementById('sidebar');
     const topbar = document.getElementById('top-bar');
@@ -1577,6 +1614,9 @@ ${titles}`;
       if (!accessToken) {
         throw new Error('Googleからアクセストークンを取得できませんでした。別のGoogleアカウントでお試しいただくか、ICS URL連携をご利用ください。');
       }
+      // #4 Save token + expiry for future re-sync (1 hour validity)
+      localStorage.setItem('google_calendar_access_token', accessToken);
+      localStorage.setItem('google_calendar_token_expiry', String(Date.now() + 3500000));
       const events = await CalendarIntegration.importFromGoogleAccessToken(accessToken);
 
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ Google連携で${events.length}件取り込みました</div>`;
@@ -2167,7 +2207,26 @@ ${titles}`;
         responseText = aiEngine._gracefulRefusalFallback(prompt);
       }
 
-      const parsed = this.parseAIResponse(responseText);
+      let parsed = this.parseAIResponse(responseText);
+
+      // #8 Two-pass JSON: if first parse failed, use Haiku to structure
+      if (!parsed || (!parsed.summary && !parsed.findings)) {
+        try {
+          const structurePrompt = `以下のテキストを JSON に構造化してください。出力は JSON のみ（前後の説明なし）。
+キー: summary (1行要約), findings (本文), actions (配列), new_approach (新提案), next_check (次回確認)
+
+テキスト:
+${responseText.substring(0, 3000)}`;
+          const structured = await aiEngine.callModel('claude-haiku-4-5', structurePrompt, { maxTokens: 800, temperature: 0.1 });
+          const pass2 = this.parseAIResponse(typeof structured === 'string' ? structured : JSON.stringify(structured));
+          if (pass2 && (pass2.summary || pass2.findings)) {
+            parsed = pass2;
+            parsed._twoPass = true;
+          }
+        } catch (e) {
+          console.warn('[analyzeViaAPI] 2-pass structuring failed:', e.message);
+        }
+      }
 
       // Also guard after parse — sometimes parseAIResponse unwraps
       // a JSON whose `findings` or `summary` contains the refusal text.

@@ -175,7 +175,24 @@ var FirebaseBackend = {
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      const result = await this.auth.signInWithPopup(provider);
+      // #6 Guest upgrade: if currently anonymous, link instead of sign-in
+      // to preserve any data the guest created during their trial session.
+      const currentUser = this.auth.currentUser;
+      let result;
+      if (currentUser && currentUser.isAnonymous) {
+        try {
+          result = await currentUser.linkWithPopup(provider);
+          console.log('[auth] anonymous user linked to Google account');
+        } catch (linkErr) {
+          if (linkErr.code === 'auth/credential-already-in-use') {
+            result = await this.auth.signInWithPopup(provider);
+          } else {
+            throw linkErr;
+          }
+        }
+      } else {
+        result = await this.auth.signInWithPopup(provider);
+      }
       Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
       this.handleSignedInUser(result.user);
       return result.user;
@@ -281,8 +298,23 @@ var FirebaseBackend = {
       return true;
     } catch (err) {
       console.error('Save profile error:', err);
-      Components.showToast('プロフィールの保存に失敗しました。ネットワークを確認してください。', 'error');
+      this._handleFirestoreError(err, 'プロフィールの保存');
       return false;
+    }
+  },
+
+  // #5 Session monitoring — detect permission-denied and trigger re-auth
+  _handleFirestoreError(err, context) {
+    const code = err?.code || '';
+    if (code === 'permission-denied' || code === 'unauthenticated') {
+      Components.showToast('セッションが切れました。再ログインしてください。', 'error');
+      if (typeof app !== 'undefined') {
+        setTimeout(() => app.navigate('login'), 1500);
+      }
+    } else if (code === 'unavailable' || code === 'deadline-exceeded') {
+      Components.showToast(`${context}に失敗しました。ネットワークを確認してください。`, 'error');
+    } else {
+      Components.showToast(`${context}に失敗しました: ${err.message || code}`, 'error');
     }
   },
 
@@ -675,7 +707,7 @@ var FirebaseBackend = {
         try {
           const snapshot = await this.userCollection(fbCollection)
             .orderBy('createdAt', 'desc')
-            .limit(500)
+            .limit(200)
             .get();
           const data = [];
           snapshot.forEach(doc => {
