@@ -2026,21 +2026,21 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div class="toast-container" id="toast-container"></div>
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
-<!-- App Modules (dependency order — no build step required) -->
-<script src="js/idb.js"></script>
-<script src="js/config.js"></script>
-<script src="js/prompts.js"></script>
-<script src="js/store.js"></script>
-<script src="js/privacy.js"></script>
-<script src="js/ai-engine.js"></script>
-<script src="js/affiliate.js"></script>
-<script src="js/components.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/calendar.js"></script>
-<script src="js/integrations.js"></script>
-<script src="js/firebase-backend.js"></script>
-<script src="js/app.js"></script>
-<script src="js/pages.js"></script>
+<!-- App Modules — __CACHE_BUST__ is replaced with commit hash by CI -->
+<script src="js/idb.js?v=__CACHE_BUST__"></script>
+<script src="js/config.js?v=__CACHE_BUST__"></script>
+<script src="js/prompts.js?v=__CACHE_BUST__"></script>
+<script src="js/store.js?v=__CACHE_BUST__"></script>
+<script src="js/privacy.js?v=__CACHE_BUST__"></script>
+<script src="js/ai-engine.js?v=__CACHE_BUST__"></script>
+<script src="js/affiliate.js?v=__CACHE_BUST__"></script>
+<script src="js/components.js?v=__CACHE_BUST__"></script>
+<script src="js/i18n.js?v=__CACHE_BUST__"></script>
+<script src="js/calendar.js?v=__CACHE_BUST__"></script>
+<script src="js/integrations.js?v=__CACHE_BUST__"></script>
+<script src="js/firebase-backend.js?v=__CACHE_BUST__"></script>
+<script src="js/app.js?v=__CACHE_BUST__"></script>
+<script src="js/pages.js?v=__CACHE_BUST__"></script>
 <script>
 // #13 PWA Service Worker registration + #19 cache update notification
 if ('serviceWorker' in navigator) {
