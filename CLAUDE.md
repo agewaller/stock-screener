@@ -136,13 +136,32 @@ Worker を変更した場合は `worker/` 以下を編集→push で `deploy-wor
 - API キー: localStorage保存（ブラウザ暗号化）、Anthropic はプロキシ経由
 - Admin: メールホワイトリストでガード
 
+## ローカル開発環境
+
+```bash
+npm install              # devDependencies インストール + husky 初期化
+npm start                # ローカルサーバー起動（localhost:8080）
+npm test                 # スモークテスト（70件）
+npm run lint             # ESLint（worker/ tests/）
+npm run format           # Prettier 自動修正
+npm run format:check     # Prettier チェック
+npm run lint:html        # HTML バリデーション
+npm run worker:dev       # Cloudflare Worker ローカル起動
+```
+
+- `package.json` に全スクリプト定義。devDependencies のみ（プロダクションに影響なし）
+- ESLint v9 flat config（`eslint.config.mjs`）、Prettier（`.prettierrc`）
+- husky pre-commit フック: lint → format:check → test（コミット前に自動実行）
+- Worker ローカル開発: `.dev.vars.example` をコピーして `.dev.vars` に API キーを設定
+- 詳細は [docs/開発環境ガイド.md](docs/開発環境ガイド.md) を参照
+
 ## テスト
 
 ```bash
-node tests/smoke.test.js    # スモークテスト実行
+npm test                 # または: node tests/smoke.test.js
 ```
 
-20+カテゴリを検証: JS構文, onclick, レンダラー, 認証, AIエンジン, プロンプト, Google翻訳リンク, 写真アップロード, カレンダー, Plaud, 栄養, データエクスポート, Worker CORS, Firestoreルール, セキュリティ等
+20カテゴリ・70件を検証: JS構文, onclick, レンダラー, 認証, AIエンジン, プロンプト, Google翻訳リンク, 写真アップロード, カレンダー, Plaud, 栄養, データエクスポート, Worker CORS, Firestoreルール, アクション推奨, モバイル安全性, 多言語, デプロイ設定, セキュリティ
 
 ## 管理者
 
