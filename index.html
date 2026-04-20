@@ -54,8 +54,10 @@
 <meta name="twitter:description" content="ME/CFS・Long COVID・線維筋痛症などの症状を毎日記録し、AI で寛解への道を分析。開発者自身の 2 年間の ME/CFS 闘病体験から誕生。">
 <meta name="twitter:image" content="https://cares.advisers.jp/og-image.png">
 
-<!-- Icons -->
+<!-- Icons + PWA manifest -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3Cpath d='M10 16.5C10 12 13 8 16 8C19 8 22 12 22 16.5C22 20 19.5 23 16 23C12.5 23 10 20 10 16.5Z' fill='white' fill-opacity='0.25'/%3E%3Cpath d='M16 11L16 20M12 15.5L16 20L20 15.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%236366f1'/%3E%3Cpath d='M56 93C56 68 68 45 90 45C112 45 124 68 124 93C124 114 110 130 90 130C70 130 56 114 56 93Z' fill='white' fill-opacity='0.2'/%3E%3Cpath d='M90 62L90 113M66 87L90 113L114 87' stroke='white' stroke-width='11' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
 <!-- ═══ Structured Data (schema.org JSON-LD) ═══ -->
 <!-- Organization + WebSite + WebApplication: identifies the
@@ -9487,6 +9489,26 @@ var App = class App {
     ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
+    // Tick the spinner message while analysis is running. Without this
+    // the "入力内容を認識中..." message never advances to "処方を組み立て中"
+    // or "AI が分析中です" because render_dashboard only fires when a
+    // store key changes — and no key changes during the API roundtrip.
+    let spinnerTickTimer = null;
+    store.on('isAnalyzing', (val) => {
+      if (val) {
+        spinnerTickTimer = setInterval(() => {
+          if (this.currentPage === 'dashboard' && store.get('isAnalyzing')) {
+            scheduleDashRefresh();
+          } else {
+            clearInterval(spinnerTickTimer);
+            spinnerTickTimer = null;
+          }
+        }, 5000);
+      } else {
+        if (spinnerTickTimer) { clearInterval(spinnerTickTimer); spinnerTickTimer = null; }
+      }
+    });
+
     // Start the auto-sync scheduler so connected integrations
     // (Fitbit, Google Calendar) refresh automatically while the
     // app is open — set up once, update forever.
@@ -9534,6 +9556,72 @@ var App = class App {
     if (!store.get('calendarEvents')) {
       store.set('calendarEvents', []);
     }
+
+    // ── PWA: service worker + install banner ──
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+    // Capture the browser's install prompt so we can show our own
+    // non-intrusive banner instead of the default Chrome prompt.
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredInstallPrompt = e;
+      // Show the banner once the user has made their first entry
+      // (they have seen value) and only if they haven't dismissed it.
+      const maybeShow = () => {
+        if (
+          !localStorage.getItem('pwa_install_dismissed') &&
+          this.currentPage === 'dashboard'
+        ) {
+          this._showPwaInstallBanner();
+        }
+      };
+      // Show after first analysis completes OR after 60 s on dashboard.
+      store.on('latestFeedback', maybeShow);
+      setTimeout(maybeShow, 60000);
+    });
+    window.addEventListener('appinstalled', () => {
+      this._deferredInstallPrompt = null;
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.remove();
+    });
+  }
+
+  _showPwaInstallBanner() {
+    if (document.getElementById('pwa-install-banner')) return;
+    const host = document.getElementById('page-content');
+    if (!host) return;
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div id="pwa-install-banner"
+        style="margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);border-radius:12px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;font-size:12px;color:#fff;line-height:1.5">
+          📱 <strong>ホーム画面に追加</strong>すると、いつでもすぐ開けます
+        </div>
+        <button onclick="app._triggerPwaInstall()"
+          style="padding:5px 12px;background:#fff;color:#6366f1;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">
+          追加
+        </button>
+        <button onclick="document.getElementById('pwa-install-banner').remove();localStorage.setItem('pwa_install_dismissed','1')"
+          style="padding:5px 8px;background:transparent;color:rgba(255,255,255,0.8);border:none;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0">
+          ✕
+        </button>
+      </div>`;
+    host.insertBefore(div.firstElementChild, host.firstElementChild);
+  }
+
+  _triggerPwaInstall() {
+    const prompt = this._deferredInstallPrompt;
+    if (!prompt) return;
+    prompt.prompt();
+    prompt.userChoice.then(choice => {
+      this._deferredInstallPrompt = null;
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.remove();
+      if (choice.outcome === 'accepted') {
+        Components.showToast('ホーム画面に追加しました！', 'success');
+      }
+    });
   }
 
   // ---- Navigation ----
@@ -11975,6 +12063,20 @@ ${titles}`;
     this.copyAnalysisShare(null, text);
   }
 
+  // Build a weekly digest text from the last 7 days of entries and
+  // share it via native share sheet → X → clipboard fallback.
+  shareWeeklyDigest() {
+    const entries = store.get('textEntries') || [];
+    const now = Date.now();
+    const week = entries.filter(e => now - new Date(e.timestamp).getTime() < 7 * 86400000);
+    const days = new Set(week.map(e => e.timestamp.slice(0, 10))).size;
+    const streak = (store.calculateStreakStats ? store.calculateStreakStats() : store.getStreakStats?.())?.streak || 0;
+    const diseases = (store.get('selectedDiseases') || []).slice(0, 2);
+    const diseaseTags = diseases.map(d => '#' + d.replace(/[^a-zA-Z0-9ぁ-んァ-ン一-龥]/g, '')).join(' ');
+    const text = `【今週の記録 📊 ${days}/7日】\n連続 ${streak}日目の記録継続中！\n慢性疾患と向き合いながら、毎日の体調を AI と一緒に記録しています。\n${diseaseTags ? diseaseTags + '\n' : ''}#健康日記 #慢性疾患\nhttps://cares.advisers.jp/`;
+    this.nativeShareAnalysis(text);
+  }
+
   renderAnalysisCard(result) {
     if (!result) return '';
 
@@ -12082,7 +12184,7 @@ ${titles}`;
             style="padding:6px 12px;background:#000;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
             𝕏 Post
           </a>
-          <a href="https://social-plugins.line.me/lineit/share?url=${refUrlEncoded}&text=${shareTextEncoded}" target="_blank" rel="noopener"
+          <a href="https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + refUrl)}" target="_blank" rel="noopener"
             style="padding:6px 12px;background:#06c755;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
             LINE
           </a>
@@ -15397,6 +15499,45 @@ App.prototype.render_dashboard = function() {
 
   <!-- 4b. Plaud 禅トラック analysis widget (if any analyses exist) -->
   ${app.renderPlaudWidget()}
+
+  <!-- 4c. Weekly digest share card (shown after 7+ entries) -->
+  ${(() => {
+    const entries = store.get('textEntries') || [];
+    const now = Date.now();
+    const weekEntries = entries.filter(e => now - new Date(e.timestamp).getTime() < 7 * 86400000);
+    const weekDays = new Set(weekEntries.map(e => e.timestamp.slice(0, 10))).size;
+    if (weekDays < 3) return '';
+    const totalDays = new Set(entries.map(e => e.timestamp.slice(0, 10))).size;
+    return `
+    <div style="margin-bottom:16px;padding:14px 16px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfeff 100%);border:1.5px solid #86efac;border-radius:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700;color:#166534">📊 今週の記録</div>
+        <div style="font-size:10px;color:#15803d">通算 ${totalDays}日</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+        ${[0,1,2,3,4,5,6].map(i => {
+          const d = new Date(now - (6 - i) * 86400000);
+          const key = d.toISOString().slice(0, 10);
+          const has = weekEntries.some(e => e.timestamp.slice(0, 10) === key);
+          return `<div style="flex:1;text-align:center">
+            <div style="font-size:9px;color:#16a34a;margin-bottom:2px">${['日','月','火','水','木','金','土'][d.getDay()]}</div>
+            <div style="width:24px;height:24px;border-radius:50%;background:${has ? '#22c55e' : '#d1fae5'};margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:10px">${has ? '✓' : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="app.shareWeeklyDigest()"
+          style="flex:1;padding:7px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer">
+          📤 今週の記録をシェア
+        </button>
+        <a href="https://x.com/intent/tweet?text=${encodeURIComponent('【今週の記録 🌱】' + weekDays + '/7日の体調を記録できました！慢性疾患と向き合いながら、AI と一緒に記録継続中 #健康日記 #慢性疾患\nhttps://cares.advisers.jp/')}"
+          target="_blank" rel="noopener"
+          style="padding:7px 14px;background:#000;color:#fff;border-radius:10px;text-decoration:none;font-size:11px;font-weight:700;flex-shrink:0">
+          𝕏
+        </a>
+      </div>
+    </div>`;
+  })()}
 
   <!-- 5. Recommendations (collapsible) -->
   ${allRecs.length > 0 ? `
