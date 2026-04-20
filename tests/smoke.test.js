@@ -25,12 +25,22 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || 'Assertion failed
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
-// Extract inline script(s) — skip src= imports and skip structured
-// data blocks (type="application/ld+json"). Concatenates all
-// remaining inline JS so the analyzer can see the full surface of
-// the SPA regardless of how many <script> tags are used.
-const scriptMatches = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g)];
-const script = scriptMatches.map(m => m[1]).join('\n;\n');
+// Load all JS modules in dependency order (replaces old inline script extraction).
+// This mirrors the <script src="js/..."> tags in index.html.
+const MODULE_ORDER = [
+  'config.js', 'prompts.js', 'store.js', 'privacy.js', 'ai-engine.js',
+  'affiliate.js', 'components.js', 'i18n.js', 'calendar.js',
+  'integrations.js', 'firebase-backend.js', 'app.js', 'pages.js'
+];
+const script = MODULE_ORDER.map(f => {
+  const p = path.join(ROOT, 'js', f);
+  if (!fs.existsSync(p)) {
+    // Fallback: extract inline script from index.html (legacy single-file mode)
+    const m = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g)];
+    return m.map(mm => mm[1]).join('\n;\n');
+  }
+  return fs.readFileSync(p, 'utf8');
+}).join('\n;\n');
 
 // Helper: extract function body by name (supports class methods,
 // object methods, and App.prototype.X = function() patterns)
@@ -70,8 +80,15 @@ function stripComments(code) {
 
 // ================================================================
 section('1. JS 構文');
-test('index.html inline JS parses without error', () => {
-  new vm.Script(script, { filename: 'index.html' });
+test('All JS modules parse without error', () => {
+  new vm.Script(script, { filename: 'all-modules' });
+});
+
+MODULE_ORDER.forEach(f => {
+  test(`js/${f} parses individually`, () => {
+    const code = fs.readFileSync(path.join(ROOT, 'js', f), 'utf8');
+    new Function(code);
+  });
 });
 
 ['worker/anthropic-proxy.js', 'worker/plaud-inbox.js'].forEach(f => {
@@ -442,7 +459,8 @@ test('i18n has 4+ languages', () => {
 });
 
 test('Language selector has 8+ options', () => {
-  const options = (html.match(/option value="[a-z]{2}"/g) || []);
+  const allSource = html + '\n' + script;
+  const options = (allSource.match(/option value="[a-z]{2}"/g) || []);
   assert(options.length >= 8, `Only ${options.length} language options`);
 });
 
