@@ -505,14 +505,12 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Try Worker proxy first, fall back to direct API if Worker fails.
-    // Direct mode uses anthropic-dangerous-direct-browser-access header.
-    const proxyUrl = localStorage.getItem('anthropic_proxy_url')
-      || 'https://stock-screener.agewaller.workers.dev';
-
+    // Direct connection to Anthropic API. Simple, no intermediaries.
+    const url = 'https://api.anthropic.com/v1/messages';
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     };
     if (apiKey) headers['x-api-key'] = apiKey;
 
@@ -538,56 +536,40 @@ ${avoidBlock}
       userContent = prompt.substring(0, 100000);
     }
 
-    // System prompt is injected server-side by the Worker.
-    // Client sends options.systemPrompt as a hint; Worker wraps it
-    // with the hidden safety layer. If null, Worker uses its own
-    // built-in safe default.
-    const systemPrompt = options.systemPrompt || null;
+    const systemPrompt = options.systemPrompt
+      || 'あなたは健康日記アプリの日記分析コンパニオンです。温かく寄り添い、一般的な健康情報を共有してください。主治医への相談を添えつつ、具体的な情報も併記してください。';
 
     const body = {
       model: apiModelId,
       max_tokens: options.maxTokens || 4096,
       temperature: options.temperature || 0.3,
-      ...(systemPrompt ? { system: systemPrompt } : {}),
+      system: systemPrompt,
       messages: [{ role: 'user', content: userContent }]
     };
 
-    // Try Worker proxy first (10s timeout), then direct API fallback
-    const tryFetch = async (url, hdrs, timeoutMs) => {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          method: 'POST', headers: hdrs,
-          body: JSON.stringify(body), signal: ctrl.signal
-        });
-        return res;
-      } finally { clearTimeout(tid); }
-    };
+    console.log('[Anthropic] Direct API call, model:', apiModelId);
+
+    const controller = new AbortController();
+    const timeoutMs = options.perCallTimeoutMs || 30000;
+    const tid = setTimeout(() => controller.abort(), timeoutMs);
 
     let response;
     try {
-      console.log('[Anthropic] Trying proxy:', proxyUrl);
-      response = await tryFetch(proxyUrl, headers, 10000);
-    } catch (proxyErr) {
-      console.warn('[Anthropic] Proxy failed:', proxyErr.message, '— trying direct API');
-      if (!apiKey) {
-        throw new Error('プロキシ接続失敗 + APIキーなし: ' + proxyErr.message);
-      }
-      const directHeaders = { ...headers, 'anthropic-dangerous-direct-browser-access': 'true' };
-      if (!body.system) {
-        body.system = 'あなたは健康日記アプリの日記分析コンパニオンです。温かく寄り添い、一般的な健康情報を共有してください。';
-      }
-      try {
-        response = await tryFetch('https://api.anthropic.com/v1/messages', directHeaders, 20000);
-      } catch (directErr) {
-        throw new Error('プロキシ・直接接続の両方が失敗: proxy=' + proxyErr.message + ' direct=' + directErr.message);
-      }
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+    } catch (fetchErr) {
+      const reason = fetchErr.name === 'AbortError' ? 'タイムアウト' : fetchErr.message;
+      throw new Error(`Anthropic API 接続失敗: ${reason}`);
+    } finally {
+      clearTimeout(tid);
     }
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '');
-      console.error('[Anthropic] Error:', response.status, errBody);
       let errMsg = response.statusText;
       try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
       throw new Error(`Anthropic ${response.status}: ${errMsg}`);
@@ -597,9 +579,8 @@ ${avoidBlock}
     console.log('[Anthropic] Success');
     try {
       const u = data.usage || {};
-      const source = !apiKey ? 'guest' : 'auth';
-      store.recordApiUsage(modelId, u.input_tokens, u.output_tokens, source);
-    } catch (e) { console.warn('[usage track]', e.message); }
+      store.recordApiUsage(modelId, u.input_tokens || 0, u.output_tokens || 0, apiKey ? 'auth' : 'guest');
+    } catch (e) {}
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 
