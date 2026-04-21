@@ -2184,7 +2184,11 @@ window.addEventListener('load', function() {
   // Run the heavy structured analysis on demand. Targets the most recent
   // text entry (the one that triggered the quick reply) and replaces
   // latestFeedback with the full schema result. Falls back gracefully on
-  // timeout / error so the cached quick reply stays visible.
+  // timeout / error so the cached quick reply stays visible. We touch
+  // latestFeedbackError on every state transition because isDeepAnalyzing
+  // is NOT in scheduleDashRefresh's watched key list — without touching a
+  // watched key the dashboard never re-renders and the user sees the
+  // button click do nothing for 30-60s.
   app.runDeepAnalysis = async function() {
     if (store.get('isDeepAnalyzing')) return;
     if (!originalAnalyzeViaAPI) {
@@ -2199,24 +2203,28 @@ window.addEventListener('load', function() {
     }
     var content = last.content;
     store.set('isDeepAnalyzing', true);
+    store.set('latestFeedbackError', null);
+    // Force a re-render so the spinner appears immediately. latestFeedback
+    // is watched; re-setting the same value still fires the listener.
+    store.set('latestFeedback', store.get('latestFeedback'));
     try {
       var result = await originalAnalyzeViaAPI('[' + (last.category || 'symptoms') + '] ' + content,
         'text_analysis',
         { globalTimeoutMs: 60000 });
       if (result && result._fromAPI !== false) {
         result._deepAnalysis = true;
-        store.set('latestFeedback', result);
-        store.set('latestFeedbackError', null);
         if (typeof app.saveAIComment === 'function' && last.id) {
           try { app.saveAIComment(last.id, result); } catch(e){}
         }
+        store.set('isDeepAnalyzing', false);
+        store.set('latestFeedback', result);
       } else {
+        store.set('isDeepAnalyzing', false);
         store.set('latestFeedbackError', (result && (result._error || result.findings)) || '深い分析に失敗しました。');
       }
     } catch(e) {
-      store.set('latestFeedbackError', '深い分析に失敗しました: ' + (e && e.message ? e.message : String(e)));
-    } finally {
       store.set('isDeepAnalyzing', false);
+      store.set('latestFeedbackError', '深い分析に失敗しました: ' + (e && e.message ? e.message : String(e)));
     }
   };
 

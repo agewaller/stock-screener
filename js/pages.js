@@ -588,6 +588,36 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
+  <!-- Deep-analysis trigger sits directly below the input so the button is
+       reachable without scrolling past the feedback card. Hidden until a
+       textEntry exists, hidden while the fast reply is streaming
+       (isAnalyzing), and hidden once the current feedback is already a
+       deep result. While a deep run is in flight, we swap the button for
+       an inline spinner. Re-render is forced by latestFeedbackError
+       touches in runDeepAnalysis (that key is watched by
+       scheduleDashRefresh). -->
+  ${(() => {
+    const hasEntry = (store.get('textEntries') || []).length > 0;
+    if (!hasEntry) return '';
+    if (store.get('isAnalyzing')) return '';
+    const fb = store.get('latestFeedback');
+    if (fb && fb._deepAnalysis) return '';
+    const deepRunning = !!store.get('isDeepAnalyzing');
+    if (deepRunning) {
+      return `
+        <div style="margin:-4px 0 16px;text-align:center;font-size:12px;color:var(--text-muted)">
+          ${Components.loading('構造化分析中...（最大 60 秒）')}
+        </div>`;
+    }
+    return `
+      <div style="margin:-4px 0 16px;text-align:center">
+        <button class="btn btn-secondary btn-sm" onclick="app.runDeepAnalysis()"
+          style="padding:8px 18px;font-size:12px;font-weight:600">
+          🔍 深い分析を実行（構造化レポート・最大60秒）
+        </button>
+      </div>`;
+  })()}
+
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
   <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1px solid #c7d2fe">
@@ -688,27 +718,7 @@ App.prototype.render_dashboard = function() {
       }
       const fb = store.get('latestFeedback');
       if (!fb) return '';
-      try {
-        const card = app.renderAnalysisCard(fb);
-        // Fast path returned a short reply — offer on-demand deep analysis
-        // with the full structured prompt (summary/findings/actions/new_approach/
-        // trend/next_check). Suppress the button once a deep result is cached
-        // or while a deep run is already in progress.
-        const isDeep = fb && fb._deepAnalysis;
-        const deepRunning = !!store.get('isDeepAnalyzing');
-        const deepButton = (!isDeep && !deepRunning) ? `
-          <div style="text-align:center;margin:-4px 0 12px">
-            <button class="btn btn-secondary btn-sm" onclick="app.runDeepAnalysis()"
-              style="padding:8px 18px;font-size:12px;font-weight:600">
-              🔍 深い分析を実行（構造化レポート・最大60秒）
-            </button>
-          </div>` : '';
-        const deepSpinner = deepRunning ? `
-          <div style="text-align:center;margin:-4px 0 12px;font-size:12px;color:var(--text-muted)">
-            ${Components.loading('構造化分析中...（最大 60 秒）')}
-          </div>` : '';
-        return card + deepButton + deepSpinner;
-      } catch(e) { return ''; }
+      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
     })()}
   </div>
 
