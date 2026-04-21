@@ -2149,7 +2149,9 @@ window.addEventListener('load', function() {
   // massive interpolated prompt (+full user data, weekly data, blood tests,
   // etc.) and calls Opus with max_tokens 2000 + a 30s deadline — which
   // regularly times out. Image analysis still falls through to the
-  // original because it needs the 2-pass classifier flow.
+  // original because it needs the 2-pass classifier flow. runDeepAnalysis
+  // re-triggers the heavy path on demand when the user wants the
+  // structured summary/findings/actions/new_approach/trend report.
   var originalAnalyzeViaAPI = typeof app.analyzeViaAPI === 'function' ? app.analyzeViaAPI.bind(app) : null;
   app.analyzeViaAPI = async function(input, type, options) {
     options = options || {};
@@ -2174,6 +2176,45 @@ window.addEventListener('load', function() {
       _raw: reply,
       _fromAPI: true
     };
+  };
+
+  // Run the heavy structured analysis on demand. Targets the most recent
+  // text entry (the one that triggered the quick reply) and replaces
+  // latestFeedback with the full schema result. Falls back gracefully on
+  // timeout / error so the cached quick reply stays visible.
+  app.runDeepAnalysis = async function() {
+    if (store.get('isDeepAnalyzing')) return;
+    if (!originalAnalyzeViaAPI) {
+      store.set('latestFeedbackError', '深い分析機能は現在利用できません。');
+      return;
+    }
+    var entries = store.get('textEntries') || [];
+    var last = entries.length ? entries[entries.length - 1] : null;
+    if (!last || !last.content) {
+      store.set('latestFeedbackError', '分析対象の記録が見つかりません。先に記録を送信してください。');
+      return;
+    }
+    var content = last.content;
+    store.set('isDeepAnalyzing', true);
+    try {
+      var result = await originalAnalyzeViaAPI('[' + (last.category || 'symptoms') + '] ' + content,
+        'text_analysis',
+        { globalTimeoutMs: 60000 });
+      if (result && result._fromAPI !== false) {
+        result._deepAnalysis = true;
+        store.set('latestFeedback', result);
+        store.set('latestFeedbackError', null);
+        if (typeof app.saveAIComment === 'function' && last.id) {
+          try { app.saveAIComment(last.id, result); } catch(e){}
+        }
+      } else {
+        store.set('latestFeedbackError', (result && (result._error || result.findings)) || '深い分析に失敗しました。');
+      }
+    } catch(e) {
+      store.set('latestFeedbackError', '深い分析に失敗しました: ' + (e && e.message ? e.message : String(e)));
+    } finally {
+      store.set('isDeepAnalyzing', false);
+    }
   };
 
   app.guestAnalyze = async function() {

@@ -688,7 +688,27 @@ App.prototype.render_dashboard = function() {
       }
       const fb = store.get('latestFeedback');
       if (!fb) return '';
-      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
+      try {
+        const card = app.renderAnalysisCard(fb);
+        // Fast path returned a short reply — offer on-demand deep analysis
+        // with the full structured prompt (summary/findings/actions/new_approach/
+        // trend/next_check). Suppress the button once a deep result is cached
+        // or while a deep run is already in progress.
+        const isDeep = fb && fb._deepAnalysis;
+        const deepRunning = !!store.get('isDeepAnalyzing');
+        const deepButton = (!isDeep && !deepRunning) ? `
+          <div style="text-align:center;margin:-4px 0 12px">
+            <button class="btn btn-secondary btn-sm" onclick="app.runDeepAnalysis()"
+              style="padding:8px 18px;font-size:12px;font-weight:600">
+              🔍 深い分析を実行（構造化レポート・最大60秒）
+            </button>
+          </div>` : '';
+        const deepSpinner = deepRunning ? `
+          <div style="text-align:center;margin:-4px 0 12px;font-size:12px;color:var(--text-muted)">
+            ${Components.loading('構造化分析中...（最大 60 秒）')}
+          </div>` : '';
+        return card + deepButton + deepSpinner;
+      } catch(e) { return ''; }
     })()}
   </div>
 
