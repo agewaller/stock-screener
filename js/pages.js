@@ -3369,7 +3369,10 @@ App.prototype.openExportModal = function() {
       label.style.border = '2px solid #6366f1';
     });
   });
-  modal.style.display = 'flex';
+  // CSS keeps the overlay at visibility:hidden/opacity:0 until .active is
+  // applied — setting display:flex alone left the modal invisible, which
+  // is why the top-bar 📥 button appeared to do nothing.
+  modal.classList.add('active');
 };
 
 // Execute the export based on the user's choices in the modal.
