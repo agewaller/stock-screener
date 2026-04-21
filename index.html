@@ -2144,6 +2144,38 @@ window.addEventListener('load', function() {
     return base + '\n\nユーザーの該当疾患: ' + label + '\n重要: 上記の疾患のみを前提にアドバイスしてください。該当しない疾患（特に ME/CFS や慢性疲労症候群）を前提にしたり、ペーシング・NICE ガイドライン等を無関係に持ち出したりしないでください。';
   };
 
+  // Route「記録」tab text entries through the same fast inline callClaude
+  // path we use on the dashboard. The original analyzeViaAPI assembles a
+  // massive interpolated prompt (+full user data, weekly data, blood tests,
+  // etc.) and calls Opus with max_tokens 2000 + a 30s deadline — which
+  // regularly times out. Image analysis still falls through to the
+  // original because it needs the 2-pass classifier flow.
+  var originalAnalyzeViaAPI = typeof app.analyzeViaAPI === 'function' ? app.analyzeViaAPI.bind(app) : null;
+  app.analyzeViaAPI = async function(input, type, options) {
+    options = options || {};
+    // Keep image analysis on the original path (2-pass classifier).
+    if (options.imageBase64 && originalAnalyzeViaAPI) return originalAnalyzeViaAPI(input, type, options);
+    // Delegate non-text types back to the original when available.
+    if (type !== 'text_analysis' && type !== 'conversation_analysis') {
+      if (originalAnalyzeViaAPI) return originalAnalyzeViaAPI(input, type, options);
+    }
+    var key = await resolveKey();
+    if (!key) throw new Error('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
+    var reply = await callClaude(input, key, store.get('selectedModel'), buildSystemPrompt());
+    if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+    return {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      timestamp: new Date().toISOString(),
+      type: type,
+      summary: '分析結果',
+      findings: reply,
+      actions: [],
+      parsed: { summary: '分析結果', findings: reply },
+      _raw: reply,
+      _fromAPI: true
+    };
+  };
+
   app.guestAnalyze = async function() {
     var input = document.getElementById('guest-input');
     if (!input || !input.value.trim()) return;

@@ -572,8 +572,8 @@ App.prototype.render_dashboard = function() {
     <div class="card-body" style="padding:14px 18px">
       <div style="display:flex;gap:12px;align-items:start">
         <div style="flex:1">
-          <textarea class="form-textarea" id="dash-quick-input" rows="2"
-            style="border:none;background:transparent;resize:none;font-size:14px;padding:0;min-height:auto"
+          <textarea class="form-textarea" id="dash-quick-input" rows="5"
+            style="border:none;background:transparent;resize:vertical;font-size:14px;padding:0;min-height:96px;line-height:1.6"
             placeholder="体調・食事・薬・検査結果など何でも記録（📎で写真も添付可）"></textarea>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
