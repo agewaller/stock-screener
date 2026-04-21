@@ -536,8 +536,18 @@ App.prototype.render_dashboard = function() {
   const allRecs = recs.length > 0 ? recs : (latestParsed.recommendations || []);
   const hasData = totalEntries > 0 || totalSymptoms > 0;
 
-  // Build AI-enriched recent entries (last 5)
-  const recentAll = textEntries.slice(-5).reverse();
+  // Build AI-enriched recent entries (last 10). Dedup by id first because
+  // Firebase sync occasionally replays the same doc as multiple store.set
+  // rounds land; without this, the same entry renders 2-3 times in a row.
+  const seenIds = new Set();
+  const uniqueTextEntries = textEntries.filter(e => {
+    const id = e && e.id;
+    if (!id) return true;
+    if (seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  });
+  const recentAll = uniqueTextEntries.slice(-10).reverse();
   const enrichedEntries = recentAll.map(e => {
     const insight = app.generateQuickInsight(e.content || '');
     return { ...e, _insight: insight };
@@ -1050,8 +1060,20 @@ App.prototype.render_data_input = function() {
     </div>`;
   }).join('');
 
-  const textEntries = store.get('textEntries') || [];
-  const recentTexts = textEntries.slice(-5).reverse();
+  const textEntriesRaw = store.get('textEntries') || [];
+  // Dedup by id — same fix as the dashboard path to prevent Firebase sync
+  // replays from rendering the same entry multiple times.
+  const textSeen = new Set();
+  const textEntries = textEntriesRaw.filter(e => {
+    const id = e && e.id;
+    if (!id) return true;
+    if (textSeen.has(id)) return false;
+    textSeen.add(id);
+    return true;
+  });
+  // Show ALL entries in the records tab (newest first). Container scrolls
+  // when the list grows. Dashboard still caps at 10 for the home glance.
+  const recentTexts = textEntries.slice().reverse();
   const categoryLabels = {
     symptoms: '症状', nutrition: '食事・栄養', medication: '服薬・処方',
     mental: '精神状態', activity: '活動', sleep: '睡眠',
@@ -1061,6 +1083,7 @@ App.prototype.render_data_input = function() {
   const recentHtml = recentTexts.length > 0 ? `
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
       <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録（${textEntries.length}件）</h4>
+      <div style="max-height:60vh;overflow-y:auto;padding-right:4px">
       ${recentTexts.map(e => {
         const rawContent = e.content || '';
         const safeContent = Components.escapeHtml(rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent);
@@ -1077,6 +1100,7 @@ App.prototype.render_data_input = function() {
         </div>
       `;
       }).join('')}
+      </div>
     </div>` : '';
 
   // Integration reception history — shows every entry that came in

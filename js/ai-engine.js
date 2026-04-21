@@ -353,11 +353,39 @@ ${avoidBlock}
   // The second mode is critical for catching cases where the AI
   // wraps the refusal in extra prose like "Hello! I'm sorry, I
   // can't assist with that. If you have other questions...".
-  // Defense logic (refusal detection, sanitization, retry) has been
-  // moved server-side to the Cloudflare Worker. These stubs remain
-  // so callers that reference them (analyzeViaAPI, etc.) still work.
-  isRefusalResponse(_text) { return false; }
-  sanitizeRefusal(text) { return text; }
+  // Direct-browser calls bypass the Cloudflare Worker, so the refusal
+  // filter has to run client-side again. Detects the common canned
+  // phrases in both English ("I'm sorry, I can't assist...") and
+  // Japanese. isRefusalResponse returns true when the whole reply is a
+  // refusal; sanitizeRefusal strips a leading refusal sentence while
+  // preserving any substantive follow-up the model included.
+  isRefusalResponse(text) {
+    if (!text) return true;
+    const s = String(text).trim();
+    if (!s) return true;
+    const patterns = [
+      /^i'?m sorry[,.]?\s*(but\s*)?i (can'?t|cannot|am not able to|won'?t) (assist|help)/i,
+      /^i (can'?t|cannot) (help|assist) (with|you) (that|this)/i,
+      /^i'?m not able to (assist|help)/i,
+      /^申し訳(ありません|ございません)が.{0,40}(お手伝い|お答え|ご案内)(でき|いたしかね)/,
+    ];
+    if (s.length < 400) {
+      for (const p of patterns) if (p.test(s)) return true;
+    }
+    const head = s.slice(0, 160);
+    for (const p of patterns) if (p.test(head)) return true;
+    return false;
+  }
+  sanitizeRefusal(text) {
+    if (!text) return '';
+    const s = String(text);
+    const firstBreak = s.search(/[。.\n]/);
+    if (firstBreak > 0) {
+      const head = s.slice(0, firstBreak + 1);
+      if (this.isRefusalResponse(head)) return s.slice(firstBreak + 1).trim();
+    }
+    return this.isRefusalResponse(s) ? '' : s;
+  }
 
   async callModel(modelId, prompt, options = {}) {
     // Apply opt-in PII masking before the text leaves the browser.
