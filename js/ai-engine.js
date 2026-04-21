@@ -542,20 +542,31 @@ ${avoidBlock}
     };
     if (apiKey) headers['x-api-key'] = apiKey;
 
-    // Vision: when options.imageBase64 is supplied, wrap the prompt and
-    // image in a content array per the Anthropic messages API contract.
-    // The base64 string may arrive as a raw payload or a data URL
-    // ("data:image/png;base64,iVBOR..."); split out the media type and
-    // payload cleanly so we never send a malformed source block.
+    // Vision / Documents: when options.imageBase64 or options.pdfBase64
+    // is supplied, wrap the prompt and file in a content array per the
+    // Anthropic messages API contract. The base64 string may arrive as a
+    // raw payload or a data URL ("data:image/png;base64,iVBOR..."); split
+    // out the media type and payload cleanly so we never send a malformed
+    // source block. PDFs ride a native `document` block so Claude can
+    // parse the underlying text and embedded images natively — sending a
+    // PDF as an `image` block silently fails (the model sees an opaque
+    // blob).
     let userContent;
-    if (options.imageBase64) {
-      let mediaType = 'image/jpeg';
-      let data = options.imageBase64;
-      const dataUrlMatch = /^data:([^;]+);base64,(.*)$/.exec(data);
-      if (dataUrlMatch) {
-        mediaType = dataUrlMatch[1];
-        data = dataUrlMatch[2];
-      }
+    const splitDataUrl = (raw, fallbackMime) => {
+      let mediaType = fallbackMime;
+      let data = raw;
+      const m = /^data:([^;]+);base64,(.*)$/.exec(data);
+      if (m) { mediaType = m[1]; data = m[2]; }
+      return { mediaType, data };
+    };
+    if (options.pdfBase64) {
+      const { mediaType, data } = splitDataUrl(options.pdfBase64, 'application/pdf');
+      userContent = [
+        { type: 'document', source: { type: 'base64', media_type: mediaType || 'application/pdf', data } },
+        { type: 'text', text: prompt.substring(0, 100000) }
+      ];
+    } else if (options.imageBase64) {
+      const { mediaType, data } = splitDataUrl(options.imageBase64, 'image/jpeg');
       userContent = [
         { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
         { type: 'text', text: prompt.substring(0, 100000) }

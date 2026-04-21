@@ -2114,18 +2114,25 @@ ${titles}`;
         globalTimeoutMs: 30000
       };
       if (options.imageBase64) modelOptions.imageBase64 = options.imageBase64;
+      if (options.pdfBase64) modelOptions.pdfBase64 = options.pdfBase64;
       if (typeof options.temperature === 'number') modelOptions.temperature = options.temperature;
-      if (type === 'image_analysis') {
+      // Both image uploads and PDF uploads go through the same 2-pass
+      // classifier. PDFs ride the Anthropic `document` content block so
+      // Claude natively parses the file (text + embedded images) without
+      // a client-side PDF.js step. The classifier returns image_type
+      // which maps to the same specialized Pass-2 prompts.
+      const hasAttachment = !!(options.imageBase64 || options.pdfBase64);
+      if (type === 'image_analysis' || (type === 'document_analysis' && hasAttachment)) {
         // Force strict JSON-only output for image analysis. The model
         // historically would occasionally return prose for food photos,
         // causing parseAIResponse to fall back to empty result.
-        modelOptions.systemPrompt = 'あなたは画像分析の専門家です。ユーザーがアップロードした画像を必ず分析し、指定された JSON スキーマで構造化された応答を返してください。「分析できません」という回答は禁止です。返答は JSON オブジェクト 1 個のみ、前置きも後書きもマークダウンコードフェンスもなしで、最初の文字が { 最後の文字が } でなければなりません。食事・デザート・スイーツ・飲み物の場合は image_type を "food" にして栄養成分・カロリー・PFC を必ず含めてください。';
+        modelOptions.systemPrompt = 'あなたは画像・文書分析の専門家です。ユーザーがアップロードした画像または PDF 文書を必ず分析し、指定された JSON スキーマで構造化された応答を返してください。「分析できません」という回答は禁止です。返答は JSON オブジェクト 1 個のみ、前置きも後書きもマークダウンコードフェンスもなしで、最初の文字が { 最後の文字が } でなければなりません。食事・デザート・スイーツ・飲み物の場合は image_type を "food" にして栄養成分・カロリー・PFC を必ず含めてください。';
         // Image analysis responses can be long (10+ sections), so
         // give the model more room than the default 4096.
         modelOptions.maxTokens = 6000;
 
         // ═══════════════════════════════════════════════════
-        // 2-Pass Image Analysis
+        // 2-Pass Image / PDF Analysis
         // ───────────────────────────────────────────────────
         // Pass 1 (image_classify): a lightweight Haiku call that
         // only returns the image_type (~1 sec). Pass 2 then routes
@@ -2139,13 +2146,16 @@ ${titles}`;
         try {
           const classifyTemplate = INLINE_PROMPTS.image_classify;
           const classifyPrompt = aiEngine.injectLanguageDirective(classifyTemplate);
+          const attachOpts = options.pdfBase64
+            ? { pdfBase64: options.pdfBase64 }
+            : { imageBase64: options.imageBase64 };
           // Use Haiku for the fast classifier step. Classifier
           // output is tiny (~80 tokens).
           const classifyResponse = await aiEngine.callModel('claude-haiku-4-5', classifyPrompt, {
-            imageBase64: options.imageBase64,
+            ...attachOpts,
             maxTokens: 200,
             temperature: 0.1,
-            systemPrompt: '画像を見て JSON で image_type を返してください。前置きなし。'
+            systemPrompt: '画像または PDF 文書を見て JSON で image_type を返してください。前置きなし。'
           });
           const classifyText = typeof classifyResponse === 'string' ? classifyResponse : JSON.stringify(classifyResponse);
           let classified;
@@ -2196,6 +2206,54 @@ ${titles}`;
               history.push(analysis);
               store.set('analysisHistory', history);
               store.set('latestAnalysis', analysis);
+
+              // Auto-route structured results into the matching health
+              // collection so food shows up in the meals log, med photos
+              // populate the medication list, and blood-panel PDFs land
+              // in bloodTests. The original textEntry (with AI comment)
+              // still exists alongside — this just adds the structured
+              // record so dashboard charts and summaries pick it up.
+              try {
+                if (specialized === 'image_food' && deepParsed.nutrition) {
+                  const n = deepParsed.nutrition;
+                  store.addHealthData('nutrition', {
+                    name: deepParsed.identified_items || '食事',
+                    calories: n.calories,
+                    protein_g: n.protein_g,
+                    fat_g: n.fat_g,
+                    carb_g: n.carb_g,
+                    fiber_g: n.fiber_g,
+                    salt_g: n.salt_g,
+                    anti_inflammatory_score: n.anti_inflammatory_score,
+                    summary: deepParsed.summary || '',
+                    source: 'ai_upload',
+                    analysis_id: analysis.id
+                  });
+                } else if (specialized === 'image_medication') {
+                  store.addHealthData('medication', {
+                    name: deepParsed.identified_items || '薬',
+                    notes: (deepParsed.summary || '').substring(0, 500),
+                    findings: (deepParsed.findings || '').substring(0, 2000),
+                    source: 'ai_upload',
+                    analysis_id: analysis.id
+                  });
+                } else if (specialized === 'image_blood_test') {
+                  store.addHealthData('blood_test', {
+                    name: deepParsed.identified_items || '検査結果',
+                    findings: (deepParsed.findings || '').substring(0, 4000),
+                    details: (deepParsed.details || '').substring(0, 4000),
+                    summary: deepParsed.summary || '',
+                    source: 'ai_upload',
+                    analysis_id: analysis.id
+                  });
+                }
+                // medical_doc intentionally not auto-routed — diagnostic
+                // notes are free-form and already live in textEntries as
+                // category='doctor'.
+              } catch (routeErr) {
+                console.warn('[2-pass] auto-route failed:', routeErr.message);
+              }
+
               return { ...analysis, result: deepParsed };
             }
             // Fall through to legacy single-pass on parse failure
@@ -3234,16 +3292,21 @@ ${axisHint}
     reader.onload = async (ev) => {
       try {
         const isImage = file.type.startsWith('image/');
-        const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        const isPDF = file.type === 'application/pdf';
+        const attachOpts = isImage
+          ? { imageBase64: ev.target.result }
+          : (isPDF ? { pdfBase64: ev.target.result } : {});
         // Bump temperature for guest file uploads so identical images
         // don't always yield the same canned output. Also stamp the
         // filename caption with a timestamp to break any request-level
         // cache on upstream providers.
-        imgOpts.temperature = 0.6;
+        attachOpts.temperature = 0.6;
+        const analyzeType = isImage ? 'image_analysis' : (isPDF ? 'document_analysis' : 'text_analysis');
+        const kind = isPDF ? 'PDF 文書' : '写真';
         const result = await this.analyzeViaAPI(
-          `[写真: ${file.name} · ${new Date().toLocaleString('ja-JP')}]`,
-          isImage ? 'image_analysis' : 'text_analysis',
-          imgOpts
+          `[${kind}: ${file.name} · ${new Date().toLocaleString('ja-JP')}]`,
+          analyzeType,
+          attachOpts
         );
 
         if (resultEl) {
@@ -3257,7 +3320,7 @@ ${axisHint}
         console.warn('[guestFileAnalyze] Failed:', err?.message || err);
         if (resultEl) {
           resultEl.innerHTML = this.renderAnalysisCard({
-            summary: '画像分析に失敗しました',
+            summary: 'ファイル分析に失敗しました',
             findings: '通信エラーが発生しました。時間をおいて再度お試しください。',
             actions: []
           });
@@ -3457,14 +3520,22 @@ ${axisHint}
 
         // ALL analysis via API prompt. Pass a richer user input so
         // the model has strong context about what it's looking at.
-        const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        // PDFs go through the same 2-pass classifier as images via the
+        // Anthropic `document` content block, so Claude can natively
+        // read the file content (검사 결과 PDF・처방전 PDF・식단표 PDF 등).
+        const attachOpts = isImage
+          ? { imageBase64: ev.target.result }
+          : (isPDF ? { pdfBase64: ev.target.result } : {});
+        const analyzeType = (isImage || isPDF) ? (isImage ? 'image_analysis' : 'document_analysis') : 'text_analysis';
         const userNote = isImage
           ? `ユーザーが写真をアップロードしました (${file.name})。画像を見て、食事・薬・検査結果・身体の状態などを判別し、該当するカテゴリの完全解析を JSON で返してください。食事の写真（デザートやお菓子も含む）の場合は image_type を "food" にして、栄養成分・カロリー・PFC・改善提案を全て含めてください。`
+          : isPDF
+          ? `ユーザーが PDF 文書をアップロードしました (${file.name})。文書の内容を読み取り、検査結果・処方箋・診断書・食事記録などの種別を判別し、該当するカテゴリの完全解析を JSON で返してください。`
           : `ユーザーがファイルをアップロードしました (${file.name})。内容を解析してください。`;
         this.analyzeViaAPI(
           userNote,
-          isImage ? 'image_analysis' : 'text_analysis',
-          imgOpts
+          analyzeType,
+          attachOpts
         ).then(result => {
           store.set('isAnalyzing', false);
           if (result && result._fromAPI === false) {
@@ -3495,9 +3566,13 @@ ${axisHint}
 
     Array.from(files).forEach(async (file) => {
       const isImage = file.type.startsWith('image/');
+      const isPDF = file.type === 'application/pdf';
 
-      // Try auto-import for non-image files
-      if (!isImage) {
+      // Try auto-import for structured non-image files (CSV/JSON/XML).
+      // PDFs skip this step because Integrations.importFile only knows
+      // parsing rules for row-based data — PDFs are handed straight to
+      // the AI document-analysis path below.
+      if (!isImage && !isPDF) {
         try {
           const count = await Integrations.importFile(file);
           if (count > 0) Components.showToast(`${file.name}: ${count}件のデータを取り込みました`, 'success');
@@ -3537,12 +3612,17 @@ ${axisHint}
 
         Components.showToast(`${file.name} を認識中...`, 'info');
 
-        // Run API analysis
-        const imgOpts = isImage ? { imageBase64: ev.target.result } : {};
+        // Run API analysis. PDFs ride the same 2-pass classifier as
+        // images via the Anthropic `document` content block so Claude
+        // natively reads 検査結果 PDF・処方箋 PDF・診断書 PDF 等.
+        const attachOpts = isImage
+          ? { imageBase64: ev.target.result }
+          : (isPDF ? { pdfBase64: ev.target.result } : {});
+        const analyzeType = isImage ? 'image_analysis' : (isPDF ? 'document_analysis' : 'text_analysis');
         const result = await this.analyzeViaAPI(
-          `[ファイル: ${file.name}] ${isImage ? '写真' : 'ファイル'}`,
-          isImage ? 'image_analysis' : 'text_analysis',
-          imgOpts
+          `[${isPDF ? 'PDF 文書' : isImage ? '写真' : 'ファイル'}: ${file.name}]`,
+          analyzeType,
+          attachOpts
         );
 
         // Save AI comment

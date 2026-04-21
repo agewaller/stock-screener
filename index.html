@@ -2155,8 +2155,11 @@ window.addEventListener('load', function() {
   var originalAnalyzeViaAPI = typeof app.analyzeViaAPI === 'function' ? app.analyzeViaAPI.bind(app) : null;
   app.analyzeViaAPI = async function(input, type, options) {
     options = options || {};
-    // Keep image analysis on the original path (2-pass classifier).
-    if (options.imageBase64 && originalAnalyzeViaAPI) return originalAnalyzeViaAPI(input, type, options);
+    // Keep image / PDF analysis on the original path (2-pass classifier +
+    // auto-routing). The fast inline callClaude can't hold attachments.
+    if ((options.imageBase64 || options.pdfBase64) && originalAnalyzeViaAPI) {
+      return originalAnalyzeViaAPI(input, type, options);
+    }
     // Delegate non-text types back to the original when available.
     if (type !== 'text_analysis' && type !== 'conversation_analysis') {
       if (originalAnalyzeViaAPI) return originalAnalyzeViaAPI(input, type, options);
