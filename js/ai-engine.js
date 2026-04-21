@@ -505,14 +505,19 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Direct connection to Anthropic API. Simple, no intermediaries.
-    const url = 'https://api.anthropic.com/v1/messages';
-    const headers = {
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    };
-    if (apiKey) headers['x-api-key'] = apiKey;
+    // Route: authenticated users call Anthropic directly; guests route through
+    // the Cloudflare Worker proxy which injects env.ANTHROPIC_API_KEY.
+    // Without this split, guests get a 401 because no x-api-key is sent.
+    const proxyBase = (typeof localStorage !== 'undefined' && localStorage.getItem('anthropic_proxy_url'))
+      || 'https://stock-screener.agewaller.workers.dev';
+    const url = apiKey
+      ? 'https://api.anthropic.com/v1/messages'
+      : proxyBase.replace(/\/$/, '');
+    const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+    if (apiKey) {
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      headers['x-api-key'] = apiKey;
+    }
 
     // Vision: when options.imageBase64 is supplied, wrap the prompt and
     // image in a content array per the Anthropic messages API contract.
@@ -547,7 +552,7 @@ ${avoidBlock}
       messages: [{ role: 'user', content: userContent }]
     };
 
-    console.log('[Anthropic] Direct API call, model:', apiModelId);
+    console.log('[Anthropic]', apiKey ? 'Direct API call' : 'Via proxy', 'model:', apiModelId);
 
     const controller = new AbortController();
     const timeoutMs = options.perCallTimeoutMs || 30000;

@@ -2801,6 +2801,22 @@ ${responseText.substring(0, 3000)}`;
   // One-shot purge of aiComments entries matching the old demo
   // output shape. These got persisted before the rejection guards
   // were added and keep resurfacing as garbled JSON in the dashboard.
+  async uploadErrorLog() {
+    const errors = (() => { try { return JSON.parse(localStorage.getItem('cc_errorLog') || '[]'); } catch(_) { return []; } })();
+    if (errors.length === 0) { Components.showToast('エラーログは空です', 'info'); return; }
+    try {
+      await firebase.firestore().collection('admin').doc('errorLog').set({
+        errors,
+        uploadedAt: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: location.href
+      }, { merge: false });
+      Components.showToast(`${errors.length}件のエラーをFirestoreに送信しました`, 'success');
+    } catch (e) {
+      Components.showToast('送信失敗: ' + (e.message || e), 'error');
+    }
+  }
+
   cleanupLegacyAIComments() {
     const comments = store.get('aiComments') || {};
     const keys = Object.keys(comments);
@@ -3142,10 +3158,21 @@ ${axisHint}
       result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border-radius:14px;border:1.5px solid #6366f1">
+            <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:4px">記録を続けると…</div>
+            <div style="font-size:11px;color:#475569;line-height:1.7;margin-bottom:10px">
+              ✅ 体調パターンが見えてくる<br>
+              ✅ 受診時に医師へ見せられる日報が自動作成<br>
+              ✅ あなたの疾患の最新研究が毎週届く
+            </div>
+            <form onsubmit="app.loginWithEmail(event)" style="display:flex;flex-direction:column;gap:6px">
+              <input type="email" name="email" placeholder="メールアドレス" required
+                style="border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+              <input type="password" name="password" placeholder="パスワード（6文字以上）" required
+                style="border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+              <button type="submit" style="padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">無料で記録を始める</button>
+            </form>
+            <div style="font-size:10px;color:#94a3b8;margin-top:6px;text-align:center">無料 · クレジットカード不要 · いつでも退会可</div>
           </div>`;
       }
     } catch (err) {
@@ -3248,9 +3275,16 @@ ${axisHint}
 
         if (resultEl) {
           resultEl.innerHTML = this.renderAnalysisCard(result) +
-            `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-              <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">この分析を保存して続けませんか？</div>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+            `<div style="margin-top:12px;padding:14px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border-radius:14px;border:1.5px solid #6366f1">
+              <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px">この分析を保存して記録を続ける</div>
+              <form onsubmit="app.loginWithEmail(event)" style="display:flex;flex-direction:column;gap:6px">
+                <input type="email" name="email" placeholder="メールアドレス" required
+                  style="border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+                <input type="password" name="password" placeholder="パスワード（6文字以上）" required
+                  style="border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+                <button type="submit" style="padding:11px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">無料で記録を始める</button>
+              </form>
+              <div style="font-size:10px;color:#94a3b8;margin-top:6px;text-align:center">無料 · クレジットカード不要 · いつでも退会可</div>
             </div>`;
         }
       } catch (err) {

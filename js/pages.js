@@ -2464,6 +2464,7 @@ App.prototype.render_admin = function() {
     <div class="tab" onclick="app.switchAdminTab('professionals')">👔 専門家登録</div>
     <div class="tab" onclick="app.switchAdminTab('firebase')">Firebase</div>
     <div class="tab" onclick="app.switchAdminTab('data')">データ管理</div>
+    <div class="tab" onclick="app.switchAdminTab('errors')">🔴 エラーログ</div>
   </div>
 
   <!-- TAB: Prompts -->
@@ -2743,6 +2744,44 @@ App.prototype.render_admin = function() {
     </div>
     <div style="padding:8px 16px 0;font-size:11px;color:var(--text-muted)">「重複レコード削除」は同じ内容のレコードを統合します。「旧分析データ削除」は過去の不正な形式のAI分析結果（生JSONとして表示されるもの）を消去します。どちらも一度だけ実行すれば十分です。</div>
   </div>
+  </div>
+
+  <!-- TAB: Error Log -->
+  <div class="admin-tab-content" id="admin-tab-errors" style="display:none">
+  ${(() => {
+    const errors = (() => { try { return JSON.parse(localStorage.getItem('cc_errorLog') || '[]'); } catch(_) { return []; } })();
+    if (errors.length === 0) return '<div class="card"><div class="card-body" style="color:var(--text-muted);font-size:13px;text-align:center;padding:32px">エラーログはありません ✅</div></div>';
+    return `
+    <div class="card">
+      <div class="card-header" style="justify-content:space-between">
+        <span class="card-title">クライアントエラーログ（直近${errors.length}件）</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="app.uploadErrorLog()">Firestoreに送信</button>
+          <button class="btn btn-danger btn-sm" onclick="localStorage.removeItem('cc_errorLog');app.navigate('admin')">クリア</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;max-height:500px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="background:var(--bg-tertiary)">
+            <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">時刻</th>
+            <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">種別</th>
+            <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">メッセージ</th>
+            <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)">ファイル:行</th>
+          </tr></thead>
+          <tbody>
+            ${[...errors].reverse().map(e => `
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:5px 10px;white-space:nowrap;color:var(--text-muted)">${(e.ts||'').substring(0,19).replace('T',' ')}</td>
+                <td style="padding:5px 10px"><span style="padding:2px 6px;border-radius:10px;background:${e.type==='promise'?'#fef3c7':'#fee2e2'};color:${e.type==='promise'?'#92400e':'#991b1b'};font-size:10px">${e.type==='promise'?'Promise':'JS'}</span></td>
+                <td style="padding:5px 10px;word-break:break-word;max-width:400px">${Components.escapeHtml(e.msg||'')}</td>
+                <td style="padding:5px 10px;white-space:nowrap;color:var(--text-muted);font-family:monospace">${e.file ? Components.escapeHtml((e.file||'').split('/').pop()) + ':' + (e.line||'') : '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  })()}
   </div>`;
 };
 
