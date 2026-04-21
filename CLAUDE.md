@@ -5,49 +5,59 @@
 
 ## アーキテクチャ
 
-**単一ファイル SPA**: `index.html` 1 枚が HTML / `<style>` / `<script>` を全て内包する。
-外部 JS / CSS ファイルは存在しない（CDN の Chart.js, Firebase を除く）。
+**モジュール分割 SPA**: `index.html` (HTML + CSS) + `js/*.js` (13 モジュール)。
+ビルド工程は存在しない。`<script src="js/...">` で依存順に読み込む。
 
 ```
-index.html                    ← 本番SPA（この 1 ファイルが全て）
-CNAME                         ← cares.advisers.jp DNS 設定
+index.html                    ← HTML シェル + CSS（JS なし）
+js/config.js                  ← CONFIG（疾患定義、設定、定数）
+js/prompts.js                 ← 全プロンプトテンプレート
+js/store.js                   ← 状態管理 + localStorage 永続化
+js/privacy.js                 ← PII マスキング
+js/ai-engine.js               ← AI モデル呼び出し + PubMed
+js/affiliate.js               ← 商品レコメンド
+js/components.js              ← UI コンポーネント生成関数
+js/i18n.js                    ← 多言語
+js/calendar.js                ← Google Calendar / ICS 連携
+js/integrations.js            ← Plaud / Fitbit / Apple Health / CSV
+js/firebase-backend.js        ← Firebase Auth + Firestore 同期
+js/app.js                     ← メインロジック（ナビ、フォーム、API）
+js/pages.js                   ← 全画面レンダラー (render_*)
+worker/anthropic-proxy.js     ← Cloudflare Worker（Claude API プロキシ）
+worker/plaud-inbox.js         ← Plaud メール受信 Worker
+worker/professional-mailer.js ← 専門家メール送信 Worker
 firestore.rules               ← Firestore セキュリティルール
-worker/anthropic-proxy.js     ← Cloudflare Worker（Claude API CORS プロキシ）
-wrangler.{jsonc,toml}         ← Worker デプロイ設定
-.github/workflows/pages.yml   ← GitHub Pages 自動デプロイ
-.github/workflows/deploy-worker.yml ← Cloudflare Worker 自動デプロイ
+CNAME                         ← cares.advisers.jp DNS 設定
 ```
 
-**編集の鉄則**: `index.html` だけを触る。ビルド工程は存在しない。
+**編集の鉄則**: 該当する `js/*.js` モジュールを編集する。ビルド工程は存在しない。
 
 ## デプロイ
 
 ```bash
-git add index.html
+git add js/config.js  # 変更したファイルを add
 git commit -m "変更内容"
 git push origin main             # → GitHub Pages 自動デプロイ（pages.yml）
 ```
 
-Worker を変更した場合は `worker/anthropic-proxy.js` を編集→push で
+Worker を変更した場合は `worker/*.js` を編集→push で
 `deploy-worker.yml` が Cloudflare に自動配布する。
 
-## index.html 内部構造（スクロール順）
+## JS モジュール構成（読み込み順 = 依存順）
 
-1. `<head>`: meta, Chart.js + Firebase CDN script tags
-2. `<style>`: 全 CSS（ライトテーマ固定、`:root` のみ）
-3. `<body>`: ルート DOM
-4. `<script>` ブロック群（依存順）:
-   - `CONFIG` — 疾患定義、全プロンプト、AI_MODELS
-   - `Store` — 状態管理 + localStorage 永続化
-   - `AIEngine` — OpenAI / Anthropic / Google + PubMed 呼び出し
-   - `AffiliateEngine` — 商品レコメンド
-   - `Components` — UI コンポーネント生成関数
-   - `I18n` — 多言語
-   - `CalendarIntegration`
-   - `Integrations` — Plaud / Apple Health / Fitbit
-   - `FirebaseBackend` — Auth + Firestore 同期
-   - `App` — メインロジック（ナビ、フォーム、API、レンダリング）
-   - `App.prototype.render_*` — 全画面レンダラー
+1. `js/config.js` — CONFIG オブジェクト（疾患、AI モデル、金銭サポート等）
+2. `js/prompts.js` — PROMPT_HEADER, DEFAULT_PROMPTS, INLINE_PROMPTS
+3. `js/store.js` — Store クラス + `var store` インスタンス
+4. `js/privacy.js` — Privacy（PII 匿名化）
+5. `js/ai-engine.js` — AIEngine + PubMed + `var aiEngine`
+6. `js/affiliate.js` — AffiliateEngine + `var affiliateEngine`
+7. `js/components.js` — Components（UI ヘルパー）
+8. `js/i18n.js` — 多言語 + DOMContentLoaded init
+9. `js/calendar.js` — CalendarIntegration
+10. `js/integrations.js` — Integrations（Plaud / Fitbit / Apple Health / autoSync）
+11. `js/firebase-backend.js` — FirebaseBackend（Auth + Firestore）
+12. `js/app.js` — App クラス + `var app` インスタンス
+13. `js/pages.js` — App.prototype.render_* 全画面レンダラー
 
 ## AI モデル
 

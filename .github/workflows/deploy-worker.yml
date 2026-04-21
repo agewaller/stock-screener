@@ -2,11 +2,13 @@ name: Deploy Cloudflare Workers
 
 on:
   push:
-    branches: ["main", "work"]
+    branches: ["main"]
     paths:
       - "worker/**"
       - "wrangler.toml"
       - "wrangler.plaud-inbox.toml"
+      - "wrangler.professional-mailer.toml"
+      - "wrangler.research-updater.toml"
       - "wrangler.learning.toml"
   workflow_dispatch:
 
@@ -32,6 +34,28 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: "."
           command: deploy --config wrangler.plaud-inbox.toml
+
+  deploy-professional-mailer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy professional mailer Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --config wrangler.professional-mailer.toml
+
+  deploy-research-updater:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy research updater Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: "."
+          command: deploy --config wrangler.research-updater.toml
 
   deploy-learning-orchestrator:
     runs-on: ubuntu-latest
