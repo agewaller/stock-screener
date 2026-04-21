@@ -2042,29 +2042,65 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <script src="js/app.js?v=5"></script>
 <script src="js/pages.js?v=5"></script>
 <script>
-// Core AI call — 10 lines, no dependencies. This is the ONLY AI code that matters.
+// Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
+// error messages. Non-Claude selectedModel values fall back to Sonnet so
+// users who picked GPT/Gemini in settings still get a response instead of
+// a 404 from the Anthropic endpoint.
 function callClaude(text, apiKey, model) {
+  var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
+  var cleanKey = String(apiKey || '').trim();
+  var ctrl = ('AbortController' in window) ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
   return fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: model || 'claude-sonnet-4-6', max_tokens: 800, system: 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。', messages: [{ role: 'user', content: text }] })
-  }).then(function(r) { if (!r.ok) return r.text().then(function(t){throw new Error(r.status+': '+t.substring(0,300))}); return r.json(); })
-    .then(function(d) { return (d.content && d.content[0] && d.content[0].text) || ''; });
+    headers: { 'Content-Type': 'application/json', 'x-api-key': cleanKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。', messages: [{ role: 'user', content: text }] }),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r) {
+    if (timer) clearTimeout(timer);
+    if (!r.ok) return r.text().then(function(t){
+      var msg = r.status + ': ' + t.substring(0, 300);
+      if (r.status === 401) msg = 'APIキーが無効です。管理パネルで再設定してください。';
+      else if (r.status === 404) msg = 'モデル「' + claudeModel + '」が見つかりません。別のモデルに切り替えてください。';
+      else if (r.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
+      else if (r.status === 529 || r.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
+      throw new Error(msg);
+    });
+    return r.json();
+  }).then(function(d) {
+    return (d.content && d.content[0] && d.content[0].text) || '';
+  }).catch(function(err) {
+    if (timer) clearTimeout(timer);
+    if (err && err.name === 'AbortError') throw new Error('タイムアウト（30秒）。通信環境をご確認ください。');
+    throw err;
+  });
 }
 
 // Override ALL AI-related methods after external JS loads
 window.addEventListener('load', function() {
   if (typeof app === 'undefined' || typeof store === 'undefined') return;
-  var getKey = function() { return localStorage.getItem('apikey_anthropic') || ''; };
+  var getKey = function() { return (localStorage.getItem('apikey_anthropic') || '').trim(); };
   var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+  // Pull the global API key from Firestore if localStorage is empty.
+  // Works for both guest (anonymous) and logged-in users whose session
+  // hasn't yet finished loading the shared admin key.
+  var resolveKey = async function() {
+    var k = getKey();
+    if (k) return k;
+    try {
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.ensureGuestAuth) {
+        await FirebaseBackend.ensureGuestAuth();
+      }
+    } catch(e){}
+    return getKey();
+  };
 
   app.guestAnalyze = async function() {
     var input = document.getElementById('guest-input');
     if (!input || !input.value.trim()) return;
     var el = document.getElementById('guest-result');
     if (el) el.innerHTML = '<div style="text-align:center;padding:30px;font-size:14px;font-weight:600">分析中...</div>';
-    var key = getKey();
-    if (!key) try { await FirebaseBackend.ensureGuestAuth(); key = getKey(); } catch(e){}
+    var key = await resolveKey();
     if (!key) { if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">APIキーが未設定です</div>'; return; }
     try {
       var reply = await callClaude(input.value.trim(), key, 'claude-haiku-4-5');
@@ -2084,8 +2120,8 @@ window.addEventListener('load', function() {
     var arr = store.get('textEntries') || []; arr.push(entry); store.set('textEntries', arr);
     store.set('latestFeedback', null); store.set('latestFeedbackError', null); store.set('isAnalyzing', true);
     app.navigate('dashboard');
-    var key = getKey();
-    if (!key) { store.set('isAnalyzing',false); store.set('latestFeedbackError','APIキーが未設定です'); return; }
+    var key = await resolveKey();
+    if (!key) { store.set('isAnalyzing',false); store.set('latestFeedbackError','APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
     try {
       var reply = await callClaude(content, key, store.get('selectedModel'));
       store.set('isAnalyzing', false);
