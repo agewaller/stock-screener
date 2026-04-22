@@ -2027,20 +2027,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=7"></script>
-<script src="js/config.js?v=7"></script>
-<script src="js/prompts.js?v=7"></script>
-<script src="js/store.js?v=7"></script>
-<script src="js/privacy.js?v=7"></script>
-<script src="js/ai-engine.js?v=7"></script>
-<script src="js/affiliate.js?v=7"></script>
-<script src="js/components.js?v=7"></script>
-<script src="js/i18n.js?v=7"></script>
-<script src="js/calendar.js?v=7"></script>
-<script src="js/integrations.js?v=7"></script>
-<script src="js/firebase-backend.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
-<script src="js/pages.js?v=7"></script>
+<script src="js/idb.js?v=8"></script>
+<script src="js/config.js?v=8"></script>
+<script src="js/prompts.js?v=8"></script>
+<script src="js/store.js?v=8"></script>
+<script src="js/privacy.js?v=8"></script>
+<script src="js/ai-engine.js?v=8"></script>
+<script src="js/affiliate.js?v=8"></script>
+<script src="js/components.js?v=8"></script>
+<script src="js/i18n.js?v=8"></script>
+<script src="js/calendar.js?v=8"></script>
+<script src="js/integrations.js?v=8"></script>
+<script src="js/firebase-backend.js?v=8"></script>
+<script src="js/app.js?v=8"></script>
+<script src="js/pages.js?v=8"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2673,6 +2673,49 @@ window.addEventListener('load', function() {
     } finally {
       if (stallTimer) clearInterval(stallTimer);
       store.set('isGeneratingReport', false);
+    }
+  };
+
+  // 「相談」tab — same fast callClaude path as the dashboard quick reply,
+  // scoped to the chat UI. The original sendChat routed through the heavy
+  // analyzeViaAPI / interpolatePrompt pipeline which was the source of the
+  // "ただいま詳細分析をご用意できません" bug: the original path hit a
+  // timeout / key-resolution edge case and returned that canned fallback.
+  app.sendChat = async function() {
+    var inputEl = document.getElementById('chat-input');
+    if (!inputEl || !inputEl.value.trim()) return;
+    var msg = inputEl.value.trim();
+    inputEl.value = '';
+    var history = store.get('conversationHistory') || [];
+    history.push({ role: 'user', content: msg, timestamp: new Date().toISOString() });
+    store.set('conversationHistory', history);
+    if (typeof app.renderChatMessages === 'function') app.renderChatMessages();
+    var chatContainer = document.getElementById('chat-messages');
+    if (chatContainer && typeof Components !== 'undefined' && Components.typingIndicator) {
+      chatContainer.insertAdjacentHTML('beforeend', Components.typingIndicator());
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    try {
+      var key = await resolveKey();
+      if (!key) throw new Error('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
+      // Build a chat-specific system prompt with disease context. We
+      // append the most recent few messages so the model has short-term
+      // conversational memory without blowing out tokens.
+      var recentHistory = (history || []).slice(-6).map(function(m) {
+        return (m.role === 'user' ? 'ユーザー: ' : 'アシスタント: ') + String(m.content || '').substring(0, 600);
+      }).join('\n');
+      var userMsg = '【直近の会話】\n' + recentHistory + '\n\n【今回のメッセージ】\n' + msg;
+      var sys = buildSystemPrompt() + '\n\nあなたは健康相談のチャットパートナーです。会話形式で、必要に応じて箇条書きを織り交ぜながら返答してください。返答は 200-400 字程度で簡潔に。';
+      var reply = await callClaude(userMsg, key, store.get('selectedModel'), sys);
+      if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+      history.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
+      store.set('conversationHistory', history);
+      if (typeof app.renderChatMessages === 'function') app.renderChatMessages();
+    } catch(e) {
+      var errMsg = (e && e.message) ? e.message : String(e);
+      history.push({ role: 'assistant', content: '応答の生成中にエラーが発生しました。\n\n' + errMsg + '\n\n再度お試しください。', timestamp: new Date().toISOString() });
+      store.set('conversationHistory', history);
+      if (typeof app.renderChatMessages === 'function') app.renderChatMessages();
     }
   };
 

@@ -1830,7 +1830,10 @@ App.prototype.render_research = function() {
   <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:14px 20px">
       <div style="display:flex;gap:10px">
-        <input type="text" class="form-input" id="pubmed-search-query" value="ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome" placeholder="検索キーワード..." style="flex:1">
+        <!-- value left empty so autoLoadResearchPage can inject a query
+             built from the user's selectedDiseases on first visit, and
+             so re-renders don't clobber the user's own keyword. -->
+        <input type="text" class="form-input" id="pubmed-search-query" value="" placeholder="検索キーワード（未入力なら疾患に合わせて自動生成）" style="flex:1">
         <select class="form-select" id="pubmed-search-days" style="width:120px">
           <option value="7">過去7日</option>
           <option value="30">過去30日</option>

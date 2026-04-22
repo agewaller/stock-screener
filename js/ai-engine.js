@@ -747,22 +747,13 @@ ${avoidBlock}
         }
 
         const pubmedUrl = `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
-        // Build Google Translate URL using the modern translate.goog
-        // subdomain format. The old translate.google.com/translate?u=
-        // endpoint was deprecated in 2019 and now shows a landing page
-        // that doesn't redirect — users were stuck on a "translation not
-        // available" screen.
-        // Format: https://{host-with-dashes}.translate.goog{path}?_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja
-        const toGoogTranslate = (srcUrl) => {
-          try {
-            const u = new URL(srcUrl);
-            const host = u.hostname.replace(/\./g, '-');
-            const sep = u.search ? u.search + '&' : '?';
-            return `https://${host}.translate.goog${u.pathname}${sep}_x_tr_sl=auto&_x_tr_tl=ja&_x_tr_hl=ja`;
-          } catch (e) {
-            return srcUrl;
-          }
-        };
+        // Translate URL: point directly at the PubMed abstract. Wrapping
+        // the URL in translate.goog caused an infinite redirect loop
+        // because pubmed.ncbi.nlm.nih.gov returns a 302 to a sibling
+        // NCBI domain that translate.goog then tries to re-wrap (B-4).
+        // PubMed abstracts are short enough that the user can translate
+        // manually; we keep the field name for backward compatibility
+        // with callers that read translateUrl.
 
         return {
           pmid: id,
@@ -772,9 +763,12 @@ ${avoidBlock}
           date: article.pubdate || article.sortpubdate || '',
           doi: doi,
           url: pubmedUrl,
-          translateUrl: toGoogTranslate(pubmedUrl),
+          // B-4 fix: direct PubMed link, no translate.goog wrapping (the
+          // wrapper caused a redirect loop). doiTranslateUrl same — the
+          // publisher URL behind the DOI often has the same issue.
+          translateUrl: pubmedUrl,
           doiUrl: doi ? `https://doi.org/${doi}` : '',
-          doiTranslateUrl: doi ? toGoogTranslate('https://doi.org/' + doi) : '',
+          doiTranslateUrl: doi ? `https://doi.org/${doi}` : '',
           summary: article.title
         };
       }).filter(Boolean);

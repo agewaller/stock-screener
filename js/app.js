@@ -966,9 +966,20 @@ var App = class App {
       || document.getElementById('dash-actions-live');
     if (!container) return;
 
-    // Check cache (refresh every 12 hours)
+    // Check cache (refresh every 12 hours OR when the user has logged
+    // new textEntries since the cache was built — otherwise the actions
+    // page shows yesterday's advice even after the user records new data
+    // today, which users reported as "今日のコメントと連動していない"
+    // (B-5).
     const cached = store.get('cachedActions');
-    if (cached && cached.html && (Date.now() - cached.fetchedAt) < 12 * 60 * 60 * 1000) {
+    const newestEntryTs = (() => {
+      const arr = store.get('textEntries') || [];
+      return arr.length ? new Date(arr[arr.length - 1].timestamp).getTime() : 0;
+    })();
+    const cacheFresh = cached && cached.html
+      && (Date.now() - cached.fetchedAt) < 12 * 60 * 60 * 1000
+      && newestEntryTs <= cached.fetchedAt;
+    if (cacheFresh) {
       container.innerHTML = cached.html;
       return;
     }
@@ -1261,7 +1272,20 @@ ${titles}`;
   async autoLoadResearchPage() {
     const resultsArea = document.getElementById('pubmed-results');
     if (!resultsArea) return;
-    // Auto-search with user's diseases
+    const queryEl = document.getElementById('pubmed-search-query');
+    // Preserve the user's current query. We only auto-initialize when the
+    // search box is at its literal default value AND we haven't already
+    // loaded research this session — without this the tab wiped custom
+    // keywords every time the user switched tabs (B-2 + B-3).
+    const DEFAULT_PLACEHOLDER = 'ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome';
+    const currentQuery = queryEl ? queryEl.value.trim() : '';
+    if (this._researchAutoLoaded && currentQuery && currentQuery !== DEFAULT_PLACEHOLDER) {
+      // User has their own query already; just re-display cached results
+      // without re-searching.
+      return;
+    }
+    // Auto-search with user's diseases on the first visit OR when the
+    // field is still at the default placeholder.
     const diseases = store.get('selectedDiseases') || [];
     const diseaseTerms = {
       mecfs: 'ME/CFS OR chronic fatigue syndrome',
@@ -1276,8 +1300,10 @@ ${titles}`;
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
-    const queryEl = document.getElementById('pubmed-search-query');
-    if (queryEl) queryEl.value = query;
+    if (queryEl && (!currentQuery || currentQuery === DEFAULT_PLACEHOLDER)) {
+      queryEl.value = query;
+    }
+    this._researchAutoLoaded = true;
     this.searchPubMedLive();
   }
 
