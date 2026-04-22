@@ -1071,7 +1071,7 @@ App.prototype.render_dashboard = function() {
   <div style="display:flex;flex-wrap:wrap;gap:4px">${diseaseTagsHtml}</div>`;
   } catch(err) {
     console.error('Dashboard render error:', err);
-    return `<div style="padding:20px"><p>読み込みエラーが発生しました。</p><p style="font-size:12px;color:var(--text-muted)">${err.message}</p><button class="btn btn-primary" onclick="store.clearAll();location.reload()">データをリセットして再読み込み</button></div>`;
+    return `<div style="padding:20px"><p>ダッシュボードの読み込みに失敗しました。</p><p style="font-size:12px;color:var(--text-muted)">問題が続く場合はデータをリセットしてください。</p><button class="btn btn-primary" onclick="store.clearAll();location.reload()">データをリセットして再読み込み</button></div>`;
   }
 };
 
@@ -3227,7 +3227,7 @@ App.prototype.deleteAccount = async function() {
     setTimeout(() => location.reload(), 1500);
   } catch (err) {
     console.error('[deleteAccount]', err);
-    Components.showToast('削除エラー: ' + err.message, 'error');
+    Components.showToast('アカウントの削除に失敗しました。時間をおいて再試行してください。', 'error');
   }
 };
 
@@ -3708,14 +3708,12 @@ App.prototype.importDataFile = function(file) {
         Components.showToast('Firestoreに同期中...', 'info');
       }
     } catch (err) {
-      Components.showToast('インポートエラー: ' + err.message, 'error');
+      Components.showToast('データのインポートに失敗しました。ファイル形式を確認してください。', 'error');
     }
   };
   reader.readAsText(file);
 };
 
 
-
-document.addEventListener('DOMContentLoaded', function() { app.init(); });
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });

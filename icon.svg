@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Droplet / health symbol -->
+  <path d="M256 120 C256 120, 170 220, 170 300 A86 86 0 0 0 342 300 C342 220, 256 120, 256 120 Z"
+        fill="white" fill-opacity="0.25"/>
+  <!-- Down arrow (record / diary) -->
+  <line x1="256" y1="210" x2="256" y2="340" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <polyline points="210,295 256,345 302,295" fill="none" stroke="white" stroke-width="22"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Small lines (diary lines) -->
+  <line x1="180" y1="395" x2="332" y2="395" stroke="white" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+  <line x1="200" y1="425" x2="312" y2="425" stroke="white" stroke-width="12" stroke-linecap="round" opacity="0.4"/>
+</svg>

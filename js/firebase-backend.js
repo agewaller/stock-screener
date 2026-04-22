@@ -106,7 +106,11 @@ var FirebaseBackend = {
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
         if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+          const img = document.createElement('img');
+          img.alt = '';
+          img.src = user.photoURL;
+          avatarEl.innerHTML = '';
+          avatarEl.appendChild(img);
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }

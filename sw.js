@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   '/js/i18n.js',
   '/js/calendar.js',
   '/js/integrations.js',
+  '/js/idb.js',
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',

@@ -533,8 +533,15 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Direct connection to Anthropic API. Simple, no intermediaries.
-    const url = 'https://api.anthropic.com/v1/messages';
+    // If no local API key is present but shared-guest mode is enabled,
+    // route via the Cloudflare Worker proxy so returning users (who only
+    // have localStorage state from older sessions) can still run prompts.
+    // This is critical for the "AIプロンプトが作動していません" reports:
+    // callModel allowed shared proxy, but this function previously always
+    // hit Anthropic directly and returned 401 when apiKey was empty.
+    const useSharedProxy = !apiKey && this.canUseSharedProxy();
+    const proxyUrl = (localStorage.getItem('anthropic_proxy_url') || 'https://stock-screener.agewaller.workers.dev').trim();
+    const url = useSharedProxy ? proxyUrl : 'https://api.anthropic.com/v1/messages';
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
