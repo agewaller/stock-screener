@@ -681,6 +681,55 @@ App.prototype.render_dashboard = function() {
     </div>`;
   })()}
 
+  <!-- 💰 Subsidy / Financial Support matched to the user's diseases.
+       Top 3 programs shown as compact cards with 申請する buttons that
+       open the existing openFinancialSupportForm modal. Full list lives
+       on the actions page (「すべて見る」). Hidden entirely when no
+       selectedDiseases are set so guests aren't overwhelmed. -->
+  ${(() => {
+    const matched = (app.matchFinancialSupport && app.matchFinancialSupport()) || [];
+    if (!matched.length) return '';
+    const top = matched.slice(0, 3);
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fefce8 0%,#fef3c7 100%);border:1px solid #fde68a">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3 style="font-size:14px;font-weight:700;color:#78350f">💰 あなたが使える補助金・支援制度</h3>
+          <a onclick="app.navigate('actions')" style="font-size:11px;color:#b45309;cursor:pointer;font-weight:600">すべて見る →</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${top.map(p => `
+            <div style="padding:10px 12px;background:#fff;border-radius:10px;border:1px solid #fef3c7">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:700;color:#1f2937;margin-bottom:2px">${p.icon || '📄'} ${Components.escapeHtml(p.name)}</div>
+                  <div style="font-size:11px;color:#78350f;margin-bottom:3px">${Components.escapeHtml(p.amount || '')}</div>
+                  <div style="font-size:10px;color:var(--text-muted);line-height:1.5">${Components.escapeHtml((p.description || '').substring(0, 80))}${(p.description || '').length > 80 ? '…' : ''}</div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="app.openFinancialSupportForm('${p.id}')" style="flex:0 0 auto;padding:6px 12px;font-size:11px;background:#f59e0b;border-color:#d97706">申請する</button>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:#92400e">※ 該当疾患に基づいて自動マッチング。選択疾患を追加すると候補が増えます。</div>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- 🔬 Latest Research widget — moved from the dashboard's deep-scroll
+       region so users see relevant new papers without scrolling past
+       integrations / charts / timeline first. Content is lazily loaded
+       by app.loadDashResearch() scheduled after navigate('dashboard'). -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+        onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
+        <h3 style="font-size:14px;font-weight:700;color:#1e3a8a">🔬 あなたの疾患に関する最新研究</h3>
+        <span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span>
+      </div>
+      <div id="dash-research" style="display:block;margin-top:8px"></div>
+    </div>
+  </div>
+
   <!-- 2. AI Instant Feedback (appears after input) -->
   <div id="dash-ai-feedback" style="margin-bottom:16px">
     ${(() => {
@@ -922,15 +971,8 @@ App.prototype.render_dashboard = function() {
     <div id="dash-actions-live" style="display:block"></div>
   </div>
 
-  <!-- 7. Latest Research (auto-loaded research) -->
-  <div style="margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 0"
-      onclick="var c=document.getElementById('dash-research');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'▸':'▾'">
-      <h3 style="font-size:15px;font-weight:600">最新研究</h3>
-      <span class="arrow" style="font-size:14px;color:var(--text-muted)">▾</span>
-    </div>
-    <div id="dash-research" style="display:block"></div>
-  </div>
+  <!-- 7. Latest Research — widget was moved higher up (right below the
+       subsidy card), so the deep-scroll placeholder has been removed. -->
 
   <!-- 8. Nutrition / BMR / PFC (collapsible) -->
   ${(() => {
