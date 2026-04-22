@@ -715,6 +715,32 @@ App.prototype.render_dashboard = function() {
     </div>`;
   })()}
 
+  <!-- 🏥 Doctor submission report — single-click generator. Aggregates
+       up to 90 days of textEntries, symptoms, meds, labs, sleep and
+       activity into a structured Markdown report the user can copy,
+       download (.md), or print before their next appointment. Streams
+       through the same SSE pipeline as deep analysis so generation
+       surface the output live. Hidden until 1+ textEntry exists so
+       an empty account can't spin up a pointless AI call. -->
+  ${(() => {
+    if ((store.get('textEntries') || []).length === 0) return '';
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#ecfeff 0%,#cffafe 100%);border:1px solid #a5f3fc">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:2px">🏥 医師提出用レポートを作成</div>
+            <div style="font-size:11px;color:#0e7490;line-height:1.6">過去 90 日の記録を AI が統合し、受診時に持参できる形式でまとめます。</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="app.generateDoctorReport()"
+            style="padding:10px 18px;font-size:12px;font-weight:700;background:#0891b2;border-color:#0e7490;flex:0 0 auto">
+            レポート作成
+          </button>
+        </div>
+      </div>
+    </div>`;
+  })()}
+
   <!-- 🔬 Latest Research widget — moved from the dashboard's deep-scroll
        region so users see relevant new papers without scrolling past
        integrations / charts / timeline first. Content is lazily loaded

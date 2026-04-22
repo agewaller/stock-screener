@@ -2027,20 +2027,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=6"></script>
-<script src="js/config.js?v=6"></script>
-<script src="js/prompts.js?v=6"></script>
-<script src="js/store.js?v=6"></script>
-<script src="js/privacy.js?v=6"></script>
-<script src="js/ai-engine.js?v=6"></script>
-<script src="js/affiliate.js?v=6"></script>
-<script src="js/components.js?v=6"></script>
-<script src="js/i18n.js?v=6"></script>
-<script src="js/calendar.js?v=6"></script>
-<script src="js/integrations.js?v=6"></script>
-<script src="js/firebase-backend.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
-<script src="js/pages.js?v=6"></script>
+<script src="js/idb.js?v=7"></script>
+<script src="js/config.js?v=7"></script>
+<script src="js/prompts.js?v=7"></script>
+<script src="js/store.js?v=7"></script>
+<script src="js/privacy.js?v=7"></script>
+<script src="js/ai-engine.js?v=7"></script>
+<script src="js/affiliate.js?v=7"></script>
+<script src="js/components.js?v=7"></script>
+<script src="js/i18n.js?v=7"></script>
+<script src="js/calendar.js?v=7"></script>
+<script src="js/integrations.js?v=7"></script>
+<script src="js/firebase-backend.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/pages.js?v=7"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2395,6 +2395,284 @@ window.addEventListener('load', function() {
       var msg = (e && e.message) ? e.message : String(e);
       if (/abort/i.test(msg)) msg = 'ストリーム接続が停止しました（45秒間応答なし）。再度お試しください。';
       store.set('latestFeedbackError', '深い分析に失敗しました: ' + msg);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // 医師提出用レポート
+  // ───────────────────────────────────────────────────────────
+  // Aggregates the user's last 90 days of diary content into a
+  // structured Japanese medical-record document the user can print or
+  // copy into a patient-portal message before their next appointment.
+  // Streams through the same SSE pipeline as deep analysis so a 3-4
+  // minute write-out never trips a request timeout. Output is plain
+  // Markdown (no JSON schema) because the user is going to paste it
+  // into a medical-records form or print it — a JSON round-trip would
+  // just lose formatting.
+  // ═══════════════════════════════════════════════════════════
+  var buildDoctorReportPrompt = function() {
+    var label = getDiseasesLabel();
+    var diseaseClause = label
+      ? 'ユーザーの該当疾患: ' + label
+      : 'ユーザーの疾患は未設定です。記録内容から推定される主要症状を中心にまとめてください。';
+    return 'あなたは慢性疾患患者と主治医をつなぐ医療ドキュメントライターです。'
+      + 'ユーザーが日々記録してきた健康日記を統合し、次回受診時に主治医に提出する'
+      + '「患者サマリーレポート」を作成してください。\n\n'
+      + diseaseClause + '\n\n'
+      + '【文体の指針】\n'
+      + '・医療カルテ風の簡潔・客観的な日本語。\n'
+      + '・感情的表現を避け、事実・数値・頻度ベースで記述。\n'
+      + '・医学用語を適切に使う（例:「倦怠感」「PEM(労作後倦怠感)」「HRV」等）。\n'
+      + '・根拠のない病態推論はしない。ユーザーが記載した事実のみを整理する。\n'
+      + '・情報が不足している項目は「該当期間の記録なし」と正直に書く。\n\n'
+      + '【出力形式】純粋な Markdown のみ、前置きなし、コードフェンスなし。\n'
+      + '見出しは ## レベル、箇条書きは -、表は Markdown テーブル。\n\n'
+      + '以下のセクション構成を厳守してください:\n\n'
+      + '# 患者サマリーレポート\n'
+      + '_（主治医への定期受診時に提出するためのサマリー）_\n\n'
+      + '## 基本情報\n'
+      + '- 対象疾患: （選択疾患を列挙）\n'
+      + '- レポート作成日: 本日\n'
+      + '- 対象期間: （記録の最古日〜最新日）\n'
+      + '- 記録件数: （件）\n\n'
+      + '## 主訴（Top 3）\n'
+      + '直近で最も困っている症状を頻度順に 3 つ。強度 (1-10)・頻度（回/週）・初発時期を記載。\n\n'
+      + '## 症状経過（時系列サマリー）\n'
+      + '- 増悪時期と推定トリガー（食事・気圧・ストレス・活動等）\n'
+      + '- 改善時期と推定要因\n'
+      + '- 直近 2-4 週の変化傾向\n\n'
+      + '## 現在の服薬・サプリメント\n'
+      + '| 薬剤・サプリ名 | 用量・用法 | 開始時期 | 主観的効果 | 副作用 |\n'
+      + '|---|---|---|---|---|\n'
+      + '（記録から抽出できる範囲で。なければ「該当期間の記録なし」）\n\n'
+      + '## 直近の検査結果\n'
+      + '記録された血液検査・尿検査等の結果を日付順に要約。異常値があれば H/L で明示。\n\n'
+      + '## 試した対処法とその効果\n'
+      + '- 食事療法（低FODMAP・抗炎症食・地中海食等）\n'
+      + '- 生活習慣（睡眠・活動ペース・入浴・呼吸法等）\n'
+      + '- 併用療法（鍼・理学療法・カウンセリング等）\n'
+      + '効果を 改善 / 不変 / 悪化 で評価。\n\n'
+      + '## 生活影響度（QOL/ADL）\n'
+      + '- 1 日の活動可能時間（時間）\n'
+      + '- 仕事/学業/家事の遂行度\n'
+      + '- 社会生活・外出頻度\n'
+      + '- 睡眠の質（1-10）\n\n'
+      + '## 主治医への質問・相談事項\n'
+      + '次回受診で相談したい事項を 3-5 項目。ユーザーの記録から推察し、検討すべき治療変更・追加検査の候補を含める。\n\n'
+      + '## 付録: 原データ集計\n'
+      + '- 期間中の記録件数（症状・服薬・食事・検査 別）\n'
+      + '- 特徴的な日（体調スコア 8 以上 / 3 以下の日付）\n\n'
+      + '---\n'
+      + '※ このレポートは本人が日常的に記録した内容をもとに AI が整理したものです。診断ではありません。';
+  };
+
+  // Gather ~last 90 days of diary data, trimmed to keep input tokens
+  // reasonable. Each collection is capped individually so a single huge
+  // category (e.g. 2000 vital-sign entries) can't crowd out the others.
+  var collectUserDiaryForReport = function() {
+    var within = function(iso, days) {
+      if (!iso) return true;
+      var t = new Date(iso).getTime();
+      return !isNaN(t) && (Date.now() - t) <= days * 86400000;
+    };
+    var pick = function(arr, days, max, limitFields) {
+      return (arr || [])
+        .filter(function(e) { return within(e.timestamp || e.createdAt, days); })
+        .slice(-max)
+        .map(function(e) {
+          if (!limitFields) return e;
+          var o = {};
+          limitFields.forEach(function(k) { if (e[k] != null) o[k] = e[k]; });
+          return o;
+        });
+    };
+    return {
+      diseases: (function() {
+        var ids = store.get('selectedDiseases') || [];
+        var names = [];
+        if (typeof CONFIG !== 'undefined' && CONFIG.DISEASE_CATEGORIES) {
+          ids.forEach(function(id) {
+            for (var i = 0; i < CONFIG.DISEASE_CATEGORIES.length; i++) {
+              var cat = CONFIG.DISEASE_CATEGORIES[i];
+              var f = cat.diseases && cat.diseases.find(function(d){ return d.id === id; });
+              if (f) { names.push(f.name); return; }
+            }
+          });
+        }
+        return names;
+      })(),
+      profile: (function() {
+        var p = store.get('userProfile') || {};
+        return {
+          age: p.age, gender: p.gender, height: p.height, weight: p.weight
+        };
+      })(),
+      textEntries: pick(store.get('textEntries'), 90, 120, ['timestamp','category','title','content']),
+      symptoms: pick(store.get('symptoms'), 90, 120),
+      vitals: pick(store.get('vitals'), 90, 60),
+      bloodTests: pick(store.get('bloodTests'), 365, 40),
+      medications: pick(store.get('medications'), 365, 60),
+      supplements: pick(store.get('supplements'), 365, 40),
+      meals: pick(store.get('meals'), 30, 40, ['timestamp','name','calories','protein_g','fat_g','carb_g','anti_inflammatory_score']),
+      sleepData: pick(store.get('sleepData'), 60, 60, ['timestamp','duration','quality']),
+      activityData: pick(store.get('activityData'), 60, 60, ['timestamp','steps','duration'])
+    };
+  };
+
+  // Minify JSON so the model doesn't waste attention on whitespace.
+  // Truncate any single string field at 800 chars so a single absurdly
+  // long entry (Plaud transcripts) can't blow out the prompt.
+  var truncateStrings = function(obj, max) {
+    if (obj == null) return obj;
+    if (typeof obj === 'string') return obj.length > max ? obj.substring(0, max) + '…' : obj;
+    if (Array.isArray(obj)) return obj.map(function(x){ return truncateStrings(x, max); });
+    if (typeof obj === 'object') {
+      var out = {};
+      Object.keys(obj).forEach(function(k){ out[k] = truncateStrings(obj[k], max); });
+      return out;
+    }
+    return obj;
+  };
+
+  app.generateDoctorReport = async function() {
+    if (store.get('isGeneratingReport')) return;
+    var entries = store.get('textEntries') || [];
+    if (!entries.length) {
+      alert('まだ記録がありません。まず 1 件以上記録を保存してから作成してください。');
+      return;
+    }
+    var key = await resolveKey();
+    if (!key) { alert('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
+
+    // Ensure the modal overlay is visible and primed with a placeholder.
+    var overlay = document.getElementById('modal-overlay');
+    var body = document.getElementById('modal-body');
+    var title = document.getElementById('modal-title');
+    if (!overlay || !body) { alert('モーダルを表示できません。ページを再読み込みしてください。'); return; }
+    if (title) title.textContent = '🏥 医師提出用レポート';
+    body.innerHTML = '<div style="padding:16px 0"><div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">📝 作成中...（30-90秒・ストリーミング表示）</div>'
+      + '<pre id="doctor-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;color:var(--text-primary);padding:14px;background:var(--bg-tertiary);border-radius:10px;min-height:120px;max-height:60vh;overflow-y:auto;margin:0"></pre>'
+      + '<div id="doctor-report-actions" style="display:none;margin-top:12px;gap:8px;flex-wrap:wrap"></div>'
+      + '</div>';
+    overlay.classList.add('active');
+
+    store.set('isGeneratingReport', true);
+    var diary = truncateStrings(collectUserDiaryForReport(), 800);
+    var userMsg = '以下は患者本人が記録した健康日記データ（JSON）です。これを読み、指定フォーマットで患者サマリーレポートを作成してください。\n\n'
+      + '【日記データ】\n' + JSON.stringify(diary, null, 1).substring(0, 60000);
+
+    var targetEl = document.getElementById('doctor-report-text');
+    var actionsEl = document.getElementById('doctor-report-actions');
+    var fullText = '';
+
+    // We can't pass a callback into callClaudeStream, so we re-implement
+    // the streaming loop here to update the DOM incrementally as bytes
+    // arrive. Keeps the user engaged during the 30-90s generation.
+    var controller = new AbortController();
+    var stallTimer = null;
+    var lastByteAt = Date.now();
+    try {
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': String(key).trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4000,
+          system: buildDoctorReportPrompt(),
+          messages: [{ role: 'user', content: userMsg }],
+          stream: true
+        }),
+        signal: controller.signal
+      });
+      if (!resp.ok) {
+        var errText = await resp.text().catch(function(){ return ''; });
+        throw new Error(resp.status + ': ' + errText.substring(0, 300));
+      }
+      stallTimer = setInterval(function() {
+        if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch(e) {} }
+      }, 5000);
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      var buffer = '';
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        lastByteAt = Date.now();
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          var frame = buffer.substring(0, idx);
+          buffer = buffer.substring(idx + 2);
+          var lines = frame.split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.indexOf('data: ') !== 0) continue;
+            var payload = line.substring(6);
+            if (payload === '[DONE]') continue;
+            try {
+              var evt = JSON.parse(payload);
+              if (evt.type === 'content_block_delta' && evt.delta && typeof evt.delta.text === 'string') {
+                fullText += evt.delta.text;
+                if (targetEl) {
+                  targetEl.textContent = fullText;
+                  targetEl.scrollTop = targetEl.scrollHeight;
+                }
+              } else if (evt.type === 'error') {
+                throw new Error((evt.error && evt.error.message) || 'streaming error');
+              }
+            } catch(_) {}
+          }
+        }
+      }
+      if (!fullText.trim()) throw new Error('レポートが生成されませんでした。再試行してください。');
+
+      // Persist so the user can retrieve even after closing the modal.
+      var reports = store.get('doctorReports') || [];
+      var reportId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      reports.push({ id: reportId, timestamp: new Date().toISOString(), text: fullText });
+      store.set('doctorReports', reports);
+
+      // Show action buttons: copy, download .md, print, close
+      if (actionsEl) {
+        actionsEl.style.display = 'flex';
+        actionsEl.innerHTML = '<button class="btn btn-primary btn-sm" id="doctor-report-copy">📋 コピー</button>'
+          + '<button class="btn btn-secondary btn-sm" id="doctor-report-download">📥 .md ダウンロード</button>'
+          + '<button class="btn btn-secondary btn-sm" id="doctor-report-print">🖨 印刷</button>'
+          + '<button class="btn btn-secondary btn-sm" onclick="app.closeModal()">閉じる</button>';
+        document.getElementById('doctor-report-copy').onclick = function() {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(fullText).then(function(){
+              if (typeof Components !== 'undefined' && Components.showToast) Components.showToast('レポートをコピーしました', 'success');
+            });
+          }
+        };
+        document.getElementById('doctor-report-download').onclick = function() {
+          var blob = new Blob([fullText], { type: 'text/markdown;charset=utf-8' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'patient-summary-' + new Date().toISOString().substring(0, 10) + '.md';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+        document.getElementById('doctor-report-print').onclick = function() {
+          var w = window.open('', '_blank');
+          if (!w) return;
+          w.document.write('<html><head><meta charset="UTF-8"><title>患者サマリーレポート</title><style>body{font-family:"Hiragino Sans","Noto Sans JP",sans-serif;max-width:800px;margin:24px auto;padding:0 24px;line-height:1.8;color:#1e293b}h1{border-bottom:2px solid #6366f1;padding-bottom:6px}h2{margin-top:24px;color:#3730a3}table{border-collapse:collapse;margin:12px 0}th,td{border:1px solid #cbd5e1;padding:6px 10px;font-size:13px}</style></head><body>'
+            + fullText.replace(/</g,'&lt;').replace(/\n/g,'<br>')
+            + '<script>window.print()<\/script></body></html>');
+        };
+      }
+    } catch(e) {
+      if (targetEl) targetEl.textContent += '\n\n[エラー] ' + (e && e.message ? e.message : String(e));
+    } finally {
+      if (stallTimer) clearInterval(stallTimer);
+      store.set('isGeneratingReport', false);
     }
   };
 
