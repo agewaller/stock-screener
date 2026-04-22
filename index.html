@@ -2078,6 +2078,117 @@ function callClaude(text, apiKey, model, systemPrompt) {
   });
 }
 
+// Streaming call for long-running structured analysis. Uses the Messages
+// API `stream: true` mode so there's no fixed request timeout — tokens
+// arrive incrementally over SSE. We abort only if the stream stalls
+// (no bytes for >45s) which means the connection is actually dead.
+// Returns the full concatenated text once message_stop arrives. Caller
+// is responsible for JSON-parsing the result.
+async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
+  var cleanKey = String(apiKey || '').trim();
+  var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
+  var controller = new AbortController();
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': cleanKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: claudeModel,
+      max_tokens: maxTokens || 2500,
+      system: systemPrompt || 'あなたは慢性疾患の健康日記アナリストです。',
+      messages: [{ role: 'user', content: text }],
+      stream: true
+    }),
+    signal: controller.signal
+  });
+  if (!resp.ok) {
+    var errText = await resp.text().catch(function(){ return ''; });
+    var msg = resp.status + ': ' + errText.substring(0, 300);
+    if (resp.status === 401) msg = 'APIキーが無効です。管理パネルで再設定してください。';
+    else if (resp.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
+    else if (resp.status === 529 || resp.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
+    throw new Error(msg);
+  }
+  if (!resp.body || !resp.body.getReader) {
+    throw new Error('お使いのブラウザはストリーミングに対応していません。');
+  }
+  var reader = resp.body.getReader();
+  var decoder = new TextDecoder('utf-8');
+  var fullText = '';
+  var buffer = '';
+  var lastByteAt = Date.now();
+  var stallTimer = setInterval(function() {
+    if (Date.now() - lastByteAt > 45000) {
+      try { controller.abort(); } catch(e) {}
+    }
+  }, 5000);
+  try {
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      lastByteAt = Date.now();
+      buffer += decoder.decode(chunk.value, { stream: true });
+      var idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        var frame = buffer.substring(0, idx);
+        buffer = buffer.substring(idx + 2);
+        var lines = frame.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.indexOf('data: ') !== 0) continue;
+          var payload = line.substring(6);
+          if (payload === '[DONE]') continue;
+          try {
+            var evt = JSON.parse(payload);
+            if (evt.type === 'content_block_delta' && evt.delta && typeof evt.delta.text === 'string') {
+              fullText += evt.delta.text;
+            } else if (evt.type === 'error') {
+              throw new Error((evt.error && evt.error.message) || 'streaming error');
+            }
+          } catch (_) { /* ignore partial frames */ }
+        }
+      }
+    }
+  } finally {
+    clearInterval(stallTimer);
+  }
+  return fullText;
+}
+
+// Best-effort JSON extractor for streaming deep-analysis replies. Claude
+// sometimes wraps the JSON in ```json fences or leading prose even when
+// we ask it not to. Pull out the first balanced { ... } block and parse.
+function extractJSON(text) {
+  if (!text) return null;
+  var s = String(text).trim();
+  if (s.indexOf('```') === 0) {
+    s = s.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  }
+  try { return JSON.parse(s); } catch(e) {}
+  var start = s.indexOf('{');
+  if (start < 0) return null;
+  var depth = 0, inStr = false, esc = false;
+  for (var i = start; i < s.length; i++) {
+    var c = s[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(s.substring(start, i + 1)); } catch(e) { return null; }
+      }
+    }
+  }
+  return null;
+}
+
 // Detect English Claude refusal strings ("I'm sorry, I can't assist...")
 // that sometimes slip through when the user's free-text entry triggers
 // the model's safety classifier. Also catches the Japanese variant.
@@ -2181,50 +2292,109 @@ window.addEventListener('load', function() {
     };
   };
 
-  // Run the heavy structured analysis on demand. Targets the most recent
-  // text entry (the one that triggered the quick reply) and replaces
-  // latestFeedback with the full schema result. Falls back gracefully on
-  // timeout / error so the cached quick reply stays visible. We touch
-  // latestFeedbackError on every state transition because isDeepAnalyzing
-  // is NOT in scheduleDashRefresh's watched key list — without touching a
-  // watched key the dashboard never re-renders and the user sees the
-  // button click do nothing for 30-60s.
+  // Run the heavy structured analysis on demand. Uses streaming so it
+  // never hits the 30s per-call timeout that kills the regular provider
+  // chain (ALL_PROVIDERS_FAILED: タイムアウト). We build a slim system
+  // prompt inline — same JSON schema as INLINE_PROMPTS.text_analysis but
+  // WITHOUT the massive {{WEEKLY_DATA}} / {{BLOOD_TEST_DATA}} /
+  // {{CURRENT_SUPPLEMENTS}} / {{SYMPTOM_DATA}} interpolation that pushed
+  // input tokens high enough to make Sonnet take >30s to reply. Result
+  // is cached in latestFeedback with _deepAnalysis so the button hides
+  // on next render.
+  var buildDeepSystemPrompt = function() {
+    var label = getDiseasesLabel();
+    var diseaseClause = label
+      ? 'ユーザーの該当疾患: ' + label + '\n重要: 上記の疾患のみを前提にしてください。該当しない疾患（特に ME/CFS）を無関係に持ち出さないでください。'
+      : '注意: ユーザーの疾患は未設定です。特定の疾患（ME/CFS 等）を前提にせず一般的な慢性疾患サポートの観点で返答してください。';
+    return 'あなたは慢性疾患患者の健康日記アナリストです。温かく寄り添い、ユーザーのテキストを深く読み、即座に役立つ構造化フィードバックを返してください。\n\n'
+      + diseaseClause
+      + '\n\n【最重要】ユーザーがまだ試していない・知らない、具体的に行動できる新しい打ち手を必ず 1 つ以上含めること。エビデンスレベル（研究/臨床ガイドライン/経験則）とできれば参考 URL を添える。\n\n'
+      + '【出力形式】純粋な JSON オブジェクト 1 個のみ、前置き・コードブロック・後書き一切なし。最初の文字が { 最後の文字が } でなければなりません。スキーマ:\n'
+      + '{\n'
+      + '  "category": "症状|服薬|食事|検査|精神|運動|睡眠 等",\n'
+      + '  "urgency": "urgent|attention|normal",\n'
+      + '  "summary": "1-2 行の共感 + 要約",\n'
+      + '  "findings": "詳細所見 5-10 行（マークダウン可）",\n'
+      + '  "actions": ["今日できる具体的アクション", "今週できる具体的アクション", "まだ試していない新しい打ち手"],\n'
+      + '  "new_approach": "新しいアプローチの提案（3-5 行・エビデンス・URL 付き）",\n'
+      + '  "trend": "前後の記録がある場合の変化分析（2-3 行）",\n'
+      + '  "next_check": "次に記録・確認すべきこと（1-2 行）",\n'
+      + '  "deeper_prompt": "さらに精度を上げるためにユーザーに聞きたいこと 1 文"\n'
+      + '}';
+  };
+
   app.runDeepAnalysis = async function() {
     if (store.get('isDeepAnalyzing')) return;
-    if (!originalAnalyzeViaAPI) {
-      store.set('latestFeedbackError', '深い分析機能は現在利用できません。');
-      return;
-    }
     var entries = store.get('textEntries') || [];
     var last = entries.length ? entries[entries.length - 1] : null;
     if (!last || !last.content) {
       store.set('latestFeedbackError', '分析対象の記録が見つかりません。先に記録を送信してください。');
       return;
     }
-    var content = last.content;
+    var key = await resolveKey();
+    if (!key) {
+      store.set('latestFeedbackError', 'APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
+      return;
+    }
     store.set('isDeepAnalyzing', true);
     store.set('latestFeedbackError', null);
     // Force a re-render so the spinner appears immediately. latestFeedback
     // is watched; re-setting the same value still fires the listener.
     store.set('latestFeedback', store.get('latestFeedback'));
+    var userText = '[' + (last.category || 'symptoms') + '] ' + last.content;
+    // Include up to 5 recent entries as context (short — keeps prompt slim)
+    var recent = entries.slice(-5).map(function(e, i) {
+      return (i + 1) + '. ' + new Date(e.timestamp).toLocaleDateString('ja-JP')
+        + ' [' + (e.category || '') + '] ' + String(e.content || '').substring(0, 300);
+    }).join('\n');
+    if (recent) userText += '\n\n【直近の記録（最大5件）】\n' + recent;
     try {
-      var result = await originalAnalyzeViaAPI('[' + (last.category || 'symptoms') + '] ' + content,
-        'text_analysis',
-        { globalTimeoutMs: 60000 });
-      if (result && result._fromAPI !== false) {
-        result._deepAnalysis = true;
-        if (typeof app.saveAIComment === 'function' && last.id) {
-          try { app.saveAIComment(last.id, result); } catch(e){}
-        }
-        store.set('isDeepAnalyzing', false);
-        store.set('latestFeedback', result);
+      var raw = await callClaudeStream(
+        userText,
+        key,
+        'claude-sonnet-4-6',
+        buildDeepSystemPrompt(),
+        2500
+      );
+      if (isRefusalReply(raw)) raw = REFUSAL_FALLBACK;
+      var parsed = extractJSON(raw);
+      var result;
+      if (parsed && typeof parsed === 'object') {
+        result = Object.assign({}, parsed, {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          timestamp: new Date().toISOString(),
+          type: 'text_analysis',
+          parsed: parsed,
+          _raw: raw,
+          _fromAPI: true,
+          _deepAnalysis: true
+        });
       } else {
-        store.set('isDeepAnalyzing', false);
-        store.set('latestFeedbackError', (result && (result._error || result.findings)) || '深い分析に失敗しました。');
+        // JSON parse failed — fall back to rendering the streamed text
+        // as plain findings. Still tagged _deepAnalysis so the button
+        // hides and the user isn't re-prompted for the same entry.
+        result = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+          timestamp: new Date().toISOString(),
+          type: 'text_analysis',
+          summary: '深い分析結果',
+          findings: raw,
+          actions: [],
+          _raw: raw,
+          _fromAPI: true,
+          _deepAnalysis: true
+        };
       }
+      if (typeof app.saveAIComment === 'function' && last.id) {
+        try { app.saveAIComment(last.id, result); } catch(e){}
+      }
+      store.set('isDeepAnalyzing', false);
+      store.set('latestFeedback', result);
     } catch(e) {
       store.set('isDeepAnalyzing', false);
-      store.set('latestFeedbackError', '深い分析に失敗しました: ' + (e && e.message ? e.message : String(e)));
+      var msg = (e && e.message) ? e.message : String(e);
+      if (/abort/i.test(msg)) msg = 'ストリーム接続が停止しました（45秒間応答なし）。再度お試しください。';
+      store.set('latestFeedbackError', '深い分析に失敗しました: ' + msg);
     }
   };
 
