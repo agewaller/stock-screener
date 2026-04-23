@@ -2117,6 +2117,14 @@ function callClaude(text, apiKey, model, systemPrompt) {
   }).catch(function(err) {
     if (timer) clearTimeout(timer);
     if (err && err.name === 'AbortError') throw new Error('タイムアウト（30秒）。通信環境をご確認ください。');
+    // "Load failed" / "Failed to fetch" / TypeError: network-level failure
+    // before any HTTP response — most commonly seen in in-app browsers
+    // (Facebook, Instagram, LINE, X) which block cross-origin fetches
+    // to workers.dev. Surface a clearer hint instead of the raw message.
+    var em = (err && err.message) ? String(err.message) : String(err);
+    if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
+      throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
+    }
     throw err;
   });
 }
@@ -3097,5 +3105,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
+<script defer src="js/inapp-browser-banner.js?v=12"></script>
 </body>
 </html>
