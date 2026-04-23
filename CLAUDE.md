@@ -94,3 +94,66 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - メール: `agewaller@gmail.com`
 - 管理パネル（`/admin`）: プロンプト管理、API キー、Firebase 設定、データ管理
 - `saveApiKeys` / `clearApiKeys` は `isAdmin()` ガードが必須
+
+## 開発環境セットアップ
+
+初回 clone 直後に一度だけ実行（ローカル設定のため clone ごとに必要）:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+これで `.githooks/pre-commit` が有効化され、以下の禁則パターンを commit 時に自動検出する:
+
+- datestamped Claude / OpenAI model id のハードコード
+- `localStorage.clear()`
+- `confirm()` / `alert()`
+- `signInWithPopup`
+- 旧 Google 翻訳 URL 形式
+- ハードコードされた Google / Firebase API key（`AIza...`）
+
+緊急 bypass（基本使わない）: `ALLOW_DANGEROUS=1 git commit ...`
+
+## 外部サービス統合プラン（車輪の再発明をしない）
+
+**原則**: 既存のサービス・ライブラリで解決できるものはゼロから作らない。
+新機能の前に既存スタックで解決できないか必ず検討する。
+
+### 判断のチェックリスト（新機能追加前に順に検討）
+
+1. 既存の健康日記機能で代替できないか？
+2. 既存の外部サービス（Firebase, Anthropic, Google 等）の機能を拡張すれば済まないか？
+3. Firebase Extensions で追加できないか？（Trigger Email, Search with Algolia 等）
+4. Cloudflare Worker で実装できないか？（既存のプロキシ基盤 `worker/` を使える）
+5. それでも必要なら、下記の統合ルールに従って新サービスを追加する
+
+### 現状の外部サービス（実装済）
+
+| 機能 | 採用サービス | 統合ファイル |
+|------|-------------|-------------|
+| 認証 | Firebase Authentication | `js/firebase-backend.js` |
+| DB | Firebase Firestore | `js/firebase-backend.js` |
+| AI | Anthropic / OpenAI / Gemini | `js/ai-engine.js` + `worker/anthropic-proxy.js` |
+| カレンダー | Google Calendar / ICS | `js/calendar.js` |
+| ウェアラブル | Fitbit / Apple Health | `js/integrations.js` |
+| メール受信 | Cloudflare Email Workers | `worker/plaud-inbox.js` |
+| メール送信 | Cloudflare Worker | `worker/professional-mailer.js` |
+
+### 新サービス追加時の共通ルール
+
+1. **管理画面で API キーを設定**（コードにハードコードしない）
+2. **`admin/config` または `admin/secrets` に保存**（全ユーザー共有。per-user トークンのみ localStorage）
+3. **`CONFIG.{service}` に展開**（`js/config.js` で型とデフォルト値を定義）
+4. **モジュールは単一ファイル**（`js/{service}-integration.js` に集約）
+5. **フォールバック必須**（サービス未設定でも健康日記全体が動く）
+6. **ユーザー画面ではサービス名を出さない**（「通知を送る」「連携する」等の一般名詞で）
+7. **README か CLAUDE.md に設定手順を追加**（非エンジニアが設定できるレベルで）
+
+### 「追加しない」判断も明文化する
+
+以下は検討したが**採用しない**。再提案されても最初に理由を確認する:
+
+- **Supabase Auth / Clerk**: Firebase Auth で十分（Google OAuth + Email/Password + カスタムクレーム）
+- **Supabase (PostgreSQL)**: Firestore で足りている。SQL による複雑分析が必要になるまで見送り
+- **shadcn/ui**: React 依存のため vanilla JS プロジェクトには直接使えない。原則（アクセシビリティ・CSS 変数・コピペ可能）のみ採用
+- **Algolia**: 10 万件未満なら Firestore クライアントフィルタで十分。それを超えたら検討
