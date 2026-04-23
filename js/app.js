@@ -3415,9 +3415,17 @@ ${axisHint}
       } catch (err) {
         console.warn('[guestFileAnalyze] Failed:', err?.message || err);
         if (resultEl) {
+          // Surface the actual error message instead of a canned
+          // "通信エラー" line. For in-app-browser / CORS failures the
+          // thrower (ai-engine.js callAnthropic) now returns a
+          // Japanese message telling the user to open in an external
+          // browser — swallowing it hid the actionable advice.
+          const friendly = (err && err.message)
+            ? String(err.message)
+            : '通信エラーが発生しました。時間をおいて再度お試しください。';
           resultEl.innerHTML = this.renderAnalysisCard({
             summary: 'ファイル分析に失敗しました',
-            findings: '通信エラーが発生しました。時間をおいて再度お試しください。',
+            findings: friendly,
             actions: []
           });
         }

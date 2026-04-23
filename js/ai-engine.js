@@ -533,14 +533,34 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Direct connection to Anthropic API. Simple, no intermediaries.
-    const url = 'https://api.anthropic.com/v1/messages';
+    // Route guests (no API key) through the Cloudflare Worker proxy so
+    // the Worker's env.ANTHROPIC_API_KEY fallback handles the request.
+    // Direct calls to api.anthropic.com from a guest browser would 401,
+    // and in Facebook / Instagram / LINE in-app browsers the fetch to
+    // api.anthropic.com itself frequently fails with "Load failed"
+    // before any HTTP response. This mirrors the policy already in
+    // place for the inline text-only callClaude in index.html — photos
+    // previously bypassed it, so guest image analysis was unreachable
+    // from in-app browsers.
+    let url = 'https://api.anthropic.com/v1/messages';
+    if (!apiKey) {
+      let proxy = '';
+      try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+      if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
+      url = proxy.replace(/\/+$/, '') + '/v1/messages';
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     };
-    if (apiKey) headers['x-api-key'] = apiKey;
+    if (apiKey) {
+      // `anthropic-dangerous-direct-browser-access` only makes sense
+      // when we're hitting api.anthropic.com directly. The Worker
+      // proxies on our behalf so the header is unnecessary there.
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
 
     // Vision / Documents: when options.imageBase64 or options.pdfBase64
     // is supplied, wrap the prompt and file in a content array per the
@@ -601,8 +621,18 @@ ${avoidBlock}
         signal: controller.signal
       });
     } catch (fetchErr) {
-      const reason = fetchErr.name === 'AbortError' ? 'タイムアウト' : fetchErr.message;
-      throw new Error(`Anthropic API 接続失敗: ${reason}`);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('Anthropic API タイムアウト（30秒）。通信環境をご確認ください。');
+      }
+      // Network-level failure before any HTTP response. Facebook /
+      // Instagram / LINE / X in-app browsers surface this as the
+      // opaque Safari message "Load failed"; surface an actionable
+      // hint instead of the raw string so users know what to try.
+      const em = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
+      if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
+        throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
+      }
+      throw new Error(`Anthropic API 接続失敗: ${em}`);
     } finally {
       clearTimeout(tid);
     }
