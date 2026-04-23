@@ -765,12 +765,16 @@ var App = class App {
           category: '写真'
         });
 
-        // Run AI image analysis
+        // Run AI image analysis. Send the compressed payload (800px
+        // JPEG@0.7, ~100-300KB) — the raw ev.target.result can be 5-7MB
+        // for iPhone photos which pushes us past Anthropic's vision
+        // block size limit and the Worker payload ceiling. Storage /
+        // preview uses the same compressed copy above.
         try {
           const result = await this.analyzeViaAPI(
             `[写真: ${file.name}]`,
             'image_analysis',
-            { imageBase64: ev.target.result }
+            { imageBase64: compressed }
           );
           if (resultEl) {
             resultEl.innerHTML = this.renderAnalysisCard(result);
@@ -3643,8 +3647,12 @@ ${axisHint}
         // PDFs go through the same 2-pass classifier as images via the
         // Anthropic `document` content block, so Claude can natively
         // read the file content (검사 결과 PDF・처방전 PDF・식단표 PDF 등).
+        // Send compressed image (already computed above) — the raw
+        // dataURL is 5-7MB for iPhone photos which exceeds Anthropic's
+        // vision block size. PDFs are not compressed (compressImage
+        // only handles images) so the raw stream goes through.
         const attachOpts = isImage
-          ? { imageBase64: ev.target.result }
+          ? { imageBase64: compressed }
           : (isPDF ? { pdfBase64: ev.target.result } : {});
         const analyzeType = (isImage || isPDF) ? (isImage ? 'image_analysis' : 'document_analysis') : 'text_analysis';
         const userNote = isImage
@@ -3735,8 +3743,10 @@ ${axisHint}
         // Run API analysis. PDFs ride the same 2-pass classifier as
         // images via the Anthropic `document` content block so Claude
         // natively reads 検査結果 PDF・処方箋 PDF・診断書 PDF 等.
+        // Send compressed (not raw) for images — otherwise iPhone
+        // photos at 5-7MB exceed the vision block size limit.
         const attachOpts = isImage
-          ? { imageBase64: ev.target.result }
+          ? { imageBase64: compressed }
           : (isPDF ? { pdfBase64: ev.target.result } : {});
         const analyzeType = isImage ? 'image_analysis' : (isPDF ? 'document_analysis' : 'text_analysis');
         const result = await this.analyzeViaAPI(
