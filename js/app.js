@@ -5895,6 +5895,31 @@ ${joined.substring(0, 8000)}`;
     store.calculateHealthScore();
     Components.showToast('デモデータを生成しました', 'success');
     this.navigate('dashboard');
+  },
+
+  copyShareLink(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        Components.showToast('リンクをコピーしました', 'success');
+      }).catch(() => this._fallbackCopy(url));
+    } else {
+      this._fallbackCopy(url);
+    }
+  },
+
+  _fallbackCopy(url) {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      Components.showToast('リンクをコピーしました', 'success');
+    } catch (e) {
+      Components.showToast('コピーできませんでした: ' + url, 'info');
+    }
+    document.body.removeChild(ta);
   }
 };
 

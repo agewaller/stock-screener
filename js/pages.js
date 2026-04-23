@@ -655,6 +655,43 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- SNS Share widget — shown when the user has ≥3-day streak or ≥5 entries.
+       LINE has ~90% penetration in Japan so it leads. Twitter/X and copy-link
+       follow. Share text highlights streak to make the tap feel like an
+       achievement share rather than an advertisement. -->
+  ${(() => {
+    const showShare = streakStats.streak >= 3 || totalEntries >= 5;
+    if (!showShare) return '';
+    const shareUrl = 'https://cares.advisers.jp';
+    const shareText = streakStats.streak >= 3
+      ? `慢性疾患の体調管理に「健康日記」を使って${streakStats.streak}日連続記録中です！`
+      : `慢性疾患の体調管理に「健康日記」を使っています。`;
+    const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(shareText + '\n' + shareUrl);
+    const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl);
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #86efac">
+      <div class="card-body" style="padding:12px 18px">
+        <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:8px">友達・家族に教える</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a href="${lineUrl}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#06c755;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C8.832 3 3 8.097 3 14.4c0 4.137 2.624 7.762 6.6 9.974l-.84 3.074a.5.5 0 0 0 .72.56l3.56-2.114A15.65 15.65 0 0 0 16 25.8c7.168 0 13-5.097 13-11.4S23.168 3 16 3z"/></svg>
+            LINE で送る
+          </a>
+          <a href="${twitterUrl}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#000;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            X でシェア
+          </a>
+          <button onclick="app.copyShareLink('${shareUrl}')"
+            style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#fff;color:#166534;border:1px solid #86efac;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">
+            🔗 リンクをコピー
+          </button>
+        </div>
+      </div>
+    </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];

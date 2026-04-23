@@ -2027,20 +2027,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=8"></script>
-<script src="js/config.js?v=8"></script>
-<script src="js/prompts.js?v=8"></script>
-<script src="js/store.js?v=8"></script>
-<script src="js/privacy.js?v=8"></script>
-<script src="js/ai-engine.js?v=8"></script>
-<script src="js/affiliate.js?v=8"></script>
-<script src="js/components.js?v=8"></script>
-<script src="js/i18n.js?v=8"></script>
-<script src="js/calendar.js?v=8"></script>
-<script src="js/integrations.js?v=8"></script>
-<script src="js/firebase-backend.js?v=8"></script>
-<script src="js/app.js?v=8"></script>
-<script src="js/pages.js?v=8"></script>
+<script src="js/idb.js?v=9"></script>
+<script src="js/config.js?v=9"></script>
+<script src="js/prompts.js?v=9"></script>
+<script src="js/store.js?v=9"></script>
+<script src="js/privacy.js?v=9"></script>
+<script src="js/ai-engine.js?v=9"></script>
+<script src="js/affiliate.js?v=9"></script>
+<script src="js/components.js?v=9"></script>
+<script src="js/i18n.js?v=9"></script>
+<script src="js/calendar.js?v=9"></script>
+<script src="js/integrations.js?v=9"></script>
+<script src="js/firebase-backend.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
+<script src="js/pages.js?v=9"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2349,10 +2349,12 @@ window.addEventListener('load', function() {
     }).join('\n');
     if (recent) userText += '\n\n【直近の記録（最大5件）】\n' + recent;
     try {
+      var deepModel = store.get('selectedModel') || 'claude-sonnet-4-6';
+      if (String(deepModel).indexOf('claude-') !== 0) deepModel = 'claude-sonnet-4-6';
       var raw = await callClaudeStream(
         userText,
         key,
-        'claude-sonnet-4-6',
+        deepModel,
         buildDeepSystemPrompt(),
         2500
       );
@@ -2581,7 +2583,7 @@ window.addEventListener('load', function() {
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: (function(){ var m = store.get('selectedModel') || 'claude-sonnet-4-6'; return String(m).indexOf('claude-') === 0 ? m : 'claude-sonnet-4-6'; })(),
           max_tokens: 4000,
           system: buildDoctorReportPrompt(),
           messages: [{ role: 'user', content: userMsg }],
@@ -2758,6 +2760,83 @@ window.addEventListener('load', function() {
     }
   };
 });
+
+// ── PWA install prompt ────────────────────────────────────────────────────
+// Intercept the browser's beforeinstallprompt event so we can show a
+// custom "ホーム画面に追加" banner instead of the default browser chrome.
+// We wait until the user has ≥ 1 entry and the page has been open ≥ 5s
+// before surfacing it, to avoid annoying new visitors.
+(function() {
+  var _deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _deferredPrompt = e;
+    setTimeout(function() {
+      var entries = (typeof store !== 'undefined' && store.get('textEntries')) || [];
+      if (entries.length === 0) return;
+      if (localStorage.getItem('pwa_install_dismissed')) return;
+      var banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.style.display = 'flex';
+    }, 5000);
+  });
+  window._triggerPwaInstall = function() {
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(r) {
+      if (r.outcome === 'accepted') {
+        var b = document.getElementById('pwa-install-banner');
+        if (b) b.style.display = 'none';
+      }
+      _deferredPrompt = null;
+    });
+  };
+  window._dismissPwaInstall = function() {
+    localStorage.setItem('pwa_install_dismissed', '1');
+    var b = document.getElementById('pwa-install-banner');
+    if (b) b.style.display = 'none';
+  };
+})();
+
+// ── Cookie / Privacy consent banner ──────────────────────────────────────
+// Show a minimal consent notice for non-Japanese browser locales (GDPR).
+// Dismissed state is stored in localStorage; no tracking cookies are set
+// before the user dismisses — the app uses only functional storage.
+(function() {
+  if (localStorage.getItem('privacy_consent_shown')) return;
+  var lang = (navigator.language || navigator.userLanguage || 'ja').toLowerCase();
+  if (lang.startsWith('ja')) {
+    localStorage.setItem('privacy_consent_shown', '1');
+    return;
+  }
+  window.addEventListener('load', function() {
+    var banner = document.getElementById('privacy-consent-banner');
+    if (banner) banner.style.display = 'flex';
+  });
+  window._acceptPrivacyConsent = function() {
+    localStorage.setItem('privacy_consent_shown', '1');
+    var b = document.getElementById('privacy-consent-banner');
+    if (b) b.style.display = 'none';
+  };
+})();
 </script>
+
+<!-- PWA install banner (hidden by default, shown by JS) -->
+<div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1e293b;color:#fff;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.3)">
+  <div style="flex:1;font-size:13px;line-height:1.4">
+    <strong>ホーム画面に追加</strong><br>
+    <span style="font-size:11px;color:#94a3b8">毎日の記録がより便利になります</span>
+  </div>
+  <button onclick="window._triggerPwaInstall()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">追加する</button>
+  <button onclick="window._dismissPwaInstall()" style="padding:8px 12px;background:transparent;color:#94a3b8;border:none;font-size:18px;cursor:pointer;line-height:1">×</button>
+</div>
+
+<!-- Cookie / Privacy consent banner (hidden by default, shown for non-JP locales) -->
+<div id="privacy-consent-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9998;background:#fff;border-top:1px solid #e2e8f0;padding:12px 16px;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -2px 8px rgba(0,0,0,0.08)">
+  <div style="flex:1;min-width:200px;font-size:12px;color:#475569;line-height:1.5">
+    This site stores health records locally in your browser using cookies and localStorage to provide its service. No data is shared with third parties without your consent.
+  </div>
+  <button onclick="window._acceptPrivacyConsent()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">I understand</button>
+</div>
+
 </body>
 </html>
