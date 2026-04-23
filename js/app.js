@@ -2227,9 +2227,17 @@ ${titles}`;
         // historically would occasionally return prose for food photos,
         // causing parseAIResponse to fall back to empty result.
         modelOptions.systemPrompt = 'あなたは画像・文書分析の専門家です。ユーザーがアップロードした画像または PDF 文書を必ず分析し、指定された JSON スキーマで構造化された応答を返してください。「分析できません」という回答は禁止です。返答は JSON オブジェクト 1 個のみ、前置きも後書きもマークダウンコードフェンスもなしで、最初の文字が { 最後の文字が } でなければなりません。食事・デザート・スイーツ・飲み物の場合は image_type を "food" にして栄養成分・カロリー・PFC を必ず含めてください。';
-        // Image analysis responses can be long (10+ sections), so
-        // give the model more room than the default 4096.
-        modelOptions.maxTokens = 6000;
+        // Vision / document analysis is intrinsically slower than text:
+        //   - input has the image/PDF block plus the full image_food /
+        //     image_diagnosis prompt (PROMPT_HEADER + ~3500 chars)
+        //   - output is a structured JSON with 5 sections of content
+        // The default 30s globalTimeoutMs / 30s per-call cap fails
+        // every food photo on Sonnet/Opus (regularly 35-50s end-to-end).
+        // Bump both ceilings and cap output to ~2500 tokens — the
+        // image_food schema doesn't need 6000.
+        modelOptions.maxTokens = 3500;
+        modelOptions.perCallTimeoutMs = 75000;
+        modelOptions.globalTimeoutMs = 150000;
 
         // ═══════════════════════════════════════════════════
         // 2-Pass Image / PDF Analysis
@@ -2285,10 +2293,12 @@ ${titles}`;
 
             console.log('[image-analysis] Pass 2: routing to', specialized);
             // Use Opus for the deep analysis (default selectedModel).
-            const deepResponse = await aiEngine.callModel(store.get('selectedModel'), specializedPrompt, {
-              ...modelOptions,
-              maxTokens: 6000
-            });
+            // maxTokens / per-call / global timeouts are already set
+            // in modelOptions for image_analysis (see above), so we
+            // just spread them — the previous explicit `maxTokens:6000`
+            // override here was undoing the reduction and pushing
+            // every Sonnet/Opus call past the per-call cap.
+            const deepResponse = await aiEngine.callModel(store.get('selectedModel'), specializedPrompt, modelOptions);
             const deepText = typeof deepResponse === 'string' ? deepResponse : JSON.stringify(deepResponse);
             const deepParsed = this.parseAIResponse(deepText);
 

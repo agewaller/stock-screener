@@ -410,10 +410,15 @@ ${avoidBlock}
     const errors = [];
     let lastRefusal = null;
     // Use shorter per-call timeout so a single hanging provider
-    // doesn't eat up the whole deadline.
+    // doesn't eat up the whole deadline. Vision / document analysis
+    // calls pass options.perCallTimeoutMs explicitly when they need
+    // more than 30s — image_analysis with maxTokens 3500 against
+    // Sonnet/Opus on a food photo regularly takes 35-50s, which the
+    // old hardcoded 30s cap killed before completion.
+    const perCallCap = options.perCallTimeoutMs || 30000;
     const perCallOptions = (remaining) => ({
       ...options,
-      perCallTimeoutMs: Math.max(5000, Math.min(30000, remaining - 2000))
+      perCallTimeoutMs: Math.max(5000, Math.min(perCallCap, remaining - 2000))
     });
 
     for (const { model, callFn } of providers) {
@@ -622,7 +627,8 @@ ${avoidBlock}
       });
     } catch (fetchErr) {
       if (fetchErr.name === 'AbortError') {
-        throw new Error('Anthropic API タイムアウト（30秒）。通信環境をご確認ください。');
+        const sec = Math.round(timeoutMs / 1000);
+        throw new Error(`Anthropic API タイムアウト（${sec}秒）。写真分析は時間がかかることがあります。もう一度お試しください。`);
       }
       // Network-level failure before any HTTP response. Facebook /
       // Instagram / LINE / X in-app browsers surface this as the
