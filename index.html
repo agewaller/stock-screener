@@ -2048,20 +2048,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=10"></script>
-<script src="js/config.js?v=10"></script>
-<script src="js/prompts.js?v=10"></script>
-<script src="js/store.js?v=10"></script>
-<script src="js/privacy.js?v=10"></script>
-<script src="js/ai-engine.js?v=10"></script>
-<script src="js/affiliate.js?v=10"></script>
-<script src="js/components.js?v=10"></script>
-<script src="js/i18n.js?v=10"></script>
-<script src="js/calendar.js?v=10"></script>
-<script src="js/integrations.js?v=10"></script>
-<script src="js/firebase-backend.js?v=10"></script>
-<script src="js/app.js?v=10"></script>
-<script src="js/pages.js?v=10"></script>
+<script src="js/idb.js?v=11"></script>
+<script src="js/config.js?v=11"></script>
+<script src="js/prompts.js?v=11"></script>
+<script src="js/store.js?v=11"></script>
+<script src="js/privacy.js?v=11"></script>
+<script src="js/ai-engine.js?v=11"></script>
+<script src="js/affiliate.js?v=11"></script>
+<script src="js/components.js?v=11"></script>
+<script src="js/i18n.js?v=11"></script>
+<script src="js/calendar.js?v=11"></script>
+<script src="js/integrations.js?v=11"></script>
+<script src="js/firebase-backend.js?v=11"></script>
+<script src="js/app.js?v=11"></script>
+<script src="js/pages.js?v=11"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2858,6 +2858,142 @@ window.addEventListener('load', function() {
       if (el) el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px"><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">'+esc(reply)+'</div></div>';
     } catch(e) {
       if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(e.message)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button></div>';
+    }
+  };
+
+  // Figure out which CONFIG.GUEST_SAMPLES / GUEST_REPORT_DATA key to use
+  // based on the guest-disease-tag chips the user has selected. Falls
+  // back to default / mecfs so the demo never blank-outs.
+  var pickGuestDiseaseKey = function(preferReport) {
+    try {
+      var tags = document.querySelectorAll('.guest-disease-tag.selected');
+      var ids = [];
+      tags.forEach(function(el) { ids.push(el.getAttribute('data-id')); });
+      var bank = preferReport ? (CONFIG.GUEST_REPORT_DATA || {}) : (CONFIG.GUEST_SAMPLES || {});
+      for (var i = 0; i < ids.length; i++) if (bank[ids[i]]) return ids[i];
+      return preferReport ? 'mecfs' : 'default';
+    } catch(e) { return preferReport ? 'mecfs' : 'default'; }
+  };
+
+  // One-tap sample text for the guest input. Cycles through the pool
+  // so repeated presses surface different examples.
+  app.guestSampleSubmit = function() {
+    var key = pickGuestDiseaseKey(false);
+    var pool = (CONFIG.GUEST_SAMPLES && CONFIG.GUEST_SAMPLES[key]) || CONFIG.GUEST_SAMPLES.default;
+    if (!pool || !pool.length) return;
+    var idx = (app._guestSampleIdx || 0) % pool.length;
+    app._guestSampleIdx = idx + 1;
+    var input = document.getElementById('guest-input');
+    if (input) {
+      input.value = pool[idx];
+      input.focus();
+    }
+    app.guestAnalyze();
+  };
+
+  // Guest doctor-report preview — streams a real 医師提出用レポート
+  // using the pre-made 30-day sample data so the user can see the
+  // app's flagship feature without creating an account.
+  app.guestSampleReport = async function() {
+    var key = await resolveKey();
+    if (!key) {
+      if (typeof Components !== 'undefined' && Components.showToast)
+        Components.showToast('APIキーが未設定です', 'error');
+      return;
+    }
+    var el = document.getElementById('guest-result');
+    if (!el) return;
+    var diseaseKey = pickGuestDiseaseKey(true);
+    var diary = (CONFIG.GUEST_REPORT_DATA && CONFIG.GUEST_REPORT_DATA[diseaseKey]) || CONFIG.GUEST_REPORT_DATA.mecfs;
+    if (!diary) return;
+
+    el.innerHTML = '<div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px">'
+      + '<div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・' + esc(diary.diseases[0] || '慢性疾患') + ' 想定の架空患者データ）を生成中...（30-60 秒）</div>'
+      + '<pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;padding:12px;background:var(--bg-tertiary);border-radius:8px;max-height:50vh;overflow-y:auto;margin:0"></pre>'
+      + '<div id="guest-report-cta" style="display:none;margin-top:10px"></div>'
+      + '</div>';
+    var target = document.getElementById('guest-report-text');
+    var cta = document.getElementById('guest-report-cta');
+    var fullText = '';
+
+    try {
+      var sys = 'あなたは慢性疾患患者と主治医をつなぐ医療ドキュメントライターです。以下の患者日記データを「主治医への患者サマリーレポート」として Markdown で取りまとめてください。\n\n'
+        + '【文体】医療カルテ風・簡潔・事実ベース・医学用語を適切に使用。\n'
+        + '【形式】純粋な Markdown（前置き・コードフェンスなし）。見出しは ##、表は Markdown テーブル。\n'
+        + '【構成】以下を順に：\n'
+        + '# 患者サマリーレポート（サンプル）\n'
+        + '## 基本情報（疾患・対象期間・記録件数）\n'
+        + '## 主訴 Top 3\n'
+        + '## 症状経過\n'
+        + '## 現在の服薬\n'
+        + '## 試した対処法と効果\n'
+        + '## 生活影響度 QOL/ADL\n'
+        + '## 主治医への質問・相談事項\n'
+        + '末尾に「※ これは架空の患者データから生成されたサンプルです」と明記してください。';
+      var userMsg = '【患者日記データ】\n' + JSON.stringify(diary, null, 1).substring(0, 30000);
+      // Use the existing streaming infra — inline SSE loop so we can
+      // paint the result into #guest-report-text as tokens arrive.
+      var controller = new AbortController();
+      var lastByteAt = Date.now();
+      var stallTimer = setInterval(function() {
+        if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch(e) {} }
+      }, 5000);
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': String(key).trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 3500, system: sys,
+          messages: [{ role: 'user', content: userMsg }], stream: true
+        }),
+        signal: controller.signal
+      });
+      if (!resp.ok) { clearInterval(stallTimer); throw new Error(resp.status + ': streaming failed'); }
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      var buffer = '';
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        lastByteAt = Date.now();
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          var frame = buffer.substring(0, idx);
+          buffer = buffer.substring(idx + 2);
+          var lines = frame.split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.indexOf('data: ') !== 0) continue;
+            var payload = line.substring(6);
+            if (payload === '[DONE]') continue;
+            try {
+              var evt = JSON.parse(payload);
+              if (evt.type === 'content_block_delta' && evt.delta && typeof evt.delta.text === 'string') {
+                fullText += evt.delta.text;
+                if (target) {
+                  target.textContent = fullText;
+                  target.scrollTop = target.scrollHeight;
+                }
+              }
+            } catch(_) {}
+          }
+        }
+      }
+      clearInterval(stallTimer);
+      if (cta) {
+        cta.style.display = 'block';
+        cta.innerHTML = '<div style="padding:12px;background:#f0fdf4;border-radius:10px;text-align:center">'
+          + '<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px">あなた自身の記録でこのレポートを作れます</div>'
+          + '<button onclick="document.getElementById(\'login-section\').scrollIntoView({behavior:\'smooth\'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">無料で登録して始める →</button>'
+          + '</div>';
+      }
+    } catch(e) {
+      if (target) target.textContent += '\n\n[エラー] ' + (e && e.message ? e.message : String(e));
     }
   };
 

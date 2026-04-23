@@ -1143,7 +1143,128 @@ var CONFIG = {
     { id: 'iherb', name: 'iHerb', code: 'CHRONICCARE' },
     { id: 'a8', name: 'A8.net', publisherId: '' },
     { id: 'custom', name: 'カスタム', tag: '' }
-  ]
+  ],
+
+  // Guest onboarding samples — pre-written records the 未登録 user can
+  // dump into #guest-input with one tap. Each disease id maps to a
+  // short list; if none of the user's selected tags match, we fall
+  // back to `default`. Keeping entries short (~150-250 字) so the
+  // guest reply returns in ~5-10s.
+  GUEST_SAMPLES: {
+    mecfs: [
+      '朝起き上がれず、疲労感が強い。昨日は友人と1時間会っただけなのに今日はその反動でベッドから出られない。ブレインフォグもひどい。',
+      '昨日軽く散歩したら今朝は頭が回らず、筋肉痛もある。典型的なPEMだと思う。ペーシングがうまくできていない。',
+      '睡眠は8時間取れているはずなのに全く回復感がない。日中の疲労度は10段階で8。立ち上がると動悸がする。'
+    ],
+    long_covid: [
+      'コロナ感染から4ヶ月経つが、階段を上ると息切れと動悸がひどい。以前は問題なくできていたことが今は難しい。',
+      'ブレインフォグで仕事に集中できない。コロナ前は普通にできていた会議での発言が出てこない。疲労感も強い。'
+    ],
+    fibromyalgia: [
+      '全身の痛みが特に朝ひどい。こわばりで起き上がるのに30分かかる。睡眠は浅く、夜中に何度も目が覚める。',
+      '天気が崩れる前に痛みが強くなるパターンがある。プレガバリンを飲んでいるが完全には取れない。'
+    ],
+    pots: [
+      '立ち上がったとたんに動悸と立ちくらみ。心拍が120近くまで上がる。塩分と水分を取っているがあまり変わらない。',
+      '長時間立っていると失神しかけることがある。コンプレッションストッキングを試してみたい。'
+    ],
+    ibs: [
+      '朝食後すぐに下痢。お腹の張りと痛みがあり、電車に乗るのが怖い。低FODMAP食を始めたばかり。',
+      '生理前になると下痢と便秘を繰り返す。ストレスと関係している気がする。'
+    ],
+    hashimoto: [
+      'チラージンを内服中だがまだ疲労感と冷えが強い。TSHは2.8で正常範囲内と言われたが症状は残っている。',
+      '髪が抜けやすく、体重が2ヶ月で3kg増えた。便秘と冷えもひどい。次の採血でFT3も測ってほしい。'
+    ],
+    depression: [
+      '朝起きるのがつらく、やる気が出ない。好きだったことに興味が持てない。夜は眠れず、食欲もない。',
+      '職場での出来事を思い出してぐるぐる考えてしまう。睡眠は取れているが疲労感が抜けない。'
+    ],
+    insomnia: [
+      '23時に布団に入っても1時間以上眠れない。夜中に2〜3回目が覚め、そのたびに30分以上眠れない。',
+      '日中に強い眠気があるのに夜は眠れない。カフェインは控えているつもり。'
+    ],
+    default: [
+      '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
+    ]
+  },
+
+  // Pre-made 30-day sample diary for the guest 医師提出レポート
+  // demo. One fictional patient per condition — realistic but
+  // obviously synthetic. generateDoctorReport consumes this in place
+  // of store.get('textEntries') when the guest triggers the preview.
+  GUEST_REPORT_DATA: {
+    mecfs: {
+      diseases: ['筋痛性脳脊髄炎／慢性疲労症候群 (ME/CFS)'],
+      profile: { age: 38, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-25T08:00:00Z', category: 'symptoms', title: '', content: '疲労度 8/10。昨日娘の学校行事で 2 時間外出。今朝はベッドから出られず。PEM 確実。' },
+        { timestamp: '2026-03-28T20:00:00Z', category: 'medication', title: 'LDN 開始', content: 'LDN 1.5mg 夜寝る前から開始。主治医指示。' },
+        { timestamp: '2026-04-02T09:00:00Z', category: 'symptoms', title: '', content: 'LDN 1週目。眠気が強い。疲労度は変わらず 7/10。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'symptoms', title: '', content: '今朝は比較的調子が良い。疲労度 5/10。ブレインフォグも薄い。久しぶりに本を読めた。' },
+        { timestamp: '2026-04-12T22:00:00Z', category: 'vitals', title: 'HRV', content: 'HRV 42ms (Oura)。先週比 +8ms で改善傾向。' },
+        { timestamp: '2026-04-15T08:30:00Z', category: 'symptoms', title: 'PEM', content: '昨日リモート会議 45 分。今日は頭痛と強い倦怠感。PEM 頻度は減ってきている気がする。' },
+        { timestamp: '2026-04-18T11:00:00Z', category: 'medication', title: 'LDN 増量', content: 'LDN 3mg に増量。眠気は慣れてきた。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'nutrition', title: '', content: '抗炎症食 2 週間継続。加工食品を避け、サバ・亜麻仁油・ブロッコリーを中心に。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: '', content: '今週の PEM は 1 回のみ (先週は 3 回)。活動可能時間が 2 → 4 時間に増えた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, brain_fog: 7, sleep_quality: 3, pain_level: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, brain_fog: 5, sleep_quality: 5, pain_level: 3 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 6, pain_level: 3 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, brain_fog: 3, sleep_quality: 6, pain_level: 2 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '定期血液検査', findings: 'CRP 0.3, フェリチン 35, TSH 2.8, ビタミンD 22 ng/mL (やや低値), B12 380' }
+      ],
+      medications: [
+        { timestamp: '2026-03-28T20:00:00Z', name: 'LDN (低用量ナルトレキソン)', notes: '1.5mg 就寝前 → 4/18 より 3mg に増量' },
+        { timestamp: '2026-04-05T08:00:00Z', name: 'CoQ10', notes: '200mg 朝食後' },
+        { timestamp: '2026-04-05T08:00:00Z', name: 'メチル B12', notes: '1000μg 朝食後' }
+      ],
+      sleepData: [],
+      activityData: [],
+      meals: []
+    },
+    long_covid: {
+      diseases: ['Long COVID (コロナ後遺症)'],
+      profile: { age: 32, gender: 'male', height: 172, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-03-20T08:00:00Z', category: 'symptoms', title: '', content: '感染から 4 ヶ月経つが階段 2 階分で息切れ。SpO2 96%。心拍 115bpm。' },
+        { timestamp: '2026-03-27T10:00:00Z', category: 'symptoms', title: 'ブレインフォグ', content: '会議で普段使う単語が出てこない。コロナ前は問題なかった。' },
+        { timestamp: '2026-04-03T09:00:00Z', category: 'medication', title: '', content: 'メスチノン 30mg x 3/日 開始。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'symptoms', title: '', content: 'メスチノン 1 週間。階段の息切れはやや軽減。動悸はまだある。' },
+        { timestamp: '2026-04-17T09:00:00Z', category: 'vitals', title: 'HR', content: '立位心拍 108 (臥位 72)。POTS 併発の可能性。循環器紹介予定。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: '', content: '今週は比較的安定。ブレインフォグは減ったが疲労は残る。' }
+      ],
+      symptoms: [],
+      bloodTests: [
+        { timestamp: '2026-03-18T10:00:00Z', name: '感染後フォローアップ', findings: 'D-dimer 0.6 (上限), CRP 0.8, フェリチン 180, B12 320' }
+      ],
+      medications: [
+        { timestamp: '2026-04-03T09:00:00Z', name: 'メスチノン 30mg', notes: '1 日 3 回、朝昼夕' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    fibromyalgia: {
+      diseases: ['線維筋痛症'],
+      profile: { age: 45, gender: 'female', height: 158, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-22T07:00:00Z', category: 'symptoms', title: '朝のこわばり', content: '起きるのに 40 分かかる。全身の痛み 7/10。' },
+        { timestamp: '2026-03-29T09:00:00Z', category: 'medication', title: 'プレガバリン調整', content: '75mg x2 → 100mg x2 に増量。眠気はあるが痛み軽減。' },
+        { timestamp: '2026-04-05T11:00:00Z', category: 'symptoms', title: '', content: '雨の前日に痛みが増悪するパターン継続。温泉で楽になる。' },
+        { timestamp: '2026-04-12T09:00:00Z', category: 'symptoms', title: '', content: '痛み 5/10 まで軽減。睡眠も前より取れるように。' },
+        { timestamp: '2026-04-20T08:00:00Z', category: 'vitals', title: '体温', content: '朝の基礎体温 36.1℃ (低体温傾向)。甲状腺チェック提案したい。' }
+      ],
+      symptoms: [],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-10T08:00:00Z', name: 'プレガバリン (リリカ)', notes: '100mg x 2/日' },
+        { timestamp: '2026-04-10T08:00:00Z', name: 'デュロキセチン (サインバルタ)', notes: '20mg 朝' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    }
+  }
 };
 
 // ME/CFS specific default analysis prompt

@@ -150,6 +150,22 @@ App.prototype.render_login = function() {
           </div>
         </div>
 
+        <!-- ✨ サンプルで体験 — 登録前の最大コンバージョンドライバー。
+             何を書けばいいか迷うユーザーに現実的な記録例を 1 タップで
+             入れてもらい、すぐに「AI が効く体験」を見せる。医師提出
+             レポートのサンプルは架空 30 日データで生成し、最大差別化
+             機能をゲストに無料体験させる。 -->
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="app.guestSampleSubmit()"
+            style="padding:10px 14px;background:#fff;border:1.5px solid #c7d2fe;border-radius:10px;font-size:12px;font-weight:600;color:#4338ca;cursor:pointer">
+            📝 サンプル記録で試してみる
+          </button>
+          <button onclick="app.guestSampleReport()"
+            style="padding:10px 14px;background:linear-gradient(135deg,#ecfeff,#cffafe);border:1.5px solid #a5f3fc;border-radius:10px;font-size:12px;font-weight:600;color:#155e75;cursor:pointer">
+            🏥 医師提出レポートのサンプルを見る
+          </button>
+        </div>
+
         <!-- Guest result area -->
         <div id="guest-result" style="margin-top:12px"></div>
       </div>
