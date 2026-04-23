@@ -3389,9 +3389,25 @@ ${axisHint}
       try {
         const isImage = file.type.startsWith('image/');
         const isPDF = file.type === 'application/pdf';
+        const rawDataUrl = ev.target.result;
+        // iPhone photos are 3-5MB raw which base64-encodes to 5-7MB.
+        // Without compression, the vision API path rejects the payload
+        // (either at the Worker with a 413 or at Anthropic with a 400
+        // about image size) and the user sees a generic failure. The
+        // other photo paths (dashboard / journal) already call
+        // Components.compressImage → 800px JPEG@0.7 (~100-300KB). This
+        // path was missing it, which is why guest食事写真 never reached
+        // the AI even on a real browser.
+        const payload = isImage
+          ? await Components.compressImage(rawDataUrl)
+          : rawDataUrl;
+        const rawKB = Math.round((rawDataUrl || '').length / 1024);
+        const sentKB = Math.round((payload || '').length / 1024);
+        console.log(`[guestFileAnalyze] ${file.name} ${file.type} raw=${rawKB}KB sent=${sentKB}KB`);
+
         const attachOpts = isImage
-          ? { imageBase64: ev.target.result }
-          : (isPDF ? { pdfBase64: ev.target.result } : {});
+          ? { imageBase64: payload }
+          : (isPDF ? { pdfBase64: payload } : {});
         // Bump temperature for guest file uploads so identical images
         // don't always yield the same canned output. Also stamp the
         // filename caption with a timestamp to break any request-level
