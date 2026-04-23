@@ -29,6 +29,18 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Verify LMS_SYNC_TOKEN is configured
+        env:
+          LMS_SYNC_TOKEN: ${{ secrets.LMS_SYNC_TOKEN }}
+        run: |
+          if [ -z "$LMS_SYNC_TOKEN" ]; then
+            echo "::error::LMS_SYNC_TOKEN secret が未登録です。"
+            echo "::error::https://github.com/agewaller/stock-screener/settings/secrets/actions で"
+            echo "::error::名前 LMS_SYNC_TOKEN として fine-grained PAT (agewaller/lms への"
+            echo "::error::contents=write, pull-requests=write) を登録してください。"
+            exit 1
+          fi
+
       - name: Checkout source (stock-screener)
         uses: actions/checkout@v4
         with:
