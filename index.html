@@ -2027,20 +2027,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=8"></script>
-<script src="js/config.js?v=8"></script>
-<script src="js/prompts.js?v=8"></script>
-<script src="js/store.js?v=8"></script>
-<script src="js/privacy.js?v=8"></script>
-<script src="js/ai-engine.js?v=8"></script>
-<script src="js/affiliate.js?v=8"></script>
-<script src="js/components.js?v=8"></script>
-<script src="js/i18n.js?v=8"></script>
-<script src="js/calendar.js?v=8"></script>
-<script src="js/integrations.js?v=8"></script>
-<script src="js/firebase-backend.js?v=8"></script>
-<script src="js/app.js?v=8"></script>
-<script src="js/pages.js?v=8"></script>
+<script src="js/idb.js?v=9"></script>
+<script src="js/config.js?v=9"></script>
+<script src="js/prompts.js?v=9"></script>
+<script src="js/store.js?v=9"></script>
+<script src="js/privacy.js?v=9"></script>
+<script src="js/ai-engine.js?v=9"></script>
+<script src="js/affiliate.js?v=9"></script>
+<script src="js/components.js?v=9"></script>
+<script src="js/i18n.js?v=9"></script>
+<script src="js/calendar.js?v=9"></script>
+<script src="js/integrations.js?v=9"></script>
+<script src="js/firebase-backend.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
+<script src="js/pages.js?v=9"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2308,6 +2308,7 @@ window.addEventListener('load', function() {
       : '注意: ユーザーの疾患は未設定です。特定の疾患（ME/CFS 等）を前提にせず一般的な慢性疾患サポートの観点で返答してください。';
     return 'あなたは慢性疾患患者の健康日記アナリストです。温かく寄り添い、ユーザーのテキストを深く読み、即座に役立つ構造化フィードバックを返してください。\n\n'
       + diseaseClause
+      + '\n\n' + summarizePastReactions()
       + '\n\n【最重要】ユーザーがまだ試していない・知らない、具体的に行動できる新しい打ち手を必ず 1 つ以上含めること。エビデンスレベル（研究/臨床ガイドライン/経験則）とできれば参考 URL を添える。\n\n'
       + '【出力形式】純粋な JSON オブジェクト 1 個のみ、前置き・コードブロック・後書き一切なし。最初の文字が { 最後の文字が } でなければなりません。スキーマ:\n'
       + '{\n'
@@ -2323,8 +2324,90 @@ window.addEventListener('load', function() {
       + '}';
   };
 
+  // Pull up to the last 10 reactions across all archived deep analyses
+  // and summarize them as a short guidance block for the next prompt.
+  // Only mention items where the user had a clear signal (positive OR
+  // negative) — empty reactions produce an empty block.
+  var summarizePastReactions = function() {
+    try {
+      var archive = store.get('deepAnalyses') || [];
+      if (archive.length === 0) return '';
+      var LABELS = {
+        like: '👍 いいかも', heart: '❤️ やってみたい', todo: '✅ 実践中',
+        dislike: '👎 興味なし', refuse: '🚫 やりたくない', ineffective: '❌ 効果なし'
+      };
+      var TITLE = {
+        summary: '要約', findings: '所見', actions: 'アクション',
+        new_approach: '新しいアプローチ', trend: 'トレンド', next_check: '次に記録すること'
+      };
+      var events = [];
+      for (var i = archive.length - 1; i >= 0 && events.length < 10; i--) {
+        var a = archive[i];
+        if (!a.reactions) continue;
+        Object.keys(a.reactions).forEach(function(section) {
+          var rkey = a.reactions[section];
+          if (!rkey || !LABELS[rkey]) return;
+          var excerpt = a.parsed && a.parsed[section];
+          if (!excerpt) return;
+          if (Array.isArray(excerpt)) excerpt = excerpt.join('; ');
+          excerpt = String(excerpt).substring(0, 120);
+          events.push('- ' + LABELS[rkey] + ' ' + (TITLE[section] || section) + ': ' + excerpt);
+        });
+      }
+      if (events.length === 0) return '';
+      return '【ユーザーが過去のアドバイスに残したリアクション】\n'
+        + events.slice(0, 10).join('\n')
+        + '\n上記を踏まえ、❌効果なし や 🚫やりたくない と評価された方向のアドバイスは避け、👍❤️✅ が付いたものはより深掘り・発展させた提案をしてください。';
+    } catch(e) { return ''; }
+  };
+
+  // Shared helper so pages.js can call into the app-level handlers for
+  // archive reactions/bookmarks. Touches latestFeedbackError (watched) to
+  // force a dashboard re-render when the archive changes.
+  var updateArchiveEntry = function(id, mutator) {
+    var archive = store.get('deepAnalyses') || [];
+    var idx = archive.findIndex(function(a){ return a.id === id; });
+    if (idx < 0) return;
+    mutator(archive[idx]);
+    store.set('deepAnalyses', archive);
+    // Re-render the data-input page if we're on it; touching a watched
+    // key is enough for the dashboard path.
+    if (app.currentPage === 'data-input') app.navigate('data-input');
+  };
+  app.setReaction = function(id, section, reaction) {
+    updateArchiveEntry(id, function(a) {
+      a.reactions = a.reactions || {};
+      a.reactions[section] = (a.reactions[section] === reaction) ? null : reaction;
+      if (a.reactions[section] == null) delete a.reactions[section];
+    });
+  };
+  app.toggleBookmark = function(id, section) {
+    updateArchiveEntry(id, function(a) {
+      a.bookmarks = a.bookmarks || {};
+      a.bookmarks[section] = !a.bookmarks[section];
+      if (!a.bookmarks[section]) delete a.bookmarks[section];
+    });
+  };
+
+  // JST date key (YYYY/MM/DD). Using toLocaleDateString(ja-JP) with the
+  // Tokyo timezone is more reliable across iOS Safari than manual offset
+  // arithmetic — Intl in Safari normalizes the year/month/day formatting.
+  var todayJstKey = function() {
+    return new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+  };
+
   app.runDeepAnalysis = async function() {
     if (store.get('isDeepAnalyzing')) return;
+    // Daily limit (JST). Once today's run has been saved we refuse a
+    // second invocation and surface a friendly toast so the user sees
+    // why the button is grayed out.
+    var todayKey = todayJstKey();
+    if (store.get('deepAnalysisLastRun') === todayKey) {
+      if (typeof Components !== 'undefined' && Components.showToast) {
+        Components.showToast('本格的な分析は明日から再度ご利用いただけます', 'info');
+      }
+      return;
+    }
     var entries = store.get('textEntries') || [];
     var last = entries.length ? entries[entries.length - 1] : null;
     if (!last || !last.content) {
@@ -2387,6 +2470,28 @@ window.addEventListener('load', function() {
       }
       if (typeof app.saveAIComment === 'function' && last.id) {
         try { app.saveAIComment(last.id, result); } catch(e){}
+      }
+      // Persist the run to the archive so the user can revisit past
+      // analyses. Keep at most 30 entries — older ones fall off the
+      // head to cap localStorage usage. Record todayKey so the button
+      // grays out until tomorrow.
+      try {
+        var archive = store.get('deepAnalyses') || [];
+        archive.push({
+          id: result.id,
+          timestamp: result.timestamp,
+          sourceEntryId: last.id || '',
+          sourceContent: String(last.content || '').substring(0, 200),
+          parsed: result.parsed || result,
+          raw: result._raw || '',
+          reactions: {},
+          bookmarks: {}
+        });
+        if (archive.length > 30) archive = archive.slice(archive.length - 30);
+        store.set('deepAnalyses', archive);
+        store.set('deepAnalysisLastRun', todayKey);
+      } catch(persistErr) {
+        console.warn('[runDeepAnalysis] archive persist failed:', persistErr.message);
       }
       store.set('isDeepAnalyzing', false);
       store.set('latestFeedback', result);

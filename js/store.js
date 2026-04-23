@@ -139,7 +139,11 @@ var Store = class Store {
     'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback',
     'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog',
     'plaudAnalyses', 'apiUsage', 'photos', 'applicationLog',
-    'globalProfessionals', 'latestFeedbackError'
+    'globalProfessionals', 'latestFeedbackError',
+    // Deep-analysis feature additions: archive of past runs + today's
+    // JST date string so the 「本格的な分析」button grays out after use.
+    // doctorReports persists the 医師提出用レポート generator output.
+    'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports'
   ];
 
   saveToStorage(key, value) {

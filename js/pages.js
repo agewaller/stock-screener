@@ -589,19 +589,16 @@ App.prototype.render_dashboard = function() {
   </div>
 
   <!-- Deep-analysis trigger sits directly below the input so the button is
-       reachable without scrolling past the feedback card. Hidden until a
-       textEntry exists, hidden while the fast reply is streaming
-       (isAnalyzing), and hidden once the current feedback is already a
-       deep result. While a deep run is in flight, we swap the button for
-       an inline spinner. Re-render is forced by latestFeedbackError
-       touches in runDeepAnalysis (that key is watched by
-       scheduleDashRefresh). -->
+       reachable without scrolling past the feedback card. Always rendered
+       when a textEntry exists; after today's run it stays visible but
+       grayed out so the user knows "also tomorrow" rather than wondering
+       where the button went. The daily-limit check uses a JST calendar
+       date (new Date().toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'}))
+       so the reset happens at local midnight everywhere. -->
   ${(() => {
     const hasEntry = (store.get('textEntries') || []).length > 0;
     if (!hasEntry) return '';
     if (store.get('isAnalyzing')) return '';
-    const fb = store.get('latestFeedback');
-    if (fb && fb._deepAnalysis) return '';
     const deepRunning = !!store.get('isDeepAnalyzing');
     if (deepRunning) {
       return `
@@ -609,12 +606,27 @@ App.prototype.render_dashboard = function() {
           ${Components.loading('構造化分析中...（最大 60 秒）')}
         </div>`;
     }
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const lastRun = store.get('deepAnalysisLastRun');
+    const usedToday = lastRun === todayJst;
+    const archiveHref = `<a onclick="app.navigate('data-input');setTimeout(function(){var el=document.getElementById('deep-analyses-archive');if(el)el.scrollIntoView({behavior:'smooth'});},120);return false;" href="#" style="display:inline-block;margin-left:12px;font-size:11px;color:var(--accent);cursor:pointer">過去の本格分析を見る →</a>`;
+    if (usedToday) {
+      return `
+        <div style="margin:-4px 0 16px;text-align:center">
+          <button class="btn btn-secondary btn-sm" onclick="Components.showToast('本格的な分析は明日から再度ご利用いただけます','info')"
+            style="padding:8px 18px;font-size:12px;font-weight:600;opacity:0.5;cursor:not-allowed" aria-disabled="true">
+            🔍 本日の本格分析は完了しています
+          </button>
+          ${archiveHref}
+        </div>`;
+    }
     return `
       <div style="margin:-4px 0 16px;text-align:center">
         <button class="btn btn-secondary btn-sm" onclick="app.runDeepAnalysis()"
           style="padding:8px 18px;font-size:12px;font-weight:600">
-          🔍 深い分析を実行（構造化レポート・最大60秒）
+          🔍 本格的な分析をする（構造化レポート・最大60秒）
         </button>
+        ${archiveHref}
       </div>`;
   })()}
 
@@ -1429,7 +1441,73 @@ App.prototype.render_data_input = function() {
     </div>
   </div>
 
-  <!-- 4. Structured Data Entry (bottom) -->
+  <!-- 4. Deep Analysis Archive — stores every「本格的な分析」run so the
+       user can revisit past structured reports, bookmark sections, and
+       react (F-2-2 / F-2-3). Each entry is rendered with its own reaction
+       bar under each section. -->
+  ${(() => {
+    const archive = (store.get('deepAnalyses') || []).slice().reverse();
+    if (archive.length === 0) return '';
+    const REACTIONS = [
+      { key: 'like',        emoji: '👍', label: 'いいかも' },
+      { key: 'heart',       emoji: '❤️', label: 'やってみたい' },
+      { key: 'todo',        emoji: '✅', label: '今日やる' },
+      { key: 'dislike',     emoji: '👎', label: '興味ない' },
+      { key: 'refuse',      emoji: '🚫', label: 'やりたくない' },
+      { key: 'ineffective', emoji: '❌', label: '効果なかった' }
+    ];
+    const SECTIONS = [
+      { key: 'summary',      title: '要約' },
+      { key: 'findings',     title: '所見' },
+      { key: 'actions',      title: 'アクション' },
+      { key: 'new_approach', title: '新しいアプローチ' },
+      { key: 'trend',        title: 'トレンド' },
+      { key: 'next_check',   title: '次に記録すること' }
+    ];
+    const renderReactionBar = (id, section, current) => REACTIONS.map(r => {
+      const selected = current === r.key;
+      return `<button title="${r.label}" onclick="app.setReaction('${id}','${section}','${r.key}')"
+        style="padding:4px 8px;border:1px solid ${selected ? '#6366f1' : 'var(--border)'};background:${selected ? '#eef2ff' : '#fff'};border-radius:8px;cursor:pointer;font-size:13px;margin:2px">${r.emoji}</button>`;
+    }).join('');
+    const renderBookmark = (id, section, isOn) => `<button onclick="app.toggleBookmark('${id}','${section}')"
+      title="ブックマーク" style="padding:4px 6px;border:none;background:transparent;cursor:pointer;font-size:14px;opacity:${isOn ? 1 : 0.35}">⭐</button>`;
+
+    const cardsHtml = archive.map(a => {
+      const parsed = a.parsed || {};
+      const sectionsHtml = SECTIONS.map(s => {
+        const val = parsed[s.key];
+        if (!val) return '';
+        const text = Array.isArray(val) ? val.map(v => '・' + v).join('\n') : String(val);
+        return `
+          <div style="margin-top:10px;padding:10px 12px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:700;color:var(--accent)">${s.title}</span>
+              ${renderBookmark(a.id, s.key, !!(a.bookmarks && a.bookmarks[s.key]))}
+            </div>
+            <div style="font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--text-primary)">${Components.escapeHtml(text)}</div>
+            <div style="margin-top:6px">${renderReactionBar(a.id, s.key, (a.reactions || {})[s.key])}</div>
+          </div>`;
+      }).join('');
+      const dateLabel = new Date(a.timestamp).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return `
+        <details style="margin-bottom:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+          <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary)">
+            📊 ${dateLabel}
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px">${Components.escapeHtml((a.sourceContent || '').substring(0, 40))}${(a.sourceContent || '').length > 40 ? '…' : ''}</span>
+          </summary>
+          ${sectionsHtml}
+        </details>`;
+    }).join('');
+
+    return `
+      <div id="deep-analyses-archive" style="margin-bottom:24px">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px">📊 本格分析アーカイブ（${archive.length}件）</h3>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">各セクションに ⭐ でブックマーク、絵文字でリアクションを付けられます。次回の本格分析がリアクションを参考にしてパーソナライズされます。</p>
+        ${cardsHtml}
+      </div>`;
+  })()}
+
+  <!-- 5. Structured Data Entry (bottom) -->
   <div style="margin-bottom:12px">
     <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">指標データ入力</h3>
     <p style="font-size:12px;color:var(--text-muted)">数値で記録したい項目はこちらから</p>
@@ -1564,6 +1642,27 @@ App.prototype.render_actions = function() {
   // Match telehealth providers to user's selected diseases
   const telehealthMatched = this.matchTelehealthToDiseases();
 
+  // 🌿 Live clinic/workshop/self-care card — promoted to the top of the
+  // actions tab (after financial support) so users actually see today's
+  // recommendations without scrolling past 4 other sections. Header
+  // surfaces the cache fetchedAt as 最終更新 and explains the trigger
+  // (new textEntry invalidates the cache via B-5).
+  const cachedActions = store.get('cachedActions') || null;
+  const lastUpdatedLabel = cachedActions && cachedActions.fetchedAt
+    ? new Date(cachedActions.fetchedAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : '未生成';
+  const selfCareCardHtml = `
+  <div class="card" style="margin-bottom:24px;border:1px solid #10b981">
+    <div class="card-header" style="background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%)">
+      <span class="card-title" style="color:#065f46">🌿 クリニック・イベント・セルフケア</span>
+      <span style="font-size:10px;color:#047857">最終更新: ${lastUpdatedLabel}</span>
+    </div>
+    <div class="card-body" id="action-live-recs"></div>
+    <div style="padding:8px 16px 12px;font-size:11px;color:var(--text-muted);border-top:1px solid #d1fae5;background:#f0fdf4">
+      💡 今日のコメントを入力すると、あなたの最新状態に合わせて自動で更新されます。
+    </div>
+  </div>`;
+
   // 💴 Financial support programs matched to user's selected diseases.
   // Requires authenticated user (programs are sensitive and need a logged-in
   // identity to file an application + receive the professional's email back).
@@ -1634,6 +1733,8 @@ App.prototype.render_actions = function() {
   </div>
 
   ${financialSupportHtml}
+
+  ${selfCareCardHtml}
 
   ${sections || ''}
 
@@ -1733,14 +1834,9 @@ App.prototype.render_actions = function() {
     </div>
   </div>
 
-  <!-- Live Clinic/Workshop/Event Recommendations -->
-  <div class="card" style="margin-bottom:24px">
-    <div class="card-header">
-      <span class="card-title">クリニック・イベント・セルフケア</span>
-      <span style="font-size:10px;color:var(--text-muted)">毎日更新</span>
-    </div>
-    <div class="card-body" id="action-live-recs"></div>
-  </div>
+  <!-- Live Clinic/Workshop/Event Recommendations —
+       Moved up to right after financialSupportHtml. See selfCareCardHtml
+       earlier in render_actions. -->
 
   <!-- Recommended Test Kits -->
   <div style="margin-top:24px;margin-bottom:24px">
