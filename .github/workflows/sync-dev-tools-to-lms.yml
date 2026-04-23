@@ -1,0 +1,90 @@
+name: Sync dev-tools to LMS
+
+# stock-screener を source-of-truth として、共通の開発ツール（CLAUDE permission
+# allowlist + pre-commit hook）を agewaller/lms へ自動同期する。
+# main への push で共通ファイルが変わったら LMS 側に PR を自動作成。
+#
+# セットアップ（初回のみ）:
+#   1. https://github.com/settings/personal-access-tokens/new で fine-grained PAT を発行
+#      - Resource owner: agewaller
+#      - Repository access: Only select repositories → agewaller/lms
+#      - Permissions: Contents = Read and write, Pull requests = Read and write
+#   2. この repo の Settings → Secrets and variables → Actions で以下を登録
+#      - Name: LMS_SYNC_TOKEN
+#      - Secret: 上記で発行した PAT
+#   3. 動作確認: Actions タブ → この workflow → Run workflow (workflow_dispatch)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.claude/settings.json'
+      - '.githooks/**'
+      - '.github/workflows/sync-dev-tools-to-lms.yml'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source (stock-screener)
+        uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Checkout target (lms)
+        uses: actions/checkout@v4
+        with:
+          repository: agewaller/lms
+          token: ${{ secrets.LMS_SYNC_TOKEN }}
+          path: dst
+          ref: main
+
+      - name: Copy shared files
+        run: |
+          mkdir -p dst/.claude dst/.githooks
+          cp src/.claude/settings.json dst/.claude/settings.json
+          cp src/.githooks/pre-commit  dst/.githooks/pre-commit
+          chmod +x dst/.githooks/pre-commit
+
+      - name: Detect changes
+        id: diff
+        working-directory: dst
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No changes to sync."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --short
+          fi
+
+      - name: Create or update PR in LMS
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: dst
+          token: ${{ secrets.LMS_SYNC_TOKEN }}
+          branch: sync/dev-tools-from-stock-screener
+          base: main
+          commit-message: "chore: sync dev-tools from stock-screener@${{ github.sha }}"
+          title: "chore: sync dev-tools from stock-screener"
+          body: |
+            stock-screener の共通開発ツールを同期します。
+
+            **同期対象**:
+            - `.claude/settings.json` — Claude Code permission allowlist
+            - `.githooks/pre-commit` — CLAUDE.md 禁則パターンの自動ブロック
+
+            **source commit**: https://github.com/agewaller/stock-screener/commit/${{ github.sha }}
+
+            マージ後、初回だけ手元で以下を実行して hook を有効化:
+            ```bash
+            git config core.hooksPath .githooks
+            ```
+          labels: |
+            auto-sync
+            dev-tools
+          delete-branch: true
