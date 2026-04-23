@@ -630,6 +630,40 @@ App.prototype.render_dashboard = function() {
       </div>`;
   })()}
 
+  <!-- AI Instant Feedback — moved up from later in the dashboard so the
+       analysis result appears directly under the input + deep-analysis
+       button. Priority order: in-flight spinner > explicit error > latest
+       result. isAnalyzing must take precedence so the scheduleDashRefresh
+       listener attached to textEntries doesn't wipe the loading state
+       200 ms after dashQuickSubmit injects it. -->
+  <div id="dash-ai-feedback" style="margin-bottom:16px">
+    ${(() => {
+      if (store.get('isAnalyzing')) {
+        const startTs = store.get('analyzeStartedAt') || Date.now();
+        const elapsed = Math.floor((Date.now() - startTs) / 1000);
+        let msg = '入力内容を認識中...';
+        if (elapsed > 40) msg = '少し時間がかかっています。処理中です (最大 60 秒でタイムアウト)';
+        else if (elapsed > 20) msg = 'AI が分析中です。もう少しお待ちください';
+        else if (elapsed > 8) msg = '処方を組み立てています...';
+        return Components.loading(msg);
+      }
+      const err = store.get('latestFeedbackError');
+      if (err) {
+        return `
+          <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
+            <div class="card-body" style="padding:12px 16px">
+              <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
+            </div>
+          </div>`;
+      }
+      const fb = store.get('latestFeedback');
+      if (!fb) return '';
+      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
+    })()}
+  </div>
+
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
   <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1px solid #c7d2fe">
@@ -768,46 +802,8 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
-  <!-- 2. AI Instant Feedback (appears after input) -->
-  <div id="dash-ai-feedback" style="margin-bottom:16px">
-    ${(() => {
-      // Render in priority order: in-flight analysis > explicit error > latest result.
-      // The `isAnalyzing` flag must be respected here, otherwise the
-      // scheduleDashRefresh listener attached to textEntries would
-      // re-render the dashboard 200ms after dashQuickSubmit injected
-      // the spinner and wipe the loading state — the user would
-      // stare at an empty feedback area for the entire 10-30s API
-      // roundtrip with no visual signal that anything was happening.
-      if (store.get('isAnalyzing')) {
-        // Show staged messages. The analyze-started timestamp is
-        // set by dashQuickSubmit so we can compute elapsed seconds
-        // and update the message as it progresses. If the analyze
-        // has been running > 40s we warn the user an extended
-        // timeout is in progress so they know the app isn't frozen.
-        const startTs = store.get('analyzeStartedAt') || Date.now();
-        const elapsed = Math.floor((Date.now() - startTs) / 1000);
-        let msg = '入力内容を認識中...';
-        if (elapsed > 40) msg = '少し時間がかかっています。処理中です (最大 60 秒でタイムアウト)';
-        else if (elapsed > 20) msg = 'AI が分析中です。もう少しお待ちください';
-        else if (elapsed > 8) msg = '処方を組み立てています...';
-        return Components.loading(msg);
-      }
-      const err = store.get('latestFeedbackError');
-      if (err) {
-        return `
-          <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
-            <div class="card-body" style="padding:12px 16px">
-              <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
-              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
-            </div>
-          </div>`;
-      }
-      const fb = store.get('latestFeedback');
-      if (!fb) return '';
-      try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
-    })()}
-  </div>
+  <!-- AI Instant Feedback moved up right under the input + deep-analysis
+       button (see block earlier in this template). -->
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
