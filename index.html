@@ -2909,12 +2909,21 @@ window.addEventListener('load', function() {
 
     el.innerHTML = '<div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px">'
       + '<div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・' + esc(diary.diseases[0] || '慢性疾患') + ' 想定の架空患者データ）を生成中...（30-60 秒）</div>'
-      + '<pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;padding:12px;background:var(--bg-tertiary);border-radius:8px;max-height:50vh;overflow-y:auto;margin:0"></pre>'
+      + '<pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;padding:12px;background:#f8fafc;border-radius:8px;max-height:50vh;overflow-y:auto;margin:0"></pre>'
       + '<div id="guest-report-cta" style="display:none;margin-top:10px"></div>'
       + '</div>';
     var target = document.getElementById('guest-report-text');
     var cta = document.getElementById('guest-report-cta');
     var fullText = '';
+    // Bring the freshly-inserted card into view on mobile where the
+    // button was likely above the fold.
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {}
+
+    var controller = new AbortController();
+    var lastByteAt = Date.now();
+    var stallTimer = setInterval(function () {
+      if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch (_) {} }
+    }, 5000);
 
     try {
       var sys = 'あなたは慢性疾患患者と主治医をつなぐ医療ドキュメントライターです。以下の患者日記データを「主治医への患者サマリーレポート」として Markdown で取りまとめてください。\n\n'
@@ -2931,13 +2940,6 @@ window.addEventListener('load', function() {
         + '## 主治医への質問・相談事項\n'
         + '末尾に「※ これは架空の患者データから生成されたサンプルです」と明記してください。';
       var userMsg = '【患者日記データ】\n' + JSON.stringify(diary, null, 1).substring(0, 30000);
-      // Use the existing streaming infra — inline SSE loop so we can
-      // paint the result into #guest-report-text as tokens arrive.
-      var controller = new AbortController();
-      var lastByteAt = Date.now();
-      var stallTimer = setInterval(function() {
-        if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch(e) {} }
-      }, 5000);
       var resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -2952,7 +2954,13 @@ window.addEventListener('load', function() {
         }),
         signal: controller.signal
       });
-      if (!resp.ok) { clearInterval(stallTimer); throw new Error(resp.status + ': streaming failed'); }
+      if (!resp.ok) {
+        var body = await resp.text().catch(function () { return ''; });
+        throw new Error(resp.status + ': ' + body.substring(0, 200));
+      }
+      if (!resp.body || !resp.body.getReader) {
+        throw new Error('お使いのブラウザはストリーミングに対応していません。');
+      }
       var reader = resp.body.getReader();
       var decoder = new TextDecoder('utf-8');
       var buffer = '';
@@ -2980,20 +2988,21 @@ window.addEventListener('load', function() {
                   target.scrollTop = target.scrollHeight;
                 }
               }
-            } catch(_) {}
+            } catch (_) {}
           }
         }
       }
-      clearInterval(stallTimer);
       if (cta) {
         cta.style.display = 'block';
         cta.innerHTML = '<div style="padding:12px;background:#f0fdf4;border-radius:10px;text-align:center">'
           + '<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px">あなた自身の記録でこのレポートを作れます</div>'
-          + '<button onclick="document.getElementById(\'login-section\').scrollIntoView({behavior:\'smooth\'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">無料で登録して始める →</button>'
+          + '<button onclick="var s=document.getElementById(\'login-section\');if(s)s.scrollIntoView({behavior:\'smooth\'});else window.scrollTo({top:0,behavior:\'smooth\'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">無料で登録して始める →</button>'
           + '</div>';
       }
-    } catch(e) {
+    } catch (e) {
       if (target) target.textContent += '\n\n[エラー] ' + (e && e.message ? e.message : String(e));
+    } finally {
+      clearInterval(stallTimer);
     }
   };
 
