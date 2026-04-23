@@ -143,7 +143,15 @@ var Store = class Store {
     // Deep-analysis feature additions: archive of past runs + today's
     // JST date string so the 「本格的な分析」button grays out after use.
     // doctorReports persists the 医師提出用レポート generator output.
-    'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports'
+    'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports',
+    // Research tab state — persisted so tab switches don't wipe the
+    // user's keyword / results (B-2 / B-3). researchResults caches the
+    // rendered HTML along with the language it was rendered in so we
+    // can invalidate on language change.
+    'researchQuery', 'researchDays', 'researchResults',
+    // Cached セルフケア panel — needs to survive reloads so the 1-per-day
+    // cap and 5-minute throttle (B-7) can be enforced across sessions.
+    'cachedActions'
   ];
 
   saveToStorage(key, value) {

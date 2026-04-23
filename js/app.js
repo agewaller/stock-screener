@@ -892,6 +892,16 @@ var App = class App {
     textEntries.push(entry);
     store.set('textEntries', textEntries);
 
+    // Kick off the 5-minute post-comment timer so the セルフケア panel
+    // (loadActionRecommendations) re-evaluates its gate once the user
+    // has presumably finished typing. Each new comment resets the
+    // timer, so the update only fires after the LAST comment in a
+    // burst. The gate itself still applies the 1-per-day cap (B-7).
+    clearTimeout(this._actionRefreshTimer);
+    this._actionRefreshTimer = setTimeout(() => {
+      this.loadActionRecommendations();
+    }, 5 * 60 * 1000 + 1000);
+
     // Also store as health data in the appropriate category
     const stateKey = store.categoryToStateKey(category);
     if (stateKey && Array.isArray(store.get(stateKey))) {
@@ -956,6 +966,18 @@ var App = class App {
 
   // ---- PubMed Live Search ----
   // Generate clinic/workshop/event recommendations via API
+  //
+  // Refresh policy (B-7). Before this rewrite, every textEntry write
+  // invalidated the cache and fired a fresh AI call, so 3 comments in
+  // a row meant 3 AI calls, and reloading the page always triggered a
+  // new call even when nothing had changed. Now:
+  //   - Already updated today (JST)                → skip
+  //   - No comment logged today                    → skip
+  //   - Last comment less than 5 minutes ago       → skip (mid-typing)
+  //   - Otherwise                                  → fire once, cache
+  //
+  // The gate lives in _shouldRefreshActions so both the dashboard
+  // widget and the actions page go through the same logic.
   async loadActionRecommendations() {
     // The container has different IDs on the dashboard vs the actions
     // page. Previously only 'action-live-recs' (actions page) was
@@ -966,21 +988,21 @@ var App = class App {
       || document.getElementById('dash-actions-live');
     if (!container) return;
 
-    // Check cache (refresh every 12 hours OR when the user has logged
-    // new textEntries since the cache was built — otherwise the actions
-    // page shows yesterday's advice even after the user records new data
-    // today, which users reported as "今日のコメントと連動していない"
-    // (B-5).
     const cached = store.get('cachedActions');
-    const newestEntryTs = (() => {
-      const arr = store.get('textEntries') || [];
-      return arr.length ? new Date(arr[arr.length - 1].timestamp).getTime() : 0;
-    })();
-    const cacheFresh = cached && cached.html
-      && (Date.now() - cached.fetchedAt) < 12 * 60 * 60 * 1000
-      && newestEntryTs <= cached.fetchedAt;
-    if (cacheFresh) {
+    // Always paint the cached result first so the panel never goes
+    // blank between tab switches or while the gate is deciding whether
+    // to refresh.
+    if (cached && cached.html) {
       container.innerHTML = cached.html;
+    }
+
+    if (!this._shouldRefreshActions()) {
+      if (!cached || !cached.html) {
+        container.innerHTML = `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;line-height:1.7">
+          今日のコメントを書くと、<br>
+          あなた向けのセルフケア提案がここに表示されます。
+        </div>`;
+      }
       return;
     }
 
@@ -997,7 +1019,15 @@ var App = class App {
     // Fire AI advice in the background. If it fails, verified links
     // are shown alone (still useful).
     const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
-    const recentText = (store.get('textEntries') || []).slice(-5).map(e => e.content || '').join('\n').substring(0, 1500);
+    // Pull every textEntry written since the last successful refresh
+    // (or the last 24h on first run) so multi-day gaps don't drop
+    // accumulated comments. Cap at 30 entries / 3000 chars to keep the
+    // prompt under control.
+    const sinceTs = (cached && cached.fetchedAt) || (Date.now() - 24 * 60 * 60 * 1000);
+    const recentEntries = (store.get('textEntries') || [])
+      .filter(e => new Date(e.timestamp).getTime() > sinceTs)
+      .slice(-30);
+    const recentText = recentEntries.map(e => e.content || '').join('\n').substring(0, 3000);
     const randomSeed = Math.floor(Date.now() / 86400000);
     const prompt = `${langDirective}
 
@@ -1037,7 +1067,33 @@ ${recentText || '記録なし'}
 
     const html = aiAdviceHtml + verifiedLinksHtml;
     container.innerHTML = html;
-    store.set('cachedActions', { html, fetchedAt: Date.now() });
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    store.set('cachedActions', { html, fetchedAt: Date.now(), fetchedDateJst: todayJst });
+  }
+
+  // Gate for loadActionRecommendations (B-7). Returns true only when
+  // the panel is allowed to fetch new advice right now.
+  _shouldRefreshActions() {
+    const cached = store.get('cachedActions');
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    // 1-per-day cap, same pattern as deepAnalysisLastRun (pages.js:610).
+    if (cached && cached.fetchedDateJst === todayJst) return false;
+
+    // Need at least one comment today so the advice is actually
+    // grounded in fresh user data.
+    const todayEntries = (store.get('textEntries') || []).filter(e =>
+      new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) === todayJst
+    );
+    if (todayEntries.length === 0) return false;
+
+    // Wait at least 5 minutes after the user's most recent comment so
+    // mid-typing doesn't trigger an update. The gate is re-checked on
+    // every scheduleDashRefresh tick and on the explicit 5-minute
+    // post-submit re-invocation in submitTextEntry.
+    const lastTs = new Date(todayEntries[todayEntries.length - 1].timestamp).getTime();
+    if ((Date.now() - lastTs) < 5 * 60 * 1000) return false;
+
+    return true;
   }
 
   // Build a grid of VERIFIED search links (real URLs that always lead
@@ -1272,20 +1328,21 @@ ${titles}`;
   async autoLoadResearchPage() {
     const resultsArea = document.getElementById('pubmed-results');
     if (!resultsArea) return;
-    const queryEl = document.getElementById('pubmed-search-query');
-    // Preserve the user's current query. We only auto-initialize when the
-    // search box is at its literal default value AND we haven't already
-    // loaded research this session — without this the tab wiped custom
-    // keywords every time the user switched tabs (B-2 + B-3).
-    const DEFAULT_PLACEHOLDER = 'ME/CFS OR myalgic encephalomyelitis OR chronic fatigue syndrome';
-    const currentQuery = queryEl ? queryEl.value.trim() : '';
-    if (this._researchAutoLoaded && currentQuery && currentQuery !== DEFAULT_PLACEHOLDER) {
-      // User has their own query already; just re-display cached results
-      // without re-searching.
+    // State lives in store, not DOM. The DOM gets blown away on every
+    // render_research(), so relying on queryEl.value to decide whether
+    // to overwrite (the old approach) always failed — the field was
+    // empty at the time of the check, so the guard never caught the
+    // user's saved keyword and the auto-generated query clobbered it
+    // on every tab switch (B-2 / B-3).
+    const savedQuery = (store.get('researchQuery') || '').trim();
+    if (savedQuery) {
+      // render_research already restored the input value and results
+      // from store. Nothing to do — do NOT auto-search.
       return;
     }
-    // Auto-search with user's diseases on the first visit OR when the
-    // field is still at the default placeholder.
+    // First visit (no saved query): seed the input with a disease-
+    // derived query and run once. Subsequent visits skip this branch
+    // because searchPubMedLive persists researchQuery on every run.
     const diseases = store.get('selectedDiseases') || [];
     const diseaseTerms = {
       mecfs: 'ME/CFS OR chronic fatigue syndrome',
@@ -1300,10 +1357,8 @@ ${titles}`;
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
-    if (queryEl && (!currentQuery || currentQuery === DEFAULT_PLACEHOLDER)) {
-      queryEl.value = query;
-    }
-    this._researchAutoLoaded = true;
+    const queryEl = document.getElementById('pubmed-search-query');
+    if (queryEl) queryEl.value = query;
     this.searchPubMedLive();
   }
 
@@ -1313,6 +1368,12 @@ ${titles}`;
     const resultsArea = document.getElementById('pubmed-results');
     const lang = (store.get('userProfile') || {}).language || 'ja';
     if (!resultsArea) return;
+
+    // Persist the query/days as soon as the user runs a search so that
+    // re-rendering the page (tab switch) restores exactly what they
+    // typed, not a disease-derived auto-query. Tied to B-2 / B-3 fix.
+    store.set('researchQuery', query);
+    store.set('researchDays', days);
 
     resultsArea.innerHTML = Components.loading('最新の研究論文を検索しています...');
 
@@ -1327,7 +1388,9 @@ ${titles}`;
       }
 
       if (articles.length === 0) {
-        resultsArea.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">現在、関連する論文が見つかりませんでした。<br>設定から疾患を選択すると、より適切な研究が見つかります。</div>';
+        const emptyHtml = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">現在、関連する論文が見つかりませんでした。<br>設定から疾患を選択すると、より適切な研究が見つかります。</div>';
+        resultsArea.innerHTML = emptyHtml;
+        store.set('researchResults', { html: emptyHtml, lang, savedAt: Date.now() });
         return;
       }
 
@@ -1343,29 +1406,36 @@ ${titles}`;
         }
       }
 
-      resultsArea.innerHTML = `
+      const resultsHtml = `
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${articles.length}件の研究論文</div>
         ${articles.map(a => `
           <div class="card" style="margin-bottom:12px">
             <div class="card-body" style="padding:14px 16px">
               <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
-                <span style="font-size:10px;color:var(--text-muted)">${a.journal}</span>
-                <span style="font-size:10px;color:var(--text-muted)">${a.date}</span>
+                <span style="font-size:10px;color:var(--text-muted)">${Components.escapeHtml(a.journal || '')}</span>
+                <span style="font-size:10px;color:var(--text-muted)">${Components.escapeHtml(a.date || '')}</span>
               </div>
               <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${Components.escapeHtml(a.titleTranslated || a.title)}</h4>
               ${(a.titleTranslated && a.titleTranslated !== a.title) ? `<div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-bottom:6px">${Components.escapeHtml(a.title)}</div>` : ''}
-              <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${(a.authors || '').substring(0, 80)}${(a.authors || '').length > 80 ? '...' : ''}</p>
+              <p style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${Components.escapeHtml((a.authors || '').substring(0, 80))}${(a.authors || '').length > 80 ? '...' : ''}</p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <a href="${a.translateUrl || a.url}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="font-size:12px">この研究を読む</a>
-                ${a.doiUrl ? `<a href="${a.doiUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:12px">論文全文</a>` : ''}
+                <a href="${Components.escapeHtml(a.translateUrl || a.url || '#')}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="font-size:12px">この研究を読む</a>
+                ${a.doiUrl ? `<a href="${Components.escapeHtml(a.doiUrl)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:12px">論文全文</a>` : ''}
               </div>
             </div>
           </div>
         `).join('')}`;
 
+      resultsArea.innerHTML = resultsHtml;
+      // Cache the rendered HTML + language so render_research can
+      // restore it on tab switch without re-hitting PubMed. Language
+      // is tracked because translated titles go stale if the user
+      // switches their profile language.
+      store.set('researchResults', { html: resultsHtml, lang, savedAt: Date.now() });
+
       Components.showToast(`${articles.length}件の論文が見つかりました`, 'success');
     } catch (err) {
-      resultsArea.innerHTML = `<div style="color:var(--danger);padding:20px">PubMed検索エラー: ${err.message}</div>`;
+      resultsArea.innerHTML = `<div style="color:var(--danger);padding:20px">PubMed検索エラー: ${Components.escapeHtml(err.message || '')}</div>`;
       Components.showToast('PubMed検索に失敗しました', 'error');
     }
   }

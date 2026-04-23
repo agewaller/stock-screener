@@ -1459,7 +1459,21 @@ App.prototype.render_data_input = function() {
        bar under each section. -->
   ${(() => {
     const archive = (store.get('deepAnalyses') || []).slice().reverse();
-    if (archive.length === 0) return '';
+    // Keep the div rendered even when empty so the「過去の本格分析を見る」
+    // link from the home page (which scrolls to #deep-analyses-archive)
+    // has a valid scroll target. Without this the link silently no-op'd
+    // and users thought the link was broken (B-6).
+    if (archive.length === 0) {
+      return `
+      <div id="deep-analyses-archive" style="margin-bottom:24px;padding:20px;background:var(--bg-tertiary);border-radius:10px;text-align:center">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:6px">📊 本格分析アーカイブ</h3>
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.8">
+          まだ本格分析の履歴がありません。<br>
+          ホーム画面の「🔍 本格的な分析をする」ボタンから分析を実行すると、<br>
+          ここに履歴が貯まっていきます。
+        </p>
+      </div>`;
+    }
     const REACTIONS = [
       { key: 'like',        emoji: '👍', label: 'いいかも' },
       { key: 'heart',       emoji: '❤️', label: 'やってみたい' },
@@ -1922,6 +1936,21 @@ App.prototype.render_research = function() {
   const analysis = store.get('latestAnalysis');
   const updates = analysis?.parsed?.researchUpdates || analysis?.result?.researchUpdates || [];
 
+  // Restore the user's last keyword / day range / results from store
+  // so tab switches don't wipe them (B-2 / B-3). Cached result HTML
+  // is only reused when the profile language still matches — cached
+  // translated titles would be in the wrong language otherwise.
+  const savedQuery = store.get('researchQuery') || '';
+  const savedDays = Number(store.get('researchDays') || 90);
+  const savedResults = store.get('researchResults');
+  const currentLang = (store.get('userProfile') || {}).language || 'ja';
+  const resultsHtml = (savedResults && savedResults.html && savedResults.lang === currentLang)
+    ? savedResults.html
+    : (updates.length > 0
+      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
+      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。'));
+  const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
+
   return `
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
     <div>
@@ -1934,19 +1963,18 @@ App.prototype.render_research = function() {
     </div>
   </div>
 
-  <!-- Search Bar -->
+  <!-- Search Bar. State is persisted to store so re-rendering (tab
+       switches) restores what the user typed, not a disease-derived
+       auto-query (B-2 / B-3). -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:14px 20px">
       <div style="display:flex;gap:10px">
-        <!-- value left empty so autoLoadResearchPage can inject a query
-             built from the user's selectedDiseases on first visit, and
-             so re-renders don't clobber the user's own keyword. -->
-        <input type="text" class="form-input" id="pubmed-search-query" value="" placeholder="検索キーワード（未入力なら疾患に合わせて自動生成）" style="flex:1">
+        <input type="text" class="form-input" id="pubmed-search-query" value="${Components.escapeHtml(savedQuery)}" placeholder="検索キーワード（未入力なら疾患に合わせて自動生成）" style="flex:1">
         <select class="form-select" id="pubmed-search-days" style="width:120px">
-          <option value="7">過去7日</option>
-          <option value="30">過去30日</option>
-          <option value="90" selected>過去90日</option>
-          <option value="365">過去1年</option>
+          ${dayOpt(7, '過去7日')}
+          ${dayOpt(30, '過去30日')}
+          ${dayOpt(90, '過去90日')}
+          ${dayOpt(365, '過去1年')}
         </select>
         <button class="btn btn-primary" onclick="app.searchPubMedLive()">論文を検索</button>
       </div>
@@ -1955,9 +1983,7 @@ App.prototype.render_research = function() {
 
   <!-- PubMed Results -->
   <div id="pubmed-results">
-    ${updates.length > 0
-      ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。')}
+    ${resultsHtml}
   </div>`;
 };
 
