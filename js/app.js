@@ -3464,6 +3464,121 @@ ${axisHint}
     reader.readAsDataURL(file);
   }
 
+  // Fill the guest input with a disease-appropriate sample and run guestAnalyze().
+  guestSampleSubmit() {
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const diseases = Array.from(selectedTags).map(t => t.dataset.id);
+    const samples = CONFIG.GUEST_SAMPLES || {};
+    let candidates = [];
+    diseases.forEach(d => { if (samples[d]) candidates.push(...samples[d]); });
+    if (candidates.length === 0) candidates = samples.default || [];
+    const text = candidates[Math.floor(Math.random() * candidates.length)] || '';
+    const input = document.getElementById('guest-input');
+    if (input) {
+      input.value = text;
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    setTimeout(() => this.guestAnalyze(), 300);
+  }
+
+  // Generate a condensed sample medical report from CONFIG.GUEST_REPORT_DATA
+  // and display it in #guest-result, with a CTA to register for a real one.
+  async guestSampleReport() {
+    const resultEl = document.getElementById('guest-result');
+    if (!resultEl) return;
+
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const selectedIds = Array.from(selectedTags).map(t => t.dataset.id);
+    const reportData = CONFIG.GUEST_REPORT_DATA || {};
+    const keys = Object.keys(reportData);
+    const sampleKey = keys.find(k => selectedIds.includes(k)) || keys[0];
+    const sample = reportData[sampleKey];
+    if (!sample) {
+      Components.showToast('サンプルデータが見つかりません', 'error');
+      return;
+    }
+
+    resultEl.innerHTML = Components.loading('サンプルレポートを生成中...', {
+      subtext: '架空の患者データから医師提出用レポートを作成しています（10〜20 秒）'
+    });
+
+    await FirebaseBackend.ensureGuestAuth().catch(() => {});
+
+    const TIMEOUT_MS = 20000;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)
+    );
+
+    const buildFallback = () => {
+      const lines = sample.textEntries.slice(0, 3).map(
+        e => `・${e.timestamp.substring(0, 10)}: ${e.content.substring(0, 80)}`
+      ).join('\n');
+      const meds = (sample.medications || []).slice(0, 2).map(m => `・${m.name}: ${m.notes || ''}`).join('\n') || '（なし）';
+      return `【サンプルレポート】${(sample.diseases || []).join('・')}\n\n■ 症状の経過\n${lines}\n\n■ 服薬情報\n${meds}\n\n■ 医師へ確認したいこと\n・現在の治療方針の継続可否・次回検査項目の確認\n\n※ これは架空のデモデータです。`;
+    };
+
+    const renderReport = (reportText) => {
+      resultEl.innerHTML = `
+        <div style="padding:14px;background:linear-gradient(135deg,#ecfeff,#cffafe);border:1.5px solid #a5f3fc;border-radius:14px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:#155e75;margin-bottom:10px">
+            🏥 医師提出用レポート（サンプル）
+            <span style="font-size:10px;color:#0e7490;margin-left:8px;font-weight:400">架空の患者データより生成</span>
+          </div>
+          <div style="font-size:12px;color:#164e63;line-height:1.8;white-space:pre-wrap;background:#fff;padding:12px;border-radius:10px;border:1px solid #a5f3fc">${Components.escapeHtml(reportText)}</div>
+          <div style="margin-top:10px;padding:10px;background:#fff5f5;border-radius:8px;border:1px solid #fed7d7;font-size:11px;color:#742a2a;line-height:1.6">
+            ⚠ これは架空の患者データをもとにしたデモです。実際の医療アドバイスではありません。
+          </div>
+        </div>
+        <div style="padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+          <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">自分の記録からレポートを作成するには登録が必要です</div>
+          <div style="font-size:11px;color:#15803d;margin-bottom:10px">毎日の記録を積み重ねると、あなたの病状に合ったレポートが自動生成されます</div>
+          <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+        </div>`;
+    };
+
+    try {
+      const summaryText = (sample.textEntries || []).map(
+        e => `[${e.timestamp.substring(0, 10)}] ${e.category}: ${e.content}`
+      ).join('\n');
+      const medicationText = (sample.medications || []).map(m => `${m.name}: ${m.notes || ''}`).join('\n');
+      const bloodText = (sample.bloodTests || []).map(b => `${b.name}: ${b.findings}`).join('\n');
+      const diseaseLabel = (sample.diseases || []).join('・');
+      const p = sample.profile || {};
+
+      const prompt = `あなたは慢性疾患患者の日記データを読み、医師との診察に役立てるサマリーレポートを作成する専門家です。
+以下の架空患者データ（デモ用）から医師提出用レポートを日本語で作成してください。
+
+【患者背景】疾患: ${diseaseLabel} / 年齢: ${p.age || '不明'}歳 / 性別: ${p.gender === 'female' ? '女性' : '男性'}
+
+【日記記録（抜粋）】
+${summaryText}
+${medicationText ? '\n【服薬情報】\n' + medicationText : ''}
+${bloodText ? '\n【検査結果】\n' + bloodText : ''}
+
+【レポート要件】以下の項目を簡潔に（合計 250〜350 文字）:
+1. 記録期間・主訴
+2. 症状の経過（箇条書き）
+3. 服薬・治療の変化
+4. 検査値の要点（あれば）
+5. 医師へ確認したいこと（患者目線）
+
+受診時にそのまま印刷して持参できる形式で作成してください。`;
+
+      const rawResponse = await Promise.race([
+        aiEngine.callModel('claude-haiku-4-5', prompt, {
+          maxTokens: 800,
+          temperature: 0.3,
+          globalTimeoutMs: 18000
+        }),
+        timeoutPromise
+      ]);
+      const reportText = typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse);
+      renderReport(reportText.trim());
+    } catch (_err) {
+      renderReport(buildFallback());
+    }
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     if (store.get('isAnalyzing')) {
