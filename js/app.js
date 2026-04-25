@@ -141,6 +141,18 @@ var App = class App {
     if (!store.get('calendarEvents')) {
       store.set('calendarEvents', []);
     }
+
+    // Register service worker for PWA caching + notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('[SW]', e));
+    }
+
+    // Defer the native "Add to Home Screen" prompt so we can show it
+    // at a better moment (after the user has used the app meaningfully).
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._installPromptEvent = e;
+    });
   }
 
   // #10 Hash routing — enables browser back/forward and bookmarks
@@ -941,6 +953,7 @@ var App = class App {
         }
         store.set('latestFeedback', result);
         this.saveAIComment(entry.id, result);
+        this.showInstallBannerIfEligible();
       })
       .catch(err => {
         console.error('[submitTextEntry] analyzeViaAPI failed:', err);
@@ -3869,6 +3882,62 @@ ${axisHint}
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // ---- PWA Install Prompt ----
+
+  showInstallBannerIfEligible() {
+    // Already installed as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    // Already shown recently (within 7 days)
+    const lastShown = parseInt(localStorage.getItem('install_banner_at') || '0', 10);
+    if (Date.now() - lastShown < 7 * 24 * 60 * 60 * 1000) return;
+    // Only show after 3+ entries (meaningful use)
+    const entries = store.get('textEntries') || [];
+    if (entries.length < 3) return;
+
+    localStorage.setItem('install_banner_at', String(Date.now()));
+
+    if (this._installPromptEvent) {
+      this._showInstallBanner();
+    } else {
+      // iOS Safari: no beforeinstallprompt; show manual instructions
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) this._showIOSInstallHint();
+    }
+  }
+
+  _showInstallBanner() {
+    if (document.getElementById('pwa-install-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:480px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 8px 24px rgba(99,102,241,.35);z-index:9000;display:flex;align-items:center;gap:12px';
+    banner.innerHTML = `<div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:2px">ホーム画面に追加しませんか？</div><div style="font-size:11px;opacity:.85">記録が続けやすくなります</div></div><button onclick="app._triggerInstallPrompt()" style="padding:8px 14px;background:#fff;color:#6366f1;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">追加</button><button onclick="document.getElementById('pwa-install-banner').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>`;
+    document.body.appendChild(banner);
+    setTimeout(() => { const b = document.getElementById('pwa-install-banner'); if (b) b.remove(); }, 15000);
+  }
+
+  _showIOSInstallHint() {
+    if (document.getElementById('pwa-install-banner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:480px;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 8px 24px rgba(14,165,233,.35);z-index:9000;display:flex;align-items:flex-start;gap:10px';
+    banner.innerHTML = `<div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:4px">ホーム画面に追加できます</div><div style="font-size:11px;opacity:.85;line-height:1.6">Safari の 🔼 共有ボタン → 「ホーム画面に追加」でインストールできます</div></div><button onclick="document.getElementById('pwa-install-banner').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;margin-top:-2px">✕</button>`;
+    document.body.appendChild(banner);
+    setTimeout(() => { const b = document.getElementById('pwa-install-banner'); if (b) b.remove(); }, 20000);
+  }
+
+  async _triggerInstallPrompt() {
+    const prompt = this._installPromptEvent;
+    if (!prompt) return;
+    prompt.prompt();
+    const result = await prompt.userChoice;
+    this._installPromptEvent = null;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.remove();
+    if (result.outcome === 'accepted') {
+      Components.showToast('ホーム画面に追加しました！', 'success');
+    }
   }
 
   // ---- Daily Reminder Notifications ----
