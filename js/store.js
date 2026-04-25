@@ -151,7 +151,9 @@ var Store = class Store {
     'researchQuery', 'researchDays', 'researchResults',
     // Cached セルフケア panel — needs to survive reloads so the 1-per-day
     // cap and 5-minute throttle (B-7) can be enforced across sessions.
-    'cachedActions'
+    'cachedActions',
+    // Daily reminder notification settings
+    'reminderEnabled', 'reminderTime'
   ];
 
   saveToStorage(key, value) {

@@ -61,4 +61,28 @@ self.addEventListener('fetch', (event) => {
 // Listen for update messages from the app
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') self.skipWaiting();
+  if (event.data && event.data.type === 'SHOW_REMINDER') {
+    const { title, body, url } = event.data;
+    event.waitUntil(
+      self.registration.showNotification(title || '健康日記', {
+        body: body || '今日の体調を記録しましょう',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'daily-reminder',
+        data: { url: url || '/' }
+      })
+    );
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url && c.url.startsWith(self.location.origin));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
 });

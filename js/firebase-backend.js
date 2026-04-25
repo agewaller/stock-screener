@@ -138,6 +138,7 @@ var FirebaseBackend = {
       // login page" reported by users.
       if (typeof app !== 'undefined' && app && typeof app.navigate === 'function') {
         app.navigate('dashboard');
+        try { app._scheduleReminder(); } catch (_) {}
       } else {
         console.error('[handleSignedInUser] app.navigate unavailable');
       }

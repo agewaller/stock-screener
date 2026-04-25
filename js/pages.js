@@ -3072,6 +3072,30 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Daily Reminder -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 毎日のお知らせ</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="toggle-reminder"
+          ${store.get('reminderEnabled') ? 'checked' : ''}
+          onchange="app.toggleReminder(this.checked)"
+          style="margin-top:2px;width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">今日未記録の場合にお知らせ</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.7">指定の時刻にまだ記録していない場合、ブラウザ通知でお知らせします。連続記録を続けるサポートになります。</div>
+        </div>
+      </label>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 4px">
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">通知時刻</label>
+        <input type="time" id="reminder-time" value="${store.get('reminderTime') || '20:00'}"
+          onchange="app.saveReminderTime(this.value)"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-primary)">
+        <div id="reminder-status" style="font-size:11px;color:var(--text-muted)"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Privacy Settings -->
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">

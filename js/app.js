@@ -3464,6 +3464,97 @@ ${axisHint}
     reader.readAsDataURL(file);
   }
 
+  // One-tap sample text for the guest input — cycles through disease-specific
+  // examples so repeated presses surface different scenarios.
+  guestSampleSubmit() {
+    let diseaseKey = 'default';
+    try {
+      const tags = document.querySelectorAll('.guest-disease-tag.selected');
+      const ids = Array.from(tags).map(t => t.getAttribute('data-id'));
+      const bank = CONFIG.GUEST_SAMPLES || {};
+      for (const id of ids) { if (bank[id]) { diseaseKey = id; break; } }
+    } catch (_) {}
+    const pool = (CONFIG.GUEST_SAMPLES && CONFIG.GUEST_SAMPLES[diseaseKey])
+      || CONFIG.GUEST_SAMPLES?.default;
+    if (!pool || !pool.length) return;
+    const idx = (this._guestSampleIdx || 0) % pool.length;
+    this._guestSampleIdx = idx + 1;
+    const input = document.getElementById('guest-input');
+    if (input) { input.value = pool[idx]; input.focus(); }
+    this.guestAnalyze();
+  }
+
+  // Guest doctor-report preview — real 医師提出用レポート from pre-made
+  // 30-day sample data. Uses callAnthropic which auto-routes guests
+  // (no API key) through the Cloudflare Worker proxy, and authenticated
+  // users directly to api.anthropic.com.
+  async guestSampleReport() {
+    const el = document.getElementById('guest-result');
+    if (!el) return;
+
+    // Pick disease from selected guest UI tags
+    let diseaseKey = 'mecfs';
+    try {
+      const tags = document.querySelectorAll('.guest-disease-tag.selected');
+      const ids = Array.from(tags).map(t => t.getAttribute('data-id'));
+      const bank = CONFIG.GUEST_REPORT_DATA || {};
+      for (const id of ids) { if (bank[id]) { diseaseKey = id; break; } }
+    } catch (_) {}
+
+    const diary = (CONFIG.GUEST_REPORT_DATA && CONFIG.GUEST_REPORT_DATA[diseaseKey])
+      || CONFIG.GUEST_REPORT_DATA?.mecfs;
+    if (!diary) return;
+
+    await FirebaseBackend.ensureGuestAuth().catch(() => {});
+    const apiKey = aiEngine.getApiKey('claude-sonnet-4-6') || null;
+
+    el.innerHTML = `<div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px">
+      <div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・${Components.escapeHtml(diary.diseases?.[0] || '慢性疾患')} 想定の架空患者データ）を生成中...${apiKey ? '' : '（30-60 秒ほどお待ちください）'}</div>
+      <pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;padding:12px;background:#f8fafc;border-radius:8px;max-height:50vh;overflow-y:auto;margin:0">${apiKey ? '' : '⏳ 生成中...'}</pre>
+      <div id="guest-report-cta" style="display:none;margin-top:10px"></div>
+    </div>`;
+    const target = document.getElementById('guest-report-text');
+    const cta = document.getElementById('guest-report-cta');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+
+    const sys = 'あなたは慢性疾患患者と主治医をつなぐ医療ドキュメントライターです。以下の患者日記データを「主治医への患者サマリーレポート」として Markdown で取りまとめてください。\n\n'
+      + '【文体】医療カルテ風・簡潔・事実ベース・医学用語を適切に使用。\n'
+      + '【形式】純粋な Markdown（前置き・コードフェンスなし）。見出しは ##、表は Markdown テーブル。\n'
+      + '【構成】以下を順に：\n'
+      + '# 患者サマリーレポート（サンプル）\n'
+      + '## 基本情報（疾患・対象期間・記録件数）\n'
+      + '## 主訴 Top 3\n'
+      + '## 症状経過\n'
+      + '## 現在の服薬\n'
+      + '## 試した対処法と効果\n'
+      + '## 生活影響度 QOL/ADL\n'
+      + '## 主治医への質問・相談事項\n'
+      + '末尾に「※ これは架空の患者データから生成されたサンプルです」と明記してください。';
+    const userMsg = '【患者日記データ】\n' + JSON.stringify(diary, null, 1).substring(0, 30000);
+
+    try {
+      const fullText = await aiEngine.callAnthropic(
+        'claude-sonnet-4-6', userMsg, apiKey,
+        { systemPrompt: sys, maxTokens: 3500, perCallTimeoutMs: 90000 }
+      );
+      if (target) target.textContent = fullText;
+      if (cta) {
+        cta.style.display = 'block';
+        cta.innerHTML = '<div style="padding:12px;background:#f0fdf4;border-radius:10px;text-align:center">'
+          + '<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px">あなた自身の記録でこのレポートを作れます</div>'
+          + '<button onclick="var s=document.getElementById(\'login-section\');if(s)s.scrollIntoView({behavior:\'smooth\'});else window.scrollTo({top:0,behavior:\'smooth\'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">無料で登録して始める →</button>'
+          + '</div>';
+      }
+    } catch (e) {
+      const msg = e?.message || String(e);
+      if (target) target.textContent = '[エラー] ' + msg + '\n\n再試行ボタンから再実行してください。';
+      if (cta) {
+        cta.style.display = 'block';
+        cta.innerHTML = '<button onclick="app.guestSampleReport()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 再試行</button>';
+      }
+    }
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     if (store.get('isAnalyzing')) {
@@ -3778,6 +3869,81 @@ ${axisHint}
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // ---- Daily Reminder Notifications ----
+
+  async toggleReminder(enabled) {
+    if (enabled) {
+      if (!('Notification' in window)) {
+        Components.showToast('このブラウザは通知に対応していません', 'error');
+        const cb = document.getElementById('toggle-reminder');
+        if (cb) cb.checked = false;
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        Components.showToast('通知を許可してください（ブラウザ設定で変更可能です）', 'info');
+        const cb = document.getElementById('toggle-reminder');
+        if (cb) cb.checked = false;
+        return;
+      }
+    }
+    store.set('reminderEnabled', enabled);
+    this._scheduleReminder();
+    const status = document.getElementById('reminder-status');
+    if (status) status.textContent = enabled ? '✓ 有効' : '';
+    Components.showToast(enabled ? '毎日のお知らせを設定しました' : 'お知らせをオフにしました', 'success');
+  }
+
+  saveReminderTime(timeStr) {
+    store.set('reminderTime', timeStr || '20:00');
+    this._scheduleReminder();
+    const status = document.getElementById('reminder-status');
+    if (status && store.get('reminderEnabled')) status.textContent = `✓ ${timeStr} に設定`;
+  }
+
+  _scheduleReminder() {
+    if (this._reminderTimer) clearTimeout(this._reminderTimer);
+    if (!store.get('reminderEnabled')) return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+    const [hh, mm] = (store.get('reminderTime') || '20:00').split(':').map(Number);
+    const now = new Date();
+    let fire = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+    if (fire <= now) fire.setDate(fire.getDate() + 1);
+    const msUntil = fire - now;
+
+    this._reminderTimer = setTimeout(() => {
+      this._fireReminder();
+      // Re-schedule for next day
+      this._scheduleReminder();
+    }, msUntil);
+  }
+
+  _fireReminder() {
+    const entries = store.get('textEntries') || [];
+    const today = new Date().toDateString();
+    const loggedToday = entries.some(e => new Date(e.timestamp).toDateString() === today);
+    if (loggedToday) return;
+
+    const sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+    if (sw) {
+      sw.postMessage({
+        type: 'SHOW_REMINDER',
+        title: '健康日記',
+        body: '今日の体調をまだ記録していません。一言でも書いてみませんか？',
+        url: '/'
+      });
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      const n = new Notification('健康日記', {
+        body: '今日の体調をまだ記録していません。一言でも書いてみませんか？',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'daily-reminder'
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    }
   }
 
   // ---- User Profile ----
