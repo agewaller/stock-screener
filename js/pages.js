@@ -569,10 +569,44 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users (minimal)
+  // Welcome card for new users — shown only while 0 records exist.
+  // The goal is to convert "just registered" to "first entry submitted"
+  // in under 60 seconds. Three concrete example prompts lower the
+  // blank-page anxiety that blocks first-time use.
+  const diseaseLabel = (() => {
+    const ids = store.get('selectedDiseases') || [];
+    if (!ids.length) return '慢性疾患';
+    try {
+      const all = CONFIG.DISEASE_CATEGORIES || [];
+      for (const cat of all) {
+        const d = cat.diseases && cat.diseases.find(x => x.id === ids[0]);
+        if (d) return d.name;
+      }
+    } catch (_) {}
+    return '慢性疾患';
+  })();
+  const examplePrompts = [
+    `今日は朝から頭が重くて、${diseaseLabel}の疲労が強い。昨夜の睡眠は5時間くらい`,
+    '昼食後から少し楽になった。血圧を測ったら上が105/下が68',
+    '頓服薬を1錠飲んだ。飲んでから40分で痛みが6→3に減った'
+  ];
   const welcomeHtml = !hasData ? `
-    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
-      上の入力欄に体調を書いてみてください
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fdf4 0%,#eff6ff 100%);border:1.5px solid #86efac">
+      <div class="card-body" style="padding:16px 18px">
+        <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:6px">🎉 ようこそ！まず最初の一言を書いてみましょう</div>
+        <div style="font-size:12px;color:#15803d;margin-bottom:12px;line-height:1.6">体調・症状・服薬・気分、なんでも OK。一言でも書くと AI が毎日の新しい処方を提案します。</div>
+        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">例えばこんな感じで書きます：</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${examplePrompts.map(p => `
+            <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value=${JSON.stringify(p)};t.focus();}"
+              style="text-align:left;padding:8px 12px;background:#fff;border:1px solid #d1fae5;border-radius:10px;font-size:12px;color:#374151;cursor:pointer;line-height:1.5">
+              ${Components.escapeHtml(p)}
+            </button>`).join('')}
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#16a34a">
+          ↑ タップして編集して「送信」、または上の入力欄に直接書いて送信してください
+        </div>
+      </div>
     </div>` : '';
 
   // Today's rotating prescription axis — shown on the dashboard as a
