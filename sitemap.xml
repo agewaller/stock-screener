@@ -83,6 +83,14 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Knowledge hub -->
+  <url>
+    <loc>https://cares.advisers.jp/knowledge.html</loc>
+    <lastmod>2026-04-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
