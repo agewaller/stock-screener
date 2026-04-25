@@ -27,8 +27,132 @@
 {
   "@context": "https://schema.org",
   "@graph": [
-    {"@type":"MedicalWebPage","name":"橋本病（慢性甲状腺炎）完全ガイド","url":"https://cares.advisers.jp/hashimoto.html","inLanguage":"ja","lastReviewed":"2026-04-23"},
-    {"@type":"MedicalCondition","name":"橋本病（慢性甲状腺炎）","alternateName":["Hashimoto's thyroiditis","慢性リンパ球性甲状腺炎","Chronic Lymphocytic Thyroiditis"],"code":{"@type":"MedicalCode","code":"5A03.1","codingSystem":"ICD-11"},"epidemiology":"日本で抗 TPO 抗体陽性者が女性の 10-20%、推定甲状腺機能低下症患者は 300-500 万人","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"慢性疲労"},{"@type":"MedicalSignOrSymptom","name":"体重増加"},{"@type":"MedicalSignOrSymptom","name":"冷え"},{"@type":"MedicalSignOrSymptom","name":"皮膚乾燥"},{"@type":"MedicalSignOrSymptom","name":"脱毛"},{"@type":"MedicalSignOrSymptom","name":"便秘"},{"@type":"MedicalSignOrSymptom","name":"気分の落ち込み"},{"@type":"MedicalSignOrSymptom","name":"徐脈"}],"cause":[{"@type":"MedicalCause","name":"自己免疫機序（抗 TPO 抗体・抗 Tg 抗体）"},{"@type":"MedicalCause","name":"遺伝的素因"},{"@type":"MedicalCause","name":"ヨード過剰摂取"}],"possibleTreatment":[{"@type":"DrugLegalStatus","name":"レボチロキシン（チラージン S）"},{"@type":"DrugLegalStatus","name":"乾燥甲状腺末"},{"@type":"DietarySupplement","name":"セレン 200μg/日"},{"@type":"DietarySupplement","name":"ビタミン D"}]}
+    {
+      "@type": "MedicalWebPage",
+      "name": "橋本病（慢性甲状腺炎）完全ガイド",
+      "url": "https://cares.advisers.jp/hashimoto.html",
+      "inLanguage": "ja",
+      "lastReviewed": "2026-04-23"
+    },
+    {
+      "@type": "MedicalCondition",
+      "name": "橋本病（慢性甲状腺炎）",
+      "alternateName": [
+        "Hashimoto's thyroiditis",
+        "慢性リンパ球性甲状腺炎",
+        "Chronic Lymphocytic Thyroiditis"
+      ],
+      "code": {
+        "@type": "MedicalCode",
+        "code": "5A03.1",
+        "codingSystem": "ICD-11"
+      },
+      "epidemiology": "日本で抗 TPO 抗体陽性者が女性の 10-20%、推定甲状腺機能低下症患者は 300-500 万人",
+      "signOrSymptom": [
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "慢性疲労"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "体重増加"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "冷え"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "皮膚乾燥"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "脱毛"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "便秘"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "気分の落ち込み"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "徐脈"
+        }
+      ],
+      "cause": [
+        {
+          "@type": "MedicalCause",
+          "name": "自己免疫機序（抗 TPO 抗体・抗 Tg 抗体）"
+        },
+        {
+          "@type": "MedicalCause",
+          "name": "遺伝的素因"
+        },
+        {
+          "@type": "MedicalCause",
+          "name": "ヨード過剰摂取"
+        }
+      ],
+      "possibleTreatment": [
+        {
+          "@type": "DrugLegalStatus",
+          "name": "レボチロキシン（チラージン S）"
+        },
+        {
+          "@type": "DrugLegalStatus",
+          "name": "乾燥甲状腺末"
+        },
+        {
+          "@type": "DietarySupplement",
+          "name": "セレン 200μg/日"
+        },
+        {
+          "@type": "DietarySupplement",
+          "name": "ビタミン D"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://cares.advisers.jp/hashimoto.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "橋本病と診断されたらすぐに薬が必要ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "橋本病（慢性甲状腺炎）があっても、甲状腺機能が正常（TSH が正常範囲内）であれば薬が不要なケースも多くあります。レボチロキシン（チラージン）の治療が必要になるのは、甲状腺機能低下症を発症した場合（TSH が高値、FT4 が低値）です。定期的な TSH/FT4 の検査で経過観察しながら、医師の判断に従いましょう。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "橋本病の症状にはどんなものがありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "橋本病に伴う甲状腺機能低下症の主な症状は、倦怠感・疲れやすさ、体重増加、冷え性、むくみ（浮腫）、便秘、皮膚の乾燥、抜け毛、集中力低下（甲状腺フォグ）などです。抗体だけ陽性で機能が正常な場合は無症状のことも多いです。症状は個人差が大きく、毎日記録することで医師への情報提供が改善します。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "TSH・FT4・FT3 の検査値の見方を教えてください",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TSH（甲状腺刺激ホルモン）は脳下垂体が甲状腺を刺激するホルモンで、甲状腺機能が低下すると上昇します。FT4（遊離サイロキシン）は甲状腺から分泌されるメインホルモン。FT3（遊離トリヨードチロニン）はより活性の高い形態。機能低下では TSH 高値 + FT4 低値が典型です。「正常範囲内」でも TSH が 2.5 以上で症状がある場合は医師と相談する価値があります。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "橋本病と ME/CFS・線維筋痛症を併発することはありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "はい、橋本病と ME/CFS（筋痛性脳脊髄炎）、線維筋痛症の重複は珍しくありません。いずれも自己免疫的機序を持ち、疲労・ブレインフォグ・睡眠障害という共通症状が見られます。橋本病の治療（レボチロキシン）で甲状腺機能が正常化しても疲労感が残る場合は、これらの重複疾患の可能性も検討すべきです。"
+          }
+        }
+      ]
+    }
   ]
 }
 </script>

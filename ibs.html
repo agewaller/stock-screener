@@ -27,8 +27,109 @@
 {
   "@context": "https://schema.org",
   "@graph": [
-    {"@type":"MedicalWebPage","name":"IBS（過敏性腸症候群）完全ガイド","url":"https://cares.advisers.jp/ibs.html","inLanguage":"ja","lastReviewed":"2026-04-23"},
-    {"@type":"MedicalCondition","name":"過敏性腸症候群","alternateName":["IBS","Irritable Bowel Syndrome"],"code":{"@type":"MedicalCode","code":"DD91.0","codingSystem":"ICD-11"},"epidemiology":"世界で約 10-15% の有病率、日本で約 1,200 万人（人口の 10%）と推計","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"反復する腹痛"},{"@type":"MedicalSignOrSymptom","name":"腹部膨満感"},{"@type":"MedicalSignOrSymptom","name":"下痢（IBS-D）"},{"@type":"MedicalSignOrSymptom","name":"便秘（IBS-C）"},{"@type":"MedicalSignOrSymptom","name":"排便異常の反復"}],"possibleTreatment":[{"@type":"DietarySupplement","name":"低 FODMAP 食"},{"@type":"DrugLegalStatus","name":"ポリカルボフィルカルシウム"},{"@type":"DrugLegalStatus","name":"ラモセトロン（IBS-D）"},{"@type":"DrugLegalStatus","name":"リナクロチド（IBS-C）"},{"@type":"MedicalTherapy","name":"プロバイオティクス・食物繊維"}]}
+    {
+      "@type": "MedicalWebPage",
+      "name": "IBS（過敏性腸症候群）完全ガイド",
+      "url": "https://cares.advisers.jp/ibs.html",
+      "inLanguage": "ja",
+      "lastReviewed": "2026-04-23"
+    },
+    {
+      "@type": "MedicalCondition",
+      "name": "過敏性腸症候群",
+      "alternateName": [
+        "IBS",
+        "Irritable Bowel Syndrome"
+      ],
+      "code": {
+        "@type": "MedicalCode",
+        "code": "DD91.0",
+        "codingSystem": "ICD-11"
+      },
+      "epidemiology": "世界で約 10-15% の有病率、日本で約 1,200 万人（人口の 10%）と推計",
+      "signOrSymptom": [
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "反復する腹痛"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "腹部膨満感"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "下痢（IBS-D）"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "便秘（IBS-C）"
+        },
+        {
+          "@type": "MedicalSignOrSymptom",
+          "name": "排便異常の反復"
+        }
+      ],
+      "possibleTreatment": [
+        {
+          "@type": "DietarySupplement",
+          "name": "低 FODMAP 食"
+        },
+        {
+          "@type": "DrugLegalStatus",
+          "name": "ポリカルボフィルカルシウム"
+        },
+        {
+          "@type": "DrugLegalStatus",
+          "name": "ラモセトロン（IBS-D）"
+        },
+        {
+          "@type": "DrugLegalStatus",
+          "name": "リナクロチド（IBS-C）"
+        },
+        {
+          "@type": "MedicalTherapy",
+          "name": "プロバイオティクス・食物繊維"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://cares.advisers.jp/ibs.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "過敏性腸症候群（IBS）はどのように診断されますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "IBS の診断には Rome IV 基準が使われます。「腹痛が過去 3 ヶ月間に月 1 日以上あり、排便により改善・または排便頻度の変化・便形状の変化に関連している」という条件を 6 ヶ月以上前から満たす場合に診断されます。炎症性腸疾患・腸管感染・大腸がんなど他の疾患を除外することが重要です。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "IBS の食事療法で有効なものはありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "低 FODMAP（発酵性オリゴ糖・二糖類・単糖類・ポリオール）食が多くの IBS 患者で有効とされています。小麦・乳製品・豆類・一部の果物など FODMAP が多い食品を 2〜6 週間制限し、その後少しずつ再導入して自分の\"地雷食品\"を特定します。食物繊維（特に可溶性食物繊維）の追加も有効なことがあります。管理栄養士の指導のもとで実施することを推奨します。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "IBS の症状記録でわかることは何ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "毎日の食事・症状・ストレス・睡眠を記録することで、IBS の個人特有のトリガーが見えてきます。例えば「コーヒーを飲んだ翌朝に症状悪化」「通勤前の緊張時に腹痛増加」など。健康日記では食事記録と症状の相関を AI が分析して個別のパターンを特定します。また医師への提出用レポートを自動生成できます。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "IBS と SIBO（小腸内細菌異常増殖）は関係がありますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "IBS 患者の 30〜80% が SIBO（Small Intestinal Bacterial Overgrowth）を合併しているという研究があります。SIBO は水素・メタンの呼気検査で診断でき、リファキシミン（抗生物質）や低 FODMAP 食が有効なことがあります。腹部膨満・ガス・慢性下痢が顕著な IBS の場合、SIBO を疑って検査することも選択肢です。"
+          }
+        }
+      ]
+    }
   ]
 }
 </script>
