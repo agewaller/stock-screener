@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OpenSearch Description for cares.advisers.jp
+  Lets the browser propose 健康日記 as a search engine in the address
+  bar (Firefox / Chromium / Safari with the appropriate setting).
+-->
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                       xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>健康日記</ShortName>
+  <LongName>健康日記 — 慢性疾患の症状記録 + AI 分析</LongName>
+  <Description>ME/CFS・Long COVID・線維筋痛症・POTS・MCAS・EDS・IBS・橋本病ほか 80 以上の慢性疾患に対応した無料の症状記録 AI アプリ。</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Image width="32" height="32" type="image/svg+xml">data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%236C63FF%22%2F%3E%3C%2Fsvg%3E</Image>
+  <Url type="text/html"
+       method="get"
+       template="https://cares.advisers.jp/?q={searchTerms}"/>
+  <moz:SearchForm>https://cares.advisers.jp/</moz:SearchForm>
+  <Developer>シェアーズ株式会社 (info@bluemarl.in)</Developer>
+  <Contact>info@bluemarl.in</Contact>
+  <Language>ja</Language>
+</OpenSearchDescription>

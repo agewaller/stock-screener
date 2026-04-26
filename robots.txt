@@ -11,6 +11,12 @@ Allow: /
 #  are listed here for future-proofing.)
 Disallow: /admin
 Disallow: /#admin
+# Internal-only pages that we don't want crawled.
+Disallow: /pitch.html
+Disallow: /learning.html
+# OG preview SVGs — exclude from generic image index since they're
+# intended for social card rendering, not user discovery.
+Disallow: /og/
 
 # Privacy / security metadata
 Sitemap: https://cares.advisers.jp/sitemap.xml
