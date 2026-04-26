@@ -2049,20 +2049,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2025 Shares Inc. All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=17"></script>
-<script src="js/config.js?v=17"></script>
-<script src="js/prompts.js?v=17"></script>
-<script src="js/store.js?v=17"></script>
-<script src="js/privacy.js?v=17"></script>
-<script src="js/ai-engine.js?v=17"></script>
-<script src="js/affiliate.js?v=17"></script>
-<script src="js/components.js?v=17"></script>
-<script src="js/i18n.js?v=17"></script>
-<script src="js/calendar.js?v=17"></script>
-<script src="js/integrations.js?v=17"></script>
-<script src="js/firebase-backend.js?v=17"></script>
-<script src="js/app.js?v=17"></script>
-<script src="js/pages.js?v=17"></script>
+<script src="js/idb.js?v=18"></script>
+<script src="js/config.js?v=18"></script>
+<script src="js/prompts.js?v=18"></script>
+<script src="js/store.js?v=18"></script>
+<script src="js/privacy.js?v=18"></script>
+<script src="js/ai-engine.js?v=18"></script>
+<script src="js/affiliate.js?v=18"></script>
+<script src="js/components.js?v=18"></script>
+<script src="js/i18n.js?v=18"></script>
+<script src="js/calendar.js?v=18"></script>
+<script src="js/integrations.js?v=18"></script>
+<script src="js/firebase-backend.js?v=18"></script>
+<script src="js/app.js?v=18"></script>
+<script src="js/pages.js?v=18"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2891,7 +2891,20 @@ window.addEventListener('load', function() {
       if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
       if (el) el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px"><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">'+esc(reply)+'</div></div>';
     } catch(e) {
-      if (el) el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(e.message)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button></div>';
+      if (el) {
+        // When the failure is a network-level error in an in-app browser
+        // (Yahoo, FB, LINE, etc.) callClaude rewrites it to a Japanese
+        // message that mentions 外部ブラウザ. In that case render an
+        // actionable button next to 再試行 that triggers the same
+        // open-external logic the proactive banner uses, so the user
+        // can fix the situation in one tap instead of copying the URL.
+        var msg = String(e && e.message || e);
+        var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser()) || /外部ブラウザ/.test(msg);
+        var extraBtn = inAppHit
+          ? '<button onclick="window.openInExternalBrowser && window.openInExternalBrowser()" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🌐 外部ブラウザで開く</button>'
+          : '';
+        el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + '</div>';
+      }
     }
   };
 
@@ -3106,6 +3119,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=17"></script>
+<script defer src="js/inapp-browser-banner.js?v=18"></script>
 </body>
 </html>
