@@ -364,6 +364,13 @@ var App = class App {
         el.value = stored;
       }
     });
+
+    // Load CF Analytics token
+    const cfEl = document.getElementById('input-cf-analytics-token');
+    if (cfEl) {
+      cfEl.value = localStorage.getItem('cf_analytics_token') || '';
+    }
+
     // Update status badge
     const statusEl = document.getElementById('api-key-status');
     if (statusEl) {
@@ -404,6 +411,14 @@ var App = class App {
         saved++;
       }
     });
+
+    // Save CF Analytics token (admin-local only; not synced to Firestore)
+    const cfEl = document.getElementById('input-cf-analytics-token');
+    if (cfEl && cfEl.value.trim()) {
+      localStorage.setItem('cf_analytics_token', cfEl.value.trim());
+      saved++;
+    }
+
     if (saved > 0) {
       // Save to global admin config so all users inherit these settings
       if (FirebaseBackend.initialized) {

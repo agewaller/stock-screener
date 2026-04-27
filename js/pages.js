@@ -195,9 +195,13 @@ App.prototype.render_login = function() {
       <div style="margin-bottom:24px">
         <!-- Email Registration/Login (primary for older users) -->
         <form onsubmit="app.loginWithEmail(event)" style="margin-bottom:14px">
-          <input type="email" name="email" class="form-input" placeholder="メールアドレス"
+          <label for="login-email" class="form-label" style="font-size:12px;color:#64748b;margin-bottom:4px;display:block">メールアドレス</label>
+          <input type="email" id="login-email" name="email" class="form-input" placeholder="your@email.com"
+            autocomplete="email" inputmode="email"
             style="border-radius:14px;padding:14px 16px;margin-bottom:8px;border:1.5px solid #e2e8f0;font-size:15px">
-          <input type="password" name="password" class="form-input" placeholder="パスワード（6文字以上）"
+          <label for="login-password" class="form-label" style="font-size:12px;color:#64748b;margin-bottom:4px;display:block">パスワード（6文字以上）</label>
+          <input type="password" id="login-password" name="password" class="form-input" placeholder="パスワード"
+            autocomplete="current-password"
             style="border-radius:14px;padding:14px 16px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:15px">
           <button type="submit" class="btn btn-primary" style="width:100%;border-radius:14px;padding:14px;font-size:15px">メールアドレスではじめる（無料）</button>
           <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px">初回は自動で登録されます。2回目以降は同じメール・パスワードでログイン。</div>
@@ -2845,12 +2849,21 @@ App.prototype.render_admin = function() {
         <label class="form-label">Google AI API Key（Gemini 2.5 Pro）</label>
         <input type="text" class="form-input" id="input-apikey-google" placeholder="AIza..." autocomplete="off">
       </div>
-      <div style="display:flex;gap:10px">
+      <div class="form-group" style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+        <label class="form-label">Cloudflare Web Analytics トークン</label>
+        <input type="text" class="form-input" id="input-cf-analytics-token"
+          placeholder="32〜64文字のトークン（one.dash.cloudflare.com）" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">
+          one.dash.cloudflare.com → Web Analytics → サイト追加 → トークンをコピー。
+          クッキーレス・個人情報保護法/GDPR 適合。保存後の次回ページ読み込みから計測開始。
+        </span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary" onclick="app.saveApiKeys()">APIキーを保存</button>
-        <button class="btn btn-secondary" onclick="app.testApiKey()" style="margin-left:8px">接続テスト</button>
-        <div id="api-test-result" style="margin-top:8px"></div>
+        <button class="btn btn-secondary" onclick="app.testApiKey()">接続テスト</button>
         <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">すべて削除</button>
       </div>
+      <div id="api-test-result" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -3078,7 +3091,7 @@ App.prototype.render_settings = function() {
       <span class="card-title">🔒 プライバシー設定</span>
       <a href="#" onclick="app.navigate('privacy');return false" style="font-size:10px;color:#6366f1">プライバシーと安全ページ →</a>
     </div>
-    <div class="card-body" style="padding:14px 16px">
+    <div class="card-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
       <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer">
         <input type="checkbox" id="toggle-privacy-anonymize"
           ${Privacy.isEnabled() ? 'checked' : ''}
@@ -3091,6 +3104,27 @@ App.prototype.render_settings = function() {
           </div>
         </div>
       </label>
+
+      <!-- Analytics consent (linked to cookie-consent.js) -->
+      ${(() => {
+        let analyticsConsent = null;
+        try { const c = JSON.parse(localStorage.getItem('health_diary_consent') || '{}'); analyticsConsent = c.analytics; } catch(_) {}
+        const checked = analyticsConsent === true;
+        return `
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer">
+          <input type="checkbox" id="toggle-analytics-consent"
+            ${checked ? 'checked' : ''}
+            onchange="(function(v){try{var c=JSON.parse(localStorage.getItem('health_diary_consent')||'{}');c.analytics=v;c.version=1;c.timestamp=Date.now();localStorage.setItem('health_diary_consent',JSON.stringify(c));if(v&&window._hdReloadAnalytics)window._hdReloadAnalytics();}catch(_){}Components.showToast(v?'アクセス解析を許可しました':'アクセス解析を無効にしました','success')})(this.checked)"
+            style="margin-top:2px;width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">匿名アクセス解析</div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.7">
+              クッキーなし・個人を特定しないアクセス解析（Cloudflare Web Analytics）を許可します。
+              サービス改善にのみ利用し、第三者に提供しません。
+            </div>
+          </div>
+        </label>`;
+      })()}
     </div>
   </div>
 

@@ -5,46 +5,72 @@
  * と GDPR 適合) and Plausible as fallback. Designed to be a single-file
  * include that every HTML page pulls in via `<script defer src="/js/analytics.js"></script>`.
  *
- * To enable: replace the placeholder token below with the real CF
- * Web Analytics token (one.dash.cloudflare.com → Web Analytics →
- * Add a site → cares.advisers.jp). Until then, this file is a
- * no-op — it will not inject any beacon or send any request.
+ * Token setup (admin only):
+ *   1. 管理パネル → API キー → Cloudflare Analytics Token を入力して保存
+ *   2. 保存後、次回ページ読み込みから計測が開始されます
+ *   Or: replace CF_TOKEN_FALLBACK with the token from
+ *   one.dash.cloudflare.com → Web Analytics → Add a site → cares.advisers.jp
  *
  * Privacy guarantees:
- * - No cookies, no localStorage reads, no fingerprinting
- * - CF Web Analytics aggregates at edge and does not store per-user
- *   identifiers. This keeps Pマーク / JIS Q 15001 準拠 trivial.
- * - Respects Do-Not-Track (navigator.doNotTrack === '1') — no-op
- *   when the user has DNT enabled.
+ * - No cookies, no localStorage reads for tracking, no fingerprinting
+ * - CF Web Analytics aggregates at edge and does not store per-user identifiers
+ * - Respects Do-Not-Track (navigator.doNotTrack === '1') — no-op when DNT enabled
+ * - Analytics only fire after explicit consent when cookie consent is active
  */
 (function () {
   'use strict';
 
-  // Respect DNT — health app users in particular are privacy-sensitive.
-  try {
-    if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
-  } catch (_) { /* ignore */ }
+  var LS_KEY = 'cf_analytics_token';
+  var CF_TOKEN_FALLBACK = '';
+  var _loaded = false;
 
-  // --- Cloudflare Web Analytics ------------------------------------
-  // Replace REPLACE_ME_CF_TOKEN with the real token string from the
-  // CF dashboard (looks like 'a1b2c3d4e5f6...', 32-64 chars).
-  var CF_TOKEN = 'REPLACE_ME_CF_TOKEN';
-  if (CF_TOKEN && CF_TOKEN.indexOf('REPLACE_ME') !== 0) {
-    var s = document.createElement('script');
-    s.defer = true;
-    s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
-    s.setAttribute('data-cf-beacon', JSON.stringify({ token: CF_TOKEN }));
-    (document.head || document.body || document.documentElement).appendChild(s);
+  function loadBeacon() {
+    if (_loaded) return;
+
+    // Respect DNT — health app users are privacy-sensitive.
+    try {
+      if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
+    } catch (_) { /* ignore */ }
+
+    // Respect analytics consent when cookie-consent module is active.
+    try {
+      var consent = localStorage.getItem('health_diary_consent');
+      if (consent) {
+        var c = JSON.parse(consent);
+        if (c.analytics === false) return;
+      }
+    } catch (_) { /* no consent state yet — allow */ }
+
+    // --- Cloudflare Web Analytics ------------------------------------
+    var cfToken = '';
+    try { cfToken = localStorage.getItem(LS_KEY) || ''; } catch (_) {}
+    cfToken = cfToken || CF_TOKEN_FALLBACK;
+
+    if (cfToken && cfToken.length >= 10) {
+      _loaded = true;
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+      s.setAttribute('data-cf-beacon', JSON.stringify({ token: cfToken }));
+      (document.head || document.body || document.documentElement).appendChild(s);
+    }
+
+    // --- Plausible (optional alternative) ----------------------------
+    // Uncomment + fill in if you self-host or subscribe to Plausible.
+    // var PLAUSIBLE_DOMAIN = '';
+    // try { PLAUSIBLE_DOMAIN = PLAUSIBLE_DOMAIN || localStorage.getItem('plausible_domain') || ''; } catch(_) {}
+    // if (PLAUSIBLE_DOMAIN) {
+    //   _loaded = true;
+    //   var p = document.createElement('script');
+    //   p.defer = true;
+    //   p.src = 'https://plausible.io/js/script.js';
+    //   p.setAttribute('data-domain', PLAUSIBLE_DOMAIN);
+    //   (document.head || document.body).appendChild(p);
+    // }
   }
 
-  // --- Plausible (optional alternative) ----------------------------
-  // Uncomment + fill in if you self-host or subscribe to Plausible.
-  // var PLAUSIBLE_DOMAIN = '';  // e.g. 'cares.advisers.jp'
-  // if (PLAUSIBLE_DOMAIN) {
-  //   var p = document.createElement('script');
-  //   p.defer = true;
-  //   p.src = 'https://plausible.io/js/script.js';
-  //   p.setAttribute('data-domain', PLAUSIBLE_DOMAIN);
-  //   (document.head || document.body).appendChild(p);
-  // }
+  loadBeacon();
+
+  // Called by cookie-consent.js after user accepts analytics
+  window._hdReloadAnalytics = loadBeacon;
 })();

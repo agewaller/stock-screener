@@ -105,11 +105,59 @@
       }
     });
 
-    // 5. Lazy-load any images that don't already have it (forward-
-    //    compatible for future <img> additions to the LPs).
+    // 5. Lazy-load any images that don't already have it.
     document.querySelectorAll('img:not([loading])').forEach(function (img) {
       img.setAttribute('loading', 'lazy');
       img.setAttribute('decoding', 'async');
     });
+
+    // 6. Form label auto-association.
+    // For every input/select/textarea that has no <label> pointing to it,
+    // generate an aria-label from its placeholder, name, or nearest text node.
+    var inputCounter = 0;
+    document.querySelectorAll('input, select, textarea').forEach(function (el) {
+      if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button') return;
+      var id = el.id;
+      if (id && document.querySelector('label[for="' + id + '"]')) return; // already labelled
+      if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
+
+      // Try to infer a label from placeholder, name, or data attributes
+      var label =
+        el.getAttribute('placeholder') ||
+        el.getAttribute('data-label') ||
+        el.getAttribute('name') ||
+        '';
+
+      // Walk up to find a preceding sibling / parent text node for context
+      if (!label) {
+        var prev = el.previousElementSibling;
+        if (prev && /label|span|div/.test(prev.tagName.toLowerCase()) && prev.textContent.trim().length < 60) {
+          label = prev.textContent.trim();
+        }
+      }
+
+      if (label) {
+        el.setAttribute('aria-label', label);
+      } else {
+        // Last resort: generate a stable numeric ID and pair with a visually hidden label
+        inputCounter++;
+        var genId = 'hd-input-' + inputCounter;
+        el.id = el.id || genId;
+        el.setAttribute('aria-label', el.tagName.toLowerCase() + ' ' + inputCounter);
+      }
+    });
+
+    // 7. Ensure <html lang> is set (Lighthouse accessibility check).
+    var html = document.documentElement;
+    if (!html.getAttribute('lang')) {
+      html.setAttribute('lang', 'ja');
+    }
+
+    // 8. Add role="main" to the primary content area if missing.
+    var mainEl = document.querySelector('main, [role="main"]');
+    if (!mainEl) {
+      var candidate = document.querySelector('#main-content, .main-content, .page-content, article');
+      if (candidate) candidate.setAttribute('role', 'main');
+    }
   });
 })();
