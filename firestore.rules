@@ -23,12 +23,12 @@ service cloud.firestore {
       }
     }
 
-    // Admin-only: global settings (API keys, prompts, model selection).
-    // Read: all authenticated users (they need API keys to call AI).
-    // Write: admin only.
+    // #15 Admin: Custom Claims (role=admin) OR legacy email check.
     match /admin/{docId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.email == 'agewaller@gmail.com';
+      allow write: if request.auth != null
+                   && (request.auth.token.role == 'admin'
+                       || request.auth.token.email == 'agewaller@gmail.com');
     }
 
     // Plaud / data inbox dispatched by the plaud-inbox Cloudflare Worker.
@@ -64,6 +64,103 @@ service cloud.firestore {
                     && request.resource.data.processed == true
                     && resource.data.hash == hash;
       allow delete: if false;
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // Personal Learning Companion (learning.html)
+    // Separate namespace from 健康日記 to keep the two products'
+    // data fully isolated. The admin (agewaller@gmail.com) retains
+    // read access for moderation; write stays owner-only.
+    // ───────────────────────────────────────────────────────────────
+    function isAdmin() {
+      return request.auth != null
+          && (request.auth.token.role == 'admin'
+              || request.auth.token.email == 'agewaller@gmail.com');
+    }
+
+    // Student/guardian user record + subcollections (sessions,
+    // messages, attempts, encouragements). The assistant/system
+    // messages are written by the Worker using the Admin SDK, which
+    // bypasses these rules, so the client is never allowed to write
+    // role == 'assistant' or 'system_internal' from the browser.
+    match /learning_users/{userId} {
+      allow read:   if request.auth != null
+                    && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null
+                    && request.auth.uid == userId;
+      allow update: if request.auth != null
+                    && request.auth.uid == userId;
+      allow delete: if false;
+
+      match /{subcollection}/{docId} {
+        allow read:   if request.auth != null
+                      && (request.auth.uid == userId || isAdmin());
+        // Only the Worker (Admin SDK) writes chat messages, profile
+        // estimates and encouragement logs. The browser may only
+        // create its own chat-session envelopes.
+        allow create: if request.auth != null
+                      && request.auth.uid == userId
+                      && subcollection == 'sessions';
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // Prompt templates — SERVER-SIDE ONLY. All reads are denied to
+    // every client (including the admin). The Worker reads via the
+    // Firebase Admin SDK. Writes are denied to clients too; all
+    // prompt edits go through the Worker's admin API so that every
+    // change is captured in auditLogs.
+    match /prompts/{key} {
+      allow read:  if false;
+      allow write: if false;
+
+      match /versions/{version} {
+        allow read:  if false;
+        allow write: if false;
+      }
+    }
+
+    // AI modes — metadata the client may know about (name, description,
+    // target segment) but the `activePromptKeys` field identifies
+    // server-side secrets, so we keep the entire doc server-only.
+    match /aiModes/{key} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // Learning items (problems, explanations). Public read once a
+    // problem is attached to the curriculum; write stays server-only.
+    match /learningItems/{id} {
+      allow read:  if request.auth != null
+                   && resource.data.isPublished == true;
+      allow write: if false;
+    }
+
+    // Audit log — admin read only, Worker-write only.
+    match /auditLogs/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // Safety events — admin read only, Worker-write only.
+    match /safetyEvents/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // Future: VoiceProfile / CharacterProfile. Publicly readable
+    // only when licenseStatus == 'approved' — prevents placeholder
+    // or pending assets from being surfaced in the UI.
+    match /voiceProfiles/{id} {
+      allow read:  if request.auth != null
+                   && resource.data.licenseStatus == 'approved';
+      allow write: if false;
+    }
+    match /characterProfiles/{id} {
+      allow read:  if request.auth != null
+                   && resource.data.licenseStatus == 'approved';
+      allow write: if false;
     }
   }
 }

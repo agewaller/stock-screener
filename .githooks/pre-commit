@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# 健康日記 / LMS 共通 pre-commit hook
+# CLAUDE.md の「絶対にやってはいけないこと」を機械的に検出して commit をブロック。
+#
+# 緊急時の bypass（極力使わない）:
+#   ALLOW_DANGEROUS=1 git commit ...
+#
+# 検出項目:
+#   1. datestamped Claude model id のハードコード（MODEL_MAP を迂回）
+#   2. datestamped OpenAI model id のハードコード
+#   3. localStorage.clear()  (store.clearAll() を使うべし)
+#   4. confirm() / alert()   (モバイルで詰む)
+#   5. signInWithPopup       (モバイルで詰む)
+#   6. 旧 Google 翻訳 URL 形式（translate.google.com/translate?u=）
+#   7. ハードコードされた Google API key (AIza...)
+
+set -u
+
+if [ "${ALLOW_DANGEROUS:-0}" = "1" ]; then
+  echo "⚠️  pre-commit: ALLOW_DANGEROUS=1 が指定されたため禁則チェックをスキップ" >&2
+  exit 0
+fi
+
+# ステージ済みの js/html/css のみチェック
+mapfile -t staged_files < <(git diff --cached --name-only --diff-filter=ACM -- '*.js' '*.html' '*.css' 2>/dev/null)
+
+if [ ${#staged_files[@]} -eq 0 ]; then
+  exit 0
+fi
+
+fail=0
+
+added_lines() {
+  # ステージ差分から、新規追加行（+ 行）のみを抽出。+++ ヘッダは除外。
+  git diff --cached -U0 -- "$1" | awk '/^\+\+\+/{next} /^\+/{print}'
+}
+
+report() {
+  echo "✗ $1" >&2
+  echo "  $2" >&2
+  echo "$3" | sed 's/^/      /' >&2
+  fail=1
+}
+
+for f in "${staged_files[@]}"; do
+  [ -f "$f" ] || continue
+
+  added=$(added_lines "$f")
+  [ -z "$added" ] && continue
+
+  # 1. datestamped Claude model id（MODEL_MAP のある ai-engine.js のみ例外）
+  if [ "$f" != "js/ai-engine.js" ]; then
+    hit=$(printf '%s\n' "$added" | grep -E "claude-[0-9a-z.-]+-[0-9]{8}" || true)
+    [ -n "$hit" ] && report "datestamped Claude model id をハードコード" "$f" "$hit"
+  fi
+
+  # 2. datestamped OpenAI model id
+  hit=$(printf '%s\n' "$added" | grep -E "gpt-[0-9a-z.-]*-[0-9]{4}-[0-9]{2}-[0-9]{2}" || true)
+  [ -n "$hit" ] && report "datestamped OpenAI model id をハードコード" "$f" "$hit"
+
+  # 3. localStorage.clear()
+  hit=$(printf '%s\n' "$added" | grep -E "localStorage\.clear\s*\(" || true)
+  [ -n "$hit" ] && report "localStorage.clear() 禁止（store.clearAll() を使う）" "$f" "$hit"
+
+  # 4. confirm() / alert()（window. プレフィクスも含む）
+  hit=$(printf '%s\n' "$added" | grep -E "(^|[^a-zA-Z0-9_.])(confirm|alert)\s*\(" || true)
+  [ -n "$hit" ] && report "confirm() / alert() 禁止（モバイルでブロック）" "$f" "$hit"
+
+  # 5. signInWithPopup
+  hit=$(printf '%s\n' "$added" | grep -E "signInWithPopup" || true)
+  [ -n "$hit" ] && report "signInWithPopup 禁止（signInWithRedirect を使う）" "$f" "$hit"
+
+  # 6. 旧 Google 翻訳 URL 形式
+  hit=$(printf '%s\n' "$added" | grep -E "translate\.google\.com/translate\?u=" || true)
+  [ -n "$hit" ] && report "旧 Google 翻訳 URL 形式（translate.goog サブドメイン形式を使う）" "$f" "$hit"
+
+  # 7. ハードコードされた Google/Firebase API key
+  hit=$(printf '%s\n' "$added" | grep -E "AIza[0-9A-Za-z_-]{35}" || true)
+  [ -n "$hit" ] && report "ハードコードされた Google / Firebase API key" "$f" "$hit"
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "" >&2
+  echo "❌ 禁則パターンを検出したため commit をブロックしました。" >&2
+  echo "   詳細は CLAUDE.md の「絶対にやってはいけないこと」を参照。" >&2
+  echo "   どうしても commit したい場合: ALLOW_DANGEROUS=1 git commit ..." >&2
+  exit 1
+fi
+
+exit 0

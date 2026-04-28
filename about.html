@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康日記について — 開発者の話と、このアプリが目指していること｜山口揚平</title>
+<meta name="description" content="健康日記を作った開発者・山口揚平（シェアーズ株式会社代表）が、ME/CFS を発症した経緯、2 年間の闘病、なぜこのアプリを作ったか、どこへ向かうかを率直に書いた「開発者の話」。">
+<meta name="keywords" content="健康日記,山口揚平,ME/CFS 当事者開発,慢性疾患 アプリ 開発者,シェアーズ株式会社">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://cares.advisers.jp/about.html">
+<link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/about.html">
+<link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/about.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="健康日記について — 開発者の話">
+<meta property="og:description" content="ME/CFS を発症した山口揚平が、なぜこのアプリを作ったか、どこへ向かうかを率直に綴った開発者ストーリー。">
+<meta property="og:url" content="https://cares.advisers.jp/about.html">
+<meta property="og:image" content="https://cares.advisers.jp/og/me-cfs.svg">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"AboutPage",
+  "name":"健康日記について",
+  "url":"https://cares.advisers.jp/about.html",
+  "inLanguage":"ja",
+  "mainEntity":{
+    "@type":"Person",
+    "name":"山口揚平",
+    "alternateName":"Yohei Yamaguchi",
+    "jobTitle":"シェアーズ株式会社 代表取締役",
+    "url":"https://note.com/age",
+    "sameAs":["https://x.com/yamaguchiyohei","https://note.com/age"],
+    "knowsAbout":["ME/CFS","慢性疾患","ヘルステック"]
+  },
+  "publisher":{
+    "@type":"Organization",
+    "name":"シェアーズ株式会社",
+    "email":"info@bluemarl.in",
+    "url":"https://cares.advisers.jp/"
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.85}
+.container{max-width:760px;margin:0 auto;padding:20px}
+header{padding:14px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px;font-size:13px}
+header a{color:#6366f1;text-decoration:none;font-weight:700;margin-right:14px}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:14px 0 10px;color:#3730a3}
+h2{font-size:19px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef}
+p{margin-bottom:14px;font-size:14.5px}
+ul{margin:8px 0 14px 22px}
+li{margin-bottom:5px;font-size:14.5px}
+.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}
+.cta{display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;border-radius:22px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px}
+.quote{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 8px 8px 0;margin:16px 0;font-style:italic;color:#4338ca}
+.values{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.value-card{padding:14px 16px;background:#fff;border:1px solid #e4e7ef;border-radius:10px}
+.value-card h3{font-size:14px;color:#3730a3;margin-bottom:6px}
+.value-card p{font-size:12.5px;line-height:1.7;margin:0}
+footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:30px;text-align:center;font-size:11px;color:#64748b}
+footer a{color:#6366f1;text-decoration:none;margin:0 6px}
+</style>
+</head>
+<body data-disease-label="健康日記について" data-app-param="">
+<div class="container">
+<header>
+  <a href="https://cares.advisers.jp/">健康日記トップ</a>
+  <a href="/me-cfs.html">疾患ガイド</a>
+  <a href="/compare.html">アプリ比較</a>
+</header>
+
+<div class="hero">
+<h1>健康日記について</h1>
+<p style="font-size:13px;color:#4338ca">「アプリの開発者は誰なのか」「なぜ無料なのか」「データはどう扱われているのか」 — 率直にお答えします。</p>
+</div>
+
+<h2>誰が作ったか</h2>
+<p>こんにちは。<strong>シェアーズ株式会社代表の山口揚平</strong>と申します。普段は経営戦略やテクノロジー領域で執筆・コンサルティングをしている一人です。</p>
+<p>2024 年に <strong>ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）</strong> を発症し、それから 2 年間、症状と向き合いながら自宅で暮らしています。健康日記は、その闘病経験のなかで「<strong>これがあれば自分が楽になれた</strong>」と思った機能を 1 つずつ実装してきたアプリです。</p>
+
+<h2>なぜ作ったか</h2>
+<p>ME/CFS の最大の問題は、症状の客観的指標が確立していないこと。検査では何も見つからない一方で、患者は自宅から出ることもできない状態が続きます。診察 3 分で症状を伝えきれず、医師にも家族にも理解してもらえず、孤独になります。</p>
+<div class="quote">「同じ病気と闘う人が、診察前夜に泣きながら症状を整理しなくてもよくなるアプリを作りたい」<br>— その動機で書き始めました。</div>
+<p>私自身が苦労した順番に、機能が増えていきました:</p>
+<ul>
+<li><strong>毎日の記録</strong>: 1 行でも続けられる</li>
+<li><strong>主治医提出レポート</strong>: 90 日分を自動でカルテ形式に</li>
+<li><strong>AI による「次の一歩」提示</strong>: 同じ助言ループを 14 軸で構造的に防ぐ</li>
+<li><strong>補助金マッチング</strong>: 17 種の制度から該当候補を抽出、社労士依頼メールも下書き</li>
+<li><strong>多疾患対応</strong>: ME/CFS 単独ではなく、Long COVID・線維筋痛症・橋本病など併発もまとめて</li>
+</ul>
+
+<h2>なぜ無料・広告なし・課金なしか</h2>
+<p>慢性疾患の患者は、就労困難で経済的に苦しい方が多くいます。そういう状況で月額課金を提示するのは、私の闘病経験からすると <strong>残酷</strong> です。</p>
+<p>運営費（AI API・サーバー・ドメイン）は、私自身がコンサルティング業務で得た売上から負担しています。<strong>慈善事業ではありません</strong> — 私が同じ病気だった頃に欲しかったものを、今闘っている方々に届けたい、それだけです。</p>
+<p>将来的に、企業向け（産業医・健保組合）の有料プランで運営費をカバーする可能性はあります。ただし<strong>個人ユーザーが無料で使える形は永続的に維持</strong>します。それがこのプロジェクトの根本的なルールです。</p>
+
+<h2>大切にしている 4 つの価値観</h2>
+<div class="values">
+<div class="value-card"><h3>🤝 当事者目線</h3><p>「健常者から見て便利」ではなく「闘っている人にとって辛くない」を判断基準にしています。1 タップで音声記録、低コントラスト UI、通知ゼロは全てそのため。</p></div>
+<div class="value-card"><h3>🔐 完全プライバシー</h3><p>データは Google Cloud 東京リージョンに暗号化保存。本人以外（私を含む運営者も）一切アクセスできない設計。Pマーク取得準備中、3 省 2 ガイドライン準拠宣言を公開済み。</p></div>
+<div class="value-card"><h3>🩺 医療機器ではない</h3><p>診断・治療・処方の代替ではなく、「日々の記録を整理して主治医との対話を質を上げる」ツール。AI 出力は全て「参考情報」と明示。医師との対話を補完するもの。</p></div>
+<div class="value-card"><h3>📖 オープンソース志向</h3><p>コード全体を <a href="https://github.com/agewaller/stock-screener" target="_blank" rel="noopener">GitHub で公開</a>しています。プライバシーポリシーや疾患情報の編集履歴も透明に確認できます。</p></div>
+</div>
+
+<h2>このサービスでないもの（明確化）</h2>
+<ul>
+<li><strong>診断ツールではありません</strong>: AI が「あなたは ME/CFS です」と判定することはありません</li>
+<li><strong>治療ツールではありません</strong>: 薬の処方や治療プログラムを提供しません</li>
+<li><strong>緊急対応ツールではありません</strong>: 自殺念慮・急性症状の場合は #いのちの電話（0570-783-556）または 119 へ</li>
+<li><strong>SNS / コミュニティではありません</strong>: 他の患者との交流機能は意図的に持たせていません（プライバシー保護のため）</li>
+</ul>
+
+<h2>これからやりたいこと</h2>
+<ul>
+<li><strong>主治医・社労士との連携深化</strong>: 患者が同意した範囲で記録を主治医のクリニックに自動共有</li>
+<li><strong>研究機関との連携</strong>: 匿名化データを ME/CFS / Long COVID 研究に役立てる仕組み（オプトイン）</li>
+<li><strong>多言語化</strong>: 日本語以外の患者にも届けたい（韓国語・中国語・英語）</li>
+<li><strong>音声入力の精度向上</strong>: ベッドで寝ながら「今日は 3」だけで記録が完結する世界</li>
+<li><strong>ML による誘因解析</strong>: 個別の患者の PEM 誘因を数週間の記録から自動抽出</li>
+</ul>
+
+<h2>連絡先・関連リンク</h2>
+<ul>
+<li>サービス: <a href="https://cares.advisers.jp/" style="color:#6366f1">cares.advisers.jp</a></li>
+<li>note 連載: <a href="https://note.com/age" target="_blank" rel="noopener" style="color:#6366f1">note.com/age</a>（闘病記・最新研究まとめ）</li>
+<li>X: <a href="https://x.com/yamaguchiyohei" target="_blank" rel="noopener" style="color:#6366f1">@yamaguchiyohei</a></li>
+<li>GitHub: <a href="https://github.com/agewaller/stock-screener" target="_blank" rel="noopener" style="color:#6366f1">github.com/agewaller/stock-screener</a></li>
+<li>メール: <a href="mailto:info@bluemarl.in" style="color:#6366f1">info@bluemarl.in</a>（個別の質問・要望・取材依頼すべて歓迎）</li>
+</ul>
+
+<div class="hero" style="text-align:center;margin-top:24px">
+<h2 style="border:none;color:#3730a3;margin:0 0 8px">この道を、一緒に歩きませんか</h2>
+<p style="font-size:13px;color:#4338ca">完全無料・登録不要のサンプル機能から</p>
+<a class="cta" href="https://cares.advisers.jp/">健康日記を開く →</a>
+</div>
+
+<footer>
+<div><a href="https://cares.advisers.jp/">健康日記トップ</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a>・<a href="https://note.com/age">開発者 note</a>・<a href="mailto:info@bluemarl.in">お問い合わせ</a></div>
+<div style="margin-top:6px">© 2026 シェアーズ株式会社</div>
+</footer>
+</div>
+<script defer src="/js/analytics.js"></script>
+<script defer src="/js/inapp-browser-banner.js"></script>
+<script defer src="/js/social-share.js"></script>
+<script defer src="/js/newsletter-signup.js"></script>
+<script defer src="/js/a11y-enhancements.js"></script>
+</body>
+</html>
