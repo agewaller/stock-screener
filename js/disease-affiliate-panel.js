@@ -121,9 +121,9 @@
   }
 
   // Amazon JP search URL with affiliate tag. Tag is configurable via
-  // <body data-amazon-tag="..."> or falls back to 'chroniccare-22'.
+  // <body data-amazon-tag="..."> or falls back to 'forestvoice-22'.
   function amazonSearchUrl(query) {
-    var tag = (document.body && document.body.getAttribute('data-amazon-tag')) || 'chroniccare-22';
+    var tag = (document.body && document.body.getAttribute('data-amazon-tag')) || 'forestvoice-22';
     return 'https://www.amazon.co.jp/s?k=' + encodeURIComponent(query) +
       '&tag=' + encodeURIComponent(tag);
   }

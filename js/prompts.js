@@ -1288,7 +1288,7 @@ var INLINE_PROMPTS = {
   "new_approach": "ユーザーがまだ試していない新しい打ち手（具体的な商品名・方法・研究引用を含めて 3-5 行）",
   "next_check": "次にユーザーが記録・確認するとよいこと",
   "products": [
-    {"name": "商品名", "reason": "推奨理由", "url": "https://www.amazon.co.jp/s?k=検索キーワード&tag=chroniccare-22"}
+    {"name": "商品名", "reason": "推奨理由", "url": "https://www.amazon.co.jp/s?k=検索キーワード&tag=forestvoice-22"}
   ],
   "deeper_prompt": "記録を続けると経過を追跡できます"
 }

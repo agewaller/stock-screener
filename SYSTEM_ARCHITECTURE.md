@@ -235,7 +235,7 @@ renderAnalysisCard(result)  ← app.js
 ## アフィリエイト
 
 ### 設定済みネットワーク
-- Amazon.co.jp: tag=chroniccare-22
+- Amazon.co.jp: tag=forestvoice-22
 - 楽天: tag=chroniccare
 - iHerb: rcode=CHRONICCARE
 
