@@ -394,7 +394,7 @@ App.prototype.render_login = function() {
       <div style="text-align:center;padding:0 0 32px;color:#94a3b8;font-size:10px;line-height:2">
         <div>運営: シェアーズ株式会社 &nbsp;·&nbsp; 🇯🇵 Made in Japan</div>
         <div>本サービスは医療機器ではありません &nbsp;·&nbsp; 無料</div>
-        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc. All rights reserved.</div>
+        <div style="margin-top:4px;color:#cbd5e1">&copy; 2026 Shares Inc. All rights reserved.</div>
       </div>
 
     </div>
@@ -878,6 +878,7 @@ App.prototype.render_dashboard = function() {
       const isLong = rawContent.length > 100;
       const preview = Components.escapeHtml(rawContent.substring(0, 100).replace(/\n/g, ' '));
       const safeTitle = Components.escapeHtml(e.title || new Date(e.timestamp).toLocaleDateString('ja-JP'));
+      const photoId = e.photoId || '';
       const previewImage = e.previewImage || '';
       const eid = 'rec-' + (e.id || i);
       // Source badge — show where the data came from for imported entries
@@ -900,7 +901,7 @@ App.prototype.render_dashboard = function() {
         <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
           <div style="flex:1;min-width:0;display:flex;gap:10px;align-items:center">
-            ${previewImage ? `<img class="record-thumbnail" style="width:40px;height:40px" src="${previewImage}" alt="${safeTitle}" onclick="event.stopPropagation();app.openImagePreview(this.src, this.alt)">` : ''}
+            ${(previewImage || photoId) ? `<img class="record-thumbnail" style="width:40px;height:40px" src="${previewImage}" alt="${safeTitle}"${photoId ? ` data-photo-id="${photoId}"` : ''} onclick="event.stopPropagation();app.openImagePreview(this.src,this.alt)">` : ''}
             <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
               <span style="font-size:12px;font-weight:600">${safeTitle}</span>
@@ -913,7 +914,7 @@ App.prototype.render_dashboard = function() {
           <span class="arrow" style="font-size:12px;color:var(--text-muted);margin-left:8px;flex-shrink:0">▸</span>
         </div>
         <div id="${eid}" style="display:none;padding:0 16px 12px">
-          ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeTitle}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
+          ${(previewImage || photoId) ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeTitle}"${photoId ? ` data-photo-id="${photoId}"` : ''} onclick="app.openImagePreview(this.src,this.alt)"></div>` : ''}
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
           ${(() => {
             const comment = app.getAIComment(e.id);
@@ -2147,7 +2148,7 @@ App.prototype.render_timeline = function() {
               <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
-            ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
+            ${(previewImage || e.photoId) ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}"${e.photoId ? ` data-photo-id="${e.photoId}"` : ''} onclick="app.openImagePreview(this.src,this.alt)"></div>` : ''}
             ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>分析:</strong> ${aiInsight}</div>` : ''}
           </div>
         </div>`;
@@ -2193,7 +2194,7 @@ App.prototype.render_timeline = function() {
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
-          ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
+          ${(e.dataUrl || e.id) ? `<img class="record-thumbnail" src="${e.dataUrl || ''}" alt="${safeFileName}"${e.id ? ` data-photo-id="${e.id}"` : ''} onclick="app.openImagePreview(this.src,this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
         </div>`;

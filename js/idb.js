@@ -138,5 +138,77 @@ var IDB = {
       req.onsuccess = () => resolve(req.result?.data || null);
       req.onerror = () => reject(req.error);
     });
+  },
+
+  // --- Bulk image fetch (used by lazyLoadPhotos) ---
+  // Returns a Map<id, dataUrl> for all requested ids that exist in IDB.
+  async getImagesBatch(ids) {
+    if (!ids || !ids.length) return new Map();
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const result = new Map();
+      const tx = db.transaction('images', 'readonly');
+      let remaining = ids.length;
+      ids.forEach(id => {
+        const req = tx.objectStore('images').get(id);
+        req.onsuccess = () => {
+          if (req.result?.dataUrl) result.set(id, req.result.dataUrl);
+          if (--remaining === 0) resolve(result);
+        };
+        req.onerror = () => { if (--remaining === 0) resolve(result); };
+      });
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  // --- Clear all IDB stores (called on logout) ---
+  async clearAll() {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(['images', 'largeData', 'pendingWrites'], 'readwrite');
+      tx.objectStore('images').clear();
+      tx.objectStore('largeData').clear();
+      tx.objectStore('pendingWrites').clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  // --- One-time migration: move dataUrl blobs from localStorage store
+  // entries into IDB. Runs once on app start if there are unstripped blobs.
+  // After migration, saveToStorage() keeps new entries clean automatically.
+  async migrateFromStore() {
+    let migrated = 0;
+    const textEntries = store.get('textEntries') || [];
+    for (const e of textEntries) {
+      if (e && e.previewImage && e.id) {
+        try {
+          await this.saveImage(e.id, e.previewImage);
+          migrated++;
+        } catch (_) {}
+      }
+      // Also handle photoId cross-reference
+      if (e && e.previewImage && e.photoId) {
+        try {
+          await this.saveImage(e.photoId, e.previewImage);
+        } catch (_) {}
+      }
+    }
+    const photos = store.get('photos') || [];
+    for (const p of photos) {
+      if (p && p.dataUrl && p.id) {
+        try {
+          await this.saveImage(p.id, p.dataUrl);
+          migrated++;
+        } catch (_) {}
+      }
+    }
+    if (migrated > 0) {
+      console.log('[IDB] migrated', migrated, 'blobs from localStorage to IndexedDB');
+      // Flush localStorage copies now (saveToStorage will strip them)
+      store.saveToStorage('textEntries', textEntries);
+      store.saveToStorage('photos', photos);
+    }
+    return migrated;
   }
 };

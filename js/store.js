@@ -155,18 +155,50 @@ var Store = class Store {
   ];
 
   saveToStorage(key, value) {
-    if (Store.PERSIST_KEYS.includes(key)) {
-      try {
-        localStorage.setItem(`cc_${key}`, JSON.stringify(value));
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.code === 22) {
-          console.error('[Store] localStorage quota exceeded for key:', key);
-          if (typeof Components !== 'undefined' && Components.showToast) {
-            Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
-          }
-        } else {
-          console.warn('Storage save failed:', e);
+    if (!Store.PERSIST_KEYS.includes(key)) return;
+    // Strip base64 image blobs before localStorage serialization.
+    // Blobs (previewImage / dataUrl) are stored in IndexedDB instead —
+    // a single compressed iPhone photo is 100-300 KB; dozens of photos
+    // easily blow the 5-10 MB localStorage quota. The in-memory
+    // store.state still carries the full object so the current session
+    // renders correctly. After page reload, lazyLoadPhotos() restores
+    // thumbnails from IDB without touching localStorage.
+    let toSave = value;
+    if (key === 'textEntries' && Array.isArray(value)) {
+      toSave = value.map(e => {
+        if (!e || (!e.dataUrl && !e.previewImage)) return e;
+        const { dataUrl, previewImage, ...rest } = e; // eslint-disable-line no-unused-vars
+        return rest;
+      });
+    } else if (key === 'photos' && Array.isArray(value)) {
+      toSave = value.map(e => {
+        if (!e || !e.dataUrl) return e;
+        const { dataUrl, ...rest } = e; // eslint-disable-line no-unused-vars
+        return rest;
+      });
+    } else if (key === 'aiComments' && value && typeof value === 'object') {
+      // Strip _raw (raw AI response string, 5-50 KB each) from persisted
+      // comments. The structured fields (summary, findings, actions) are
+      // sufficient for offline display and are much smaller.
+      toSave = {};
+      Object.entries(value).forEach(([id, c]) => {
+        if (!c || typeof c !== 'object') { toSave[id] = c; return; }
+        const result = c.result && typeof c.result === 'object'
+          ? (({ _raw, ...r }) => r)(c.result) // eslint-disable-line no-unused-vars
+          : c.result;
+        toSave[id] = { ...c, result };
+      });
+    }
+    try {
+      localStorage.setItem(`cc_${key}`, JSON.stringify(toSave));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.error('[Store] localStorage quota exceeded for key:', key);
+        if (typeof Components !== 'undefined' && Components.showToast) {
+          Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
         }
+      } else {
+        console.warn('Storage save failed:', e);
       }
     }
   }
@@ -367,6 +399,12 @@ var Store = class Store {
   // ICS URL / re-OAuth Fitbit / re-enter Firebase config every time
   // they log out and back in.
   clearAll() {
+    // Clear IndexedDB (photos, large data, pending writes). Fire-and-
+    // forget — IDB cleanup doesn't block the logout flow.
+    try {
+      if (typeof IDB !== 'undefined' && IDB.clearAll) IDB.clearAll().catch(() => {});
+    } catch (_) {}
+
     // Save device-level config that survives logout. These are not
     // per-user data — they're per-device integration settings that
     // a user explicitly configured and expects to persist.

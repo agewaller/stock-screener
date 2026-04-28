@@ -693,21 +693,31 @@ var FirebaseBackend = {
 
       // Load collections in parallel
       const collections = {
-        textEntries: 'textEntries',
-        symptoms: 'symptoms',
-        vitals: 'vitals',
-        sleepData: 'sleep',
+        textEntries:  'textEntries',
+        symptoms:     'symptoms',
+        vitals:       'vitals',
+        sleepData:    'sleep',
         activityData: 'activity',
-        bloodTests: 'bloodTests',
-        medications: 'medications',
-        conversations: 'conversationHistory'
+        bloodTests:   'bloodTests',
+        medications:  'medications',
+        conversations: 'conversationHistory',
+        // Previously localStorage-only — now fully cloud-backed
+        plaudAnalyses: 'plaudAnalyses',
+        deepAnalyses:  'deepAnalyses',
+        nutritionLog:  'nutritionLog',
+        doctorReports: 'doctorReports'
       };
+
+      // Limits: main health data gets 500 most-recent docs; feature
+      // collections (plaud analyses, deep reports) get 100.
+      const limitFor = (key) =>
+        ['plaudAnalyses', 'deepAnalyses', 'nutritionLog', 'doctorReports'].includes(key) ? 100 : 500;
 
       const loadPromises = Object.entries(collections).map(async ([storeKey, fbCollection]) => {
         try {
           const snapshot = await this.userCollection(fbCollection)
             .orderBy('createdAt', 'desc')
-            .limit(200)
+            .limit(limitFor(storeKey))
             .get();
           const data = [];
           snapshot.forEach(doc => {
@@ -719,12 +729,28 @@ var FirebaseBackend = {
           data.reverse(); // chronological order
           store.set(storeKey, data);
         } catch (err) {
-          // Collection might not exist yet
+          // Collection might not exist yet for new users
           console.warn(`Load ${fbCollection}:`, err.message);
         }
       });
 
-      await Promise.all(loadPromises);
+      // Load aiComments (object map, not an array)
+      const loadAiComments = (async () => {
+        try {
+          if (!this._syncedComments) this._syncedComments = new Set();
+          const snap = await this.userCollection('aiComments').get();
+          const comments = { ...(store.get('aiComments') || {}) };
+          snap.forEach(doc => {
+            comments[doc.id] = { ...doc.data(), _synced: true };
+            this._syncedComments.add(doc.id);
+          });
+          store.set('aiComments', comments);
+        } catch (err) {
+          console.warn('Load aiComments:', err.message);
+        }
+      })();
+
+      await Promise.all([...loadPromises, loadAiComments]);
 
       // Legacy per-user keys (backward compatibility). Global config
       // already ran at the top of this function, so re-fetch just for
@@ -857,44 +883,76 @@ var FirebaseBackend = {
 
   // ---- Sync store changes to Firestore ----
   //
-  // IMPORTANT: every listener here MUST bail out when `this._loading` is
-  // true. loadAllData() sets that flag while it populates the store from
-  // Firestore; without the guard, each load fires these listeners and
-  // re-writes the loaded data as fresh docs, duplicating the newest
-  // record on every reload.
-  //
-  // Each listener also skips entries that already carry a Firestore doc
-  // id (present on loaded data), as a second line of defence in case the
-  // _loading flag is missed due to a late-arriving snapshot.
+  // IMPORTANT: every listener MUST bail out when `this._loading` is true.
+  // loadAllData() sets that flag while populating the store from Firestore;
+  // without the guard each store.set() fires these listeners and re-writes
+  // loaded data as new docs, creating duplicates on every reload.
   enableAutoSync() {
+    // Tracks aiComment entryIds that have been written to Firestore so
+    // we don't re-upload them on every store change.
+    this._syncedComments = new Set();
+
     const isFromFirestore = (entry) => {
       if (!entry) return true;
-      // Firestore doc ids are auto-generated 20-char base58-ish strings.
-      // Local ids from addHealthData are timestamp-based (digits + '-').
-      // If _synced is already set, it's definitely loaded data.
       if (entry._synced) return true;
-      if (entry.createdAt) return true; // set by saveHealthEntry
+      if (entry.createdAt) return true;
       return false;
     };
 
-    const syncLatest = (collection) => (entries) => {
+    // Sync ALL entries that haven't been synced yet (not just the latest).
+    // This handles bulk imports that append multiple entries in one store.set.
+    const syncAll = (collection) => (entries) => {
       if (this._loading) return;
-      if (!this.userId || !entries?.length) return;
-      const latest = entries[entries.length - 1];
-      if (!latest || isFromFirestore(latest)) return;
-      this.saveHealthEntry(collection, latest).then(id => {
-        if (id) {
-          latest._synced = true;
-          latest.createdAt = latest.createdAt || Date.now();
-        }
+      if (!this.userId || !Array.isArray(entries) || !entries.length) return;
+      const toSync = entries.filter(e => e && !isFromFirestore(e));
+      toSync.forEach(entry => {
+        this.saveHealthEntry(collection, entry)
+          .then(id => {
+            if (id) {
+              entry._synced = true;
+              entry.createdAt = entry.createdAt || Date.now();
+            }
+          })
+          .catch(e => console.warn('[sync]', collection, e.message));
       });
     };
 
-    store.on('textEntries', syncLatest('textEntries'));
-    store.on('symptoms', syncLatest('symptoms'));
-    store.on('vitals', syncLatest('vitals'));
+    // Health data collections
+    store.on('textEntries',   syncAll('textEntries'));
+    store.on('symptoms',      syncAll('symptoms'));
+    store.on('vitals',        syncAll('vitals'));
+    store.on('sleepData',     syncAll('sleep'));
+    store.on('activityData',  syncAll('activity'));
+    store.on('bloodTests',    syncAll('bloodTests'));
+    store.on('medications',   syncAll('medications'));
 
-    // Watch for settings changes (idempotent; merge:true)
+    // Feature-specific collections (previously localStorage-only)
+    store.on('plaudAnalyses', syncAll('plaudAnalyses'));
+    store.on('deepAnalyses',  syncAll('deepAnalyses'));
+    store.on('nutritionLog',  syncAll('nutritionLog'));
+    store.on('doctorReports', syncAll('doctorReports'));
+
+    // AI comments: object map { entryId → { timestamp, result } }.
+    // Sync each new entryId as an individual Firestore document so the
+    // total document size never approaches Firestore's 1 MB limit.
+    store.on('aiComments', (comments) => {
+      if (this._loading) return;
+      if (!this.userId || !comments || typeof comments !== 'object') return;
+      Object.entries(comments).forEach(([entryId, comment]) => {
+        if (!comment || this._syncedComments.has(entryId)) return;
+        this._syncedComments.add(entryId);
+        // Strip _raw (raw AI response, up to 50 KB) — only structured
+        // fields are needed in the cloud copy.
+        const result = comment.result && typeof comment.result === 'object'
+          ? (({ _raw, ...r }) => r)(comment.result) // eslint-disable-line no-unused-vars
+          : comment.result;
+        this.userDoc().collection('aiComments').doc(entryId)
+          .set({ ...comment, result }, { merge: true })
+          .catch(e => console.warn('[aiComments sync]', e.message));
+      });
+    });
+
+    // Settings (idempotent; merge:true)
     ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
       store.on(key, (value) => {
         if (this._loading) return;
@@ -903,14 +961,15 @@ var FirebaseBackend = {
       });
     });
 
-    // Watch for user profile changes
+    // User profile
     store.on('userProfile', (value) => {
       if (this._loading) return;
       if (!this.userId) return;
       this.saveProfile({ userProfile: value });
     });
 
-    // Watch for analysis history
+    // Analysis snapshots (lightweight summary only — full result stays in
+    // aiComments above)
     store.on('latestAnalysis', (analysis) => {
       if (this._loading) return;
       if (!this.userId || !analysis) return;
@@ -921,6 +980,17 @@ var FirebaseBackend = {
         summary: analysis.parsed?.summary || '',
       });
     });
+  },
+
+  // Delete a single document from a user's Firestore subcollection.
+  // Called from the UI delete handlers so removals propagate to the cloud.
+  async deleteEntry(collection, docId) {
+    if (!this.userId || !docId) return;
+    try {
+      await this.userCollection(collection).doc(docId).delete();
+    } catch (err) {
+      console.warn('[deleteEntry]', collection, docId, err.message);
+    }
   },
 
   // Check if Firebase is configured

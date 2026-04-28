@@ -141,6 +141,32 @@ var App = class App {
     if (!store.get('calendarEvents')) {
       store.set('calendarEvents', []);
     }
+
+    // One-time migration: move any base64 blobs that were saved to
+    // localStorage before this fix into IndexedDB, then strip them
+    // from localStorage so the quota pressure is relieved immediately.
+    try {
+      IDB.migrateFromStore().catch(e => console.warn('[IDB migrate]', e));
+    } catch (_) {}
+  }
+
+  // Lazy-load photo thumbnails from IndexedDB.
+  // Finds all <img data-photo-id="…"> elements in the DOM and fills
+  // their src from IDB. Called from afterRender() on every page change
+  // so thumbnails show up even after a browser reload (when previewImage
+  // is no longer in localStorage).
+  lazyLoadPhotos() {
+    const imgs = document.querySelectorAll('img[data-photo-id]');
+    if (!imgs.length) return;
+    const ids = Array.from(imgs).map(el => el.dataset.photoId).filter(Boolean);
+    if (!ids.length) return;
+    IDB.getImagesBatch(ids).then(map => {
+      imgs.forEach(img => {
+        const url = map.get(img.dataset.photoId);
+        if (url && !img.src) img.src = url;
+        else if (url && img.src !== url && !img.src.startsWith('data:')) img.src = url;
+      });
+    }).catch(() => {});
   }
 
   // #10 Hash routing — enables browser back/forward and bookmarks
@@ -230,6 +256,12 @@ var App = class App {
   }
 
   afterRender(page) {
+    // Lazy-load photo thumbnails from IndexedDB for any img elements
+    // that carry a data-photo-id attribute. Runs on every page render
+    // so thumbnails appear even after a reload (when previewImage is
+    // no longer in localStorage — it was stripped to save quota space).
+    try { this.lazyLoadPhotos(); } catch (_) {}
+
     // Populate the "選択疾患の規模" banner on the login page when it
     // first mounts — otherwise a user returning with diseases already
     // cached in localStorage sees an empty box until they click a tag.
@@ -742,14 +774,23 @@ var App = class App {
         const rawDataUrl = ev.target.result;
         const compressed = await Components.compressImage(rawDataUrl);
 
+        // Use a shared photoId so both the textEntry and the photos
+        // collection reference the same IDB key for lazy-loading.
+        const photoId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        // Persist blob to IndexedDB (keeps localStorage clean).
+        try { await IDB.saveImage(photoId, compressed); } catch (_) {}
+
         const entry = {
           id: Date.now().toString(36) + Math.random().toString(36).substr(2),
           timestamp: new Date().toISOString(),
           category: '写真',
           type: 'file_upload',
+          photoId,
           title: `📸 ${file.name}`,
           content: `写真をアップロードしました（${(file.size / 1024).toFixed(0)}KB）`,
-          dataUrl: compressed,
+          // previewImage is kept in-memory only (stripped from localStorage
+          // by saveToStorage); lazy-loaded from IDB on next page reload.
           previewImage: compressed,
           source: 'photo_modal'
         };
@@ -758,6 +799,7 @@ var App = class App {
         store.set('textEntries', textEntries);
 
         store.addHealthData('photos', {
+          id: photoId,
           filename: file.name,
           type: file.type,
           size: file.size,
@@ -3615,6 +3657,12 @@ ${axisHint}
         const rawDataUrl = ev.target.result;
         const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
         const photoId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        // Persist blob to IndexedDB before touching localStorage.
+        if (isImage) {
+          try { await IDB.saveImage(photoId, compressed); } catch (_) {}
+        }
+
         store.addHealthData('photos', {
           id: photoId,
           filename: file.name, type: file.type, size: file.size,
@@ -3629,7 +3677,8 @@ ${axisHint}
           category: category,
           type: 'file_upload',
           photoId: isImage ? photoId : '',
-          previewImage: compressed,
+          // previewImage in-memory only; stripped from localStorage by saveToStorage
+          previewImage: isImage ? compressed : '',
           title: `📎 ${file.name}`,
           content: `${category}をアップロードしました（${(file.size/1024).toFixed(0)}KB）`
         });
@@ -3722,6 +3771,11 @@ ${axisHint}
         const rawDataUrl = ev.target.result;
         const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
         const photoId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        if (isImage) {
+          try { await IDB.saveImage(photoId, compressed); } catch (_) {}
+        }
+
         store.addHealthData('photos', {
           id: photoId,
           filename: file.name, type: file.type, size: file.size,
@@ -3737,7 +3791,7 @@ ${axisHint}
           category: isImage ? '写真' : 'ファイル',
           type: 'file_upload',
           photoId: isImage ? photoId : '',
-          previewImage: compressed,
+          previewImage: isImage ? compressed : '',
           title: `📎 ${file.name}`,
           content: `${isImage ? '写真' : 'ファイル'}をアップロード（${(file.size/1024).toFixed(0)}KB）`
         });
