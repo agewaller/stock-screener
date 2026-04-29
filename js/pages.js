@@ -101,7 +101,7 @@ App.prototype.render_login = function() {
         <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1.5px solid #6366f1;border-radius:12px">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:10px;color:#6366f1;font-weight:700;flex-shrink:0">📅 今日の新処方の指定軸</div>
-            <div id="public-user-count-inline" style="margin-left:auto;font-size:10px;color:#64748b">読込中…</div>
+            <div id="public-user-count-inline" style="margin-left:auto;font-size:10px;color:#64748b"></div>
           </div>
           <div style="font-size:14px;font-weight:700;color:#3730a3;margin-top:4px;line-height:1.4">${todayAxis.icon} ${todayAxis.name}</div>
           <div style="font-size:11px;color:#4338ca;line-height:1.6;margin-top:3px">${Components.escapeHtml((todayAxis.desc || '').substring(0, 100))}${(todayAxis.desc || '').length > 100 ? '…' : ''}</div>

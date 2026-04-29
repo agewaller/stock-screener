@@ -3120,5 +3120,108 @@ window.addEventListener('load', function() {
 });
 </script>
 <script defer src="js/inapp-browser-banner.js?v=19"></script>
+<script defer src="js/analytics.js?v=19"></script>
+<script>
+// Service Worker registration — enables offline cache and satisfies
+// the PWA installability criteria (beforeinstallprompt).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+      // SW registration failures are non-fatal — the app works without it.
+      console.log('[SW] registration failed:', err);
+    });
+  });
+}
+
+// PWA install prompt — captured here (top-level, before any async init)
+// and surfaced as a banner when the browser deems the app installable.
+// The banner is injected into the DOM lazily so it doesn't block first paint.
+(function () {
+  var _deferredPrompt = null;
+  var DISMISSED_KEY = 'pwa_install_dismissed';
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    _deferredPrompt = e;
+    // Don't re-show if the user already dismissed the banner this session.
+    try { if (sessionStorage.getItem(DISMISSED_KEY)) return; } catch (_) {}
+    _showInstallBanner();
+  });
+
+  window.addEventListener('appinstalled', function () {
+    var el = document.getElementById('pwa-install-banner');
+    if (el) el.remove();
+    _deferredPrompt = null;
+  });
+
+  function _showInstallBanner() {
+    if (document.getElementById('pwa-install-banner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.setAttribute('role', 'status');
+    banner.style.cssText = [
+      'position:fixed',
+      'bottom:80px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'z-index:9999',
+      'background:#fff',
+      'border:1.5px solid #6366f1',
+      'border-radius:16px',
+      'box-shadow:0 4px 24px rgba(99,102,241,0.18)',
+      'padding:14px 18px',
+      'display:flex',
+      'align-items:center',
+      'gap:12px',
+      'max-width:320px',
+      'width:calc(100% - 40px)',
+      'font-family:inherit'
+    ].join(';');
+    banner.innerHTML =
+      '<div style="font-size:26px;flex-shrink:0">📲</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:700;color:#1e293b;line-height:1.3">ホーム画面に追加</div>' +
+        '<div style="font-size:11px;color:#64748b;margin-top:2px">オフラインでも使えます</div>' +
+      '</div>' +
+      '<button id="pwa-install-btn" style="' +
+        'padding:8px 14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);' +
+        'color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;' +
+        'cursor:pointer;white-space:nowrap' +
+      '">追加</button>' +
+      '<button id="pwa-dismiss-btn" style="' +
+        'padding:4px 8px;background:none;border:none;color:#94a3b8;' +
+        'cursor:pointer;font-size:18px;line-height:1;flex-shrink:0' +
+      '" aria-label="閉じる">&times;</button>';
+
+    document.body.appendChild(banner);
+
+    document.getElementById('pwa-install-btn').addEventListener('click', function () {
+      if (!_deferredPrompt) return;
+      _deferredPrompt.prompt();
+      _deferredPrompt.userChoice.then(function (choice) {
+        if (choice.outcome === 'accepted') banner.remove();
+        _deferredPrompt = null;
+      });
+    });
+
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', function () {
+      banner.remove();
+      try { sessionStorage.setItem(DISMISSED_KEY, '1'); } catch (_) {}
+    });
+  }
+
+  // Expose for Settings page "ホーム画面に追加" button.
+  window._triggerPwaInstall = function () {
+    if (_deferredPrompt) {
+      _deferredPrompt.prompt();
+    } else {
+      // Already installed, or browser doesn't support — show a toast.
+      if (typeof app !== 'undefined' && app.showToast) {
+        app.showToast('すでにホーム画面に追加されているか、お使いのブラウザでは自動インストールに対応していません。ブラウザのメニューから「ホーム画面に追加」をお試しください。');
+      }
+    }
+  };
+})();
+</script>
 </body>
 </html>
