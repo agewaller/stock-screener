@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アップデート履歴 — 健康日記</title>
+<meta name="description" content="健康日記のアップデート履歴。バグ修正・新機能・改善内容を時系列で公開しています。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://cares.advisers.jp/changelog.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="アップデート履歴 — 健康日記">
+<meta property="og:description" content="健康日記の最新アップデート情報。ユーザーの声をもとに毎週改善中。">
+<meta property="og:url" content="https://cares.advisers.jp/changelog.html">
+<meta property="og:image" content="https://cares.advisers.jp/og-image.png">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.7}
+.container{max-width:760px;margin:0 auto;padding:20px}
+header{padding:14px 0;border-bottom:1px solid #e4e7ef;margin-bottom:28px;font-size:13px}
+header a{color:#6366f1;text-decoration:none;font-weight:700;margin-right:14px}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:14px 0 4px;color:#3730a3}
+.lead{font-size:14px;color:#64748b;margin-bottom:28px}
+.release{margin-bottom:32px}
+.release-header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.version{font-size:15px;font-weight:800;color:#3730a3}
+.date{font-size:12px;color:#64748b}
+.tag{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;margin-left:4px}
+.tag-feature{background:#dcfce7;color:#15803d}
+.tag-fix{background:#fee2e2;color:#dc2626}
+.tag-improve{background:#e0e7ff;color:#4338ca}
+.tag-security{background:#fef3c7;color:#b45309}
+ul{list-style:none;padding:0}
+ul li{padding:6px 0 6px 0;border-bottom:1px solid #f1f5f9;font-size:13.5px;line-height:1.6;display:flex;gap:8px;align-items:baseline}
+ul li:last-child{border-bottom:none}
+ul li::before{content:'';flex-shrink:0}
+.item-type{display:inline-block;width:52px;text-align:center;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;flex-shrink:0}
+.type-new{background:#dcfce7;color:#15803d}
+.type-fix{background:#fee2e2;color:#dc2626}
+.type-imp{background:#e0e7ff;color:#4338ca}
+.divider{border:none;border-top:2px solid #e4e7ef;margin:32px 0}
+.cta-box{padding:20px 24px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;text-align:center;margin:32px 0}
+.cta-box h2{font-size:18px;font-weight:700;color:#3730a3;margin-bottom:6px}
+.cta-box p{font-size:13px;color:#4338ca;margin-bottom:14px}
+.cta{display:inline-block;padding:11px 24px;background:#6366f1;color:#fff;border-radius:22px;text-decoration:none;font-weight:700;font-size:13px}
+footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:30px;text-align:center;font-size:11px;color:#64748b}
+footer a{color:#6366f1;text-decoration:none;margin:0 6px}
+@media(max-width:600px){h1{font-size:21px}.release-header{gap:6px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <a href="https://cares.advisers.jp/">健康日記トップ</a>
+  <a href="/about.html">開発者について</a>
+  <a href="/me-cfs.html">疾患ガイド</a>
+</header>
+
+<h1>📋 アップデート履歴</h1>
+<p class="lead">健康日記の最新アップデート情報です。ユーザーの声をもとに毎週改善しています。<br>ご意見・ご要望は <a href="mailto:info@bluemarl.in" style="color:#6366f1">info@bluemarl.in</a> まで。</p>
+
+<!-- v1.1.0 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.1.0</span>
+    <span class="date">2026年4月30日</span>
+    <span class="tag tag-fix">バグ修正</span>
+    <span class="tag tag-improve">改善</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-fix">修正</span>PWA（ホーム画面に追加）が動作していなかった問題を修正。Service Worker を正しく登録し、オフライン対応とキャッシュ管理が有効になりました。</li>
+    <li><span class="item-type type-fix">修正</span>スマートフォンのホーム画面から起動した際のキャッシュが古くなる問題を修正。デプロイ時に自動でキャッシュバージョンが更新されます。</li>
+    <li><span class="item-type type-imp">改善</span>アプリ更新時に「再読み込みで最新版になります」とトースト通知が出るようになりました。</li>
+    <li><span class="item-type type-imp">改善</span>このアップデート履歴ページを新設。今後すべての変更をここに記録します。</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v1.0.9 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.0.9</span>
+    <span class="date">2026年4月28日</span>
+    <span class="tag tag-fix">バグ修正</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-fix">修正</span>in-app ブラウザ（Facebook・Instagram・LINE・Yahoo!など）での写真分析が失敗する問題を修正。外部ブラウザへの誘導バナーを表示するようになりました。</li>
+    <li><span class="item-type type-fix">修正</span>ゲスト写真分析で画像が大きすぎる場合の送信失敗を修正。送信前に自動圧縮するようになりました。</li>
+    <li><span class="item-type type-fix">修正</span>Amazon アフィリエイトタグを更新（forestvoice-22）。</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v1.0.8 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.0.8</span>
+    <span class="date">2026年4月24日</span>
+    <span class="tag tag-improve">改善</span>
+    <span class="tag tag-feature">新機能</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-new">新機能</span>ME/CFS・Long COVID・IBS・橋本病など10疾患の専用ランディングページを追加。疾患の概要・症状・治療・日本の患者会情報をまとめました。</li>
+    <li><span class="item-type type-new">新機能</span>他の症状記録アプリ（Bearable・Visible・Symple）との機能比較ページ（<a href="/compare.html" style="color:#6366f1">/compare</a>）を追加。</li>
+    <li><span class="item-type type-new">新機能</span>シェアボタン（X・Facebook・LINE・はてな等）を全疾患ページに追加。</li>
+    <li><span class="item-type type-new">新機能</span>プライバシー重視のアクセス解析（Cloudflare Web Analytics）を導入。cookie・個人情報を一切使いません。</li>
+    <li><span class="item-type type-imp">改善</span>SEO：hreflang・FAQ schema・OG 画像を全ページに設定。</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v1.0.7 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.0.7</span>
+    <span class="date">2026年4月20日</span>
+    <span class="tag tag-fix">バグ修正</span>
+    <span class="tag tag-improve">改善</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-fix">修正</span>AI 分析後にダッシュボードが「読み込み中」のまま固まることがあった問題を修正（isAnalyzing / latestFeedbackError の store イベント欠落）。</li>
+    <li><span class="item-type type-fix">修正</span>「本格的な分析をする」リンクが正しくスクロールしない問題を修正。</li>
+    <li><span class="item-type type-fix">修正</span>セルフケアのスロットリングが効かず、連打でAPIコストが増加していた問題を修正。</li>
+    <li><span class="item-type type-imp">改善</span>写真分析のタイムアウトを延長（30秒 → 60秒）し、大きな画像も安定して分析できるようになりました。</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v1.0.6 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.0.6</span>
+    <span class="date">2026年4月14日</span>
+    <span class="tag tag-feature">新機能</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-new">新機能</span>ゲスト体験の強化：登録不要で「サンプル記録を試す」「医師提出レポートのサンプルを見る」ができるようになりました。</li>
+    <li><span class="item-type type-new">新機能</span>ゲストモードでも Cloudflare Worker 経由で AI 分析が使えるようになりました。API キー不要。</li>
+    <li><span class="item-type type-imp">改善</span>ストリーク（連続記録日数）ウィジェットのバッジ表示を改善。</li>
+    <li><span class="item-type type-imp">改善</span>補助金・支援制度カード（ダッシュボード）を疾患に合わせて自動マッチングするように改善。</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v1.0.5 以前 -->
+<div class="release">
+  <div class="release-header">
+    <span class="version">v1.0.5 以前</span>
+    <span class="date">〜2026年4月</span>
+  </div>
+  <ul>
+    <li><span class="item-type type-new">新機能</span>Firebase Authentication（Google ログイン・メールログイン）によるクラウド同期。</li>
+    <li><span class="item-type type-new">新機能</span>Plaud 録音連携・Fitbit・Apple Health からのデータ取り込み。</li>
+    <li><span class="item-type type-new">新機能</span>写真（食事・薬・検査結果）をそのまま AI に送れる写真分析機能。</li>
+    <li><span class="item-type type-new">新機能</span>14 軸の「新処方」AI コーチング。毎日の記録から具体的な行動提案を生成。</li>
+    <li><span class="item-type type-new">新機能</span>主治医への提出レポート（PDF・印刷用）を自動生成。</li>
+    <li><span class="item-type type-new">新機能</span>多言語対応（日本語・英語・中国語・韓国語・スペイン語他）。</li>
+  </ul>
+</div>
+
+<div class="cta-box">
+  <h2>最新版を今すぐ使う</h2>
+  <p>登録不要でサンプル体験できます。Google ログインで記録がクラウド保存されます。</p>
+  <a class="cta" href="https://cares.advisers.jp/">健康日記を始める →</a>
+</div>
+
+<footer>
+<div><a href="https://cares.advisers.jp/">健康日記トップ</a>・<a href="/about.html">開発者について</a>・<a href="mailto:info@bluemarl.in">お問い合わせ</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a></div>
+<div style="margin-top:6px">© 2026 シェアーズ株式会社</div>
+</footer>
+</div>
+<script defer src="/js/analytics.js"></script>
+<script defer src="/js/inapp-browser-banner.js"></script>
+<script defer src="/js/a11y-enhancements.js"></script>
+</body>
+</html>

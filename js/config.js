@@ -4,7 +4,7 @@
    ============================================================ */
 var CONFIG = {
   APP_NAME: '健康日記',
-  APP_VERSION: '1.0.0',
+  APP_VERSION: '1.1.0',
 
   // Contact email — single source of truth for all お問い合わせ
   // links, privacy/terms documents, and user-facing email mentions.
