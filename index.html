@@ -2695,17 +2695,17 @@ window.addEventListener('load', function() {
     if (store.get('isGeneratingReport')) return;
     var entries = store.get('textEntries') || [];
     if (!entries.length) {
-      alert('まだ記録がありません。まず 1 件以上記録を保存してから作成してください。');
+      Components.showToast('まだ記録がありません。まず 1 件以上記録を保存してから作成してください。', 'warning');
       return;
     }
     var key = await resolveKey();
-    if (!key) { alert('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
+    if (!key) { Components.showToast('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。', 'error'); return; }
 
     // Ensure the modal overlay is visible and primed with a placeholder.
     var overlay = document.getElementById('modal-overlay');
     var body = document.getElementById('modal-body');
     var title = document.getElementById('modal-title');
-    if (!overlay || !body) { alert('モーダルを表示できません。ページを再読み込みしてください。'); return; }
+    if (!overlay || !body) { Components.showToast('モーダルを表示できません。ページを再読み込みしてください。', 'error'); return; }
     if (title) title.textContent = '🏥 医師提出用レポート';
     body.innerHTML = '<div style="padding:16px 0"><div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">📝 作成中...（30-90秒・ストリーミング表示）</div>'
       + '<pre id="doctor-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;color:var(--text-primary);padding:14px;background:var(--bg-tertiary);border-radius:10px;min-height:120px;max-height:60vh;overflow-y:auto;margin:0"></pre>'
@@ -3120,5 +3120,6 @@ window.addEventListener('load', function() {
 });
 </script>
 <script defer src="js/inapp-browser-banner.js?v=19"></script>
+<script defer src="js/notification-reminder.js?v=20"></script>
 </body>
 </html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>更新履歴 — 健康日記 アップデート情報</title>
+<meta name="description" content="健康日記（cares.advisers.jp）の最新アップデート・バグ修正・新機能一覧。慢性疾患患者のための AI 記録アプリの成長を一覧で確認できます。">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://cares.advisers.jp/changelog.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="更新履歴 — 健康日記">
+<meta property="og:description" content="健康日記の最新機能・バグ修正・改善の記録。">
+<meta property="og:url" content="https://cares.advisers.jp/changelog.html">
+<meta property="og:image" content="https://cares.advisers.jp/og-image.png">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}
+.container{max-width:720px;margin:0 auto;padding:20px}
+header{padding:14px 0;border-bottom:1px solid #e4e7ef;margin-bottom:24px;font-size:13px;display:flex;align-items:center;gap:12px}
+header a{color:#6366f1;text-decoration:none;font-weight:700}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:0 0 6px;color:#3730a3}
+.subtitle{font-size:13px;color:#64748b;margin-bottom:24px}
+.release{margin-bottom:28px;padding:0}
+.release-header{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.release-version{font-size:16px;font-weight:800;color:#3730a3}
+.release-date{font-size:12px;color:#94a3b8}
+.release-tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-left:4px}
+.tag-feature{background:#dbeafe;color:#1d4ed8}
+.tag-fix{background:#dcfce7;color:#166534}
+.tag-seo{background:#fef9c3;color:#854d0e}
+.tag-ux{background:#ede9fe;color:#6d28d9}
+.tag-security{background:#fee2e2;color:#991b1b}
+.change-list{list-style:none;padding:0}
+.change-list li{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.change-list li:last-child{border-bottom:none}
+.change-list li .icon{flex-shrink:0;width:20px;text-align:center;margin-top:2px}
+.divider{border:none;border-top:2px solid #e4e7ef;margin:32px 0}
+.cta-block{padding:16px 20px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:12px;text-align:center;margin:28px 0}
+.cta{display:inline-block;padding:10px 24px;background:#6366f1;color:#fff;border-radius:22px;text-decoration:none;font-weight:700;font-size:13px;margin-top:8px}
+footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:30px;text-align:center;font-size:11px;color:#64748b}
+footer a{color:#6366f1;text-decoration:none;margin:0 6px}
+@media(max-width:480px){h1{font-size:22px}.release-version{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <a href="https://cares.advisers.jp/">← 健康日記トップ</a>
+</header>
+
+<h1>更新履歴</h1>
+<p class="subtitle">健康日記（cares.advisers.jp）の最新アップデート・バグ修正・新機能の記録です。</p>
+
+<!-- v20 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v20</span>
+    <span class="release-date">2026年5月1日</span>
+    <span class="release-tag tag-feature">新機能</span>
+    <span class="release-tag tag-fix">バグ修正</span>
+    <span class="release-tag tag-seo">SEO</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">🔔</span><span><strong>毎日リマインダー通知</strong> — アプリを 3 回以上開いた方に、ブラウザ通知のオプトインバナーを表示。今日まだ記録していない場合に通知が届くよう設定できます（完全任意・いつでも解除可能）。</span></li>
+    <li><span class="icon">🐛</span><span><strong>モバイルでブロックされるダイアログを修正</strong> — 「医師提出用レポート」生成時の alert() を画面内トーストに変更。管理パネルの「ログをクリア」ボタンの confirm() をインライン確認 UI に変更。これでモバイル Safari でも正常に動作します。</span></li>
+    <li><span class="icon">📚</span><span><strong>FAQ ページ 3 件追加</strong> — <a href="/faq/chronic-fatigue.html">慢性疲労とは</a> / <a href="/faq/fibromyalgia-diagnosis.html">線維筋痛症の症状・診断・治療</a> / <a href="/faq/hashimoto-symptoms.html">橋本病の症状・検査・治療</a>。それぞれ FAQ 構造化データ（schema.org）付き。</span></li>
+    <li><span class="icon">📝</span><span><strong>note 連載下書き #7-#9 追加</strong> — 腸内細菌と ME/CFS・慢性疲労（#7）/ 睡眠と PEM 予防（#8）/ 医師との上手な付き合い方（#9）の原稿を準備。</span></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v19 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v19</span>
+    <span class="release-date">2026年4月28日</span>
+    <span class="release-tag tag-feature">新機能</span>
+    <span class="release-tag tag-seo">SEO</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">🏷️</span><span><strong>Amazon アフィリエイトタグを <code>forestvoice-22</code> に更新</strong> — 全 28 箇所の商品リンクを更新。</span></li>
+    <li><span class="icon">📧</span><span><strong>ニュースレター登録機能</strong> — 全疾患 LP・FAQ・About ページにニュースレター登録フォームを設置（Firestore 保存・月 1 回配信・1 タップ解除対応）。</span></li>
+    <li><span class="icon">🛍️</span><span><strong>疾患別アフィリエイトパネル</strong> — 各疾患 LP に推薦書籍・サプリ・デバイスのパネルを追加（景品表示法対応開示文付き）。</span></li>
+    <li><span class="icon">♿</span><span><strong>アクセシビリティ改善</strong> — スキップリンク・フォーカスインジケーター・reduced-motion 対応・テーマカラーメタタグを一括適用。</span></li>
+    <li><span class="icon">📊</span><span><strong>プレスリリース最終版を公開準備</strong> — PR TIMES 配信用の完成原稿（docs/ に保存）。</span></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v18 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v18</span>
+    <span class="release-date">2026年4月24日</span>
+    <span class="release-tag tag-fix">バグ修正</span>
+    <span class="release-tag tag-ux">UX</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">📱</span><span><strong>in-app ブラウザ検出を拡張</strong> — Yahoo! JAPAN・楽天・SmartNews などの in-app ブラウザを追加検出。外部ブラウザへの誘導ボタンを表示。</span></li>
+    <li><span class="icon">🐛</span><span><strong>研究ページの状態保持を修正</strong> — 検索結果が画面遷移後にリセットされる問題を解消。</span></li>
+    <li><span class="icon">🐛</span><span><strong>ディープ分析リンクの修正</strong> — ダッシュボードから詳細分析へのリンクが機能しないケースを修正。</span></li>
+    <li><span class="icon">🐛</span><span><strong>セルフケア推薦のスロットリング修正</strong> — 同じ推薦が短時間に重複して表示される問題を修正。</span></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v17 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v17</span>
+    <span class="release-date">2026年4月21日</span>
+    <span class="release-tag tag-seo">SEO</span>
+    <span class="release-tag tag-ux">UX</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">📄</span><span><strong>疾患別 LP 10 本に analytics + Sticky CTA を追加</strong> — 各ページ最下部に固定 CTA バー。ページごとの OG 画像・hreflang・FAQ schema を一括追加。</span></li>
+    <li><span class="icon">📄</span><span><strong>/compare.html・/about.html を新規追加</strong> — 競合比較ページと「このアプリについて」ページ。</span></li>
+    <li><span class="icon">📄</span><span><strong>FAQ ページ 3 本追加</strong> — /faq/pem.html・/faq/brain-fog.html・/faq/ldn.html を追加。</span></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v16 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v16</span>
+    <span class="release-date">2026年4月14日</span>
+    <span class="release-tag tag-feature">新機能</span>
+    <span class="release-tag tag-ux">UX</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">📸</span><span><strong>ゲスト向け写真分析</strong> — 未登録でも写真を撮ってすぐに AI 分析が使えるように。写真を送信前に圧縮して速度を改善。</span></li>
+    <li><span class="icon">🚀</span><span><strong>写真分析タイムアウトを延長</strong> — 30 秒から 90 秒に延長し、大きい画像でもタイムアウトしにくくなりました。</span></li>
+    <li><span class="icon">👋</span><span><strong>ゲスト向けサンプル記録</strong> — 初めての方がワンタップでサンプルデータを挿入できるよう改善。</span></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- v15 -->
+<div class="release">
+  <div class="release-header">
+    <span class="release-version">v15</span>
+    <span class="release-date">2026年4月7日</span>
+    <span class="release-tag tag-feature">新機能</span>
+    <span class="release-tag tag-seo">SEO</span>
+  </div>
+  <ul class="change-list">
+    <li><span class="icon">🌐</span><span><strong>疾患別 LP 10 本を追加</strong> — ME/CFS・Long COVID・線維筋痛症・IBS・橋本病・うつ病・不眠症・POTS・MCAS・EDS の専用ランディングページを追加。</span></li>
+    <li><span class="icon">🔗</span><span><strong>疾患間クロスリンクを整備</strong> — 各 LP が相互にリンクする構造を構築。</span></li>
+    <li><span class="icon">📊</span><span><strong>プライバシー優先 analytics を導入</strong> — Cloudflare Web Analytics（クッキーなし・GDPR 対応）。</span></li>
+  </ul>
+</div>
+
+<div class="cta-block">
+  <div style="font-size:16px;font-weight:800;color:#3730a3;margin-bottom:6px">最新の健康日記を試してみてください</div>
+  <div style="font-size:13px;color:#4338ca">完全無料・広告なし・当事者開発</div>
+  <a class="cta" href="https://cares.advisers.jp/">健康日記を開く →</a>
+</div>
+
+<footer>
+<div><a href="https://cares.advisers.jp/">健康日記トップ</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a>・<a href="/about.html">このアプリについて</a>・<a href="mailto:info@bluemarl.in">お問い合わせ</a></div>
+<div style="margin-top:6px">© 2026 シェアーズ株式会社</div>
+</footer>
+</div>
+<script defer src="/js/analytics.js"></script>
+<script defer src="/js/inapp-browser-banner.js"></script>
+<script defer src="/js/a11y-enhancements.js"></script>
+</body>
+</html>

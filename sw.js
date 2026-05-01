@@ -62,3 +62,29 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') self.skipWaiting();
 });
+
+// Handle server-side VAPID push payloads (future use)
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || '健康日記';
+  const options = {
+    body: data.body || '今日の体調を記録しましょう。',
+    icon: '/og-image.png',
+    badge: '/og-image.png',
+    tag: data.tag || 'health-diary',
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes('cares.advisers.jp') || c.url === target);
+      if (existing) return existing.focus();
+      return clients.openWindow(target);
+    })
+  );
+});

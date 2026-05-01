@@ -4111,6 +4111,32 @@ ${axisHint}
     if (tabId === 'professionals') this.renderProfessionalsList();
   }
 
+  _confirmClearUsageLog(btn) {
+    if (btn.dataset.confirming === '1') {
+      store.set('apiUsage', []);
+      this.navigate('admin');
+      setTimeout(() => this.switchAdminTab('usage'), 50);
+      return;
+    }
+    const orig = btn.textContent;
+    btn.dataset.confirming = '1';
+    btn.textContent = '本当に消去';
+    btn.classList.add('btn-danger');
+    btn.style.background = 'var(--color-danger, #ef4444)';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    const reset = () => {
+      btn.dataset.confirming = '';
+      btn.textContent = orig;
+      btn.classList.remove('btn-danger');
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.border = '';
+    };
+    const tid = setTimeout(reset, 4000);
+    btn.addEventListener('blur', () => { clearTimeout(tid); reset(); }, { once: true });
+  }
+
   // ---- API Usage Dashboard (admin) ----
   // Renders a complete usage breakdown from store.apiUsage records.
   // Shows: today / this month totals, per-model breakdown, daily
@@ -4255,7 +4281,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app._confirmClearUsageLog(this)">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
