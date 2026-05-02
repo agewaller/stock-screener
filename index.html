@@ -3867,6 +3867,12 @@ var INLINE_PROMPTS = {
 【最重要】ユーザーがまだ知らない、実際に行動に移せる新しい打ち手を必ず1つ以上含めること。
 過去の記録と比較して改善・悪化の傾向があれば具体的に指摘すること。
 
+【ユーザーのデータ充実度】
+{{DATA_DEPTH}}
+未登録の項目がある場合、分析の末尾で「お薬リストを登録すると飲み合わせ分析ができます」等、
+そのデータがあると何ができるかを1行で自然に添えてください（押しつけず、メリットだけ伝える）。
+記録日数が7日未満の場合は「あと○日で傾向分析ができます」と軽く触れてください。
+
 【ユーザー入力】
 {{INPUT}}
 
@@ -5367,7 +5373,22 @@ ${avoidBlock}
       .replace(/\{\{SYMPTOM_DATA\}\}/g, JSON.stringify(data.symptoms || {}, null, 2))
       .replace(/\{\{HRV_DATA\}\}/g, JSON.stringify(data.hrv || {}, null, 2))
       .replace(/\{\{ACTIVITY_DATA\}\}/g, JSON.stringify(data.activity || {}, null, 2))
-      .replace(/\{\{PEM_HISTORY\}\}/g, JSON.stringify(data.pemHistory || {}, null, 2));
+      .replace(/\{\{PEM_HISTORY\}\}/g, JSON.stringify(data.pemHistory || {}, null, 2))
+      .replace(/\{\{DATA_DEPTH\}\}/g, (() => {
+        const entries = (store.get('textEntries') || []).length;
+        const meds = (store.get('medications') || []).length;
+        const supps = (store.get('supplements') || []).length;
+        const tests = (store.get('bloodTests') || []).length;
+        const days = this._computeRecordedDays ? this._computeRecordedDays() : 0;
+        const parts = [`記録日数: ${days}日`, `テキスト記録: ${entries}件`];
+        if (meds)  parts.push(`お薬: ${meds}種`);
+        else       parts.push('お薬: 未登録');
+        if (supps) parts.push(`サプリ: ${supps}種`);
+        else       parts.push('サプリ: 未登録');
+        if (tests) parts.push(`検査結果: ${tests}件`);
+        else       parts.push('検査結果: 未登録');
+        return parts.join(' / ');
+      })());
 
     return prompt;
   }
@@ -14506,6 +14527,34 @@ App.prototype.render_dashboard = function() {
   // Real data counts
   const totalEntries = textEntries.length;
   const totalSymptoms = symptoms.length;
+
+  // ── Data richness (retention driver) ──
+  // Tracks which data types the user has supplied. Each filled slot
+  // makes the AI analysis deeper. Showing progress encourages users
+  // to add medications, supplements, test photos, etc.
+  const medications = store.get('medications') || [];
+  const supplements = store.get('supplements') || [];
+  const bloodTests  = store.get('bloodTests') || [];
+  const photos      = (textEntries || []).filter(e => e.imageBase64 || e.image).length;
+  const profile     = store.get('userProfile') || {};
+  const hasProfile  = !!(profile.age || profile.gender || profile.height || profile.weight);
+  const dataSlots = [
+    { key: 'entries', icon: '📝', label: '体調記録',     filled: totalEntries > 0,     count: totalEntries,       hint: '今の体調を入力してみてください' },
+    { key: 'meds',    icon: '💊', label: 'お薬リスト',   filled: medications.length > 0, count: medications.length, hint: '飲んでいるお薬を登録すると飲み合わせチェックができます' },
+    { key: 'supps',   icon: '🧪', label: 'サプリメント', filled: supplements.length > 0, count: supplements.length, hint: 'サプリを登録すると栄養バランスの分析が深まります' },
+    { key: 'photos',  icon: '📷', label: '写真データ',   filled: photos > 0,             count: photos,             hint: '食事・お薬・検査結果の写真を📎から添付できます' },
+    { key: 'tests',   icon: '🩸', label: '検査結果',     filled: bloodTests.length > 0,  count: bloodTests.length,  hint: '血液検査の写真を撮ると数値を自動で読み取ります' },
+    { key: 'profile', icon: '👤', label: 'プロフィール', filled: hasProfile,             count: hasProfile ? 1 : 0, hint: '年齢・性別・身長・体重を入れるとカロリー計算ができます' },
+  ];
+  const filledCount = dataSlots.filter(s => s.filled).length;
+  const nextSlot = dataSlots.find(s => !s.filled);
+  const daysRecorded = streakStats.totalDays;
+  const progressMilestones = [
+    { days: 3,  label: '体調の波が見え始めます' },
+    { days: 7,  label: 'パターン分析が可能になります' },
+    { days: 14, label: '本格的な傾向分析ができます' },
+  ];
+  const nextMilestone = progressMilestones.find(m => daysRecorded < m.days);
   const lastEntry = textEntries[textEntries.length - 1];
   const lastUpdate = lastEntry ? new Date(lastEntry.timestamp).toLocaleString('ja-JP') : (symptoms.length ? new Date(latest.timestamp).toLocaleString('ja-JP') : '未記録');
 
@@ -14629,6 +14678,33 @@ App.prototype.render_dashboard = function() {
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
+      </div>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- Data Richness Progress (retention driver) -->
+  ${filledCount < dataSlots.length || nextMilestone ? `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:14px 18px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:10px">📊 データの充実度 — 情報が増えるほど分析が深まります</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        ${dataSlots.map(s => `
+          <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;background:${s.filled ? '#f0fdf4' : 'var(--bg-tertiary)'};border:1px solid ${s.filled ? '#86efac' : '#e2e8f0'};border-radius:10px;font-size:11px;color:${s.filled ? '#166534' : 'var(--text-muted)'}">
+            ${s.icon} ${s.label}${s.filled ? ` (${s.count})` : ''}
+            ${s.filled ? '<span style="color:#22c55e">✓</span>' : ''}
+          </span>
+        `).join('')}
+      </div>
+      ${nextSlot ? `<div style="font-size:11px;color:var(--accent);line-height:1.6">💡 ${Components.escapeHtml(nextSlot.hint)}</div>` : ''}
+      ${nextMilestone ? `
+      <div style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:10px;color:var(--text-muted)">あと${nextMilestone.days - daysRecorded}日で${Components.escapeHtml(nextMilestone.label)}</span>
+          <span style="font-size:10px;color:var(--text-muted)">${daysRecorded}/${nextMilestone.days}日</span>
+        </div>
+        <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${Math.min(100, Math.round(daysRecorded / nextMilestone.days * 100))}%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:3px;transition:width 0.3s"></div>
+        </div>
       </div>` : ''}
     </div>
   </div>` : ''}
