@@ -64,26 +64,7 @@
     copyUrlAndPrompt();
   }
 
-  function copyUrlAndPrompt() {
-    var currentUrl = window.location.href;
-    var copied = false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(currentUrl);
-        copied = true;
-      }
-    } catch (_) {}
-    if (!copied) {
-      try {
-        var ta = document.createElement('textarea');
-        ta.value = currentUrl;
-        ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        copied = true;
-      } catch (_) {}
-    }
+  function showCopyToast(copied) {
     var toast = document.createElement('div');
     toast.textContent = copied
       ? 'URL をコピーしました。Safari または Chrome を開いてペーストしてください。'
@@ -94,6 +75,34 @@
       'font-size:12px;z-index:10001;max-width:90%;text-align:center';
     document.body.appendChild(toast);
     setTimeout(function () { toast.remove(); }, 3500);
+  }
+
+  function copyUrlAndPrompt() {
+    var currentUrl = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentUrl).then(
+        function () { showCopyToast(true); },
+        function () {
+          // Permission denied or not in secure context — fall back to execCommand.
+          copyViaExecCommand(currentUrl);
+        }
+      );
+      return;
+    }
+    copyViaExecCommand(currentUrl);
+  }
+
+  function copyViaExecCommand(text) {
+    var copied = false;
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      copied = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (_) {}
+    showCopyToast(copied);
   }
 
   // Expose helpers so the AI error renderer can offer the same
@@ -139,8 +148,9 @@
       '</div>';
 
     document.body.appendChild(bar);
-    // Shift page content down so the banner doesn't hide the hero.
-    document.body.style.paddingTop = '104px';
+    // Shift page content down using the banner's actual rendered height
+    // so small/large screens and text-wrap variations are all handled.
+    document.body.style.paddingTop = bar.offsetHeight + 'px';
 
     document.getElementById('inapp-open-external').addEventListener('click', openExternal);
     document.getElementById('inapp-copy-url').addEventListener('click', copyUrlAndPrompt);
