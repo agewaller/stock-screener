@@ -1,0 +1,126 @@
+ID,カテゴリ,施策名,状態,担当,優先度,所要時間,想定コスト(円),想定ユーザー獲得,期限/頻度,関連ファイル,備考
+1,SEO/LP,index.html(健康日記トップ),完了,Claude,-,-,0,基盤,常時,/index.html,慢性疾患の寛解をサポート
+2,SEO/LP,/me-cfs.html (ME/CFS),完了,Claude,-,-,0,SEOロングテール,常時,/me-cfs.html,ICD-11 + FAQ schema 5問
+3,SEO/LP,/long-covid.html,完了,Claude,-,-,0,SEOロングテール,常時,/long-covid.html,既存
+4,SEO/LP,/fibromyalgia.html (線維筋痛症),完了,Claude,-,-,0,SEOロングテール,常時,/fibromyalgia.html,既存
+5,SEO/LP,/pots.html (起立性不耐症),完了,Claude,-,-,0,SEOロングテール,常時,/pots.html,既存
+6,SEO/LP,/mcas.html (肥満細胞活性化症候群),完了,Claude,-,-,0,SEOロングテール,常時,/mcas.html,既存
+7,SEO/LP,/eds.html (エーラス・ダンロス症候群),完了,Claude,-,-,0,SEOロングテール,常時,/eds.html,既存
+8,SEO/LP,/ibs.html (過敏性腸症候群),完了,Claude,-,-,0,SEOロングテール,常時,/ibs.html,新規・1200万人ターゲット
+9,SEO/LP,/hashimoto.html (橋本病),完了,Claude,-,-,0,SEOロングテール,常時,/hashimoto.html,新規・300-500万人ターゲット
+10,SEO/LP,/depression.html (うつ病),完了,Claude,-,-,0,SEOロングテール,常時,/depression.html,既存
+11,SEO/LP,/insomnia.html (不眠症),完了,Claude,-,-,0,SEOロングテール,常時,/insomnia.html,既存
+12,SEO/LP,/faq/pem.html (PEM とは),完了,Claude,-,-,0,検索クエリ獲得,常時,/faq/pem.html,FAQPage schema
+13,SEO/LP,/faq/brain-fog.html (ブレインフォグ),完了,Claude,-,-,0,検索クエリ獲得,常時,/faq/brain-fog.html,FAQPage schema
+14,SEO/LP,/faq/ldn.html (LDN処方),完了,Claude,-,-,0,検索クエリ獲得,常時,/faq/ldn.html,FAQPage schema + 自費診療情報
+15,SEO/LP,/compare.html (アプリ比較),完了,Claude,-,-,0,「ME/CFSアプリ」検索獲得,常時,/compare.html,Bearable/Visible/Symple/Apple Health 比較
+16,SEO/LP,/about.html (開発者ストーリー),完了,Claude,-,-,0,E-E-A-T 強化,常時,/about.html,Person + AboutPage schema
+17,SEO/LP,/pitch.html (内部用ピッチA4),完了,Claude,-,-,0,営業資料,常時,/pitch.html,noindex
+18,SEO/メタ,sitemap.xml 更新,完了,Claude,-,-,0,クローラー誘導,常時,/sitemap.xml,15 URL
+19,SEO/メタ,robots.txt 更新,完了,Claude,-,-,0,クローラー制御,常時,/robots.txt,内部URL除外
+20,SEO/メタ,opensearch.xml,完了,Claude,-,-,0,ブラウザ検索エンジン登録,常時,/opensearch.xml,FF/Chrome アドレスバー対応
+21,SEO/メタ,疾患別 OG SVG 10本,完了,Claude,-,-,0,SNS シェア時の見栄え,常時,/og/*.svg,1200x630 疾患色分け
+22,SEO/メタ,hreflang 全LP適用,完了,Claude,-,-,0,国際SEO,常時,*.html,ja + x-default
+23,SEO/メタ,FAQPage JSON-LD (ME/CFS LP),完了,Claude,-,-,0,リッチリザルト,常時,/me-cfs.html,5 Q&A
+24,SEO/メタ,Breadcrumb JSON-LD (動的),完了,Claude,-,-,0,SERP パンくず表示,常時,js/disease-lp-enhancements.js,
+25,SEO/メタ,キャッシュバスト ?v=19,完了,Claude,-,-,0,SW更新確実化,毎デプロイ,/index.html,
+26,開発/機能,疾患LP相互リンク,完了,Claude,-,-,0,内部リンクグラフ強化,常時,index.html + 10LP,
+27,開発/機能,Sticky CTA on LPs,完了,Claude,-,-,0,モバイル離脱防止,常時,js/disease-lp-enhancements.js,スクロール50%で出現
+28,開発/機能,Social Share buttons,完了,Claude,-,-,0,バイラル係数向上,常時,js/social-share.js,5SNS + Web Share API
+29,開発/機能,In-app browser banner,完了,Claude,-,-,0,FB等内ブラウザ救済,常時,js/inapp-browser-banner.js,7プラットフォーム検出
+30,開発/機能,a11y 拡張(skip-link/focus 等),完了,Claude,-,-,0,Lighthouse スコア向上,常時,js/a11y-enhancements.js,WCAG 2.4.1/2.4.7
+31,開発/機能,Newsletter signup form,完了,Claude,-,-,0,メアド収集基盤,常時,js/newsletter-signup.js,Firestore直書き
+32,開発/機能,Affiliate panel (10疾患),完了,Claude,-,-,0,収益化基盤,常時,js/disease-affiliate-panel.js,景表法準拠開示
+33,開発/機能,Cloudflare Web Analytics ローダ,完了,Claude,-,-,0,計測基盤,常時,js/analytics.js,DNT 尊重・Cookieless
+34,開発/機能,Amazon タグ更新 (forestvoice-22),完了,Claude,-,-,0,収益送金先確定,常時,js/config.js + js/app.js,28箇所一括置換
+35,コンテンツ,note記事 #01 今月の研究5選,既存,山口,中,2h,0,500-2000PV,毎月1日,docs/note連載下書き_01,
+36,コンテンツ,note記事 #02 14軸食事栄養,既存,山口,中,2h,0,500-2000PV,公開済,docs/note連載下書き_02,
+37,コンテンツ,note記事 #03 LDN正しい使い方,既存,山口,中,2h,0,500-2000PV,公開済,docs/note連載下書き_03,
+38,コンテンツ,note記事 #04 患者ノート作り方,完了,Claude→山口,高,30m(公開作業),0,1000-3000PV,Day 2 公開推奨,docs/note連載下書き_04,公開準備完了
+39,コンテンツ,note記事 #05 デジタルデトックス,完了,Claude→山口,中,30m,0,800-2500PV,2週間後,docs/note連載下書き_05,
+40,コンテンツ,note記事 #06 補助金17種ロードマップ,完了,Claude→山口,高,30m,0,2000-5000PV,4週間後,docs/note連載下書き_06,SEO 重い
+41,コンテンツ,note マガジン化,未着手,山口,中,30m,0,フォロー獲得,Day 7,note.com,「ME/CFSと共に生きる」
+42,コンテンツ,note記事 月4本ペース,未着手,山口,中,2h/本,0,月5000-15000PV,継続,-,長期SEO効果
+43,SNS/X,X 開発者ストーリー連投,未着手,山口,高,5m/日,0,フォロワー+200-500/30日,毎日1投稿,docs/SNS投稿テンプレート_追加版.md,Story-1〜3
+44,SNS/X,X 疾患別投稿(IBS/橋本病),未着手,山口,高,5m/日,0,流入源,週3回,docs/SNS投稿テンプレート_追加版.md,IBS-1〜IBS-3, 橋本-1〜3
+45,SNS/X,X FAQ流入投稿(PEM/LDN/ブレインフォグ),未着手,山口,高,5m/日,0,検索クエリ流入,週2回,docs/SNS投稿テンプレート_追加版.md,FAQ-1〜FAQ-3
+46,SNS/X,X 比較ページ流入,未着手,山口,中,5m,0,「ME/CFSアプリ」獲得,週1回,docs/SNS投稿テンプレート_追加版.md,Cmp-1, Cmp-2
+47,SNS/X,X インフルエンサー10名にDMデモ依頼,未着手,山口,高,1h,0,200-500リーチ,Day 5,-,「闘病記」「ME/CFS」検索
+48,SNS/X,X スペース開催「ME/CFS記録術」,未着手,山口,中,1h,0,リスナー50-200,月1回,-,30-60分・録音可
+49,SNS/note,note 連動投稿,未着手,山口,中,5m/記事,0,note内拡散,記事公開後即,-,
+50,SNS/Instagram,IG カルーセル投稿(PEM 5枚図解),未着手,山口,低,3h,0,新規層,月1-2回,-,IG-1
+51,SNS/Instagram,IG 14軸新処方カルーセル,未着手,山口,低,3h,0,継続フォロワー,月1回,-,IG-2
+52,SNS/Reddit,r/cfs / r/longCovid 投稿(英語),未着手,山口,中,30m,0,300-1000リーチ,週1回,-,Karma 必要・Mod ガイドライン確認
+53,SNS/Quora,慢性疾患質問にアプリ紹介付き回答,未着手,山口,中,15m/件,0,長期ストック流入,週2回,-,
+54,SNS/Yahoo知恵袋,健康相談に当事者として回答,未着手,山口,中,15m/件,0,検索流入,週2回,-,
+55,SNS/LINE,LINE 公式アカウント運営,未着手,山口,低,30m/週,1500/月,既存ユーザー育成,フォロワー50+で開始,-,
+56,SNS/Threads,Threads で短い闘病記,未着手,山口,低,5m/日,0,Meta内拡散,毎日,-,
+57,SNS/TikTok,TikTok 60秒記録のコツ動画,未着手,山口,低,1h/本,0,若年層リーチ,月2-4本,-,
+58,SNS/YouTube,YouTube ショート 60秒動画,未着手,山口,中,1h/本,0,長期流入,週1本,-,「ME/CFSの朝記録」等
+59,アウトリーチ,患者会メール(ME/CFS),完了,Claude→山口,高,10m(送信),0,200-500名,Day 3,docs/患者会依頼メール_ME-CFS.md,筋痛性脳脊髄炎の会
+60,アウトリーチ,患者会メール(Long COVID),完了,Claude→山口,高,10m,0,200-500名,Day 6,docs/患者会依頼メール_LongCOVID.md,
+61,アウトリーチ,患者会メール(線維筋痛症),完了,Claude→山口,高,10m,0,200-500名,Day 11,docs/患者会依頼メール_線維筋痛症.md,
+62,アウトリーチ,患者会メール(POTS),完了,Claude→山口,中,10m,0,100-300名,Week 3,docs/患者会依頼メール_POTS.md,
+63,アウトリーチ,患者会メール(IBS),完了,Claude→山口,中,10m,0,200-500名,Week 4,docs/患者会依頼メール_IBS.md,
+64,アウトリーチ,患者会連絡先リスト 20団体,完了,Claude→山口,高,週3-5通,0,累計1000-3000リーチ,4週間,docs/患者会連絡先リスト.md,送信状態トラッキング表付き
+65,アウトリーチ,知人100名 LINE/メール,未着手,山口,最高,30m,0,5-10名登録,Day 1,-,最大ROI・口コミ起点
+66,アウトリーチ,専門医10-20名 コールドメール,未着手,山口,中,2h,0,医師経由50-200名,Month 2,-,難治性疾患研究班リスト
+67,アウトリーチ,クリニック向けA4ポスター郵送(30件),未着手,山口,中,2h+郵送費,3000(切手),5-10件採用,Month 1-2,/pitch.html → PDF,待合室掲示用
+68,アウトリーチ,医療系インフルエンサーにデモ提供,未着手,山口,中,1h,0,1000-5000PV,Month 1,-,YouTuber/Voicy
+69,アウトリーチ,医療系メディアに直接メール,未着手,山口,中,2h,0,1-3媒体掲載,4/28 配信日同時,docs/プレスリリース_最終版_2026年4月.md,日経メディカル/m3 等
+70,アウトリーチ,note クリエイターに応援/連携,未着手,山口,低,30m/週,0,コラボの可能性,継続,-,
+71,プレスリリース,プレスリリース最終稿,完了,Claude→山口,-,-,0,ストック効果,4/28,docs/プレスリリース_最終版_2026年4月.md,
+72,プレスリリース,PR TIMES 配信,未着手,山口,中,1h,30000,メディア掲載3-10件,4/28 10:00,-,
+73,プレスリリース,@Press 配信(代替/併用),未着手,山口,低,1h,30000-40000,医療系記者リスト持ち,4/28 11:00,-,任意
+74,プレスリリース,直接メール13媒体,未着手,山口,高,2h,0,1-3媒体反応,4/28,docs/プレスリリース_最終版_2026年4月.md,テック+医療+一般
+75,プレスリリース,SNS同時配信(X/FB/LinkedIn),未着手,山口,高,30m,0,フォロワー +500-1000,4/28 10:00,-,
+76,プレスリリース,患者会への前日連絡,未着手,山口,中,30m,0,関係性維持,4/27,-,
+77,計測,Cloudflare Web Analytics トークン取得,未着手,山口,最高,5m,0,計測基盤,Day 1,docs/analytics設定.md,one.dash.cloudflare.com
+78,計測,Google Search Console 新URL5本登録,未着手,山口,高,15m,0,インデックス促進,Day 1,-,me-cfs/ibs/hashimoto/compare/about/3FAQ
+79,計測,Bing Webmaster Tools 登録,未着手,山口,中,15m,0,Bing流入,Day 1-2,-,
+80,計測,Google Analytics 4 (任意),未着手,山口,低,15m,0,計測詳細化,任意,-,CFで足りなければ
+81,計測,流入トップ3 LP の見出し最適化,未着手,山口,高,30m,0,CTR向上,Day 7+,-,Day 7 中間レビュー後
+82,計測,コンバージョンファネル可視化,未着手,Claude+山口,中,1h,0,CV最適化,Month 1,-,「サンプル試行」クリック計測
+83,収益化,Amazon アソシエイト forestvoice-22,完了,Claude+山口,-,-,0,アフィリエイト収入,常時,js/config.js,28箇所適用済
+84,収益化,楽天アフィリエイト ID 検討,未着手,山口,低,30m,0,別収益源,任意,js/config.js:1142,現状 chroniccare のまま
+85,収益化,iHerb Rewards コード設定,未着手,山口,低,30m,0,別収益源,任意,js/config.js,
+86,収益化,Affiliate商品 月次レビュー,未着手,山口,中,30m/月,0,収益最適化,月初,docs/収益化戦略.md,選定基準5項目
+87,収益化,GitHub Sponsors 設定,未着手,山口,低,1h,0,寄付収入,Month 1,github.com/sponsors,
+88,収益化,法人プラン構想着手,未着手,山口,中,長期,0,月¥150k-500k(2026後半),Month 6+,docs/収益化戦略.md,産業医インタビュー5件後
+89,法務,プライバシーポリシー更新(Analytics追記),未着手,山口,高,30m,0,法令遵守,Cloudflare Analytics 有効化前,docs/プライバシーポリシー.md,
+90,法務,P マーク本取得,進行中,山口+専門家,中,数ヶ月,200000,法人契約の前提,Month 6+,docs/Pマーク準備チェックリスト.md,
+91,法務,3省2GL 準拠宣言再点検,完了,山口,-,-,0,医療事業者要件,継続,docs/3省2GL準拠宣言.md,
+92,法務,薬機法レビュー(アフィリエイト商品),未着手,山口,中,2h/月,0,法令遵守,月初レビュー,-,「治る」表現禁止
+93,法務,景表法ステマ規制対応,完了,Claude,-,-,0,法令遵守,常時,js/disease-affiliate-panel.js,全パネル開示文付与
+94,法務,特定電子メール法対応(NL配信),未着手,山口,高,30m,0,法令遵守,NL配信前,docs/ニュースレター運用.md,
+95,法務,個人情報保護法 第28条対応,進行中,山口,高,継続,0,法令遵守,常時,docs/プライバシーポリシー.md,
+96,設定,/firebase-config.json 配置,未着手,山口,最高,5m,0,Firebase基盤,Day 1,docs/ニュースレター運用.md,Web SDK 公開設定
+97,設定,firestore.rules newsletter_subscribers 追加,未着手,山口,最高,5m,0,登録機能の前提,Day 1,docs/ニュースレター運用.md,コピペ可能なルール提供
+98,設定,Cloudflare Worker ANTHROPIC_API_KEY 確認,未着手,山口,最高,2m,0,ゲストAI機能の前提,Day 1,worker/anthropic-proxy.js,wrangler secret put
+99,設定,Amazon アソシエイト forestvoice-22 アカウント,未着手,山口,最高,5m,0,収益受け取り,Day 1,-,Amazon側で承認済の前提
+100,設定,Google Search Console + Bing 認証,未着手,山口,中,30m,0,SEO計測,Day 1-3,-,
+101,メール,Mailchimp / ConvertKit / Buttondown 検討,未着手,山口,中,1h,9-15USD/月,1000+登録時,登録100名超えたら,docs/ニュースレター運用.md,Buttondown推奨
+102,メール,月次ニュースレター本配信,未着手,山口,中,2h/月,0,既存ユーザー継続,月1回,docs/ニュースレター運用.md,テンプレ完備
+103,イベント,World ME Day 5/12 連動投稿,未着手,山口,中,30m,0,該当日 X 拡散,5/12,-,国際 ME/CFS の日
+104,イベント,IACFS/ME 学術会議の解説記事,未着手,山口,低,3h,0,被リンク + 権威性,会議開催時,-,
+105,イベント,Healthcare Innovation Challenge 応募,未着手,山口,低,3h,0,受賞→PR効果,Year 1,startup-portal.go.jp,
+106,イベント,J-Startup Hour 等 Pitch コンテスト,未着手,山口,低,3h,0,メディア露出,Year 1,-,
+107,広告,X(Twitter) Promoted Tweet,未着手,山口,低,1h,30000/月,フォロワー+500-1000,任意,-,1000ユーザー超えてから検討
+108,広告,YouTube ショート広告,未着手,山口,低,1h,20000/月,リーチ50000-200000,任意,-,
+109,広告,Google Ads (検索広告),未着手,山口,低,2h,30000/月,直接CV,任意,-,YMYL要審査
+110,海外展開,英語 LP 検討,未着手,山口,低,数ヶ月,0,海外ユーザー,Year 2,-,Reddit/r/cfs 反応次第
+111,海外展開,韓国語 LP 検討,未着手,山口,低,数ヶ月,0,KR患者会連携,Year 2,-,
+112,海外展開,中国語 LP 検討,未着手,山口,低,数ヶ月,0,CN/TW患者,Year 2,-,
+113,UX,既存 7 LP 内容アップグレード,未着手,Claude+山口,中,4h,0,SEO 強化,Month 1,-,DocSim API 経由でリフレッシュ?
+114,UX,Lighthouse スコア再測定,未着手,山口,中,30m,0,改善ターゲット明確化,Month 1,-,90+ 目標
+115,UX,Service Worker 改善(network-first 検討),未着手,Claude,中,2h,0,デプロイ反映高速化,任意,sw.js,キャッシュバスト不要に
+116,UX,音声入力(WebSpeech)既存機能の精度確認,未着手,山口,中,30m,0,記録ハードル低減,Month 1,-,
+117,UX,主治医提出レポートの主治医評価,未着手,山口,高,30m/医師,0,信頼性向上,Month 2,-,医師1-3名にレビュー依頼
+118,データ,匿名化研究協力(オプトイン)設計,未着手,Claude+山口,低,長期,0,研究機関連携,Year 1+,-,患者同意必須
+119,コミュニティ,X 闘病系コミュニティ参加,未着手,山口,中,15m/日,0,信頼関係構築,継続,-,
+120,コミュニティ,FB Group 参加(ME/CFS患者会等),未着手,山口,中,15m/日,0,口コミ拡散,継続,-,
+121,コミュニティ,Discord ME/CFS 患者鯖参加,未着手,山口,低,15m/日,0,英語圏ネットワーキング,継続,-,
+122,DOC,SYSTEM_ARCHITECTURE.md,完了,Claude,-,-,0,引継書,常時,SYSTEM_ARCHITECTURE.md,
+123,DOC,docs/プレスキット.md,既存,山口,-,-,0,メディア対応,常時,docs/プレスキット.md,
+124,DOC,docs/即実行プレイブック.md,既存,山口,-,-,0,意思決定支援,常時,docs/即実行プレイブック.md,
+125,DOC,docs/成長戦略.md,既存,山口,-,-,0,長期戦略,常時,docs/成長戦略.md,
