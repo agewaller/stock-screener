@@ -1,11 +1,12 @@
 // #13 PWA Service Worker + #19 Cache management
 // Version is updated on each deploy via GitHub Actions sed replacement.
-const CACHE_VERSION = 'v1-__COMMIT_HASH__';
+const CACHE_VERSION = 'v2-__COMMIT_HASH__';
 const CACHE_NAME = 'health-diary-' + CACHE_VERSION;
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/js/idb.js',
   '/js/config.js',
   '/js/prompts.js',
   '/js/store.js',
@@ -19,7 +20,16 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
-  '/manifest.json'
+  '/js/analytics.js',
+  '/js/disease-affiliate-panel.js',
+  '/js/disease-lp-enhancements.js',
+  '/js/newsletter-signup.js',
+  '/js/social-share.js',
+  '/js/a11y-enhancements.js',
+  '/js/inapp-browser-banner.js',
+  '/js/notifications.js',
+  '/manifest.json',
+  '/og-image.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -58,7 +68,26 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Listen for update messages from the app
+// Show notification when triggered by the app via postMessage.
 self.addEventListener('message', (event) => {
-  if (event.data === 'skipWaiting') self.skipWaiting();
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
+
+// Handle notification click — focus the app window.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
+    })
+  );
 });

@@ -3072,6 +3072,37 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Notifications -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔔 毎日リマインダー</span>
+      <span id="notif-perm-badge" style="font-size:10px;padding:2px 8px;border-radius:12px;background:${(typeof NotificationManager !== 'undefined' && NotificationManager.getPermission() === 'granted') ? '#dcfce7' : '#fef9c3'};color:${(typeof NotificationManager !== 'undefined' && NotificationManager.getPermission() === 'granted') ? '#166534' : '#854d0e'}">${(typeof NotificationManager !== 'undefined' && NotificationManager.getPermission() === 'granted') ? '許可済み' : '未許可'}</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7">
+        設定した時刻にブラウザ通知で「今日の記録を書きましょう」とお知らせします。
+        アプリ（このタブ）が開いているときのみ動作します。
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="toggle-reminder-enabled"
+          ${(typeof NotificationManager !== 'undefined' && NotificationManager.isEnabled()) ? 'checked' : ''}
+          onchange="app.toggleReminder(this.checked)"
+          style="margin-top:2px;width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">毎日リマインダーを有効にする</div>
+          <div style="font-size:11px;color:var(--text-muted)">記録していない日に通知します</div>
+        </div>
+      </label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="form-label" style="margin:0;white-space:nowrap;font-size:12px">通知時刻</label>
+        <input type="time" class="form-input" id="reminder-time"
+          value="${(typeof NotificationManager !== 'undefined') ? NotificationManager.getReminderTime() : '20:00'}"
+          onchange="app.saveReminderTime(this.value)"
+          style="padding:6px 10px;width:120px;font-size:13px">
+      </div>
+    </div>
+  </div>
+
   <!-- Privacy Settings -->
   <div class="card" style="margin-bottom:16px">
     <div class="card-header">

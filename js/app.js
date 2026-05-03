@@ -99,6 +99,12 @@ var App = class App {
     // app is open — set up once, update forever.
     try { Integrations.autoSync.init(); } catch (e) { console.warn('autoSync init:', e); }
 
+    // Initialize daily reminder system (Web Notifications API).
+    // No-op in environments where Notification is unavailable.
+    try {
+      if (typeof NotificationManager !== 'undefined') NotificationManager.init();
+    } catch (e) { console.warn('NotificationManager init:', e); }
+
     // Capture referral ID from URL (?ref=xxx). Stored in
     // localStorage so it survives until the user signs up, at
     // which point touchUserMetadata writes it to users/{uid}.
@@ -928,6 +934,11 @@ var App = class App {
     // Navigate to dashboard and run API analysis
     this.navigate('dashboard');
     Components.showToast('保存しました', 'success');
+
+    // Nudge user toward daily reminder after their first entry
+    try {
+      if (typeof NotificationManager !== 'undefined') NotificationManager.promptAfterFirstEntry();
+    } catch (_) {}
 
     const inputWithContext = `[${category}] ${title ? title + ': ' : ''}${content}`;
     const promptType = category === 'conversation' ? 'conversation_analysis' : 'text_analysis';
@@ -3845,6 +3856,35 @@ ${axisHint}
       const el = document.getElementById(id);
       if (el && profile[key]) el.value = profile[key];
     });
+  }
+
+  // ---- Notification / Reminder settings ----
+  async toggleReminder(enabled) {
+    if (!enabled) {
+      if (typeof NotificationManager !== 'undefined') NotificationManager.setEnabled(false);
+      Components.showToast('リマインダーをオフにしました', 'info');
+      return;
+    }
+    if (typeof NotificationManager === 'undefined') return;
+    const granted = await NotificationManager.requestPermission();
+    if (!granted) {
+      Components.showToast('ブラウザの通知を許可してください（アドレスバー横の鍵アイコン）', 'error');
+      const cb = document.getElementById('toggle-reminder-enabled');
+      if (cb) cb.checked = false;
+      return;
+    }
+    NotificationManager.setEnabled(true);
+    NotificationManager._scheduleNext();
+    const badge = document.getElementById('notif-perm-badge');
+    if (badge) { badge.textContent = '許可済み'; badge.style.background = '#dcfce7'; badge.style.color = '#166534'; }
+    Components.showToast('リマインダーを設定しました ✓', 'success');
+  }
+
+  saveReminderTime(time) {
+    if (typeof NotificationManager !== 'undefined') {
+      NotificationManager.setReminderTime(time);
+      if (NotificationManager.isEnabled()) NotificationManager._scheduleNext();
+    }
   }
 
   // ---- Sidebar (mobile) ----

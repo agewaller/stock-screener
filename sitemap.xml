@@ -117,6 +117,20 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- Pitch / enterprise -->
+  <url>
+    <loc>https://cares.advisers.jp/pitch.html</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/enterprise-pitch.html</loc>
+    <lastmod>2026-05-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
