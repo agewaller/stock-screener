@@ -16090,70 +16090,120 @@ App.prototype.render_integrations = function() {
       </span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
-        <strong>取り込めるデータ:</strong> 心拍数・安静時心拍・HRV (自律神経)・血中酸素・歩数・活動時間・睡眠・マインドフルネス・体温・体重・血圧・VO2Max。
-        <br><span style="color:var(--accent)">💡 Apple Watchのデータも自動で取り込まれます（同じヘルスケアアプリに保存されるため）。</span>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;line-height:1.7">
+        <strong>取り込めるデータ:</strong> 心拍数・HRV (自律神経)・血中酸素・歩数・睡眠・体温・体重・血圧 など
       </p>
+      <p style="font-size:11px;color:var(--accent);margin-bottom:14px">💡 Apple Watch をお持ちならそのデータも一緒に取り込まれます</p>
 
-      <!-- Method 1: iOS Shortcut (recommended for daily sync) -->
-      <div style="background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span style="font-size:18px">⚡</span>
-          <span style="font-size:13px;font-weight:700;color:#92400e">方法1: iOSショートカット（推奨・毎日自動）</span>
+      <!-- ── かんたん取込ガイド ── -->
+      <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);padding:16px 18px;border-radius:12px;border:1.5px solid #86efac;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:12px">📱 かんたん取込ガイド（どなたでもできます）</div>
+
+        <!-- Step 1 -->
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">
+          <div style="flex:0 0 36px;height:36px;background:#22c55e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">1</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">iPhone で「ヘルスケア」アプリを開く</div>
+            <div style="font-size:11px;color:#15803d;line-height:1.7">白い背景にハートのアイコン ❤️ のアプリです。<br>ホーム画面にない場合は、下にスワイプして「ヘルスケア」と検索してください。</div>
+            <div style="margin-top:8px;background:#fff;border-radius:10px;padding:12px;text-align:center;border:1px solid #e2e8f0">
+              <div style="font-size:40px">❤️</div>
+              <div style="font-size:10px;color:#64748b;margin-top:4px">ヘルスケア</div>
+            </div>
+          </div>
         </div>
-        <ol style="font-size:12px;color:#78350f;line-height:1.9;padding-left:20px;margin-bottom:10px">
-          <li>iPhoneで「ショートカット」アプリを開く</li>
-          <li>「+」で新規ショートカット作成</li>
-          <li>アクション「<strong>ヘルスケアサンプルを検索</strong>」を追加<br>
-            →「心拍数」「歩数」「睡眠分析」などを選択</li>
-          <li>アクション「<strong>テキスト</strong>」で以下を貼り付け：<br>
-            <code style="display:block;background:#fff7ed;padding:6px 8px;border-radius:4px;font-size:10px;margin-top:4px;color:#9a3412;word-break:break-all">{"source":"apple_watch","items":[{"type":"heart_rate","value":[検索結果]}]}</code></li>
-          <li>アクション「<strong>Base64エンコード</strong>」を追加</li>
-          <li>アクション「<strong>URLを開く</strong>」を追加 → URLに以下を入力：<br>
-            <code id="shortcut-url-prefix" style="display:block;background:#fff7ed;padding:6px 8px;border-radius:4px;font-size:10px;margin-top:4px;color:#9a3412;word-break:break-all">${window.location.origin}${window.location.pathname}#import=</code>
-            <span style="font-size:10px">（上のURL末尾に Base64エンコードの結果を連結）</span>
-          </li>
-          <li><strong>オートメーションで毎日自動実行 ←★ ここが重要</strong><br>
-            ショートカットアプリ下部「オートメーション」タブ → 「+」<br>
-            → 「個人用オートメーションを作成」<br>
-            → 「時刻」を選択 → 21:00（就寝前など）→ 「毎日」<br>
-            → 作成したショートカットを選択 → 「実行前に尋ねる」を<strong>オフ</strong>にする<br>
-            <span style="color:#dc2626;font-weight:600">→ これで毎日21時に自動的にデータがアプリに送信されます。ユーザーは何もしなくてOK。</span>
-          </li>
-        </ol>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button class="btn btn-sm btn-primary" onclick="app.copyShortcutUrlPrefix()" style="font-size:11px">URLをコピー</button>
-          <button class="btn btn-sm btn-secondary" onclick="var u=app.buildSampleShortcutUrl();Components.showToast('サンプルURLをコピー。新しいタブで開くとデモデータが取り込まれます','info')" style="font-size:11px">サンプルURLをテスト</button>
+
+        <!-- Step 2 -->
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">
+          <div style="flex:0 0 36px;height:36px;background:#22c55e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">2</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">右上のプロフィールアイコンをタップ</div>
+            <div style="font-size:11px;color:#15803d;line-height:1.7">画面右上にある人型のアイコン 👤 をタップします。</div>
+            <div style="margin-top:8px;background:#fff;border-radius:10px;padding:10px;border:1px solid #e2e8f0">
+              <div style="display:flex;justify-content:flex-end;padding:4px 8px">
+                <div style="width:30px;height:30px;background:#e2e8f0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px">👤</div>
+              </div>
+              <div style="text-align:center;font-size:10px;color:#64748b">← ここをタップ</div>
+            </div>
+          </div>
         </div>
-        <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f">
-          <strong>💡 一度設定すれば、以降は完全自動</strong>。毎日同じ時刻に iOS が自動でショートカットを実行し、心拍数・歩数・睡眠などをこのアプリに送信します。アプリを開く必要すらありません。
+
+        <!-- Step 3 -->
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">
+          <div style="flex:0 0 36px;height:36px;background:#22c55e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">3</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">「すべてのヘルスケアデータを書き出す」をタップ</div>
+            <div style="font-size:11px;color:#15803d;line-height:1.7">下にスクロールすると見つかります。<br>タップすると書き出しが始まります（数分かかることがあります）。</div>
+            <div style="margin-top:8px;background:#fff;border-radius:10px;padding:10px 14px;border:1px solid #e2e8f0">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+                <span style="font-size:14px">📋</span>
+                <span style="font-size:12px;color:#1e293b">アクセスとデバイス</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 0;background:#f0fdf4;border-radius:6px;padding-left:6px;margin-top:4px">
+                <span style="font-size:14px">📤</span>
+                <span style="font-size:12px;color:#166534;font-weight:600">すべてのヘルスケアデータを書き出す ← これ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start">
+          <div style="flex:0 0 36px;height:36px;background:#22c55e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">4</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">書き出されたファイルを「ファイル」に保存</div>
+            <div style="font-size:11px;color:#15803d;line-height:1.7">書き出し完了後、共有メニューが表示されます。<br>「"ファイル"に保存」を選んで、iPhone 内に保存してください。</div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div style="display:flex;gap:12px;margin-bottom:8px;align-items:flex-start">
+          <div style="flex:0 0 36px;height:36px;background:#22c55e;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">5</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">ZIP を解凍して export.xml を下にアップロード</div>
+            <div style="font-size:11px;color:#15803d;line-height:1.7">保存した ZIP ファイルをタップすると自動的に解凍されます。<br>中にある <strong>export.xml</strong> を下のボタンから選んでください。</div>
+          </div>
         </div>
       </div>
 
-      <!-- Method 2: XML file upload (for bulk / historical data) -->
-      <div style="background:var(--bg-tertiary);padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span style="font-size:18px">📂</span>
-          <span style="font-size:13px;font-weight:700">方法2: ファイルアップロード（過去データを一括取込）</span>
-        </div>
-        <ol style="font-size:12px;color:var(--text-secondary);line-height:1.9;padding-left:20px;margin-bottom:10px">
-          <li>iPhoneの「ヘルスケア」アプリ → 右上プロフィール → 「すべてのヘルスケアデータを書き出す」</li>
-          <li>生成されたZIPを解凍し、中の<code>export.xml</code>を取り出す</li>
-          <li>下のエリアにドラッグ＆ドロップ</li>
-        </ol>
-        <div class="upload-area" style="padding:20px;background:var(--bg-primary);border:2px dashed var(--border);border-radius:var(--radius-sm);text-align:center;cursor:pointer"
-          onclick="document.getElementById('apple-health-file').click()"
-          ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='var(--accent-bg)'"
-          ondragleave="this.style.borderColor='var(--border)';this.style.background='var(--bg-primary)'"
-          ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='var(--bg-primary)';app.importAppleHealthFile(event.dataTransfer.files[0])">
-          <div style="font-size:28px;margin-bottom:6px">📄</div>
-          <div style="font-size:13px;font-weight:600">export.xml をドロップ</div>
-          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">またはクリックして選択</div>
-          <input type="file" id="apple-health-file" hidden accept=".xml" onchange="app.importAppleHealthFile(this.files[0])">
-        </div>
+      <!-- Upload area -->
+      <div class="upload-area" style="padding:24px;background:var(--bg-primary);border:2.5px dashed var(--accent);border-radius:14px;text-align:center;cursor:pointer"
+        onclick="document.getElementById('apple-health-file').click()"
+        ondragover="event.preventDefault();this.style.borderColor='#22c55e';this.style.background='#f0fdf4'"
+        ondragleave="this.style.borderColor='var(--accent)';this.style.background='var(--bg-primary)'"
+        ondrop="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='var(--bg-primary)';app.importAppleHealthFile(event.dataTransfer.files[0])">
+        <div style="font-size:40px;margin-bottom:8px">📄</div>
+        <div style="font-size:14px;font-weight:700;color:var(--accent)">export.xml をここにドロップ</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">またはタップしてファイルを選択</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:8px">iPhone の「ファイル」アプリから選べます</div>
+        <input type="file" id="apple-health-file" hidden accept=".xml" onchange="app.importAppleHealthFile(this.files[0])">
       </div>
-
       <div id="apple-import-status" style="margin-top:10px"></div>
+
+      <!-- Advanced: iOS Shortcut (collapsible) -->
+      <details style="margin-top:14px">
+        <summary style="font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;padding:8px 0">⚡ 上級者向け: iOSショートカットで毎日自動取込</summary>
+        <div style="background:#fefce8;padding:14px 16px;border-radius:10px;margin-top:8px;border:1px solid #fde68a">
+          <p style="font-size:11px;color:#78350f;line-height:1.8;margin-bottom:10px">
+            iOSの「ショートカット」アプリを使うと、毎日自動的にヘルスケアデータを送信できます。一度設定すれば完全自動です。
+          </p>
+          <ol style="font-size:11px;color:#78350f;line-height:2.0;padding-left:18px;margin-bottom:10px">
+            <li>「ショートカット」アプリで新規作成</li>
+            <li>アクション「ヘルスケアサンプルを検索」を追加 → 心拍数・歩数・睡眠などを選択</li>
+            <li>アクション「テキスト」で以下の JSON テンプレートを貼り付け</li>
+            <li>アクション「Base64エンコード」を追加</li>
+            <li>アクション「URLを開く」→ URL 末尾に Base64 結果を連結</li>
+            <li>「オートメーション」タブで毎日21時に自動実行を設定</li>
+          </ol>
+          <div style="background:#fff;padding:8px 10px;border-radius:6px;margin-bottom:8px">
+            <div style="font-size:10px;color:#78350f;font-weight:600;margin-bottom:4px">URL プレフィックス:</div>
+            <code id="shortcut-url-prefix" style="display:block;font-size:10px;color:#9a3412;word-break:break-all">${window.location.origin}${window.location.pathname}#import=</code>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="app.copyShortcutUrlPrefix()" style="font-size:11px">URLをコピー</button>
+            <button class="btn btn-sm btn-secondary" onclick="var u=app.buildSampleShortcutUrl();Components.showToast('サンプルURLをコピー。新しいタブで開くとデモデータが取り込まれます','info')" style="font-size:11px">サンプルURLをテスト</button>
+          </div>
+        </div>
+      </details>
     </div>
   </div>
 
