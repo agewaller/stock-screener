@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
 <!-- Google Search Console ownership verification (property:
      https://cares.advisers.jp/). Do not remove — removing this
@@ -12021,17 +12024,19 @@ ${titles}`;
       // Build a user-friendly one-line hint from the error. We surface
       // enough info for the user to report the issue back (HTTP status,
       // short reason) without dumping full stack traces onto the UI.
-      let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
+      let friendlyHint = 'AI 分析サービスに一時的に接続できませんでした。ページを再読み込みしてもう一度お試しください。';
       if (/401/.test(errMessage)) {
-        friendlyHint = '認証エラー (401)。運営者に連絡してください。';
+        friendlyHint = 'AI サービスの認証に失敗しました (401)。しばらくしてから再度お試しください。';
       } else if (/404|not found|deprecat/i.test(errMessage)) {
-        friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
+        friendlyHint = 'AI モデルが一時的に利用できません。しばらくしてから再度お試しください。';
       } else if (/429|rate limit/i.test(errMessage)) {
-        friendlyHint = '一時的に混雑しています (429)。30 秒ほど待ってから再度お試しください。';
-      } else if (/Failed to fetch|NetworkError|TypeError/.test(errMessage)) {
-        friendlyHint = 'ネットワーク接続に失敗しました。Wi-Fi または通信状況をご確認ください。';
+        friendlyHint = 'ただいま混雑しています。30 秒ほど待ってから再度お試しください。';
+      } else if (/Failed to fetch|NetworkError|TypeError|プロキシに接続/.test(errMessage)) {
+        friendlyHint = 'AI サーバーに接続できませんでした。ページを再読み込み (↻) してからお試しください。古いキャッシュが原因の場合があります。';
       } else if (/500|502|503|504/.test(errMessage)) {
-        friendlyHint = 'AI サービスが一時的に応答していません (5xx)。数分後に再度お試しください。';
+        friendlyHint = 'AI サービスが一時的に応答していません。数分後に再度お試しください。';
+      } else if (/ALL_PROVIDERS_FAILED/.test(errMessage)) {
+        friendlyHint = 'AI サービスに接続できませんでした。ページを再読み込みしてお試しください。';
       }
       // Build a diagnostic string that users can copy back to us when
       // reporting the issue. Includes browser UA + timestamp so we can
@@ -12051,8 +12056,8 @@ ${titles}`;
               ${Components.escapeHtml(friendlyHint)}
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-              <button onclick="app.guestAnalyze()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 もう一度試す</button>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:8px 16px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
+              <button onclick="location.reload(true)" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">↻ ページを再読み込み</button>
+              <button onclick="app.guestAnalyze()" style="padding:8px 16px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 もう一度試す</button>
             </div>
             <details style="font-size:11px;color:#7f1d1d;margin-top:6px">
               <summary style="cursor:pointer;font-weight:600">🔍 詳細（運営者への報告に使えます）</summary>
