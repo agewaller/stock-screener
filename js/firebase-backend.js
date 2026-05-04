@@ -194,6 +194,12 @@ var FirebaseBackend = {
         result = await this.auth.signInWithPopup(provider);
       }
       Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+      try {
+        const isNew = result.additionalUserInfo && result.additionalUserInfo.isNewUser;
+        if (typeof window.trackEvent === 'function') {
+          window.trackEvent(isNew ? 'signup_complete' : 'login', { method: 'google' });
+        }
+      } catch (_) {}
       this.handleSignedInUser(result.user);
       return result.user;
     } catch (err) {
@@ -238,6 +244,7 @@ var FirebaseBackend = {
           try {
             const result = await this.auth.createUserWithEmailAndPassword(email, password);
             Components.showToast('アカウントを作成しました。ようこそ！', 'success');
+            try { if (typeof window.trackEvent === 'function') window.trackEvent('signup_complete', { method: 'email' }); } catch (_) {}
             this.handleSignedInUser(result.user);
             return result.user;
           } catch (createErr) {

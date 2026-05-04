@@ -475,6 +475,7 @@ var App = class App {
   }
 
   async loginWithGoogle() {
+    if (typeof window.trackEvent === 'function') window.trackEvent('guest_register_click', { method: 'google' });
     // Clear any previous error banner
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.style.display = 'none';
@@ -574,6 +575,7 @@ var App = class App {
   }
 
   async loginWithEmail(e) {
+    if (typeof window.trackEvent === 'function') window.trackEvent('guest_register_click', { method: 'email' });
     if (e) e.preventDefault();
     const form = e.target;
     const email = form.querySelector('[name=email]').value;
@@ -3485,6 +3487,7 @@ ${axisHint}
     this._guestSampleIdx = idx + 1;
     const input = document.getElementById('guest-input');
     if (input) { input.value = pool[idx]; input.focus(); }
+    if (typeof window.trackEvent === 'function') window.trackEvent('guest_sample_submit', { disease: key });
     this.guestAnalyze();
   }
 
@@ -3493,6 +3496,7 @@ ${axisHint}
   // data. Guests use the Cloudflare Worker proxy (non-streaming); users
   // with an API key get streaming direct to Anthropic.
   async guestSampleReport() {
+    if (typeof window.trackEvent === 'function') window.trackEvent('guest_sample_report');
     const el = document.getElementById('guest-result');
     if (!el) return;
 
@@ -4458,7 +4462,87 @@ ${axisHint}
 
       <div style="font-size:11px;color:var(--text-muted);padding:8px 0">
         ※ コストは Anthropic / OpenAI / Google の公開単価から算出した推定値です。実際の請求とは多少のズレがあります。
+      </div>
+
+      ${this._renderConversionFunnel()}`;
+  }
+
+  _renderConversionFunnel() {
+    let events = [];
+    try { events = JSON.parse(localStorage.getItem('cc_events') || '[]'); } catch (_) {}
+    if (!events.length) return `
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><span class="card-title">🔽 コンバージョンファネル</span></div>
+        <div class="card-body" style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">
+          まだイベントがありません。ゲストがサンプルを試すとここに集計されます。
+        </div>
       </div>`;
+
+    const count = (name) => events.filter(e => e.n === name).length;
+    const steps = [
+      { key: 'pageview',            label: 'ページ表示',              icon: '👁' },
+      { key: 'guest_sample_submit', label: 'サンプル試行',            icon: '▶' },
+      { key: 'guest_sample_report', label: '医師レポート生成',         icon: '📋' },
+      { key: 'guest_register_click',label: '登録ボタンクリック',       icon: '🖱' },
+      { key: 'signup_complete',     label: '登録完了',                icon: '✅' },
+    ];
+
+    const counts = steps.map(s => ({ ...s, n: count(s.key) }));
+    const top = counts[0].n || 1;
+
+    const bars = counts.map((s, i) => {
+      const prev = i === 0 ? s.n : counts[i - 1].n;
+      const rate = prev > 0 ? Math.round((s.n / prev) * 100) : 0;
+      const width = Math.round((s.n / top) * 100);
+      return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:500">${s.icon} ${s.label}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--accent)">${s.n.toLocaleString()}件${i > 0 ? ` <span style="font-size:10px;color:var(--text-muted);font-weight:400">（前ステップ比 ${rate}%）</span>` : ''}</div>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:10px">
+            <div style="width:${width}%;height:100%;background:var(--accent);border-radius:4px;transition:width 0.3s"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Recent events list
+    const recent = events.slice(-20).reverse()
+      .filter(e => e.n !== 'pageview')
+      .slice(0, 10);
+    const recentRows = recent.map(e => {
+      const d = new Date(e.t);
+      const time = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      return `<tr>
+        <td style="padding:5px 10px;font-size:10px;color:var(--text-muted);font-family:monospace">${time}</td>
+        <td style="padding:5px 10px;font-size:10px;font-family:monospace">${Components.escapeHtml(e.n)}</td>
+        <td style="padding:5px 10px;font-size:10px;color:var(--text-muted)">${Components.escapeHtml(e.p || '')}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="card" style="margin-top:20px;margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title">🔽 コンバージョンファネル</span>
+          <button class="btn btn-outline btn-sm" style="font-size:10px"
+            onclick="localStorage.removeItem('cc_events');app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)">ログをクリア</button>
+        </div>
+        <div class="card-body" style="padding:16px">${bars}</div>
+      </div>
+      ${recent.length ? `
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><span class="card-title">最近のイベント</span></div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:var(--bg-tertiary)">
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-muted)">時刻</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-muted)">イベント</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-muted)">ページ</th>
+            </tr></thead>
+            <tbody>${recentRows}</tbody>
+          </table>
+        </div>
+      </div>` : ''}`;
   }
 
   // Render the 30-day trend chart for usage dashboard.
