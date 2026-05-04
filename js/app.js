@@ -3464,6 +3464,190 @@ ${axisHint}
     reader.readAsDataURL(file);
   }
 
+  // ---- Guest Sample Submit ----
+  // Fills the guest input with a disease-appropriate sample entry and
+  // immediately triggers analysis. Defined here (not inline index.html)
+  // so the smoke test can verify onclick wiring.
+  guestSampleSubmit() {
+    const pickKey = () => {
+      try {
+        const ids = Array.from(document.querySelectorAll('.guest-disease-tag.selected'))
+          .map(t => t.getAttribute('data-id'));
+        const bank = CONFIG.GUEST_SAMPLES || {};
+        for (const id of ids) if (bank[id]) return id;
+      } catch (_) {}
+      return 'default';
+    };
+    const key = pickKey();
+    const pool = (CONFIG.GUEST_SAMPLES && CONFIG.GUEST_SAMPLES[key]) || (CONFIG.GUEST_SAMPLES || {}).default;
+    if (!pool || !pool.length) return;
+    const idx = (this._guestSampleIdx || 0) % pool.length;
+    this._guestSampleIdx = idx + 1;
+    const input = document.getElementById('guest-input');
+    if (input) { input.value = pool[idx]; input.focus(); }
+    this.guestAnalyze();
+  }
+
+  // ---- Guest Sample Report ----
+  // Generates a real 医師提出用レポート from the pre-made 30-day sample
+  // data. Guests use the Cloudflare Worker proxy (non-streaming); users
+  // with an API key get streaming direct to Anthropic.
+  async guestSampleReport() {
+    const el = document.getElementById('guest-result');
+    if (!el) return;
+
+    const pickDisease = () => {
+      try {
+        const ids = Array.from(document.querySelectorAll('.guest-disease-tag.selected'))
+          .map(t => t.getAttribute('data-id'));
+        const bank = CONFIG.GUEST_REPORT_DATA || {};
+        for (const id of ids) if (bank[id]) return id;
+      } catch (_) {}
+      return 'mecfs';
+    };
+    const diseaseKey = pickDisease();
+    const diary = (CONFIG.GUEST_REPORT_DATA && CONFIG.GUEST_REPORT_DATA[diseaseKey])
+      || (CONFIG.GUEST_REPORT_DATA || {}).mecfs;
+    if (!diary) return;
+
+    let apiKey = (localStorage.getItem('apikey_anthropic') || '').trim();
+    if (!apiKey) {
+      try { await FirebaseBackend.ensureGuestAuth(); } catch (_) {}
+      apiKey = (localStorage.getItem('apikey_anthropic') || '').trim();
+    }
+    const useProxy = !apiKey;
+    const proxyBase = (() => {
+      let p = '';
+      try { p = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+      if (!p) p = 'https://stock-screener.agewaller.workers.dev';
+      return p.replace(/\/+$/, '');
+    })();
+    const MODEL = 'claude-sonnet-4-6';
+
+    el.innerHTML = '<div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px">'
+      + '<div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・'
+      + Components.escapeHtml(String((diary.diseases && diary.diseases[0]) || '慢性疾患'))
+      + ' 想定の架空患者データ）を生成中...'
+      + (useProxy ? '（30-60 秒ほどお待ちください）' : '')
+      + '</div>'
+      + '<pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;'
+      + 'font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;padding:12px;background:#f8fafc;'
+      + 'border-radius:8px;max-height:50vh;overflow-y:auto;margin:0">'
+      + (useProxy ? '⏳ 生成中...（ゲストモードはストリーミング非対応のため、完成までお待ちください）' : '')
+      + '</pre>'
+      + '<div id="guest-report-cta" style="display:none;margin-top:10px"></div>'
+      + '</div>';
+    const target = document.getElementById('guest-report-text');
+    const cta = document.getElementById('guest-report-cta');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+
+    const sys = 'あなたは慢性疾患患者と主治医をつなぐ医療ドキュメントライターです。以下の患者日記データを「主治医への患者サマリーレポート」として Markdown で取りまとめてください。\n\n'
+      + '【文体】医療カルテ風・簡潔・事実ベース・医学用語を適切に使用。\n'
+      + '【形式】純粋な Markdown（前置き・コードフェンスなし）。見出しは ##、表は Markdown テーブル。\n'
+      + '【構成】以下を順に：\n'
+      + '# 患者サマリーレポート（サンプル）\n## 基本情報（疾患・対象期間・記録件数）\n## 主訴 Top 3\n'
+      + '## 症状経過\n## 現在の服薬\n## 試した対処法と効果\n## 生活影響度 QOL/ADL\n## 主治医への質問・相談事項\n'
+      + '末尾に「※ これは架空の患者データから生成されたサンプルです」と明記してください。';
+    const userMsg = '【患者日記データ】\n' + JSON.stringify(diary, null, 1).substring(0, 30000);
+
+    const showDone = (text) => {
+      if (target) target.textContent = text;
+      if (cta) {
+        cta.style.display = 'block';
+        cta.innerHTML = '<div style="padding:12px;background:#f0fdf4;border-radius:10px;text-align:center">'
+          + '<div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px">あなた自身の記録でこのレポートを作れます</div>'
+          + '<button onclick="var s=document.getElementById(\'login-section\');if(s)s.scrollIntoView({behavior:\'smooth\'});'
+          + 'else window.scrollTo({top:0,behavior:\'smooth\'})" '
+          + 'style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">'
+          + '無料で登録して始める →</button></div>';
+      }
+    };
+    const showErr = (msg) => {
+      if (target) target.textContent = '[エラー] ' + msg + '\n\n再試行ボタンから再実行してください。';
+      if (cta) {
+        cta.style.display = 'block';
+        cta.innerHTML = '<button onclick="app.guestSampleReport()" '
+          + 'style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 再試行</button>';
+      }
+    };
+
+    if (useProxy) {
+      try {
+        const resp = await fetch(proxyBase + '/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: MODEL, max_tokens: 3500, system: sys, messages: [{ role: 'user', content: userMsg }] })
+        });
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error(resp.status + ': ' + txt.substring(0, 200));
+        }
+        const data = await resp.json();
+        showDone((data.content && data.content[0] && data.content[0].text) || '(レポートが空でした)');
+      } catch (e) {
+        showErr(e && e.message ? e.message : String(e));
+      }
+      return;
+    }
+
+    // Authenticated streaming path
+    const controller = new AbortController();
+    let lastByteAt = Date.now();
+    const stallTimer = setInterval(() => {
+      if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch (_) {} }
+    }, 5000);
+    let fullText = '';
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model: MODEL, max_tokens: 3500, system: sys, messages: [{ role: 'user', content: userMsg }], stream: true }),
+        signal: controller.signal
+      });
+      if (!resp.ok) {
+        const body2 = await resp.text().catch(() => '');
+        throw new Error(resp.status + ': ' + body2.substring(0, 200));
+      }
+      if (!resp.body || !resp.body.getReader) throw new Error('お使いのブラウザはストリーミングに対応していません。');
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        lastByteAt = Date.now();
+        buffer += decoder.decode(chunk.value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const frame = buffer.substring(0, idx);
+          buffer = buffer.substring(idx + 2);
+          for (const line of frame.split('\n')) {
+            if (line.indexOf('data: ') !== 0) continue;
+            const payload = line.substring(6);
+            if (payload === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(payload);
+              if (evt.type === 'content_block_delta' && evt.delta && typeof evt.delta.text === 'string') {
+                fullText += evt.delta.text;
+                if (target) { target.textContent = fullText; target.scrollTop = target.scrollHeight; }
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      showDone(fullText);
+    } catch (e) {
+      showErr(e && e.message ? e.message : String(e));
+    } finally {
+      clearInterval(stallTimer);
+    }
+  }
+
   // ---- Dashboard Quick Input ----
   dashQuickSubmit() {
     if (store.get('isAnalyzing')) {
