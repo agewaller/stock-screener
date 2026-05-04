@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>うつ病（大うつ病性障害）完全ガイド｜症状・治療・記録アプリ - 健康日記</title>
-<meta name="description" content="うつ病（大うつ病性障害、Major Depressive Disorder）の症状・診断基準（DSM-5）・治療（SSRI・SNRI・TMS・ケタミン）・自己記録の重要性を当事者がまとめた完全ガイド。世界 3.32 億人・日本 172 万人のうつ病患者のための無料 AI 記録アプリ。">
-<meta name="keywords" content="うつ病,大うつ病性障害,MDD,Major Depressive Disorder,うつ病 症状,うつ病 治療,SSRI,SNRI,TMS,ケタミン,PHQ-9,気分記録,健康日記">
+<title>うつ病（大うつ病性障害）完全ガイド｜症状・治療・PHQ-9・記録アプリ - 健康日記</title>
+<meta name="description" content="うつ病（MDD）の症状チェック（DSM-5 / PHQ-9）・SSRI/SNRI・TMS・ケタミン等の治療法・仕事と傷病手当金・AI 記録ツールを当事者・専門情報でまとめた完全ガイド。日本 172 万人のうつ病患者向け。">
+<meta name="keywords" content="うつ病,大うつ病性障害,MDD,うつ病 症状,うつ病 治療,PHQ-9,SSRI,SNRI,TMS,ケタミン,傷病手当金,うつ病 期間,うつ病 仕事,健康日記">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://cares.advisers.jp/depression.html">
 <link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/depression.html">
 <link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/depression.html">
 <meta property="og:type" content="article">
-<meta property="og:title" content="うつ病 完全ガイド｜症状・治療・記録アプリ">
-<meta property="og:description" content="うつ病の症状管理・SSRI/SNRI・最新治療・記録のコツを当事者が解説。無料 AI 記録アプリ。">
+<meta property="og:title" content="うつ病 完全ガイド｜症状・PHQ-9・治療・記録アプリ">
+<meta property="og:description" content="うつ病の症状・DSM-5・PHQ-9 自己チェック・SSRI/SNRI・TMS・傷病手当金・AI 記録ツールを解説。172 万人の当事者向け。">
 <meta property="og:url" content="https://cares.advisers.jp/depression.html">
 <meta property="og:image" content="https://cares.advisers.jp/og/depression.svg">
 <meta property="og:image:type" content="image/svg+xml">
@@ -25,19 +25,27 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"MedicalWebPage","name":"うつ病 完全ガイド","url":"https://cares.advisers.jp/depression.html","inLanguage":"ja","lastReviewed":"2026-04-14"},
-{"@type":"MedicalCondition","name":"うつ病 (大うつ病性障害)","alternateName":["Major Depressive Disorder","MDD","Depression"],"code":{"@type":"MedicalCode","code":"6A70","codingSystem":"ICD-11"},"epidemiology":"世界で 3.32 億人 (WHO 2025)、日本で約 172 万人 (厚労省患者調査 2020)","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"抑うつ気分"},{"@type":"MedicalSignOrSymptom","name":"興味・喜びの消失"},{"@type":"MedicalSignOrSymptom","name":"睡眠障害"},{"@type":"MedicalSignOrSymptom","name":"疲労"},{"@type":"MedicalSignOrSymptom","name":"集中困難"},{"@type":"MedicalSignOrSymptom","name":"食欲変化"}],"possibleTreatment":[{"@type":"DrugLegalStatus","name":"SSRI (セルトラリン・エスシタロプラム)"},{"@type":"DrugLegalStatus","name":"SNRI (デュロキセチン・ベンラファキシン)"},{"@type":"MedicalTherapy","name":"認知行動療法 (CBT)"},{"@type":"MedicalTherapy","name":"TMS (経頭蓋磁気刺激)"},{"@type":"DrugLegalStatus","name":"ケタミン/エスケタミン"}]}
+{"@type":"MedicalWebPage","name":"うつ病 完全ガイド","url":"https://cares.advisers.jp/depression.html","inLanguage":"ja","lastReviewed":"2026-05-04","medicalAudience":{"@type":"Patient"}},
+{"@type":"MedicalCondition","name":"うつ病 (大うつ病性障害)","alternateName":["Major Depressive Disorder","MDD","Depression"],"code":{"@type":"MedicalCode","code":"6A70","codingSystem":"ICD-11"},"epidemiology":"世界で 3.32 億人 (WHO 2025)、日本で約 172 万人 (厚労省患者調査 2020)、生涯有病率 約 15%","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"抑うつ気分"},{"@type":"MedicalSignOrSymptom","name":"興味・喜びの消失（アンヘドニア）"},{"@type":"MedicalSignOrSymptom","name":"睡眠障害"},{"@type":"MedicalSignOrSymptom","name":"疲労・気力減退"},{"@type":"MedicalSignOrSymptom","name":"集中困難・決断力低下"},{"@type":"MedicalSignOrSymptom","name":"食欲変化・体重変動"},{"@type":"MedicalSignOrSymptom","name":"無価値感・罪責感"},{"@type":"MedicalSignOrSymptom","name":"希死念慮"}],"possibleTreatment":[{"@type":"DrugLegalStatus","name":"SSRI（セルトラリン・エスシタロプラム・パロキセチン・フルボキサミン）"},{"@type":"DrugLegalStatus","name":"SNRI（デュロキセチン・ベンラファキシン・ミルナシプラン）"},{"@type":"MedicalTherapy","name":"認知行動療法（CBT）"},{"@type":"MedicalTherapy","name":"TMS（経頭蓋磁気刺激）"},{"@type":"DrugLegalStatus","name":"ケタミン/エスケタミン（スプラバト）"},{"@type":"MedicalTherapy","name":"運動療法・生活療法"}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"うつ病はどれくらいの期間で治りますか？","acceptedAnswer":{"@type":"Answer","text":"個人差が大きく、軽症なら 3〜6 ヶ月、中等症以上では 1 年以上かかることもあります。抗うつ薬は再発予防のため、症状が改善した後も 6 ヶ月〜1 年は継続服薬が推奨されます（日本うつ病学会ガイドライン）。完治後も 30〜50% の確率で再発するため、日々の記録で早期サインを掴むことが重要です。"}},
+{"@type":"Question","name":"PHQ-9 スコアの見方を教えてください。","acceptedAnswer":{"@type":"Answer","text":"PHQ-9 は 0〜27 点。0〜4 点：症状なし、5〜9 点：軽症うつ、10〜14 点：中等症うつ（医師への相談を検討）、15〜19 点：やや重症（受診推奨）、20〜27 点：重症（早急な受診が必要）。2 週間ごとに記録すると治療効果を客観的に評価できます。"}},
+{"@type":"Question","name":"SSRI を飲み始めると最初に副作用が出やすいと聞きました。","acceptedAnswer":{"@type":"Answer","text":"正しいです。服薬開始後 1〜2 週間は吐き気・頭痛・不安感の増悪・眠気などが出やすく、この時期に自己中断してしまう方が多いです。ほとんどの場合 2〜4 週間で軽減します。症状を日記に記録し、次の受診で医師に伝えることで量の調整や薬の変更をしてもらいやすくなります。"}},
+{"@type":"Question","name":"うつ病で仕事を続けることはできますか？","acceptedAnswer":{"@type":"Answer","text":"軽症の場合は就労継続が可能なことも多いですが、中等症以上では休職が治療の一環です。会社の健康保険から「傷病手当金」（最長 1 年 6 ヶ月、給与の約 2/3）が受給できます。産業医や主治医と相談し、最初から完全復帰を急がず段階的復帰（リワーク）を検討してください。"}},
+{"@type":"Question","name":"うつ病は自然に治りますか？","acceptedAnswer":{"@type":"Answer","text":"軽症では自然寛解することもありますが、中等症以上では治療なしに長引くリスクが高く、放置で慢性化・再発率も上がります。早期に精神科・心療内科を受診し適切な治療を受けることが、回復期間の短縮につながります。"}},
+{"@type":"Question","name":"うつ病の記録を続けることで何が変わりますか？","acceptedAnswer":{"@type":"Answer","text":"気分・睡眠・服薬・トリガーを毎日記録すると、(1) 再発の前兆（睡眠悪化・意欲低下）を早期に検出できる、(2) 次の診察で「先週はこうでした」と具体的に伝えられる、(3) 薬の効果が数値で見えるため自己中断のリスクが減る、の 3 つのメリットがあります。健康日記の AI がパターンを分析し、医師提出用レポートも自動生成します。"}}
+]}
 ]}
 </script>
-<style>*{box-sizing:border-box;margin:0;padding:0}html{font-size:15px;scroll-behavior:smooth}body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}.container{max-width:820px;margin:0 auto;padding:20px}header{padding:16px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px}header a{color:#6366f1;text-decoration:none;font-weight:700;font-size:14px}h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#3730a3}h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef}p{margin-bottom:12px}ul{margin:8px 0 14px 22px}li{margin-bottom:4px}.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}.cta{display:inline-block;padding:14px 28px;background:#6366f1;color:#fff;border-radius:24px;text-decoration:none;font-weight:700;font-size:14px;margin-top:12px}.box{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 10px 10px 0;margin-bottom:14px}.box-title{font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px}.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:14px 0}.related a{padding:8px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#4338ca;font-size:12px;font-weight:600;text-align:center}.warning{padding:14px 18px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:0 10px 10px 0;margin-bottom:14px;color:#78350f;font-size:12px;line-height:1.7}footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:36px;text-align:center;font-size:12px;color:#64748b}footer a{color:#6366f1;text-decoration:none;margin:0 6px}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}html{font-size:15px;scroll-behavior:smooth}body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}.container{max-width:820px;margin:0 auto;padding:20px}header{padding:16px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px}header a{color:#6366f1;text-decoration:none;font-weight:700;font-size:14px}h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#3730a3}h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef}h3{font-size:16px;font-weight:700;margin:20px 0 8px;color:#3730a3}p{margin-bottom:12px}ul,ol{margin:8px 0 14px 22px}li{margin-bottom:4px}.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}.cta{display:inline-block;padding:14px 28px;background:#6366f1;color:#fff;border-radius:24px;text-decoration:none;font-weight:700;font-size:14px;margin-top:12px}.box{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 10px 10px 0;margin-bottom:14px}.box-title{font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px}.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:14px 0}.related a{padding:8px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#4338ca;font-size:12px;font-weight:600;text-align:center}.warning{padding:14px 18px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:0 10px 10px 0;margin-bottom:14px;color:#78350f;font-size:12px;line-height:1.7}.faq-item{border:1px solid #e4e7ef;border-radius:12px;margin-bottom:10px;overflow:hidden}.faq-q{padding:14px 18px;font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:#1e293b;list-style:none;display:flex;justify-content:space-between;align-items:center}.faq-q::after{content:"＋";font-size:18px;color:#6366f1;flex-shrink:0;margin-left:12px}.faq-item.open .faq-q::after{content:"－"}.faq-a{display:none;padding:0 18px 14px;font-size:13px;line-height:1.8;color:#374151;background:#fff}.faq-item.open .faq-a{display:block}.toc{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:14px 20px;margin-bottom:24px;font-size:13px}.toc ol{margin:8px 0 0 18px}.toc li{margin-bottom:3px}.toc a{color:#4338ca;text-decoration:none}.phq-table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0 20px}.phq-table th{background:#e8eafc;padding:8px 12px;text-align:left;font-weight:600;font-size:12px}.phq-table td{padding:7px 12px;border-bottom:1px solid #e4e7ef}.phq-table tr:last-child td{border:none}.score-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}.score-ok{background:#dcfce7;color:#166534}.score-mild{background:#fef3c7;color:#92400e}.score-mod{background:#fed7aa;color:#9a3412}.score-sev{background:#fee2e2;color:#991b1b}footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:36px;text-align:center;font-size:12px;color:#64748b}footer a{color:#6366f1;text-decoration:none;margin:0 6px}</style>
 </head>
 <body data-disease-label="うつ病" data-app-param="depression">
 <div class="container">
 <header><a href="https://cares.advisers.jp/">← 健康日記トップ</a></header>
 
 <div class="hero">
-<h1>うつ病 完全ガイド｜症状・治療・記録アプリ</h1>
-<p style="color:#4338ca;font-size:13px">世界 <strong>3.32 億人</strong>・日本 <strong>約 172 万人</strong>のうつ病患者を支えるための完全ガイド。毎日の気分・PHQ-9 スコア・服薬・睡眠を記録し、AI が個別化のアドバイスを提示します。</p>
+<h1>うつ病（大うつ病性障害）完全ガイド</h1>
+<p style="color:#4338ca;font-size:13px">世界 <strong>3.32 億人</strong>・日本 <strong>約 172 万人</strong>のうつ病患者を支えるための完全ガイド。PHQ-9 スコアの見方・SSRI・TMS・傷病手当金・毎日の記録方法を解説します。</p>
 <a class="cta" href="https://cares.advisers.jp/?d=depression">無料で記録を始める →</a>
 </div>
 
@@ -45,49 +53,120 @@
 <strong>⚠ 緊急時:</strong> 強い希死念慮があるときは <strong>よりそいホットライン 0120-279-338</strong>（24 時間、無料）、<strong>いのちの電話 0570-783-556</strong> にご連絡ください。命の危険がある場合は 119 番。
 </div>
 
-<h2>うつ病（大うつ病性障害）とは何か</h2>
-<p>うつ病（Major Depressive Disorder, MDD）は、抑うつ気分と興味・喜びの消失を中核症状とする気分障害です。単なる「気分の落ち込み」ではなく、脳の神経伝達物質（セロトニン・ノルアドレナリン・ドーパミン）のバランス、HPA 軸機能障害、炎症、遺伝的要因、環境ストレスが複雑に絡み合って発症します。ICD-11 では <strong>6A70</strong> として分類されています。</p>
-<p>WHO の 2025 年推計では世界で 3.32 億人、日本では厚労省の患者調査（2020 年）で約 172 万人が医療機関を受診していると報告されています。生涯有病率は約 15%（日本）とされ、実際にうつ病を経験したことがある人はもっと多い可能性があります。</p>
+<div class="toc">
+<strong>目次</strong>
+<ol>
+<li><a href="#what">うつ病とは</a></li>
+<li><a href="#symptoms">症状チェック（DSM-5）</a></li>
+<li><a href="#phq9">PHQ-9 スコアの見方</a></li>
+<li><a href="#treatment">治療選択肢</a></li>
+<li><a href="#work">仕事・傷病手当金</a></li>
+<li><a href="#recording">記録が重要な理由</a></li>
+<li><a href="#faq">よくある質問</a></li>
+</ol>
+</div>
 
-<h2>主な症状（DSM-5 診断基準）</h2>
-<p>以下の症状のうち 5 つ以上が <strong>2 週間以上</strong>続き、かつ「抑うつ気分」または「興味・喜びの消失」のどちらか（または両方）を含む必要があります:</p>
+<h2 id="what">うつ病（大うつ病性障害）とは何か</h2>
+<p>うつ病（Major Depressive Disorder, MDD）は、抑うつ気分と興味・喜びの消失を中核症状とする気分障害です。単なる「気分の落ち込み」ではなく、脳の神経伝達物質（セロトニン・ノルアドレナリン・ドーパミン）のバランス、HPA 軸機能障害、炎症、遺伝的要因、環境ストレスが複雑に絡み合って発症します。ICD-11 では <strong>6A70</strong> として分類されています。</p>
+<p>WHO の 2025 年推計では世界で 3.32 億人、日本では厚労省の患者調査（2020 年）で約 172 万人が医療機関を受診しています。生涯有病率は約 15%（日本）とされており、「以前より気力がない」「楽しめない」という軽症も含めると実際はもっと多いと推定されています。</p>
+
+<h2 id="symptoms">主な症状（DSM-5 診断基準）</h2>
+<p>以下の症状のうち <strong>5 つ以上が 2 週間以上続き</strong>、かつ「抑うつ気分」または「興味・喜びの消失」のどちらか（または両方）を含む必要があります:</p>
 <ul>
 <li><strong>抑うつ気分</strong>（1 日のほとんど、ほぼ毎日）</li>
-<li><strong>興味・喜びの消失</strong>（アンヘドニア）</li>
-<li><strong>食欲変化・体重変動</strong>（著しい増減）</li>
+<li><strong>興味・喜びの消失</strong>（アンヘドニア）— 以前楽しかったことが楽しめない</li>
+<li><strong>食欲変化・体重変動</strong>（著しい増減、1 ヶ月に体重の 5% 以上）</li>
 <li><strong>不眠または過眠</strong></li>
-<li><strong>精神運動性焦燥または制止</strong></li>
+<li><strong>精神運動性焦燥または制止</strong>（落ち着かない、または動けない）</li>
 <li><strong>疲労・気力減退</strong></li>
 <li><strong>無価値感・罪責感</strong></li>
 <li><strong>思考力・集中力・決断力の低下</strong></li>
 <li><strong>死について考える・希死念慮</strong></li>
 </ul>
 
-<h2>治療選択肢</h2>
-<div class="box"><div class="box-title">💊 SSRI（選択的セロトニン再取り込み阻害薬）</div><p>セルトラリン（ジェイゾロフト）、エスシタロプラム（レクサプロ）、パロキセチン（パキシル）、フルボキサミン（ルボックス）。効果発現に 2-4 週間。最初の 1-2 週間は副作用（嘔気・頭痛・不安増悪）が出やすく注意。</p></div>
-<div class="box"><div class="box-title">💊 SNRI（セロトニン・ノルアドレナリン再取り込み阻害薬）</div><p>デュロキセチン（サインバルタ）、ベンラファキシン（イフェクサー SR）、ミルナシプラン。疼痛と抑うつが併存するときに有効。</p></div>
-<div class="box"><div class="box-title">💊 その他の抗うつ薬</div><p>NaSSA（ミルタザピン/リフレックス）、ブプロピオン（米国）、ボルチオキセチン（トリンテリックス）、トラゾドン、三環系抗うつ薬。</p></div>
-<div class="box"><div class="box-title">🧠 TMS（経頭蓋磁気刺激療法）</div><p>日本でも 2019 年から保険適用。治療抵抗性うつ病に週 5 回 × 6 週間。磁気刺激で前頭前野を活性化。副作用が少なく長期効果あり。</p></div>
-<div class="box"><div class="box-title">💉 ケタミン / エスケタミン（スプラバト）</div><p>米国で急速作用の治療抵抗性うつ病薬として承認。日本では未承認だが自費クリニックで実施可能。数時間で効果発現、週 2 回で 4-6 週間。</p></div>
-<div class="box"><div class="box-title">🧘 CBT（認知行動療法）</div><p>認知の歪みを修正し、行動活性化を促す心理療法。軽症〜中等症で薬物療法と同等の効果がメタ分析で示されている。日本でも保険適用あり。</p></div>
-<div class="box"><div class="box-title">🌱 生活療法</div><p>毎日の散歩 20 分、朝の日光曝露 10 分、規則正しい睡眠、オメガ 3 脂肪酸、ビタミン D、葉酸、運動療法（軽症で抗うつ薬と同等の効果）。</p></div>
+<h2 id="phq9">PHQ-9 スコアの見方</h2>
+<p>PHQ-9（Patient Health Questionnaire-9）は 9 項目を各 0〜3 点で評価する標準的なうつ病スクリーニングツールです。合計 0〜27 点で重症度を判定します。</p>
+<table class="phq-table">
+<thead><tr><th>合計スコア</th><th>重症度</th><th>推奨される行動</th></tr></thead>
+<tbody>
+<tr><td>0〜4 点 <span class="score-badge score-ok">軽微/なし</span></td><td>症状なし〜軽微</td><td>経過観察でOK</td></tr>
+<tr><td>5〜9 点 <span class="score-badge score-mild">軽症</span></td><td>軽症うつ</td><td>記録継続・かかりつけ医に相談</td></tr>
+<tr><td>10〜14 点 <span class="score-badge score-mod">中等症</span></td><td>中等症うつ</td><td>精神科・心療内科への受診を検討</td></tr>
+<tr><td>15〜19 点 <span class="score-badge score-sev">やや重症</span></td><td>やや重症うつ</td><td>速やかに受診</td></tr>
+<tr><td>20〜27 点 <span class="score-badge score-sev">重症</span></td><td>重症うつ</td><td>早急に受診（休職・入院を検討）</td></tr>
+</tbody>
+</table>
+<p style="font-size:12px;color:#64748b">※ PHQ-9 は診断ツールではありません。スコアが高い場合は必ず医師の診断を受けてください。健康日記では 2 週間ごとの PHQ-9 記録と AI による傾向分析が可能です。</p>
 
-<h2>記録が重要な理由</h2>
-<p>うつ病は <strong>PHQ-9</strong>（9 項目質問票）を定期的に記録することで改善度が数値化できます。主治医への共有も容易になります。健康日記では:</p>
+<h2 id="treatment">治療選択肢</h2>
+<div class="box"><div class="box-title">💊 SSRI（選択的セロトニン再取り込み阻害薬）— 第一選択</div><p>セルトラリン（ジェイゾロフト）、エスシタロプラム（レクサプロ）、パロキセチン（パキシル）、フルボキサミン（ルボックス）。効果発現に 2-4 週間。最初の 1-2 週間は嘔気・頭痛・不安増悪が出やすいが多くは自然軽快。急な中断は避け、必ず医師と相談して漸減すること。</p></div>
+<div class="box"><div class="box-title">💊 SNRI（セロトニン・ノルアドレナリン再取り込み阻害薬）</div><p>デュロキセチン（サインバルタ）、ベンラファキシン（イフェクサー SR）、ミルナシプラン（トレドミン）。疼痛と抑うつが併存するときや、SSRI で効果が不十分なときに有効。</p></div>
+<div class="box"><div class="box-title">💊 その他の抗うつ薬</div><p>NaSSA（ミルタザピン/リフレックス）、ボルチオキセチン（トリンテリックス）、トラゾドン（レスリン）。SSRI/SNRI で効果が不十分・副作用が強い場合の選択肢として検討。</p></div>
+<div class="box"><div class="box-title">🧠 TMS（経頭蓋磁気刺激療法）</div><p>2019 年より保険適用（治療抵抗性うつ病）。磁気刺激で左前頭前野の活動を高め、週 5 回 × 6 週間で実施。副作用が少なく（軽度の頭痛・頭皮不快感）、抗うつ薬が使えない妊婦にも選択可能。保険適用外施設では費用は 30〜60 万円程度。</p></div>
+<div class="box"><div class="box-title">💉 ケタミン / エスケタミン（スプラバト）</div><p>数時間で効果発現する速効型。米国では FDA 承認済、日本では自費クリニックで実施可能。週 2 回 × 4-6 週間が標準。1 回 3〜8 万円が目安。希死念慮が高い急性期に有効なことがある。</p></div>
+<div class="box"><div class="box-title">🧘 認知行動療法（CBT）</div><p>認知の歪みを修正し行動活性化を促す心理療法。軽症〜中等症で薬物療法と同等の効果がメタ分析で示されている（Cuijpers et al. 2019）。日本でも一部保険適用あり（うつ病で週 1 回 × 16 回）。</p></div>
+<div class="box"><div class="box-title">🌱 生活療法（補完的アプローチ）</div><p>有酸素運動（週 3 回・30 分以上）、朝の日光曝露 10〜20 分、規則正しい睡眠（同じ時間に起床）、オメガ 3 脂肪酸・ビタミン D・葉酸の補給。軽症うつでは運動療法が抗うつ薬と同等の効果を示す研究もある。</p></div>
+
+<h2 id="work">仕事と傷病手当金</h2>
+<h3>休職が治療になることがある</h3>
+<p>中等症以上のうつ病では、「まず休む」ことが治療の第一歩です。無理に出勤を続けると回復が大幅に遅れることがあります。主治医に「診断書（傷病手当金用）」を依頼することで、以下のサポートを受けられます。</p>
 <ul>
-<li>毎日の気分（1-10）</li>
-<li>PHQ-9 スコアの定期記録</li>
-<li>服薬（SSRI/SNRI）の効果と副作用</li>
-<li>睡眠・食欲・活動量</li>
-<li>トリガー（ストレス・対人関係・季節変動）</li>
-<li>改善の兆し（小さな楽しみ・達成感）</li>
-<li>AI による気分パターン分析</li>
+<li><strong>傷病手当金</strong>：健康保険から最長 <strong>1 年 6 ヶ月間</strong>、給与の約 <strong>2/3</strong>（標準報酬月額の 2/3）が支給されます。待機期間は 3 日間で、4 日目から対象です。</li>
+<li><strong>精神障害者保健福祉手帳</strong>：重症度に応じて取得可能（2 級・3 級）。税の控除、交通費割引などの優遇があります。</li>
+<li><strong>自立支援医療制度</strong>：医療費が 1 割負担になります（収入制限あり）。精神科受診・薬代が対象。申請は市区町村の担当窓口へ。</li>
 </ul>
+<p>健康日記では傷病手当金の申請に必要な「症状経過記録」を自動でまとめ、主治医への提出資料として出力できます。</p>
+
+<h2 id="recording">記録が重要な理由</h2>
+<p>うつ病は症状が波打ちます。「昨日は良かったのに今日は最悪」という日が続くと、治療効果が見えなくなります。毎日の記録が解決策です。健康日記で記録できる項目:</p>
+<ul>
+<li>気分スコア（1〜10）と気分の理由・きっかけ</li>
+<li>PHQ-9 スコア（2 週間ごとの定点観測）</li>
+<li>服薬（SSRI/SNRI）の効果・副作用メモ</li>
+<li>睡眠時間・質（入眠時間・中途覚醒・起床時の気分）</li>
+<li>食欲・体重の変化</li>
+<li>トリガー（ストレスイベント・対人摩擦・季節・天気）</li>
+<li>良かったこと・小さな達成（ポジティブ日記）</li>
+<li>AI による気分パターン分析と改善提案</li>
+</ul>
+<p>蓄積したデータは「医師提出用サマリーレポート」として自動生成でき、3 分の診察でも的確に伝えられます。</p>
 
 <div class="hero" style="text-align:center;margin-top:24px">
-<h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から記録を始めましょう</h2>
-<p style="color:#4338ca;font-size:13px">完全無料・本人のみアクセス可能</p>
+<h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から PHQ-9 記録を始めましょう</h2>
+<p style="color:#4338ca;font-size:13px">完全無料・本人のみアクセス可能・医師提出レポート自動生成</p>
 <a class="cta" href="https://cares.advisers.jp/?d=depression">健康日記を開く →</a>
+</div>
+
+<h2 id="faq">よくある質問</h2>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">うつ病はどれくらいの期間で治りますか？</div>
+<div class="faq-a">個人差が大きく、軽症なら 3〜6 ヶ月、中等症以上では 1 年以上かかることもあります。抗うつ薬は症状が改善した後も <strong>6 ヶ月〜1 年は継続服薬</strong>が推奨されます（日本うつ病学会ガイドライン）。完治後も 30〜50% の確率で再発するため、日々の記録で早期サインを掴むことが大切です。</div>
+</div>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">PHQ-9 スコアの目安を教えてください。</div>
+<div class="faq-a">0〜4 点：症状なし、5〜9 点：軽症（経過観察）、10〜14 点：中等症（受診を検討）、15〜19 点：やや重症（受診推奨）、20〜27 点：重症（早急に受診）。2 週間ごとに記録すると治療効果が数値で見えます。</div>
+</div>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">SSRI を飲み始めると最初に副作用が出やすいと聞きました。</div>
+<div class="faq-a">正しいです。服薬開始後 1〜2 週間は吐き気・頭痛・不安増悪・眠気が出やすく、この時期に自己中断してしまう方が多いです。ほとんどの場合 2〜4 週間で軽減します。症状を日記に記録し、次の受診で医師に伝えることで量の調整や薬の変更をしてもらいやすくなります。</div>
+</div>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">うつ病で仕事を続けることはできますか？</div>
+<div class="faq-a">軽症なら就労継続が可能なことも多いですが、中等症以上では休職が治療の一環です。健康保険から「傷病手当金」（最長 1 年 6 ヶ月、給与の約 2/3）が受給できます。産業医や主治医と相談し、段階的復帰（リワーク）を検討してください。</div>
+</div>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">うつ病は自然に治りますか？</div>
+<div class="faq-a">軽症では自然寛解することもありますが、中等症以上では治療なしに長引くリスクが高く、慢性化・再発率も上がります。早期に精神科・心療内科を受診し適切な治療を受けることが、回復期間の短縮につながります。</div>
+</div>
+
+<div class="faq-item">
+<div class="faq-q" onclick="this.parentElement.classList.toggle('open')">記録を続けることで何が変わりますか？</div>
+<div class="faq-a">気分・睡眠・服薬・トリガーを毎日記録すると、①再発の前兆（睡眠悪化・意欲低下）を早期に検出できる、②次の診察で「先週はこうでした」と具体的に伝えられる、③薬の効果が数値で見えるため自己中断のリスクが減る、という 3 つのメリットがあります。健康日記の AI がパターンを分析し、医師提出用レポートも自動生成します。</div>
 </div>
 
 <h2>関連疾患ガイド</h2>
@@ -105,7 +184,7 @@
 
 <footer>
 <div><a href="https://cares.advisers.jp/">健康日記</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a>・<a href="https://note.com/age">note</a>・<a href="mailto:info@bluemarl.in">問い合わせ</a></div>
-<div style="margin-top:8px;font-size:11px">本情報は参考情報です。健康上の判断は必ず医師にご相談ください。<br>© 2026 シェアーズ株式会社</div>
+<div style="margin-top:8px;font-size:11px">本情報は医療情報の参考として提供しています。健康上の判断は必ず医師にご相談ください。<br>© 2026 シェアーズ株式会社</div>
 </footer>
 </div>
 <script defer src="/js/analytics.js"></script>
