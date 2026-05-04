@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2124,7 +2127,10 @@ function callClaude(text, apiKey, model, systemPrompt) {
     // to workers.dev. Surface a clearer hint instead of the raw message.
     var em = (err && err.message) ? String(err.message) : String(err);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
-      throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
+      var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+      throw new Error(inApp
+        ? 'アプリ内ブラウザでは接続できません。Safari または Chrome で開いてください。'
+        : 'AI サーバーに接続できませんでした。ページを再読み込み (↻) してお試しください。');
     }
     throw err;
   });
@@ -2244,20 +2250,9 @@ function extractJSON(text) {
 // Detect English Claude refusal strings ("I'm sorry, I can't assist...")
 // that sometimes slip through when the user's free-text entry triggers
 // the model's safety classifier. Also catches the Japanese variant.
-function isRefusalReply(text) {
-  if (!text) return true;
-  var s = String(text).trim();
-  if (!s) return true;
-  var patterns = [
-    /i'?m sorry[,.]? (but )?i (can'?t|cannot|am not able to|won'?t) (assist|help)/i,
-    /i (can'?t|cannot) (help|assist) (with|you) (that|this)/i,
-    /i'?m not able to (assist|help)/i,
-    /申し訳(ありません|ございません)が.*(お手伝い|お答え|ご案内)(でき|いたしかね)/,
-  ];
-  for (var i = 0; i < patterns.length; i++) if (patterns[i].test(s)) return true;
-  return false;
-}
-var REFUSAL_FALLBACK = '記録を保存しました。本日のテキストを受け取りました。詳細な分析は次回の主治医診察の材料としてご活用ください。';
+// isRefusalReply / REFUSAL_FALLBACK は削除済み。
+// AI の応答をそのまま表示する。静的テンプレートに差し替えると
+// 「毎回同じ回答」バグの原因になるため。
 
 // Override ALL AI-related methods after external JS loads
 window.addEventListener('load', function() {
@@ -2302,9 +2297,18 @@ window.addEventListener('load', function() {
   };
   var buildSystemPrompt = function() {
     var label = getDiseasesLabel();
-    var base = 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。';
-    if (!label) return base + '\n\n注意: ユーザーの疾患は未設定です。特定の疾患（ME/CFS 等）を前提にせず、一般的な慢性疾患サポートの観点で返答してください。';
-    return base + '\n\nユーザーの該当疾患: ' + label + '\n重要: 上記の疾患のみを前提にアドバイスしてください。該当しない疾患（特に ME/CFS や慢性疲労症候群）を前提にしたり、ペーシング・NICE ガイドライン等を無関係に持ち出したりしないでください。';
+    var base = 'あなたは健康日記アプリの「日記分析コンパニオン」です。\n' +
+      'これは教育的な情報提供タスクであり、医療行為ではありません。\n\n' +
+      '【役割】公開されている健康情報を整理して共有する教育的コンパニオン。\n' +
+      '【前提】ユーザーは慢性疾患の成人当事者で既に主治医診療中。\n' +
+      '【応答指針】\n' +
+      '- どんな質問にも役立つ一般情報を提供する。情報を出し惜しみしない\n' +
+      '- 公開情報レベルであれば医療トピックでも遠慮なく共有してよい\n' +
+      '- 温かく寄り添い、希望を添えて、具体的で誠実に共有する\n' +
+      '- ユーザーへの質問は極力控える。情報提供に徹する\n' +
+      '- 末尾に「※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。」を付ける';
+    if (!label) return base + '\n\n注意: ユーザーの疾患は未設定です。特定の疾患を前提にせず、一般的な慢性疾患サポートの観点で返答してください。';
+    return base + '\n\nユーザーの該当疾患: ' + label + '\n重要: 上記の疾患のみを前提にアドバイスしてください。該当しない疾患を前提にしないでください。';
   };
 
   // Route「記録」tab text entries through the same fast inline callClaude
@@ -2330,7 +2334,7 @@ window.addEventListener('load', function() {
     var key = await resolveKey();
     if (!key) throw new Error('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
     var reply = await callClaude(input, key, store.get('selectedModel'), buildSystemPrompt());
-    if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+    // AI応答をそのまま使用（静的差替は削除済み）
     return {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       timestamp: new Date().toISOString(),
@@ -2491,7 +2495,6 @@ window.addEventListener('load', function() {
         buildDeepSystemPrompt(),
         2500
       );
-      if (isRefusalReply(raw)) raw = REFUSAL_FALLBACK;
       var parsed = extractJSON(raw);
       var result;
       if (parsed && typeof parsed === 'object') {
@@ -2864,7 +2867,7 @@ window.addEventListener('load', function() {
       var userMsg = '【直近の会話】\n' + recentHistory + '\n\n【今回のメッセージ】\n' + msg;
       var sys = buildSystemPrompt() + '\n\nあなたは健康相談のチャットパートナーです。会話形式で、必要に応じて箇条書きを織り交ぜながら返答してください。返答は 200-400 字程度で簡潔に。';
       var reply = await callClaude(userMsg, key, store.get('selectedModel'), sys);
-      if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+      // AI応答をそのまま使用（静的差替は削除済み）
       history.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
       store.set('conversationHistory', history);
       if (typeof app.renderChatMessages === 'function') app.renderChatMessages();
@@ -2888,7 +2891,7 @@ window.addEventListener('load', function() {
     var key = await resolveKey();
     try {
       var reply = await callClaude(input.value.trim(), key || '', 'claude-haiku-4-5', buildSystemPrompt());
-      if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+      // AI応答をそのまま使用（静的差替は削除済み）
       if (el) el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px"><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">'+esc(reply)+'</div></div>';
     } catch(e) {
       if (el) {
@@ -2899,10 +2902,10 @@ window.addEventListener('load', function() {
         // open-external logic the proactive banner uses, so the user
         // can fix the situation in one tap instead of copying the URL.
         var msg = String(e && e.message || e);
-        var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser()) || /外部ブラウザ/.test(msg);
+        var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser()) || /アプリ内ブラウザ/.test(msg);
         var extraBtn = inAppHit
           ? '<button onclick="window.openInExternalBrowser && window.openInExternalBrowser()" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🌐 外部ブラウザで開く</button>'
-          : '';
+          : '<button onclick="location.reload(true)" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">↻ ページを再読み込み</button>';
         el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + '</div>';
       }
     }
@@ -3109,7 +3112,7 @@ window.addEventListener('load', function() {
     if (!key) { store.set('isAnalyzing',false); store.set('latestFeedbackError','APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
     try {
       var reply = await callClaude(content, key, store.get('selectedModel'), buildSystemPrompt());
-      if (isRefusalReply(reply)) reply = REFUSAL_FALLBACK;
+      // AI応答をそのまま使用（静的差替は削除済み）
       store.set('isAnalyzing', false);
       store.set('latestFeedback', { summary:'分析結果', findings: reply, actions:[], _fromAPI:true });
     } catch(e) {
