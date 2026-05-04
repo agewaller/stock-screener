@@ -6,6 +6,7 @@ on:
     paths:
       - "worker/**"
       - "wrangler.toml"
+      - "wrangler.jsonc"
       - "wrangler.plaud-inbox.toml"
       - "wrangler.professional-mailer.toml"
       - "wrangler.research-updater.toml"
@@ -22,7 +23,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: "."
-          command: deploy --name stock-screener
+          command: deploy --config wrangler.jsonc
 
   deploy-plaud-inbox:
     runs-on: ubuntu-latest
