@@ -615,6 +615,38 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>
 
+  <!-- Quick Symptom Score Widget -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+      onclick="var c=document.getElementById('dash-symptom-sliders');var open=c.style.display!=='none';c.style.display=open?'none':'block';this.querySelector('.arr').textContent=open?'▸':'▾'">
+      <span style="font-size:13px;font-weight:600;color:var(--text-primary)">📊 症状スコアを記録（数値で）</span>
+      <span class="arr" style="font-size:12px;color:var(--text-muted)">▸</span>
+    </div>
+    <div id="dash-symptom-sliders" style="display:none;padding:0 16px 14px">
+      ${[
+        { key: 'fatigue_level', label: '疲労度', min: 0, max: 7 },
+        { key: 'pain_level', label: '痛み', min: 0, max: 7 },
+        { key: 'brain_fog', label: 'ブレインフォグ', min: 0, max: 7 },
+        { key: 'sleep_quality', label: '睡眠の質', min: 0, max: 7 },
+      ].map(s => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+            <span style="color:var(--text-secondary)">${s.label}</span>
+            <span id="qs-val-${s.key}" style="font-weight:700;color:var(--accent);min-width:20px;text-align:right">${Math.floor((s.max - s.min) / 2)}</span>
+          </div>
+          <input type="range" id="qs-${s.key}" min="${s.min}" max="${s.max}" value="${Math.floor((s.max - s.min) / 2)}"
+            style="width:100%;accent-color:var(--accent)"
+            oninput="document.getElementById('qs-val-${s.key}').textContent=this.value">
+        </div>
+      `).join('')}
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:var(--text-secondary)">
+        <input type="checkbox" id="qs-pem" style="accent-color:var(--accent)">
+        PEM（労作後倦怠感）あり
+      </label>
+      <button class="btn btn-primary btn-sm" onclick="app.dashQuickSymptoms()" style="width:100%;font-size:13px">症状スコアを記録</button>
+    </div>
+  </div>
+
   <!-- Deep-analysis trigger sits directly below the input so the button is
        reachable without scrolling past the feedback card. Always rendered
        when a textEntry exists; after today's run it stays visible but

@@ -3030,6 +3030,23 @@ ${responseText.substring(0, 3000)}`;
     Components.showToast('記録を更新しました', 'success');
   }
 
+  dashQuickSymptoms() {
+    const get = (id) => document.getElementById(id);
+    const data = {
+      fatigue_level: parseInt(get('qs-fatigue_level')?.value ?? 3, 10),
+      pain_level:    parseInt(get('qs-pain_level')?.value    ?? 3, 10),
+      brain_fog:     parseInt(get('qs-brain_fog')?.value     ?? 3, 10),
+      sleep_quality: parseInt(get('qs-sleep_quality')?.value ?? 3, 10),
+      pem:           get('qs-pem')?.checked ?? false,
+    };
+    store.addHealthData('symptoms', data);
+    store.calculateHealthScore();
+    const sliders = get('dash-symptom-sliders');
+    if (sliders) sliders.style.display = 'none';
+    this.navigate('dashboard');
+    Components.showToast('症状スコアを記録しました', 'success');
+  }
+
   // One-shot purge of aiComments entries matching the old demo
   // output shape. These got persisted before the rejection guards
   // were added and keep resurfacing as garbled JSON in the dashboard.
