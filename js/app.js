@@ -2966,6 +2966,21 @@ ${responseText.substring(0, 3000)}`;
     return comments[entryId] || null;
   }
 
+  deleteTextEntry(id) {
+    const entries = store.get('textEntries') || [];
+    store.set('textEntries', entries.filter(e => e.id !== id));
+    const comments = store.get('aiComments') || {};
+    delete comments[id];
+    store.set('aiComments', comments);
+    // Propagate deletion to Firestore so it survives reloads for logged-in users.
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id).catch(() => {});
+    }
+    const cur = store.get('currentPage') || 'dashboard';
+    this.navigate(cur);
+    Components.showToast('記録を削除しました', 'success');
+  }
+
   // One-shot purge of aiComments entries matching the old demo
   // output shape. These got persisted before the rejection guards
   // were added and keep resurfacing as garbled JSON in the dashboard.
@@ -4255,7 +4270,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.confirmAction(this,'クリア',()=>{store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)})">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">

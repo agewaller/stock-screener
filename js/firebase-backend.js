@@ -375,6 +375,23 @@ var FirebaseBackend = {
     return await this.saveHealthEntry('textEntries', entry);
   },
 
+  // Delete a health entry from a Firestore collection by its local `id` field.
+  // Queries for documents where id == localId and deletes them all.
+  async deleteHealthEntry(collection, localId) {
+    if (!this.userId || !this.initialized || !localId) return false;
+    try {
+      const snap = await this.userCollection(collection).where('id', '==', localId).get();
+      if (snap.empty) return false;
+      const batch = this.db.batch();
+      snap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      return true;
+    } catch (err) {
+      console.error('[FirebaseBackend] deleteHealthEntry error:', err);
+      return false;
+    }
+  },
+
   // Save conversation message
   async saveConversation(message) {
     return await this.saveHealthEntry('conversations', message);

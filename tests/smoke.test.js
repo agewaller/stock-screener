@@ -112,9 +112,10 @@ test('Every onclick="app.X()" references a real App method', () => {
   });
   const missing = [];
   methods.forEach(fn => {
-    // Check if method exists in script (class method or prototype)
+    // Check if method exists in js/* modules, prototype, or index.html inline app.X = assignment
     const hasMethod = new RegExp(`(?:^|\\s)${fn}\\s*\\(`).test(script) ||
-                      new RegExp(`App\\.prototype\\.${fn}`).test(script);
+                      new RegExp(`App\\.prototype\\.${fn}`).test(script) ||
+                      new RegExp(`app\\.${fn}\\s*=`).test(html);
     if (!hasMethod) missing.push(fn);
   });
   assert(missing.length === 0, `Missing App methods: ${missing.join(', ')}`);
@@ -488,7 +489,8 @@ test('pages.yml deploys on main push', () => {
 
 test('deploy-worker.yml deploys both workers', () => {
   const yml = fs.readFileSync(path.join(ROOT, '.github/workflows/deploy-worker.yml'), 'utf8');
-  assert(yml.includes('stock-screener'), 'must deploy anthropic-proxy');
+  // anthropic-proxy is deployed via wrangler.jsonc (worker name: stock-screener)
+  assert(yml.includes('wrangler.jsonc') || yml.includes('stock-screener'), 'must deploy anthropic-proxy');
   assert(yml.includes('plaud-inbox'), 'must deploy plaud-inbox');
 });
 
