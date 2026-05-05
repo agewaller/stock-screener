@@ -763,6 +763,40 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- 7-day symptom trend mini-chart (shown only when ≥1 symptom recorded) -->
+  ${recent7.length > 0 ? (() => {
+    const LABELS = [
+      { key: 'fatigue_level', label: '疲労', avg: fatigueAvg, change: fatigueChange },
+      { key: 'pain_level',    label: '痛み', avg: painAvg,    change: painChange    },
+      { key: 'brain_fog',     label: '霧',   avg: fogAvg,     change: fogChange     },
+      { key: 'sleep_quality', label: '睡眠', avg: sleepAvg,   change: sleepChange   },
+    ].filter(m => m.avg !== '--');
+    if (LABELS.length === 0) return '';
+    const bars = LABELS.map(m => {
+      const pct = Math.round((parseFloat(m.avg) / 7) * 100);
+      const arw = m.change > 0 ? '↑' : m.change < 0 ? '↓' : '→';
+      const col = (m.key === 'sleep_quality')
+        ? (m.change >= 0 ? '#22c55e' : '#ef4444')
+        : (m.change <= 0 ? '#22c55e' : '#ef4444');
+      return `
+        <div style="flex:1;min-width:54px;text-align:center">
+          <div style="font-size:9px;color:var(--text-muted);margin-bottom:3px">${m.label}</div>
+          <div style="height:44px;background:var(--bg-tertiary);border-radius:4px;position:relative;overflow:hidden">
+            <div style="position:absolute;bottom:0;left:0;right:0;height:${pct}%;background:var(--accent);opacity:0.75;border-radius:4px 4px 0 0;transition:height .3s"></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;margin-top:3px">${m.avg}<span style="font-size:9px;color:${col};margin-left:2px">${arw}</span></div>
+        </div>`;
+    }).join('');
+    return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body" style="padding:12px 16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">📈 直近7日間の平均症状スコア（/7）</div>
+        <div style="display:flex;gap:8px">${bars}</div>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:6px;text-align:right">${recent7.length}件のデータ — <a onclick="app.navigate('timeline')" style="color:var(--accent);cursor:pointer">詳細を見る →</a></div>
+      </div>
+    </div>`;
+  })() : ''}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];

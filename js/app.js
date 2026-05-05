@@ -3037,7 +3037,7 @@ ${responseText.substring(0, 3000)}`;
       pain_level:    parseInt(get('qs-pain_level')?.value    ?? 3, 10),
       brain_fog:     parseInt(get('qs-brain_fog')?.value     ?? 3, 10),
       sleep_quality: parseInt(get('qs-sleep_quality')?.value ?? 3, 10),
-      pem:           get('qs-pem')?.checked ?? false,
+      pem_status:    get('qs-pem')?.checked ?? false,
     };
     store.addHealthData('symptoms', data);
     store.calculateHealthScore();
