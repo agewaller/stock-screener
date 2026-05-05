@@ -738,6 +738,7 @@ var FirebaseBackend = {
         if (profile.settings?.customPrompts) store.set('customPrompts', profile.settings.customPrompts);
         if (profile.settings?.affiliateConfig) store.set('affiliateConfig', profile.settings.affiliateConfig);
         if (profile.settings?.dashboardLayout) store.set('dashboardLayout', profile.settings.dashboardLayout);
+        if (profile.settings?.customDiseaseName) store.set('customDiseaseName', profile.settings.customDiseaseName);
         if (profile.userProfile) store.set('userProfile', profile.userProfile);
         if (profile.adminEmails) {
           try { app.ADMIN_EMAILS = [...new Set(['agewaller@gmail.com', ...profile.adminEmails])]; } catch(e) {}
@@ -975,7 +976,7 @@ var FirebaseBackend = {
     store.on('bloodTests',   syncLatest('bloodTests'));
 
     // Watch for settings changes (idempotent; merge:true)
-    ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
+    ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout', 'customDiseaseName'].forEach(key => {
       store.on(key, (value) => {
         if (this._loading) return;
         if (!this.userId) return;
