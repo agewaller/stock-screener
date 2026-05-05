@@ -398,6 +398,9 @@ var Components = {
       // Headers
       .replace(/^### (.+)$/gm, '<div style="font-size:14px;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</div>')
       .replace(/^## (.+)$/gm, '<div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</div>')
+      // Bullet lists (- or * at start of line)
+      .replace(/^[*\-] (.+)$/gm, '<div style="padding-left:14px;margin-bottom:2px">・$1</div>')
+      .replace(/^\d+\. (.+)$/gm, '<div style="padding-left:14px;margin-bottom:2px">$1</div>')
       .replace(/\n/g, '<br>');
   },
 
