@@ -1290,15 +1290,21 @@ App.prototype.render_data_input = function() {
 
   const recentHtml = recentTexts.length > 0 ? `
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
-      <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px">最近の記録（${textEntries.length}件）</h4>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">
+        <h4 style="font-size:13px;font-weight:600;color:var(--text-secondary);flex-shrink:0">最近の記録（${textEntries.length}件）</h4>
+        <input type="search" id="entry-search" placeholder="記録を検索..." style="flex:1;padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);max-width:200px"
+          oninput="var q=this.value.toLowerCase();document.querySelectorAll('.di-entry').forEach(function(el){var t=(el.dataset.title+' '+el.dataset.content).toLowerCase();el.style.display=t.includes(q)?'':'none'})">
+      </div>
       <div style="max-height:60vh;overflow-y:auto;padding-right:4px">
       ${recentTexts.map(e => {
         const rawContent = e.content || '';
         const safeContent = Components.escapeHtml(rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent);
         const safeTitle = e.title ? Components.escapeHtml(e.title) : '';
         const safeCategory = Components.escapeHtml(categoryLabels[e.category] || e.category || '');
+        const searchTitle = Components.escapeHtml(e.title || '');
+        const searchContent = Components.escapeHtml(rawContent.substring(0, 200));
         return `
-        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+        <div class="di-entry" data-title="${searchTitle}" data-content="${searchContent}" style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
             <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
