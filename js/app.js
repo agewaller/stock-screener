@@ -3597,26 +3597,30 @@ ${axisHint}
     this.navigate('dashboard');
 
     // Simple direct API call — no heavy prompt interpolation, no fallback chain.
+    // Route through the Cloudflare Worker proxy when no personal API key is set
+    // so users who signed in without configuring their own key can still get AI feedback.
     const entryId = entry.id;
     const apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey) {
+    const proxyUrl = (() => {
+      try { return (localStorage.getItem('anthropic_proxy_url') || '').trim() || 'https://stock-screener.agewaller.workers.dev'; } catch(_) { return 'https://stock-screener.agewaller.workers.dev'; }
+    })();
+    const useProxy = !apiKey && localStorage.getItem('enable_shared_guest_ai') !== '0';
+    if (!apiKey && !useProxy) {
       store.set('isAnalyzing', false);
       store.set('latestFeedbackError', 'APIキーが設定されていません。管理パネル→APIキーで設定してください。');
       return;
     }
+    const endpoint = useProxy ? proxyUrl : 'https://api.anthropic.com/v1/messages';
+    const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+    if (apiKey) { headers['x-api-key'] = apiKey; headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
 
     const diseases = (store.get('selectedDiseases') || []).join('・');
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 25000);
 
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers,
       body: JSON.stringify({
         model: store.get('selectedModel') || 'claude-sonnet-4-6',
         max_tokens: 800,
