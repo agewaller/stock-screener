@@ -3856,6 +3856,7 @@ App.prototype._exportAsMarkdown = function(data, period) {
   pushAll('meals',               '食事',         '🍽️');
   pushAll('sleepData',           '睡眠',         '😴');
   pushAll('bloodTests',          '血液検査',     '🩸');
+  pushAll('activityData',        '活動量',       '🚶');
   pushAll('plaudAnalyses',       '禅トラック',   '🎙️');
   allEntries.sort((a, b) => a.ts - b.ts);
 
