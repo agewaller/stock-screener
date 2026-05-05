@@ -5,12 +5,12 @@
  *
  * セキュリティ:
  *   1. CORS Origin を cares.advisers.jp のみに制限
- *   2. env.ANTHROPIC_API_KEY フォールバック削除 — クライアントが x-api-key 必須
- *   3. 拒否検出・リトライ・サニタイズ・安全プロンプト注入はすべてサーバー側
- *   4. クライアントは {disease, symptoms} と選択した promptKey のみ送信可
+ *   2. env.ANTHROPIC_API_KEY をゲスト用フォールバックとして使用
+ *   3. クライアントが x-api-key を持っていればそちらを優先
  *
  * デプロイ:
- *   git push → deploy-worker.yml → Cloudflare Pages / Workers 自動デプロイ
+ *   git push → deploy-worker.yml → Cloudflare Workers 自動デプロイ
+ *   シークレット: wrangler secret put ANTHROPIC_API_KEY --name stock-screener
  *   env: ALLOWED_ORIGINS (カンマ区切り; 省略時 https://cares.advisers.jp)
  */
 
