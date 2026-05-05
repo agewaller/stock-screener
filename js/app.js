@@ -1540,10 +1540,10 @@ ${titles}`;
       } else if (result.findings) {
         responseText = (result.summary ? result.summary + '\n\n' : '') + result.findings;
         if (result.actions?.length) responseText += '\n\n推奨アクション:\n' + result.actions.map(a => '→ ' + a).join('\n');
+      } else if (result.summary) {
+        responseText = result.summary;
       } else {
-        if (advice.actions.length > 0) {
-          responseText += '\n\n📋 推奨アクション:\n' + advice.actions.map(a => '→ ' + a).join('\n');
-        }
+        responseText = '応答を取得できませんでした。もう一度お試しください。';
       }
 
       history.push({ role: 'assistant', content: responseText, timestamp: new Date().toISOString() });
@@ -3024,6 +3024,9 @@ ${responseText.substring(0, 3000)}`;
     if (idx === -1) return;
     entries[idx] = { ...entries[idx], content: newContent, title: newTitle, _edited: true };
     store.set('textEntries', entries);
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
+      FirebaseBackend.updateHealthEntry('textEntries', id, { content: newContent, title: newTitle, _edited: true }).catch(() => {});
+    }
     this.closeModal();
     const cur = store.get('currentPage') || 'dashboard';
     this.navigate(cur);

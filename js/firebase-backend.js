@@ -375,6 +375,26 @@ var FirebaseBackend = {
     return await this.saveHealthEntry('textEntries', entry);
   },
 
+  // Update an existing health entry in Firestore by its local `id` field.
+  // Queries the collection, finds the doc(s) matching localId, and merges changes.
+  async updateHealthEntry(collection, localId, changes) {
+    if (!this.userId || !this.initialized || !localId) return false;
+    try {
+      const snap = await this.userCollection(collection).where('id', '==', localId).get();
+      if (snap.empty) return false;
+      const cleaned = { ...changes };
+      delete cleaned.dataUrl;
+      delete cleaned.previewImage;
+      const batch = this.db.batch();
+      snap.forEach(doc => batch.update(doc.ref, cleaned));
+      await batch.commit();
+      return true;
+    } catch (err) {
+      console.error('[FirebaseBackend] updateHealthEntry error:', err);
+      return false;
+    }
+  },
+
   // Delete a health entry from a Firestore collection by its local `id` field.
   // Queries for documents where id == localId and deletes them all.
   async deleteHealthEntry(collection, localId) {

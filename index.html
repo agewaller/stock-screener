@@ -2488,10 +2488,11 @@ window.addEventListener('load', function() {
     }).join('\n');
     if (recent) userText += '\n\n【直近の記録（最大5件）】\n' + recent;
     try {
+      var deepModel = store.get('selectedModel') || 'claude-sonnet-4-6';
       var raw = await callClaudeStream(
         userText,
         key,
-        'claude-sonnet-4-6',
+        deepModel,
         buildDeepSystemPrompt(),
         2500
       );
