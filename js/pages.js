@@ -975,7 +975,9 @@ App.prototype.render_dashboard = function() {
               ${actions.length ? '<div style="margin-top:6px;font-size:11px">' + actions.map(a => '<div style="color:var(--accent)">→ ' + Components.escapeHtml(a) + '</div>').join('') + '</div>' : ''}
             </div>`;
           })()}
-          ${e.id ? `<div style="text-align:right;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          ${e.id ? `<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+            <button class="btn btn-sm" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent-border);padding:3px 10px"
+              onclick="event.stopPropagation();app.editTextEntry('${e.id}')">✏️ 編集</button>
             <button class="btn btn-sm" style="font-size:11px;color:var(--text-muted);background:none;border:1px solid var(--border);padding:3px 10px"
               onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteTextEntry('${e.id}'))">🗑 削除</button>
           </div>` : ''}
@@ -1237,7 +1239,9 @@ App.prototype.render_data_input = function() {
           </div>
           ${safeTitle ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${safeTitle}</div>` : ''}
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${safeContent}</div>
-          ${e.id ? `<div style="text-align:right;margin-top:8px">
+          ${e.id ? `<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
+            <button class="btn btn-sm" style="font-size:10px;color:var(--accent);background:none;border:1px solid var(--accent-border);padding:2px 8px"
+              onclick="app.editTextEntry('${e.id}')">✏️ 編集</button>
             <button class="btn btn-sm" style="font-size:10px;color:var(--text-muted);background:none;border:1px solid var(--border);padding:2px 8px"
               onclick="app.confirmAction(this,'削除',()=>app.deleteTextEntry('${e.id}'))">🗑 削除</button>
           </div>` : ''}
@@ -2175,7 +2179,9 @@ App.prototype.render_timeline = function() {
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
             ${aiInsight ? `<div style="padding:8px 12px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent)"><strong>分析:</strong> ${aiInsight}</div>` : ''}
-            ${e.id ? `<div style="text-align:right;margin-top:8px">
+            ${e.id ? `<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
+              <button class="btn btn-sm" style="font-size:10px;color:var(--accent);background:none;border:1px solid var(--accent-border);padding:2px 8px"
+                onclick="app.editTextEntry('${e.id}')">✏️ 編集</button>
               <button class="btn btn-sm" style="font-size:10px;color:var(--text-muted);background:none;border:1px solid var(--border);padding:2px 8px"
                 onclick="app.confirmAction(this,'削除',()=>app.deleteTextEntry('${e.id}'))">🗑 削除</button>
             </div>` : ''}

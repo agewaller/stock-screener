@@ -2981,6 +2981,55 @@ ${responseText.substring(0, 3000)}`;
     Components.showToast('記録を削除しました', 'success');
   }
 
+  editTextEntry(id) {
+    const entries = store.get('textEntries') || [];
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const title = document.getElementById('modal-title');
+    if (!overlay || !body) return;
+
+    if (title) title.textContent = '記録を編集';
+    const safeContent = Components.escapeHtml(entry.content || '');
+    const safeTitle = Components.escapeHtml(entry.title || '');
+    body.innerHTML = `
+      <form onsubmit="app.saveEditedEntry(event,'${id}')">
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">タイトル（任意）</label>
+          <input type="text" id="edit-entry-title" class="form-input" value="${safeTitle}" placeholder="タイトル">
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">内容</label>
+          <textarea id="edit-entry-content" class="form-textarea" rows="6" style="resize:vertical">${safeContent}</textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" class="btn btn-secondary" onclick="app.closeModal()">キャンセル</button>
+        </div>
+      </form>`;
+    overlay.classList.add('active');
+    setTimeout(() => document.getElementById('edit-entry-content')?.focus(), 50);
+  }
+
+  saveEditedEntry(e, id) {
+    e.preventDefault();
+    const newContent = document.getElementById('edit-entry-content')?.value?.trim() || '';
+    const newTitle = document.getElementById('edit-entry-title')?.value?.trim() || '';
+    if (!newContent) { Components.showToast('内容を入力してください', 'error'); return; }
+
+    const entries = store.get('textEntries') || [];
+    const idx = entries.findIndex(en => en.id === id);
+    if (idx === -1) return;
+    entries[idx] = { ...entries[idx], content: newContent, title: newTitle, _edited: true };
+    store.set('textEntries', entries);
+    this.closeModal();
+    const cur = store.get('currentPage') || 'dashboard';
+    this.navigate(cur);
+    Components.showToast('記録を更新しました', 'success');
+  }
+
   // One-shot purge of aiComments entries matching the old demo
   // output shape. These got persisted before the rejection guards
   // were added and keep resurfacing as garbled JSON in the dashboard.
