@@ -70,10 +70,7 @@ function json(data, status = 200, extraHeaders = {}) {
 }
 
 function notImplemented(phase) {
-  return json(
-    { error: 'not_implemented', phase, message: 'この機能は準備中です。' },
-    501
-  );
+  return json({ error: 'not_implemented', phase, message: 'この機能は準備中です。' }, 501);
 }
 
 export default {

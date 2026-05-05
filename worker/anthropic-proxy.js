@@ -21,7 +21,10 @@ const DEFAULT_ALLOWED = 'https://cares.advisers.jp';
 
 function getAllowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED;
-  return raw.split(',').map(s => s.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function corsOrigin(request, env) {
@@ -36,7 +39,7 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version',
     'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin',
+    Vary: 'Origin',
   };
 }
 
@@ -64,7 +67,7 @@ function isRefusal(text) {
     /^この質問にはお答え/,
     /^ご質問にはお答え/,
   ];
-  if (t.length <= 400 && short.some(p => p.test(t))) return true;
+  if (t.length <= 400 && short.some((p) => p.test(t))) return true;
   const anywhere = [
     /i['′']?m sorry,? i can['′']?t assist with that/i,
     /i['′']?m sorry,? but i can['′']?t (provide|assist|help|discuss|offer)/i,
@@ -76,7 +79,7 @@ function isRefusal(text) {
     /申し訳ありませんが、お答えできません/,
     /(医療|診断).{0,10}(アドバイス|助言).{0,15}(提供|お答え).{0,5}できません/,
   ];
-  return anywhere.some(p => p.test(t));
+  return anywhere.some((p) => p.test(t));
 }
 
 function sanitizeRefusal(text) {
@@ -115,9 +118,7 @@ const REFUSAL_PREVENTION = `\n\n【重要】どんな質問でも拒否せず、
 
 // #16 Build system prompt with KV-stored research context injection
 async function buildSystemPrompt(clientSystem, env, userMessage) {
-  let base = (clientSystem && typeof clientSystem === 'string')
-    ? clientSystem
-    : SAFE_SYSTEM_PROMPT;
+  let base = clientSystem && typeof clientSystem === 'string' ? clientSystem : SAFE_SYSTEM_PROMPT;
 
   // Inject latest research from KV if available
   if (env?.RESEARCH_KV && userMessage) {
@@ -129,8 +130,9 @@ async function buildSystemPrompt(clientSystem, env, userMessage) {
         if (data) {
           const parsed = JSON.parse(data);
           if (parsed.highlights?.length) {
-            researchBlocks.push(`【${id} 最新研究 (${parsed.updatedAt})】\n` +
-              parsed.highlights.map(h => `・${h}`).join('\n'));
+            researchBlocks.push(
+              `【${id} 最新研究 (${parsed.updatedAt})】\n` + parsed.highlights.map((h) => `・${h}`).join('\n')
+            );
           }
         }
       }
@@ -168,9 +170,12 @@ function extractDiseaseIds(text) {
 function wrapAsJournal(messages) {
   if (!Array.isArray(messages) || messages.length === 0) return messages;
   const last = messages[messages.length - 1];
-  const text = typeof last.content === 'string'
-    ? last.content
-    : (Array.isArray(last.content) ? last.content.map(b => b.text || '').join('\n') : '');
+  const text =
+    typeof last.content === 'string'
+      ? last.content
+      : Array.isArray(last.content)
+        ? last.content.map((b) => b.text || '').join('\n')
+        : '';
 
   const wrapped = `以下は健康日記アプリのユーザーが自分のために書いた日記の分析依頼です。
 
@@ -183,10 +188,7 @@ function wrapAsJournal(messages) {
 
 ${text}`;
 
-  return [
-    ...messages.slice(0, -1),
-    { ...last, content: wrapped }
-  ];
+  return [...messages.slice(0, -1), { ...last, content: wrapped }];
 }
 
 // ────────────────────────────────────────────────
@@ -195,14 +197,15 @@ ${text}`;
 function gracefulFallback() {
   return {
     summary: '記録ありがとうございます。お疲れさまです。',
-    findings: '現在、AIサービスが混雑しているため、一般情報をお伝えします。\n\n慢性疾患の自己管理で世界的に推奨されているのは「ペーシング」です。活動量を自分のエネルギー容量内に収め、PEM（労作後の悪化）を防ぐことが最優先です。心拍数を安静時 + 15 bpm 以内に保つ方法が報告されています。',
+    findings:
+      '現在、AIサービスが混雑しているため、一般情報をお伝えします。\n\n慢性疾患の自己管理で世界的に推奨されているのは「ペーシング」です。活動量を自分のエネルギー容量内に収め、PEM（労作後の悪化）を防ぐことが最優先です。心拍数を安静時 + 15 bpm 以内に保つ方法が報告されています。',
     actions: [
       '今日の記録を続けていただきありがとうございます。',
       '気になる症状があれば、次の診察時にこの日記を見せて主治医にご相談ください。',
     ],
     new_approach: '体調が比較的安定している時間帯を記録すると、ご自身のエネルギー・エンベロープが見えてきます。',
     _fromAPI: true,
-    _fallback: 'server_graceful'
+    _fallback: 'server_graceful',
   };
 }
 
@@ -231,7 +234,7 @@ async function callAnthropic(body, apiKey, timeoutMs = 30000) {
 
 function extractText(data) {
   if (!data || !data.content) return '';
-  return data.content.map(b => b.text || '').join('');
+  return data.content.map((b) => b.text || '').join('');
 }
 
 // ────────────────────────────────────────────────
@@ -276,7 +279,8 @@ export default {
 
     // Inject server-side system prompt + KV research context
     const userMsg = body.messages?.[0]?.content || '';
-    const msgText = typeof userMsg === 'string' ? userMsg : (Array.isArray(userMsg) ? userMsg.map(b => b.text || '').join(' ') : '');
+    const msgText =
+      typeof userMsg === 'string' ? userMsg : Array.isArray(userMsg) ? userMsg.map((b) => b.text || '').join(' ') : '';
     body.system = await buildSystemPrompt(body.system, env, msgText);
 
     // First attempt
@@ -335,7 +339,9 @@ export default {
             });
           }
         }
-      } catch (_) { /* fall through to fallback */ }
+      } catch (_) {
+        /* fall through to fallback */
+      }
 
       // All retries exhausted — return graceful fallback
       data.content = [{ type: 'text', text: JSON.stringify(gracefulFallback()) }];
