@@ -395,6 +395,22 @@ var FirebaseBackend = {
     }
   },
 
+  // Save a single AI comment (per-entry analysis result) to Firestore.
+  // Stored in users/{uid}/aiComments/{entryId} so it can be loaded back
+  // on any device without reconstructing the entire aiComments dictionary.
+  async saveAIComment(entryId, comment) {
+    if (!this.userId || !this.initialized || !entryId) return;
+    try {
+      await this.userCollection('aiComments').doc(entryId).set({
+        timestamp: comment.timestamp || new Date().toISOString(),
+        result: comment.result || comment,
+        savedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (err) {
+      console.warn('[FirebaseBackend] saveAIComment error:', err.message);
+    }
+  },
+
   // Delete a health entry from a Firestore collection by its local `id` field.
   // Queries for documents where id == localId and deletes them all.
   async deleteHealthEntry(collection, localId) {
@@ -810,6 +826,25 @@ var FirebaseBackend = {
         }
       } catch (err) {
         console.warn('Load calendar:', err.message);
+      }
+
+      // Load AI comments per entry — stored in aiComments subcollection
+      // so they survive device switches. Merge into any locally cached
+      // comments so entries analyzed on this device aren't lost.
+      try {
+        const aiCommentsSnap = await this.userCollection('aiComments').limit(500).get();
+        if (!aiCommentsSnap.empty) {
+          const existing = store.get('aiComments') || {};
+          aiCommentsSnap.forEach(doc => {
+            const d = doc.data();
+            if (!existing[doc.id]) {
+              existing[doc.id] = { timestamp: d.timestamp, result: d.result };
+            }
+          });
+          store.set('aiComments', existing);
+        }
+      } catch (err) {
+        console.warn('Load aiComments:', err.message);
       }
 
       store.calculateHealthScore();

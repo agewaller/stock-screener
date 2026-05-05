@@ -2953,11 +2953,12 @@ ${responseText.substring(0, 3000)}`;
   // Save AI analysis comment linked to a text entry
   saveAIComment(entryId, result) {
     const comments = store.get('aiComments') || {};
-    comments[entryId] = {
-      timestamp: new Date().toISOString(),
-      result: result
-    };
+    const comment = { timestamp: new Date().toISOString(), result: result };
+    comments[entryId] = comment;
     store.set('aiComments', comments);
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
+      FirebaseBackend.saveAIComment(entryId, comment).catch(() => {});
+    }
   }
 
   // Get AI comment for a specific entry
@@ -2975,6 +2976,7 @@ ${responseText.substring(0, 3000)}`;
     // Propagate deletion to Firestore so it survives reloads for logged-in users.
     if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized) {
       FirebaseBackend.deleteHealthEntry('textEntries', id).catch(() => {});
+      try { FirebaseBackend.userCollection('aiComments').doc(id).delete().catch(() => {}); } catch(_) {}
     }
     const cur = store.get('currentPage') || 'dashboard';
     this.navigate(cur);
