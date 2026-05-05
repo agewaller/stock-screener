@@ -2023,7 +2023,7 @@ App.prototype.render_chat = function() {
         ${messages || `
           <div style="text-align:center;padding:40px;color:var(--text-muted)">
             <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>ME/CFSについて何でも質問してください</p>
+            <p>${Components.escapeHtml((store.get('selectedDisease') || { name: '慢性疾患' }).name)}について何でも質問してください</p>
             <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
           </div>
         `}
