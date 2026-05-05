@@ -199,10 +199,12 @@ test('Every onclick="app.X()" references a real App method', () => {
   });
   const missing = [];
   methods.forEach((fn) => {
-    // Check if method exists in script (class method or prototype)
-    const hasMethod =
+    // js/*.js モジュール（class method / prototype）と
+    // index.html 内のインライン定義（app.X = function() ...）の両方を見る。
+    const inModule =
       new RegExp(`(?:^|\\s)${fn}\\s*\\(`).test(script) || new RegExp(`App\\.prototype\\.${fn}`).test(script);
-    if (!hasMethod) missing.push(fn);
+    const inInlineHtml = new RegExp(`app\\.${fn}\\s*=\\s*(?:async\\s+)?function`).test(html);
+    if (!inModule && !inInlineHtml) missing.push(fn);
   });
   assert(missing.length === 0, `Missing App methods: ${missing.join(', ')}`);
 });
