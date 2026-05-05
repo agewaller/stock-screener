@@ -501,6 +501,15 @@ App.prototype.render_dashboard = function() {
   const streakStats = this._computeStreak();
   const earnedBadges = this._getEarnedBadges(streakStats);
 
+  // Check if the user has recorded anything today (JST-aware)
+  const todayJstStr = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+  const allEntryDates = [...textEntries, ...symptoms].map(e => {
+    const ts = e.timestamp || e.createdAt;
+    if (!ts) return '';
+    return new Date(ts).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+  });
+  const todayRecorded = allEntryDates.some(d => d === todayJstStr);
+
   // Real data counts
   const totalEntries = textEntries.length;
   const totalSymptoms = symptoms.length;
@@ -705,15 +714,18 @@ App.prototype.render_dashboard = function() {
           ` : `<div style="font-size:12px;color:#4338ca">記録を続けて、毎日の処方を受け取りましょう</div>`}
         </div>
       </div>
-      ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;${todayRecorded ? 'background:#d1fae5;color:#065f46;border:1px solid #6ee7b7' : 'background:#fff7ed;color:#92400e;border:1px solid #fcd34d;cursor:pointer'}"
+          ${!todayRecorded ? 'onclick="document.getElementById(\'dash-quick-input\')?.focus()"' : ''}>
+          ${todayRecorded ? '✅ 今日の記録あり' : '⚠️ 今日まだ記録していません — タップして入力'}
+        </span>
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
-      </div>` : ''}
+      </div>
     </div>
   </div>` : ''}
 
@@ -2111,9 +2123,13 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply type filter (set by filterTimeline)
+  const activeFilter = store.get('_timelineFilter') || '';
+  const filteredEntries = activeFilter ? allEntries.filter(e => e._type === activeFilter) : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  filteredEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2237,17 +2253,17 @@ App.prototype.render_timeline = function() {
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+      <p style="font-size:12px;color:var(--text-muted)">${filteredEntries.length}${activeFilter ? '' : ''}件のデータ${activeFilter ? '（絞り込み中）' : '（日記・検査・薬剤・バイタル・写真）'}</p>
     </div>
     <div style="display:flex;gap:8px">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        <option value="" ${!activeFilter ? 'selected' : ''}>すべて表示</option>
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
+    ${filteredEntries.length > 0 ? dateGroups : Components.emptyState('📅', activeFilter ? 'このカテゴリのデータがありません' : 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
