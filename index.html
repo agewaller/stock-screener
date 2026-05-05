@@ -2089,7 +2089,12 @@ function getAnthropicEndpoint(hasKey) {
 function callClaude(text, apiKey, model, systemPrompt) {
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var cleanKey = String(apiKey || '').trim();
-  var sys = systemPrompt || 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。';
+  var defaultLang = 'ja';
+  try { var p = store.get('userProfile'); defaultLang = (p && p.language) || localStorage.getItem('cc_language') || 'ja'; } catch(_) {}
+  var defaultSys = defaultLang === 'ja'
+    ? 'あなたは慢性疾患患者の健康日記パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。'
+    : 'You are a chronic disease health diary partner. Respond warmly and provide specific advice in ' + (({'en':'English','zh':'Chinese','ko':'Korean','es':'Spanish','fr':'French','de':'German','pt':'Portuguese','th':'Thai','vi':'Vietnamese','ar':'Arabic','hi':'Hindi'})[defaultLang] || defaultLang) + '.';
+  var sys = systemPrompt || defaultSys;
   var ctrl = ('AbortController' in window) ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
   var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
@@ -2295,8 +2300,22 @@ window.addEventListener('load', function() {
       return (legacy && legacy.fullName) || '';
     } catch(e) { return ''; }
   };
+  var getUserLang = function() {
+    try {
+      var profile = store.get('userProfile') || {};
+      return profile.language || localStorage.getItem('cc_language') || 'ja';
+    } catch(e) { return 'ja'; }
+  };
+  var langNames = {
+    ja:'日本語', en:'English', zh:'中文', ko:'한국어',
+    es:'Español', fr:'Français', de:'Deutsch', pt:'Português',
+    th:'ไทย', vi:'Tiếng Việt', ar:'العربية', hi:'हिन्दी'
+  };
   var buildSystemPrompt = function() {
     var label = getDiseasesLabel();
+    var lang = getUserLang();
+    var langDirective = lang === 'ja' ? ''
+      : '\n\n【応答言語】必ず ' + (langNames[lang] || lang) + ' で応答してください。日本語では返答しないでください。';
     var base = 'あなたは健康日記アプリの「日記分析コンパニオン」です。\n' +
       'これは教育的な情報提供タスクであり、医療行為ではありません。\n\n' +
       '【役割】公開されている健康情報を整理して共有する教育的コンパニオン。\n' +
@@ -2306,7 +2325,7 @@ window.addEventListener('load', function() {
       '- 公開情報レベルであれば医療トピックでも遠慮なく共有してよい\n' +
       '- 温かく寄り添い、希望を添えて、具体的で誠実に共有する\n' +
       '- ユーザーへの質問は極力控える。情報提供に徹する\n' +
-      '- 末尾に「※本情報は参考情報です。健康上の判断は必ず医師にご相談ください。」を付ける';
+      '- 末尾に免責事項を付ける' + langDirective;
     if (!label) return base + '\n\n注意: ユーザーの疾患は未設定です。特定の疾患を前提にせず、一般的な慢性疾患サポートの観点で返答してください。';
     return base + '\n\nユーザーの該当疾患: ' + label + '\n重要: 上記の疾患のみを前提にアドバイスしてください。該当しない疾患を前提にしないでください。';
   };
