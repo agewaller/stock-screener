@@ -2741,7 +2741,7 @@ window.addEventListener('load', function() {
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: (function() { var m = store.get('selectedModel') || 'claude-sonnet-4-6'; return m.indexOf('claude-') === 0 ? m : 'claude-sonnet-4-6'; })(),
           max_tokens: 4000,
           system: buildDoctorReportPrompt(),
           messages: [{ role: 'user', content: userMsg }],
