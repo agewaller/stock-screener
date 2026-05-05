@@ -501,14 +501,16 @@ App.prototype.render_dashboard = function() {
   const streakStats = this._computeStreak();
   const earnedBadges = this._getEarnedBadges(streakStats);
 
-  // Check if the user has recorded anything today (JST-aware)
-  const todayJstStr = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-  const allEntryDates = [...textEntries, ...symptoms].map(e => {
+  // Check if the user has recorded anything today (JST = UTC+9)
+  const toJstYmd = (d) => {
+    const jst = new Date(d.getTime() + 9 * 3600000);
+    return jst.getUTCFullYear() + '-' + String(jst.getUTCMonth() + 1).padStart(2, '0') + '-' + String(jst.getUTCDate()).padStart(2, '0');
+  };
+  const todayJstStr = toJstYmd(new Date());
+  const todayRecorded = [...textEntries, ...symptoms].some(e => {
     const ts = e.timestamp || e.createdAt;
-    if (!ts) return '';
-    return new Date(ts).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    return ts ? toJstYmd(new Date(ts)) === todayJstStr : false;
   });
-  const todayRecorded = allEntryDates.some(d => d === todayJstStr);
 
   // Real data counts
   const totalEntries = textEntries.length;
