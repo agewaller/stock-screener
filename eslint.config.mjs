@@ -17,6 +17,9 @@ export default [
         console: 'readonly',
         TextDecoder: 'readonly',
         atob: 'readonly',
+        AbortController: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
     },
     rules: {
