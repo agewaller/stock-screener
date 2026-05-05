@@ -717,6 +717,8 @@ var FirebaseBackend = {
         activityData: 'activity',
         bloodTests: 'bloodTests',
         medications: 'medications',
+        supplements: 'supplements',
+        meals: 'meals',
         conversations: 'conversationHistory'
       };
 
@@ -907,9 +909,15 @@ var FirebaseBackend = {
       });
     };
 
-    store.on('textEntries', syncLatest('textEntries'));
-    store.on('symptoms', syncLatest('symptoms'));
-    store.on('vitals', syncLatest('vitals'));
+    store.on('textEntries',  syncLatest('textEntries'));
+    store.on('symptoms',     syncLatest('symptoms'));
+    store.on('vitals',       syncLatest('vitals'));
+    store.on('medications',  syncLatest('medications'));
+    store.on('supplements',  syncLatest('supplements'));
+    store.on('meals',        syncLatest('meals'));
+    store.on('sleepData',    syncLatest('sleepData'));
+    store.on('activityData', syncLatest('activityData'));
+    store.on('bloodTests',   syncLatest('bloodTests'));
 
     // Watch for settings changes (idempotent; merge:true)
     ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
