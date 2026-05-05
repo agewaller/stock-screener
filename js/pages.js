@@ -2092,13 +2092,25 @@ App.prototype.render_chat = function() {
   <div class="card">
     <div class="chat-container">
       <div class="chat-messages" id="chat-messages">
-        ${messages || `
-          <div style="text-align:center;padding:40px;color:var(--text-muted)">
-            <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>${Components.escapeHtml((store.get('selectedDisease') || { name: '慢性疾患' }).name)}について何でも質問してください</p>
-            <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
-          </div>
-        `}
+        ${messages || (() => {
+          const diseaseName = Components.escapeHtml((store.get('selectedDisease') || { name: '慢性疾患' }).name);
+          const starters = [
+            '今日の体調データから気をつけることは？',
+            '最近の症状の傾向を教えてください',
+            'PEMを予防するために何ができますか？',
+            '医師に伝えるべき重要な変化はありますか？',
+          ];
+          const btnHtml = starters.map(q =>
+            `<button class="btn btn-outline btn-sm" style="font-size:11px;text-align:left;white-space:normal;line-height:1.4;padding:6px 12px"
+              onclick="document.getElementById('chat-input').value=${JSON.stringify(q)};app.sendChat()">${Components.escapeHtml(q)}</button>`
+          ).join('');
+          return `
+          <div style="text-align:center;padding:28px 16px 16px;color:var(--text-muted)">
+            <div style="font-size:36px;margin-bottom:10px">💬</div>
+            <p style="font-size:13px;margin-bottom:14px">${diseaseName}について何でも質問してください</p>
+            <div style="display:flex;flex-direction:column;gap:6px;text-align:left">${btnHtml}</div>
+          </div>`;
+        })()}
       </div>
       <div class="chat-input-area">
         <input type="text" class="chat-input" id="chat-input" placeholder="メッセージを入力..."

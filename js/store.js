@@ -248,6 +248,7 @@ var Store = class Store {
       'sleep': 'sleepData',
       'activity': 'activityData',
       'photos': 'photos',
+      'supplement': 'supplements',
       'wearable': 'wearableData',
       'genetic': 'geneticData'
     };
