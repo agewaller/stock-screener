@@ -3270,9 +3270,16 @@ App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
     try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      Components.showToast('URLをコピーしました。Safari/Chromeのアドレスバーに貼り付けてください', 'success');
     } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
+      Components.showToast('URLのコピーに失敗しました。アドレスバーから手動でコピーしてください: ' + url, 'error');
     }
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -3499,9 +3506,10 @@ App.prototype.deleteAccount = async function() {
   // Subcollections we know the app writes into. Must match the
   // loadAllData / exportData lists or data may silently remain.
   const subcollections = [
-    'textEntries', 'symptoms', 'vitals', 'sleep', 'medications',
+    'textEntries', 'symptoms', 'vitals', 'sleep', 'activity', 'medications',
     'supplements', 'meals', 'bloodTests', 'photos', 'plaudAnalyses',
-    'conversations', 'analysisHistory', 'secrets', 'private'
+    'conversations', 'analysisHistory', 'analyses', 'aiComments',
+    'secrets', 'private'
   ];
 
   try {
