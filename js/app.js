@@ -230,6 +230,10 @@ var App = class App {
   }
 
   afterRender(page) {
+    // Translate UI to user's selected language
+    if (typeof i18n !== 'undefined' && i18n.translatePage) {
+      try { i18n.translatePage(); } catch (_) {}
+    }
     // Populate the "選択疾患の規模" banner on the login page when it
     // first mounts — otherwise a user returning with diseases already
     // cached in localStorage sees an empty box until they click a tag.
