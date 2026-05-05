@@ -3123,5 +3123,68 @@ window.addEventListener('load', function() {
 });
 </script>
 <script defer src="js/inapp-browser-banner.js?v=19"></script>
+<script>
+// Service Worker registration + PWA install prompt
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function() {});
+}
+
+// Capture the beforeinstallprompt event (Chrome/Android) and show a
+// gentle "ホーム画面に追加" banner after 30s on the page, or after the
+// user has recorded 3+ entries (whichever comes first).
+(function() {
+  var deferredPrompt = null;
+  var shown = false;
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    tryShow();
+  });
+
+  function tryShow() {
+    if (shown || !deferredPrompt) return;
+    var entries = (function() { try { return JSON.parse(localStorage.getItem('cc_textEntries') || '[]').length; } catch(_) { return 0; } })();
+    if (entries >= 3) showBanner();
+    else setTimeout(showBanner, 30000);
+  }
+
+  function showBanner() {
+    if (shown || !deferredPrompt) return;
+    shown = true;
+    var bar = document.createElement('div');
+    bar.id = 'pwa-banner';
+    bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9990;background:#fff;border:1.5px solid #6366f1;border-radius:14px;box-shadow:0 4px 20px rgba(99,102,241,.25);padding:12px 16px;display:flex;align-items:center;gap:12px;max-width:340px;width:calc(100% - 32px);font-family:-apple-system,sans-serif';
+    bar.innerHTML = '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:2px">📲 ホーム画面に追加</div><div style="font-size:11px;color:#64748b">オフラインでも使えるようになります</div></div>'
+      + '<button id="pwa-install-btn" style="padding:7px 14px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">追加</button>'
+      + '<button id="pwa-dismiss-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:#94a3b8;padding:2px 4px;flex-shrink:0">×</button>';
+    document.body.appendChild(bar);
+    document.getElementById('pwa-install-btn').addEventListener('click', function() {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() { bar.remove(); deferredPrompt = null; });
+    });
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', function() { bar.remove(); });
+  }
+
+  // iOS Safari: show a manual "Add to Home Screen" hint since
+  // beforeinstallprompt is not fired on iOS.
+  var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isIos && !isStandalone) {
+    setTimeout(function() {
+      var visited = parseInt(localStorage.getItem('_pwa_visits') || '0', 10) + 1;
+      localStorage.setItem('_pwa_visits', visited);
+      if (visited === 3) {
+        var bar = document.createElement('div');
+        bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9990;background:#fff;border:1.5px solid #6366f1;border-radius:14px;box-shadow:0 4px 20px rgba(99,102,241,.25);padding:12px 16px;text-align:center;max-width:300px;width:calc(100% - 32px);font-family:-apple-system,sans-serif';
+        bar.innerHTML = '<div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:4px">📲 ホーム画面に追加</div>'
+          + '<div style="font-size:11px;color:#64748b;line-height:1.6">Safari の共有ボタン（↑）→「ホーム画面に追加」でオフラインでも使えます</div>'
+          + '<button onclick="this.closest(\'div\').remove()" style="margin-top:8px;padding:5px 16px;background:#e2e8f0;border:none;border-radius:8px;font-size:12px;cursor:pointer">閉じる</button>';
+        document.body.appendChild(bar);
+      }
+    }, 5000);
+  }
+})();
+</script>
 </body>
 </html>
