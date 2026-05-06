@@ -3824,6 +3824,7 @@ ${axisHint}
   }
 
   async saveProfile() {
+    const prevLang = (store.get('userProfile') || {}).language || 'ja';
     const profile = {
       age: document.getElementById('profile-age')?.value || '',
       gender: document.getElementById('profile-gender')?.value || '',
@@ -3840,6 +3841,10 @@ ${axisHint}
       if (!ok) return;
     }
     Components.showToast('プロフィールを保存しました', 'success');
+    if (profile.language !== prevLang) {
+      i18n.setLang(profile.language);
+      setTimeout(() => location.reload(), 400);
+    }
   }
 
   loadProfileFields() {
@@ -4092,6 +4097,17 @@ ${axisHint}
     Components.showToast(`「${nameEl.value}」を保存しました`, 'success');
   }
 
+  confirmClearUsageLog() {
+    const btn = document.getElementById('clear-usage-btn');
+    if (!btn) return;
+    btn.outerHTML = `
+      <span id="clear-usage-confirm" style="display:inline-flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:var(--danger)">消去しますか？</span>
+        <button class="btn btn-sm btn-danger" style="font-size:10px;padding:2px 8px" onclick="store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)">はい</button>
+        <button class="btn btn-sm btn-secondary" style="font-size:10px;padding:2px 8px" onclick="app.switchAdminTab('usage')">いいえ</button>
+      </span>`;
+  }
+
   // ---- Admin Tab Navigation ----
   switchAdminTab(tabId) {
     document.querySelectorAll('.admin-tab-content').forEach(el => el.style.display = 'none');
@@ -4259,7 +4275,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button id="clear-usage-btn" class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.confirmClearUsageLog()">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">

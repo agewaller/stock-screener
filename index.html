@@ -42,6 +42,16 @@
 <link rel="search" type="application/opensearchdescription+xml" title="健康日記" href="/opensearch.xml">
 <link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/">
 <link rel="alternate" hreflang="en" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="zh" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="ko" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="es" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="fr" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="de" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="pt" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="th" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="vi" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="ar" href="https://cares.advisers.jp/">
+<link rel="alternate" hreflang="hi" href="https://cares.advisers.jp/">
 <link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/">
 
 <!-- Open Graph (Facebook, LINE, Slack, Discord link previews) -->
@@ -1602,6 +1612,22 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 .disease-option-icon { font-size: 28px; margin-bottom: 8px; }
 .disease-option-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
 .disease-option-desc { font-size: 11px; color: var(--text-muted); }
+
+/* ---- RTL (Arabic etc.) ---- */
+[dir="rtl"] .sidebar {
+  right: 0; left: auto;
+  border-right: none; border-left: 1px solid var(--border);
+}
+[dir="rtl"] .main-content { margin-left: 0; margin-right: var(--sidebar-width); }
+[dir="rtl"] .nav-item .badge-count { margin-right: auto; margin-left: 0; }
+[dir="rtl"] .card-header { flex-direction: row-reverse; }
+[dir="rtl"] .top-bar { flex-direction: row-reverse; }
+[dir="rtl"] .chat-message.user { margin-right: auto; margin-left: 0; }
+@media (max-width: 768px) {
+  [dir="rtl"] .sidebar { transform: translateX(100%); right: 0; left: auto; }
+  [dir="rtl"] .sidebar.open { transform: translateX(0); }
+  [dir="rtl"] .main-content { margin-right: 0 !important; }
+}
 
 /* ---- Print ---- */
 @media print {

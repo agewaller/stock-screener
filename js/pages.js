@@ -3065,7 +3065,7 @@ App.prototype.render_settings = function() {
 
       <div class="form-group"><label class="form-label">居住地</label><input type="text" class="form-input" id="profile-location" placeholder="神奈川県秦野市" style="padding:8px 10px"></div>
       <div class="form-group"><label class="form-label">通院範囲</label><select class="form-select" id="profile-travel-range" style="padding:8px 10px"><option value="local">近隣</option><option value="prefecture">県内</option><option value="region" selected>関東圏</option><option value="national">国内全域</option><option value="international">海外含</option></select></div>
-      <div class="form-group"><label class="form-label">言語</label><select class="form-select" id="profile-language" style="padding:8px 10px"><option value="ja" selected>日本語</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option></select></div>
+      <div class="form-group"><label class="form-label">言語</label><select class="form-select" id="profile-language" style="padding:8px 10px"><option value="ja">日本語</option><option value="en">English</option><option value="zh">中文</option><option value="ko">한국어</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="th">ไทย</option><option value="vi">Tiếng Việt</option><option value="ar">العربية</option><option value="hi">हिन्दी</option></select></div>
       <div class="form-group"><label class="form-label">備考</label><textarea class="form-textarea" id="profile-notes" rows="2" placeholder="アレルギー、既往歴、家族歴..." style="padding:8px 10px"></textarea></div>
 
       <button class="btn btn-primary btn-sm" onclick="app.saveProfile()">プロフィールを保存</button>

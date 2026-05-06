@@ -295,16 +295,43 @@ var i18n = {
       || key;
   },
 
+  // Right-to-left languages
+  RTL_LANGS: new Set(['ar']),
+
   setLang(lang) {
     this.currentLang = lang;
     localStorage.setItem('cc_language', lang);
     store.set('userProfile', { ...(store.get('userProfile') || {}), language: lang });
+    this._applyDir(lang);
+  },
+
+  _applyDir(lang) {
+    document.documentElement.dir = this.RTL_LANGS.has(lang) ? 'rtl' : 'ltr';
+  },
+
+  // Map browser locale prefixes to app-supported language codes.
+  _browserLangMap: {
+    ja: 'ja', en: 'en', zh: 'zh', ko: 'ko',
+    es: 'es', fr: 'fr', de: 'de', pt: 'pt',
+    th: 'th', vi: 'vi', ar: 'ar', hi: 'hi',
   },
 
   init() {
     const profile = store.get('userProfile');
     const stored = localStorage.getItem('cc_language');
-    this.currentLang = profile?.language || stored || 'ja';
+    if (profile?.language || stored) {
+      this.currentLang = profile?.language || stored;
+    } else {
+      // First visit with no preference: auto-detect from browser locale.
+      const browserLang = (navigator.language || 'ja').split('-')[0].toLowerCase();
+      const detected = this._browserLangMap[browserLang] || 'ja';
+      this.currentLang = detected;
+      if (detected !== 'ja') {
+        // Persist so subsequent page loads don't re-detect.
+        localStorage.setItem('cc_language', detected);
+      }
+    }
+    this._applyDir(this.currentLang);
   },
 
   // Post-render DOM translation: walks the rendered page and replaces
@@ -316,15 +343,18 @@ var i18n = {
     if (!dict) return;
     const ja = this.translations.ja;
 
-    // Build reverse map: Japanese text → i18n key
+    // Build reverse map: Japanese text → translated text, sorted longest-first
+    // so that a longer phrase is matched before any shorter substring it contains.
     if (!this._reverseMap || this._reverseMapLang !== this.currentLang) {
-      this._reverseMap = new Map();
+      const entries = [];
       for (const [key, jaText] of Object.entries(ja)) {
         const translated = dict[key];
         if (translated && translated !== jaText) {
-          this._reverseMap.set(jaText, translated);
+          entries.push([jaText, translated]);
         }
       }
+      entries.sort((a, b) => b[0].length - a[0].length);
+      this._reverseMap = new Map(entries);
       this._reverseMapLang = this.currentLang;
     }
     const map = this._reverseMap;
@@ -346,15 +376,20 @@ var i18n = {
         node.textContent = node.textContent.replace(original, map.get(original));
         continue;
       }
-      // Partial match for longer strings containing known text
-      for (const [ja, tr] of map) {
-        if (ja.length >= 2 && node.textContent.includes(ja)) {
-          node.textContent = node.textContent.replace(ja, tr);
+      // Partial match — iterate longest-first to avoid short substrings
+      // corrupting a longer phrase that hasn't been replaced yet.
+      let text = node.textContent;
+      let changed = false;
+      for (const [jaStr, tr] of map) {
+        if (jaStr.length >= 2 && text.includes(jaStr)) {
+          text = text.replace(jaStr, tr);
+          changed = true;
         }
       }
+      if (changed) node.textContent = text;
     }
 
-    // Translate attributes: placeholder, title, aria-label, value (buttons)
+    // Translate attributes: placeholder, title, aria-label
     const el = document.body;
     el.querySelectorAll('[placeholder],[title],[aria-label]').forEach(function(e) {
       ['placeholder', 'title', 'aria-label'].forEach(function(attr) {
@@ -364,7 +399,8 @@ var i18n = {
         }
       });
     });
-    // Translate button/submit values
+    // Translate button/submit values (text nodes already handled above;
+    // this catches buttons whose textContent is exactly a known phrase)
     el.querySelectorAll('button, input[type="submit"]').forEach(function(btn) {
       var txt = btn.textContent.trim();
       if (map.has(txt)) btn.textContent = map.get(txt);
@@ -375,8 +411,9 @@ var i18n = {
       if (map.has(txt)) opt.textContent = map.get(txt);
     });
 
-    // Update document title and html lang
+    // Update document title, lang, and dir
     document.documentElement.lang = this.currentLang;
+    this._applyDir(this.currentLang);
     if (dict.app_name) document.title = document.title.replace(ja.app_name, dict.app_name);
   }
 };
