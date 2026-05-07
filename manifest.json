@@ -7,8 +7,18 @@
   "background_color": "#ffffff",
   "theme_color": "#6C63FF",
   "orientation": "portrait-primary",
+  "categories": ["health", "medical"],
+  "lang": "ja",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "健康日記 — 症状記録・AI分析ダッシュボード"
+    }
   ]
 }

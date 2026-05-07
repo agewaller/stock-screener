@@ -3094,6 +3094,30 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Daily Reminder -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔔 毎日の記録リマインダー</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">設定した時刻に「今日の記録を忘れずに」と通知します。ブラウザが開いているときに動作します。</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="reminder-enabled"
+            ${localStorage.getItem('reminder_enabled') === '1' ? 'checked' : ''}
+            onchange="app.saveReminderSettings()"
+            style="width:16px;height:16px;accent-color:var(--accent)">
+          <span style="font-size:13px;font-weight:600">リマインダーをオン</span>
+        </label>
+        <input type="time" id="reminder-time"
+          value="${localStorage.getItem('reminder_time') || '20:00'}"
+          onchange="app.saveReminderSettings()"
+          style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:14px;background:var(--bg-secondary)">
+      </div>
+      <div id="reminder-status" style="font-size:11px;color:var(--text-muted)"></div>
+    </div>
+  </div>
+
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">データ管理</span></div>

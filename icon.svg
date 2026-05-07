@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#6C63FF"/>
+  <!-- Health diary drop / leaf motif -->
+  <path d="M256 96 C256 96 176 176 176 272 a80 80 0 0 0 160 0 C336 176 256 96 256 96 Z"
+        fill="white" fill-opacity="0.25"/>
+  <line x1="256" y1="168" x2="256" y2="336" stroke="white" stroke-width="20" stroke-linecap="round"/>
+  <polyline points="216,296 256,336 296,296" fill="none" stroke="white" stroke-width="20"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Small cross (health symbol) top-right -->
+  <rect x="336" y="120" width="48" height="16" rx="8" fill="white" fill-opacity="0.85"/>
+  <rect x="352" y="104" width="16" height="48" rx="8" fill="white" fill-opacity="0.85"/>
+</svg>

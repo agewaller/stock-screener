@@ -196,22 +196,26 @@ var App = class App {
       el.classList.toggle('active', el.dataset.page === page);
     });
 
-    // Update top bar title
-    const titles = {
-      dashboard: 'ダッシュボード',
-      'data-input': 'データ入力',
-      analysis: 'AI分析',
-      actions: 'アクションセンター',
-      research: '最新研究',
-      chat: '相談する',
-      integrations: 'デバイス連携',
-      timeline: 'タイムライン',
-      admin: '管理パネル',
-      settings: '設定',
-      privacy: 'プライバシーと安全'
+    // Update top bar title — use i18n keys so the title translates
+    // with the rest of the UI when the user switches language.
+    const titleKeys = {
+      dashboard:    'page_title_dashboard',
+      'data-input': 'page_title_data_input',
+      analysis:     'page_title_analysis',
+      actions:      'page_title_actions',
+      research:     'page_title_research',
+      chat:         'page_title_chat',
+      integrations: 'page_title_integrations',
+      timeline:     'page_title_timeline',
+      admin:        'page_title_admin',
+      settings:     'page_title_settings',
+      privacy:      'page_title_privacy',
     };
     const titleEl = document.getElementById('top-bar-title');
-    if (titleEl) titleEl.textContent = titles[page] || '';
+    if (titleEl) {
+      const key = titleKeys[page];
+      titleEl.textContent = key ? (typeof i18n !== 'undefined' ? i18n.t(key) : key) : '';
+    }
 
     // Close sidebar on mobile after navigation
     this.closeSidebar();
@@ -302,6 +306,107 @@ var App = class App {
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
     if (page === 'settings') this.loadProfileFields();
+    if (page === 'dashboard') {
+      try { this.checkDailyReminder(); } catch (_) {}
+    }
+  }
+
+  // ---- Daily Reminder ----
+  // Checks on every dashboard render if it's time to show a
+  // "今日まだ記録していません" nudge. Works in two modes:
+  //   1. In-app banner (always) when user hasn't logged today
+  //   2. Native Notification (if permission granted + enabled)
+  checkDailyReminder() {
+    if (!store.get('isAuthenticated')) return;
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    if (!enabled) return;
+
+    const remTime = localStorage.getItem('reminder_time') || '20:00';
+    const [hh, mm] = remTime.split(':').map(Number);
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const remMins = hh * 60 + mm;
+    if (nowMins < remMins) return;
+
+    // Check if already logged today
+    const today = now.toISOString().slice(0, 10);
+    const lastNudge = localStorage.getItem('reminder_last_shown');
+    if (lastNudge === today) return;
+
+    const entries = (store.get('textEntries') || []).concat(store.get('symptoms') || []);
+    const hasToday = entries.some(e => {
+      const ts = e.timestamp || e.createdAt;
+      return ts && ts.startsWith(today);
+    });
+    if (hasToday) return;
+
+    localStorage.setItem('reminder_last_shown', today);
+
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification('健康日記', {
+          body: '今日の記録がまだです。少しだけ体調を記録しましょう 📝',
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: 'daily-reminder',
+        });
+      } catch (_) {}
+    } else {
+      // In-app nudge banner
+      const existing = document.getElementById('reminder-nudge');
+      if (existing) return;
+      const bar = document.createElement('div');
+      bar.id = 'reminder-nudge';
+      bar.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#6366f1;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(99,102,241,0.4);max-width:90vw;cursor:pointer';
+      bar.innerHTML = '📝 今日の記録がまだです <button onclick="app.navigate(\'data-input\');document.getElementById(\'reminder-nudge\')?.remove()" style="margin-left:8px;padding:4px 12px;background:rgba(255,255,255,0.25);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer">記録する</button><button onclick="this.closest(\'#reminder-nudge\').remove()" style="padding:4px 8px;background:none;border:none;color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;margin-left:4px">✕</button>';
+      document.body.appendChild(bar);
+      setTimeout(() => bar.remove(), 8000);
+    }
+  }
+
+  saveReminderSettings() {
+    const cb = document.getElementById('reminder-enabled');
+    const timePicker = document.getElementById('reminder-time');
+    if (!cb || !timePicker) return;
+
+    const enabled = cb.checked;
+    const time = timePicker.value || '20:00';
+    localStorage.setItem('reminder_enabled', enabled ? '1' : '0');
+    localStorage.setItem('reminder_time', time);
+
+    const statusEl = document.getElementById('reminder-status');
+
+    if (!enabled) {
+      if (statusEl) statusEl.textContent = 'リマインダーはオフです';
+      Components.showToast('リマインダーをオフにしました', 'info');
+      return;
+    }
+
+    if (typeof Notification === 'undefined' || Notification.permission === 'denied') {
+      if (statusEl) statusEl.textContent = i18n.t('reminder_denied');
+      Components.showToast(i18n.t('reminder_denied'), 'error');
+      return;
+    }
+
+    const doSave = () => {
+      if (statusEl) statusEl.textContent = `✓ 毎日 ${time} にお知らせします`;
+      Components.showToast(i18n.t('reminder_saved'), 'success');
+    };
+
+    if (Notification.permission === 'granted') {
+      doSave();
+    } else {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          doSave();
+        } else {
+          localStorage.setItem('reminder_enabled', '0');
+          if (cb) cb.checked = false;
+          if (statusEl) statusEl.textContent = i18n.t('reminder_denied');
+          Components.showToast(i18n.t('reminder_denied'), 'error');
+        }
+      }).catch(() => doSave());
+    }
   }
 
   // ---- API Key Management ----
