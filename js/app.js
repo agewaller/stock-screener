@@ -2836,6 +2836,27 @@ ${responseText.substring(0, 3000)}`;
     this.copyAnalysisShare(null, text);
   }
 
+  async shareStreak(streak) {
+    const disease = store.get('selectedDisease');
+    const diseaseName = disease ? disease.name : '慢性疾患';
+    const text = `🔥 健康日記で${streak}日連続記録中！\n${diseaseName}と向き合いながら毎日の体調を記録しています。\nhttps://cares.advisers.jp #健康日記 #慢性疾患`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: `健康日記 ${streak}日連続記録！`, text });
+        return;
+      } catch (e) { /* user canceled */ }
+    }
+    // Fallback: copy to clipboard
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        Components.showToast('シェア文をコピーしました！SNSに貼り付けてください', 'success');
+        return;
+      } catch (e) { /* ignore */ }
+    }
+    window.prompt('コピーして共有してください:', text);
+  }
+
   renderAnalysisCard(result) {
     if (!result) return '';
 

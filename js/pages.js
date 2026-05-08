@@ -706,14 +706,25 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
-      </div>` : ''}
+        ${streakStats.streak >= 7 ? `
+        <button onclick="app.shareStreak(${streakStats.streak})"
+          style="margin-left:auto;padding:3px 10px;background:#6366f1;color:#fff;border:none;border-radius:14px;font-size:10px;font-weight:600;cursor:pointer">
+          📣 シェアする
+        </button>` : ''}
+      </div>` : (streakStats.streak >= 7 ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;text-align:right">
+        <button onclick="app.shareStreak(${streakStats.streak})"
+          style="padding:3px 10px;background:#6366f1;color:#fff;border:none;border-radius:14px;font-size:10px;font-weight:600;cursor:pointer">
+          📣 シェアする
+        </button>
+      </div>` : '')}
     </div>
   </div>` : ''}
 
@@ -733,6 +744,11 @@ App.prototype.render_dashboard = function() {
       bipolar: ['気分(1-10)', '睡眠時間', '活動量'],
       ptsd: ['気分', '睡眠', 'フラッシュバック'],
       adhd: ['集中力', '睡眠', 'タスク達成'],
+      migraine: ['頭痛(1-10)', '前兆', '誘因'],
+      ra: ['こわばり時間', '関節痛(1-10)', '倦怠感'],
+      ms: ['疲労(1-10)', '歩行', 'しびれ'],
+      sle: ['倦怠感', '関節痛', '皮膚症状'],
+      uc: ['排便回数', '血便', '腹痛(1-10)'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
