@@ -260,6 +260,21 @@ var App = class App {
     if (page === 'login') {
       try { this.updateSelectedDiseaseScale(); } catch (_) {}
       try { this.loadPublicUserCount(); } catch (_) {}
+      // Pre-select guest disease tags if selectedDiseases was set by ?d= URL param.
+      try {
+        const preSelected = store.get('selectedDiseases') || [];
+        if (preSelected.length > 0) {
+          document.querySelectorAll('.guest-disease-tag').forEach(tag => {
+            if (preSelected.includes(tag.dataset.id)) {
+              tag.classList.add('selected');
+              tag.style.background = '#ede9fe';
+              tag.style.borderColor = '#6366f1';
+              tag.style.color = '#6366f1';
+            }
+          });
+          this.updateGuestDiseaseScale();
+        }
+      } catch (_) {}
     }
     // Surface the first-time user onboarding widget on dashboard
     // when the user has 0 records. This pushes them into their
