@@ -46,6 +46,8 @@ var App = class App {
   init() {
     document.documentElement.removeAttribute('data-theme');
     localStorage.removeItem('cc_theme');
+    // Stale error from a previous session should not appear on fresh load.
+    store.set('latestFeedbackError', null);
     this._initHashRouter();
     store.on('currentPage', (p) => this.navigate(p));
 
@@ -1166,6 +1168,14 @@ ${recentText || '記録なし'}
       bipolar: { ja: '双極性障害', en: 'bipolar disorder' },
       ptsd: { ja: 'PTSD トラウマ', en: 'PTSD trauma' },
       adhd: { ja: 'ADHD 発達障害', en: 'ADHD' },
+      migraine: { ja: '片頭痛 頭痛', en: 'migraine headache' },
+      ra: { ja: '関節リウマチ', en: 'rheumatoid arthritis' },
+      ms: { ja: '多発性硬化症 MS', en: 'multiple sclerosis' },
+      sle: { ja: '全身性エリテマトーデス ループス SLE', en: 'lupus SLE' },
+      crohns: { ja: 'クローン病 IBD', en: "Crohn's disease IBD" },
+      parkinsons: { ja: 'パーキンソン病', en: "Parkinson's disease" },
+      eds: { ja: 'エーラスダンロス症候群 EDS', en: 'Ehlers-Danlos syndrome' },
+      mcas: { ja: 'MCAS マスト細胞', en: 'mast cell activation syndrome' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1269,6 +1279,13 @@ ${recentText || '記録なし'}
       ibs: 'irritable bowel syndrome treatment',
       pots: 'postural orthostatic tachycardia',
       insomnia: 'insomnia treatment',
+      migraine: 'migraine headache treatment',
+      ra: 'rheumatoid arthritis treatment',
+      ms: 'multiple sclerosis treatment',
+      crohns: "Crohn's disease treatment",
+      parkinsons: "Parkinson's disease treatment",
+      eds: 'Ehlers-Danlos syndrome',
+      mcas: 'mast cell activation syndrome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1398,6 +1415,14 @@ ${titles}`;
       hashimoto: 'Hashimoto thyroiditis',
       ibs: 'irritable bowel syndrome',
       insomnia: 'insomnia treatment',
+      migraine: 'migraine headache',
+      ra: 'rheumatoid arthritis',
+      ms: 'multiple sclerosis',
+      sle: 'systemic lupus erythematosus',
+      crohns: "Crohn's disease",
+      parkinsons: "Parkinson's disease",
+      eds: 'Ehlers-Danlos syndrome',
+      mcas: 'mast cell activation syndrome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';

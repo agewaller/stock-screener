@@ -1202,6 +1202,16 @@ var CONFIG = {
       '最近CRPが0.8に上がっていた。リウマチ外来で生物学的製剤の追加を検討と言われた。疲労感が強く、仕事が続けられるか不安。',
       '雨の日は関節の痛みが強くなる気がする。体調を記録して次回の受診時に見せたい。今日は膝と足首も痛い。'
     ],
+    ms: [
+      '今日は午後から右足のしびれが強くなった。歩くと少しふらつく感じがある。1週間前から続いていて、先生に連絡すべきか迷っている。',
+      '昨日入浴後から視野が少しぼやける。ウートフ現象かもしれない。体温が下がったら戻るはずだが不安。疲労度は8/10。',
+      'インターフェロンβを打った翌日は決まって発熱と筋肉痛がある。解熱剤で対処しているが仕事に影響している。副作用の記録をつけておきたい。'
+    ],
+    sle: [
+      '今日は顔に蝶形紅斑が出ている。両頬が赤く、少し熱っぽい。日光に当たったせいかもしれない。関節も痛くて起き上がるのが辛い。',
+      '血液検査でC3補体が低下していた。フレアの前兆かもしれないと主治医に言われた。疲労感が強く、尿の泡立ちが気になる。',
+      'プレドニゾロンを5mg増量した。副作用（むくみ・不眠）が出ているが、関節痛は少し楽になった。今後の減量スケジュールを確認したい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -1331,6 +1341,33 @@ var CONFIG = {
         { timestamp: '2026-01-10T08:00:00Z', name: 'メトトレキサート (MTX)', notes: '8mg/週 毎週火曜夜 + 葉酸 5mg/週' },
         { timestamp: '2026-01-10T08:00:00Z', name: 'プレドニゾロン', notes: '5mg 朝（漸減中）' },
         { timestamp: '2026-02-01T08:00:00Z', name: '葉酸', notes: '5mg MTX服用翌日' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ms: {
+      diseases: ['多発性硬化症（MS）'],
+      profile: { age: 34, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-18T08:00:00Z', category: 'symptoms', title: '視神経炎？', content: '右目が少しぼやける感じが昨夜から続く。眼痛はなし。神経内科に電話して経過観察と言われた。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'symptoms', title: '疲労強い', content: '疲労度 9/10。右足のしびれが戻ってきた。ステロイドパルス後から比較的安定していたのに不安。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'medication', title: 'MRI結果', content: 'MRI で新しいガドリニウム造影病変 1 か所。先生から DMT 変更の話が出た。ナタリズマブへの切り替えを検討中。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'symptoms', title: '', content: 'ウートフ現象：昨日の入浴後、右脚の脱力感が強まった。冷却後に回復。記録しておく。' },
+        { timestamp: '2026-04-15T08:00:00Z', category: 'medication', title: 'DMT変更初回', content: 'ナタリズマブ初回点滴。注入反応なし。次回は 4 週間後。JCV 抗体検査を依頼。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'symptoms', title: '経過良好', content: '疲労度 5/10。右足のしびれは軽減。歩行も安定してきた。認知機能（集中力）はまだ不安。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, brain_fog: 6, sleep_quality: 4, pain_level: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 7, brain_fog: 5, sleep_quality: 5, pain_level: 3 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 6, brain_fog: 5, sleep_quality: 6, pain_level: 2 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 6, pain_level: 2 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-01T10:00:00Z', name: '定期検査 + JCV 抗体', findings: 'JCV 抗体 陽性（index 0.6）, ビタミン D 18 (低値), WBC 6.2, Hb 12.8, CRP 0.1 (正常)' }
+      ],
+      medications: [
+        { timestamp: '2026-04-15T10:00:00Z', name: 'ナタリズマブ（タイサブリ）', notes: '300mg 4週ごと点滴 — DMT 変更後' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'バクロフェン', notes: '5mg 就寝前（痙縮・足のこわばり）' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'ビタミン D3', notes: '2,000IU/日（低値補充）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

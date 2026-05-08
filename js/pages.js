@@ -135,7 +135,7 @@ App.prototype.render_login = function() {
         <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:11px;color:#64748b;line-height:1.6">
           お持ちの症状を選ぶと、より的確な情報をお伝えできます（任意）
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px" id="guest-disease-tag-row">
-            ${['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'migraine:片頭痛', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺', 'ra:リウマチ'].map(item => {
+            ${['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'migraine:片頭痛', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺', 'ra:リウマチ', 'ms:MS', 'sle:ループス'].map(item => {
               const [id, label] = item.split(':');
               const epi = CONFIG.DISEASE_EPIDEMIOLOGY?.[id];
               const tooltipLabel = epi ? `世界で ${epi.label}（${epi.source || '統計'}）` : '';
