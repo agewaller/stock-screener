@@ -3669,54 +3669,32 @@ ${axisHint}
     // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
 
-    // Simple direct API call — no heavy prompt interpolation, no fallback chain.
+    // Route through aiEngine.callModel() so the shared Cloudflare
+    // Worker proxy works for users who have no personal API key.
     const entryId = entry.id;
-    const apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey) {
-      store.set('isAnalyzing', false);
-      store.set('latestFeedbackError', 'APIキーが設定されていません。管理パネル→APIキーで設定してください。');
-      return;
-    }
-
     const diseases = (store.get('selectedDiseases') || []).join('・');
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 25000);
+    const modelId = store.get('selectedModel') || 'claude-sonnet-4-6';
+    const profile = store.get('userProfile') || {};
+    const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
+    const prompt = `${langDirective}
+${diseases ? '【疾患: ' + diseases + '】' : ''}
 
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: store.get('selectedModel') || 'claude-sonnet-4-6',
-        max_tokens: 800,
-        temperature: 0.4,
-        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
-        messages: [{ role: 'user', content: (diseases ? '【疾患: ' + diseases + '】\n' : '') + content }]
-      }),
-      signal: ctrl.signal
-    })
-    .then(res => {
-      clearTimeout(tid);
-      if (!res.ok) return res.text().then(t => { throw new Error('API ' + res.status + ': ' + t.substring(0, 200)); });
-      return res.json();
-    })
-    .then(data => {
+${content}`;
+
+    aiEngine.callModel(modelId, prompt, {
+      maxTokens: 800,
+      temperature: 0.4,
+      systemPrompt: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
+      globalTimeoutMs: 30000
+    }).then(text => {
       store.set('isAnalyzing', false);
-      const text = data?.content?.[0]?.text || '';
-      const result = { summary: '分析結果', findings: text, actions: [], _fromAPI: true };
-      try { const p = this.parseAIResponse(text); if (p && p.summary) Object.assign(result, p); } catch(_){}
+      const result = { summary: '分析結果', findings: typeof text === 'string' ? text : JSON.stringify(text), actions: [], _fromAPI: true };
+      try { const p = this.parseAIResponse(typeof text === 'string' ? text : JSON.stringify(text)); if (p && p.summary) Object.assign(result, p); } catch(_){}
       store.set('latestFeedback', result);
       this.saveAIComment(entryId, result);
-    })
-    .catch(err => {
-      clearTimeout(tid);
+    }).catch(err => {
       store.set('isAnalyzing', false);
-      const msg = err.name === 'AbortError' ? '25秒以内に応答がありませんでした。もう一度お試しください。' : (err.message || String(err));
-      store.set('latestFeedbackError', msg);
+      store.set('latestFeedbackError', err?.message || String(err));
     });
   }
 
