@@ -1192,6 +1192,16 @@ var CONFIG = {
       '23時に布団に入っても1時間以上眠れない。夜中に2〜3回目が覚め、そのたびに30分以上眠れない。',
       '日中に強い眠気があるのに夜は眠れない。カフェインは控えているつもり。'
     ],
+    migraine: [
+      '朝から目の前にキラキラしたものが見えると思ったら、右側の頭がズキズキしてきた。吐き気もある。スマトリプタンを飲んだが効果がいまひとつ。先月は5回発作があった。',
+      '天気が崩れる前日に決まって頭痛が来る。低気圧に敏感で気圧計アプリでも確認できている。今日は薬を飲まずに暗い部屋で横になっていたが3時間かかった。',
+      '月経前の3〜4日間は毎回片頭痛が来る。ホルモンとの関係を主治医に相談したい。ピルを飲んでいるが頭痛は減っていない。'
+    ],
+    ra: [
+      '朝起きたら両手の指がこわばって握れない。30分経ってようやく動くようになった。手首と人差し指の付け根が腫れていて押すと痛い。MTXを飲んで3ヶ月目。',
+      '最近CRPが0.8に上がっていた。リウマチ外来で生物学的製剤の追加を検討と言われた。疲労感が強く、仕事が続けられるか不安。',
+      '雨の日は関節の痛みが強くなる気がする。体調を記録して次回の受診時に見せたい。今日は膝と足首も痛い。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -1269,6 +1279,58 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-03-10T08:00:00Z', name: 'プレガバリン (リリカ)', notes: '100mg x 2/日' },
         { timestamp: '2026-04-10T08:00:00Z', name: 'デュロキセチン (サインバルタ)', notes: '20mg 朝' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    migraine: {
+      diseases: ['片頭痛'],
+      profile: { age: 33, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-20T07:30:00Z', category: 'symptoms', title: '片頭痛発作', content: '閃輝暗点から始まり右側頭部のズキズキが4時間続いた。スマトリプタン50mgで2時間後に改善。吐き気あり。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'symptoms', title: '', content: '今日は低気圧が来ていた。頭痛なし。予防できた？水分多めに取った。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'symptoms', title: '月経関連', content: '月経開始日に発作。痛み 8/10。スマトリプタン効果あり。今月2回目。' },
+        { timestamp: '2026-04-08T07:00:00Z', category: 'medication', title: 'アミトリプチリン開始', content: '予防薬として就寝前に10mgから開始。眠気あるかも。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'symptoms', title: '', content: '先週の嵐でも頭痛なし。アミトリプチリン1週間。まだ効果不明。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'symptoms', title: '発作', content: '仕事のストレスが重なった日の夜に発作。痛み 7/10。スマトリプタンで対応。今月3回目。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 6, brain_fog: 4, sleep_quality: 5, pain_level: 8 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 4, brain_fog: 3, sleep_quality: 6, pain_level: 3 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, brain_fog: 2, sleep_quality: 7, pain_level: 2 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 5, pain_level: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-04-08T20:00:00Z', name: 'アミトリプチリン', notes: '10mg 就寝前（予防薬）' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'スマトリプタン (50mg)', notes: '発作時頓服・月9回まで' },
+        { timestamp: '2026-04-01T08:00:00Z', name: 'マグネシウム', notes: '400mg 夕食後（予防補助）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ra: {
+      diseases: ['関節リウマチ'],
+      profile: { age: 52, gender: 'female', height: 155, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-18T07:00:00Z', category: 'symptoms', title: '朝のこわばり', content: '両手の指が動かしにくい。こわばりが40分続いた。両手関節の腫れあり。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'medication', title: 'MTX継続', content: 'MTX 8mg/週（葉酸補充継続）。3ヶ月目。吐き気は服用翌日のみ。' },
+        { timestamp: '2026-04-01T09:00:00Z', category: 'blood_test', title: '定期採血', content: 'CRP 1.2（先月 0.8 から増加）。RF 強陽性。抗CCP抗体 高値継続。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'symptoms', title: '', content: '右手首の腫れが気になる。物を持つと痛い。こわばりは20分に短縮。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'medication', title: '受診・薬調整', content: '主治医より生物学的製剤追加の話が出た。次回受診で決める予定。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'symptoms', title: '', content: '今週は天気が良く比較的調子良い。こわばり15分。疲労感は続く。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, brain_fog: 3, sleep_quality: 5, pain_level: 6 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, brain_fog: 3, sleep_quality: 6, pain_level: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, brain_fog: 2, sleep_quality: 6, pain_level: 4 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, brain_fog: 2, sleep_quality: 7, pain_level: 3 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-01T10:00:00Z', name: '定期検査', findings: 'CRP 1.2 (増加), RF 強陽性, 抗CCP抗体 高値, WBC 4.8, Hb 11.2 (軽度貧血), 肝機能正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-10T08:00:00Z', name: 'メトトレキサート (MTX)', notes: '8mg/週 毎週火曜夜 + 葉酸 5mg/週' },
+        { timestamp: '2026-01-10T08:00:00Z', name: 'プレドニゾロン', notes: '5mg 朝（漸減中）' },
+        { timestamp: '2026-02-01T08:00:00Z', name: '葉酸', notes: '5mg MTX服用翌日' }
       ],
       sleepData: [], activityData: [], meals: []
     }

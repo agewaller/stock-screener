@@ -3277,7 +3277,9 @@ ${responseText.substring(0, 3000)}`;
 
   guestSampleSubmit() {
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
-    const firstId = selectedTags.length > 0 ? selectedTags[0].dataset.id : 'default';
+    const storedDiseases = store.get('selectedDiseases') || [];
+    const firstId = selectedTags.length > 0 ? selectedTags[0].dataset.id
+      : (storedDiseases[0] || 'default');
     const samples = CONFIG.GUEST_SAMPLES;
     const pool = samples[firstId] || samples['default'] || [];
     const text = pool[Math.floor(Math.random() * pool.length)] || '';
@@ -3291,7 +3293,9 @@ ${responseText.substring(0, 3000)}`;
 
   guestSampleReport() {
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
-    const diseaseId = selectedTags.length > 0 ? selectedTags[0].dataset.id : 'mecfs';
+    const storedDiseases = store.get('selectedDiseases') || [];
+    const diseaseId = selectedTags.length > 0 ? selectedTags[0].dataset.id
+      : (storedDiseases[0] || 'mecfs');
     const dataKey = diseaseId.replace(/_/g, '_');
     const sample = CONFIG.GUEST_REPORT_DATA?.[dataKey] || CONFIG.GUEST_REPORT_DATA?.mecfs;
     const resultEl = document.getElementById('guest-result');
@@ -3382,11 +3386,13 @@ ${responseText.substring(0, 3000)}`;
       console.warn('[guestAnalyze] ensureGuestAuth returned false — proceeding with Worker env fallback');
     }
 
-    // Collect selected diseases from guest tags
+    // Collect selected diseases — tag clicks take priority, then fall
+    // back to store (pre-populated via ?d= URL param from disease LPs).
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
-    const diseases = Array.from(selectedTags).map(t => t.dataset.id);
-    const prevDiseases = store.get('selectedDiseases');
-    if (diseases.length > 0) store.set('selectedDiseases', diseases);
+    const tagDiseases = Array.from(selectedTags).map(t => t.dataset.id);
+    const prevDiseases = store.get('selectedDiseases') || [];
+    const diseases = tagDiseases.length > 0 ? tagDiseases : prevDiseases;
+    if (tagDiseases.length > 0) store.set('selectedDiseases', tagDiseases);
 
     try {
       // Speed/empathy balance: use Claude Haiku 4.5 (2-3x faster than
