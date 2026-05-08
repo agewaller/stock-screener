@@ -111,6 +111,26 @@ var App = class App {
         localStorage.setItem('referrer_id', ref);
         console.log('[Referral] captured ref=' + ref);
       }
+      // ?d= pre-selects a disease from the landing page CTAs
+      // (e.g. me-cfs.html → https://cares.advisers.jp/?d=mecfs).
+      // We toggle it into selectedDiseases and set selectedDisease
+      // so the guest tag row and the disease header both reflect it.
+      const dParam = params.get('d');
+      if (dParam) {
+        let matchedDisease = null;
+        for (const cat of CONFIG.DISEASE_CATEGORIES) {
+          const found = cat.diseases.find(x => x.id === dParam || x.id.replace(/_/g, '') === dParam.replace(/_/g, ''));
+          if (found) { matchedDisease = found; break; }
+        }
+        if (matchedDisease) {
+          const existing = store.get('selectedDiseases') || [];
+          if (!existing.includes(matchedDisease.id)) {
+            store.set('selectedDiseases', [...existing, matchedDisease.id]);
+          }
+          store.set('selectedDisease', matchedDisease);
+          console.log('[LP] pre-selected disease:', matchedDisease.id);
+        }
+      }
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
@@ -246,6 +266,7 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      try { this.maybeShowDailyNudge(); } catch (_) {}
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -3139,6 +3160,49 @@ ${responseText.substring(0, 3000)}`;
         </div>
       </div>
     `;
+    host.insertBefore(card.firstElementChild, host.firstElementChild);
+  }
+
+  // Show a gentle nudge when the user has past records but hasn't
+  // logged anything yet today. Dismissed per-day via localStorage
+  // so it doesn't pester users who open the app multiple times.
+  maybeShowDailyNudge() {
+    const entries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    if (entries.length === 0 && symptoms.length === 0) return; // first-time onboarding handles this
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const dismissedKey = 'cc_nudge_dismissed_' + todayStr;
+    if (localStorage.getItem(dismissedKey)) return;
+    const lastEntryDate = [...entries, ...symptoms]
+      .map(e => (e.timestamp || '').substring(0, 10))
+      .sort()
+      .pop();
+    if (lastEntryDate === todayStr) return; // already logged today
+    if (document.getElementById('daily-nudge')) return;
+
+    const streakStats = this._computeStreak();
+    const streakMsg = streakStats.streak > 0
+      ? `🔥 現在 <strong>${streakStats.streak} 日</strong> 連続記録中。今日も記録して継続をキープしましょう！`
+      : '今日の体調を記録して、傾向を積み上げましょう。';
+
+    const host = document.getElementById('page-content');
+    if (!host) return;
+    const card = document.createElement('div');
+    card.id = 'daily-nudge';
+    card.innerHTML = `
+      <div style="margin-bottom:14px;padding:12px 16px;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="font-size:12px;color:#92400e;line-height:1.6">${streakMsg}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="document.getElementById('dash-quick-input')?.focus();document.getElementById('daily-nudge').remove()"
+            style="padding:6px 14px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">
+            今日を記録
+          </button>
+          <button onclick="localStorage.setItem('${dismissedKey}','1');document.getElementById('daily-nudge').remove()"
+            style="padding:6px 10px;background:transparent;color:#92400e;border:1px solid #fbbf24;border-radius:8px;font-size:11px;cursor:pointer">
+            後で
+          </button>
+        </div>
+      </div>`;
     host.insertBefore(card.firstElementChild, host.firstElementChild);
   }
 
@@ -6209,6 +6273,35 @@ ${bloodText || '記録なし'}
         <div style="color:var(--danger);padding:16px">レポート生成に失敗しました: ${Components.escapeHtml(err.message || String(err))}</div>
         <button class="btn btn-outline" style="margin-top:12px" onclick="app.closeModal()">閉じる</button>`;
     }
+  }
+
+  // ---- Deep Analysis Archive reactions / bookmarks ----
+  // These stubs are overridden at runtime by index.html's inline scripts
+  // which have access to the local updateArchiveEntry helper.
+  setReaction(id, section, reaction) {
+    const archive = store.get('deepAnalyses') || [];
+    const entry = archive.find(a => a.id === id);
+    if (!entry) return;
+    entry.reactions = entry.reactions || {};
+    entry.reactions[section] = entry.reactions[section] === reaction ? null : reaction;
+    if (entry.reactions[section] == null) delete entry.reactions[section];
+    store.set('deepAnalyses', archive);
+    if (this.currentPage === 'data-input') this.navigate('data-input');
+  }
+
+  toggleBookmark(id, section) {
+    const archive = store.get('deepAnalyses') || [];
+    const entry = archive.find(a => a.id === id);
+    if (!entry) return;
+    entry.bookmarks = entry.bookmarks || {};
+    entry.bookmarks[section] = !entry.bookmarks[section];
+    if (!entry.bookmarks[section]) delete entry.bookmarks[section];
+    store.set('deepAnalyses', archive);
+    if (this.currentPage === 'data-input') this.navigate('data-input');
+  }
+
+  async runDeepAnalysis() {
+    Components.showToast('本格分析を準備中です。しばらくお待ちください。', 'info');
   }
 
   // ---- Generate Demo Data ----

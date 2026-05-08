@@ -104,7 +104,12 @@ MODULE_ORDER.forEach(f => {
 // ================================================================
 section('2. onclick ハンドラの配線');
 test('Every onclick="app.X()" references a real App method', () => {
-  const onclicks = html.match(/onclick="app\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g) || [];
+  // Scan both index.html AND pages.js (which holds template literal onclick strings)
+  const pagesJs = (() => {
+    try { return fs.readFileSync(path.join(ROOT, 'js', 'pages.js'), 'utf8'); } catch(_) { return ''; }
+  })();
+  const combined = html + '\n' + pagesJs;
+  const onclicks = combined.match(/onclick="app\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g) || [];
   const methods = new Set();
   onclicks.forEach(m => {
     const fn = m.match(/app\.([a-zA-Z_][a-zA-Z0-9_]*)/)[1];
