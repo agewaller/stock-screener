@@ -3211,6 +3211,86 @@ ${responseText.substring(0, 3000)}`;
     scaleEl.style.display = '';
   }
 
+  guestSampleSubmit() {
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const firstId = selectedTags.length > 0 ? selectedTags[0].dataset.id : 'default';
+    const samples = CONFIG.GUEST_SAMPLES;
+    const pool = samples[firstId] || samples['default'] || [];
+    const text = pool[Math.floor(Math.random() * pool.length)] || '';
+    const input = document.getElementById('guest-input');
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+    this.guestAnalyze();
+  }
+
+  guestSampleReport() {
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const diseaseId = selectedTags.length > 0 ? selectedTags[0].dataset.id : 'mecfs';
+    const dataKey = diseaseId.replace(/_/g, '_');
+    const sample = CONFIG.GUEST_REPORT_DATA?.[dataKey] || CONFIG.GUEST_REPORT_DATA?.mecfs;
+    const resultEl = document.getElementById('guest-result');
+    if (!resultEl || !sample) return;
+
+    const diseases = (sample.diseases || []).join('、');
+    const profile = sample.profile || {};
+    const entries = sample.textEntries || [];
+    const symptoms = sample.symptoms || [];
+    const meds = sample.medications || [];
+    const blood = sample.bloodTests || [];
+
+    const entryRows = entries.slice(-6).map(e => {
+      const d = new Date(e.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+      return `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-size:11px;color:#64748b;white-space:nowrap">${d}</td><td style="padding:6px 8px;font-size:12px;color:#1e293b">${Components.escapeHtml(e.content)}</td></tr>`;
+    }).join('');
+
+    const latestSymptom = symptoms[symptoms.length - 1] || {};
+    const firstSymptom = symptoms[0] || {};
+    const fatigueDelta = latestSymptom.fatigue_level && firstSymptom.fatigue_level
+      ? firstSymptom.fatigue_level - latestSymptom.fatigue_level : 0;
+    const trendText = fatigueDelta > 0 ? `疲労度 ${fatigueDelta} ポイント改善` : fatigueDelta < 0 ? `疲労度 ${-fatigueDelta} ポイント悪化` : '安定';
+
+    const medRows = meds.map(m =>
+      `<li style="font-size:11px;color:#1e293b;margin-bottom:2px">${Components.escapeHtml(m.name)}${m.notes ? ' — ' + Components.escapeHtml(m.notes) : ''}</li>`
+    ).join('');
+
+    const bloodRows = blood.map(b =>
+      `<div style="font-size:11px;color:#1e293b;margin-bottom:4px"><span style="font-weight:600">${Components.escapeHtml(b.name)}</span>: ${Components.escapeHtml(b.findings)}</div>`
+    ).join('');
+
+    resultEl.innerHTML = `
+      <div style="margin-top:12px;padding:16px;background:#fff;border:2px solid #0891b2;border-radius:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:#155e75">🏥 医師提出用レポート（サンプル）</div>
+          <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:2px 8px">架空のサンプルデータ</span>
+        </div>
+        <div style="font-size:12px;color:#0e7490;margin-bottom:12px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          対象疾患: <strong>${Components.escapeHtml(diseases)}</strong> ／
+          ${profile.age ? profile.age + '歳 ' : ''}${profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : ''}
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📊 症状推移サマリー</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:12px;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          期間: ${symptoms.length > 0 ? new Date(symptoms[0].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) + ' 〜 ' + new Date(symptoms[symptoms.length-1].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) : '記録なし'} ／
+          ${trendText}
+        </div>
+        ${meds.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">💊 服薬記録</div><ul style="margin:0 0 12px;padding-left:16px">${medRows}</ul>` : ''}
+        ${blood.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">🩸 検査結果</div><div style="margin-bottom:12px">${bloodRows}</div>` : ''}
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📝 日記ハイライト（直近 6 件）</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+          <tbody>${entryRows}</tbody>
+        </table>
+        <div style="padding:12px;background:linear-gradient(135deg,#eef2ff,#fdf4ff);border-radius:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:4px">あなた自身のデータでこのレポートを作成できます</div>
+          <div style="font-size:11px;color:#4338ca;margin-bottom:10px">記録を続けると AI が 90 日分の症状・服薬・検査結果を医師に説明しやすい形にまとめます</div>
+          <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})"
+            style="padding:10px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+            無料で登録して使ってみる
+          </button>
+        </div>
+      </div>`;
+  }
+
   async guestAnalyze() {
     const input = document.getElementById('guest-input');
     if (!input || !input.value.trim()) {
@@ -3824,6 +3904,7 @@ ${axisHint}
   }
 
   async saveProfile() {
+    const prevLang = (store.get('userProfile') || {}).language || 'ja';
     const profile = {
       age: document.getElementById('profile-age')?.value || '',
       gender: document.getElementById('profile-gender')?.value || '',
@@ -3840,6 +3921,10 @@ ${axisHint}
       if (!ok) return;
     }
     Components.showToast('プロフィールを保存しました', 'success');
+    if (profile.language !== prevLang) {
+      i18n.setLang(profile.language);
+      setTimeout(() => this.navigate('settings'), 100);
+    }
   }
 
   loadProfileFields() {
@@ -4259,7 +4344,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.clearUsageLog(this)">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
@@ -4854,6 +4939,26 @@ ${axisHint}
     this.navigate('admin');
     // Auto-open the new prompt
     setTimeout(() => this.togglePromptEdit(key), 100);
+  }
+
+  clearUsageLog(btn) {
+    if (!btn.dataset.confirmed) {
+      btn.dataset.confirmed = 'pending';
+      btn.textContent = '本当にクリア？もう一度押して確定';
+      btn.style.color = 'var(--danger)';
+      btn.style.borderColor = 'var(--danger)';
+      setTimeout(() => {
+        btn.textContent = 'ログをクリア';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        delete btn.dataset.confirmed;
+      }, 4000);
+      return;
+    }
+    store.set('apiUsage', []);
+    Components.showToast('使用量ログをクリアしました', 'success');
+    this.navigate('admin');
+    setTimeout(() => this.switchAdminTab('usage'), 50);
   }
 
   deletePrompt(key) {
@@ -5983,6 +6088,126 @@ ${joined.substring(0, 8000)}`;
     } catch (err) {
       console.error('Deduplicate error:', err);
       Components.showToast('重複削除に失敗しました', 'error');
+    }
+  }
+
+  // ---- Doctor Report ----
+  async generateDoctorReport() {
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const medications = store.get('medications') || [];
+    const bloodTests = store.get('bloodTests') || [];
+    const profile = store.get('userProfile') || {};
+    const selectedDiseases = store.get('selectedDiseases') || [];
+
+    if (textEntries.length + symptoms.length < 3) {
+      Components.showToast('レポートを作成するには 3 件以上の記録が必要です', 'info');
+      return;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    if (!overlay || !body) return;
+
+    titleEl.textContent = '🏥 医師提出用レポートを作成中…';
+    body.innerHTML = Components.loading('過去の記録を整理しています...', { subtext: '90 日分のデータから医師向けサマリーを生成します（30〜60 秒）' });
+    overlay.classList.add('active');
+
+    const diseases = selectedDiseases.map(id => {
+      for (const cat of CONFIG.DISEASE_CATEGORIES) {
+        const d = cat.diseases.find(x => x.id === id);
+        if (d) return d.name;
+      }
+      return id;
+    }).join('、') || '未設定';
+
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+    const recentEntries = textEntries.filter(e => e.timestamp >= cutoff).slice(-30);
+    const recentSymptoms = symptoms.filter(s => s.timestamp >= cutoff).slice(-30);
+    const recentMeds = medications.filter(m => m.timestamp >= cutoff).slice(-10);
+    const recentBlood = bloodTests.filter(b => b.timestamp >= cutoff).slice(-5);
+
+    const entryText = recentEntries.map(e =>
+      `${e.timestamp.substring(0,10)} [${e.category||'diary'}] ${e.content||''}`
+    ).join('\n');
+    const symptomText = recentSymptoms.map(s =>
+      `${s.timestamp.substring(0,10)} 疲労:${s.fatigue_level??'-'} 痛み:${s.pain_level??'-'} 脳霧:${s.brain_fog??'-'} 睡眠:${s.sleep_quality??'-'}`
+    ).join('\n');
+    const medText = recentMeds.map(m => `${m.name||''} ${m.dose||''} ${m.notes||''}`).join('、');
+    const bloodText = recentBlood.map(b => `${b.name||''}: ${b.findings||''}`).join('；');
+
+    const profileSummary = [
+      profile.age ? profile.age + '歳' : '',
+      profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : '',
+      profile.height ? profile.height + 'cm' : '',
+      profile.weight ? profile.weight + 'kg' : ''
+    ].filter(Boolean).join('、');
+
+    const lang = profile.language || 'ja';
+    const langDir = aiEngine._languageDirectiveFor(lang);
+
+    const prompt = `${langDir}
+あなたは慢性疾患患者が医師に提出する診察レポートを作成するアシスタントです。
+以下のデータから、受診時に医師に手渡せる形式のレポートを生成してください。
+
+【患者基本情報】
+${profileSummary}
+対象疾患: ${diseases}
+
+【過去 90 日の日記（最大 30 件）】
+${entryText || '記録なし'}
+
+【症状スコア推移】
+${symptomText || '記録なし'}
+
+【服薬記録】
+${medText || '記録なし'}
+
+【検査結果】
+${bloodText || '記録なし'}
+
+【出力形式】
+以下の見出しを使った日本語の医師向けレポートを作成してください:
+1. 主訴・経過サマリー（200〜300文字）
+2. 症状の推移と傾向（箇条書き）
+3. 服薬・治療内容
+4. 検査結果ハイライト（あれば）
+5. 医師への質問・確認事項（患者が聞きたいこと 3〜5 点）
+6. 生活への影響度（就労・日常活動への影響）
+
+レポートは医師が 3 分で読める簡潔な形式にしてください。`;
+
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, {
+        maxTokens: 2000,
+        temperature: 0.3,
+        globalTimeoutMs: 60000
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+
+      body.innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:12px">🏥 医師提出用レポート</div>
+        <div style="font-size:11px;color:#0891b2;margin-bottom:14px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          期間: 過去 90 日 ／ 対象: ${Components.escapeHtml(diseases)} ／ ${profileSummary ? Components.escapeHtml(profileSummary) : ''}
+        </div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1e293b;max-height:60vh;overflow-y:auto;padding:4px">${Components.escapeHtml(text)}</div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1" onclick="
+            navigator.clipboard && navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>Components.showToast('レポートをクリップボードにコピーしました','success'))">
+            📋 コピーして印刷
+          </button>
+          <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+        </div>`;
+
+      const reports = store.get('doctorReports') || [];
+      reports.unshift({ timestamp: new Date().toISOString(), diseases, text });
+      if (reports.length > 10) reports.length = 10;
+      store.set('doctorReports', reports);
+    } catch (err) {
+      body.innerHTML = `
+        <div style="color:var(--danger);padding:16px">レポート生成に失敗しました: ${Components.escapeHtml(err.message || String(err))}</div>
+        <button class="btn btn-outline" style="margin-top:12px" onclick="app.closeModal()">閉じる</button>`;
     }
   }
 
