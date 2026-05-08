@@ -1948,7 +1948,7 @@ App.prototype.render_research = function() {
     ? savedResults.html
     : (updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。'));
+      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックすると最新論文が表示されます。'));
   const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
 
   return `
@@ -2003,7 +2003,7 @@ App.prototype.render_chat = function() {
         ${messages || `
           <div style="text-align:center;padding:40px;color:var(--text-muted)">
             <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>ME/CFSについて何でも質問してください</p>
+            <p>${(store.get('selectedDisease') || { name: 'あなたの体調' }).name}について何でも質問してください</p>
             <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
           </div>
         `}
