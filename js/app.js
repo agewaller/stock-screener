@@ -6255,7 +6255,7 @@ ${bloodText || '記録なし'}
         <div style="font-size:11px;color:#0891b2;margin-bottom:14px;padding:8px 12px;background:#ecfeff;border-radius:8px">
           期間: 過去 90 日 ／ 対象: ${Components.escapeHtml(diseases)} ／ ${profileSummary ? Components.escapeHtml(profileSummary) : ''}
         </div>
-        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1e293b;max-height:60vh;overflow-y:auto;padding:4px">${Components.escapeHtml(text)}</div>
+        <div style="font-size:13px;line-height:1.8;color:#1e293b;max-height:60vh;overflow-y:auto;padding:4px">${Components.formatMarkdown(text)}</div>
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary" style="flex:1" onclick="
             navigator.clipboard && navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>Components.showToast('レポートをクリップボードにコピーしました','success'))">

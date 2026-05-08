@@ -398,6 +398,19 @@ var Components = {
       // Headers
       .replace(/^### (.+)$/gm, '<div style="font-size:14px;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</div>')
       .replace(/^## (.+)$/gm, '<div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</div>')
+      .replace(/^# (.+)$/gm, '<div style="font-size:16px;font-weight:800;margin:14px 0 8px;color:var(--text-primary)">$1</div>')
+      // Horizontal rule
+      .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">')
+      // Unordered lists — convert leading `- ` or `* ` lines into <li>
+      .replace(/((?:^[ \t]*[-*][ \t].+\n?)+)/gm, (block) => {
+        const items = block.replace(/^[ \t]*[-*][ \t]/gm, '').trimEnd().split('\n').filter(Boolean);
+        return '<ul style="margin:6px 0 6px 18px;padding:0">' + items.map(i => `<li style="margin:2px 0">${i}</li>`).join('') + '</ul>';
+      })
+      // Numbered lists — convert `1. ` `2. ` lines into <li>
+      .replace(/((?:^[ \t]*\d+\.[ \t].+\n?)+)/gm, (block) => {
+        const items = block.replace(/^[ \t]*\d+\.[ \t]/gm, '').trimEnd().split('\n').filter(Boolean);
+        return '<ol style="margin:6px 0 6px 20px;padding:0">' + items.map(i => `<li style="margin:2px 0">${i}</li>`).join('') + '</ol>';
+      })
       .replace(/\n/g, '<br>');
   },
 
