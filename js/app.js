@@ -2975,6 +2975,101 @@ ${responseText.substring(0, 3000)}`;
     return comments[entryId] || null;
   }
 
+  // ---- User content edit / delete -----------------------------------
+  // Lets the user freely modify or remove anything they wrote / uploaded
+  // (text entries, photos, file uploads). Each entry carries a stable
+  // id, so we look up by that and rewrite the whole textEntries array.
+  // Cleans up linked aiComments and photos so deleted records don't
+  // leave orphan references behind. Re-render is automatic via the
+  // store listener on textEntries (scheduleDashRefresh).
+  // -------------------------------------------------------------------
+  deleteTextEntry(id) {
+    if (!id) return;
+    const entries = store.get('textEntries') || [];
+    const target = entries.find(e => e && e.id === id);
+    const next = entries.filter(e => !e || e.id !== id);
+    store.set('textEntries', next);
+
+    // Remove linked AI comment so it doesn't appear without an entry
+    const comments = store.get('aiComments') || {};
+    if (comments[id]) {
+      delete comments[id];
+      store.set('aiComments', comments);
+    }
+
+    // If this was a photo / file upload, also remove the photo blob
+    if (target && target.photoId) {
+      const photos = store.get('photos') || [];
+      const remainingPhotos = photos.filter(p => p && p.id !== target.photoId);
+      if (remainingPhotos.length !== photos.length) {
+        store.set('photos', remainingPhotos);
+      }
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Switches the rendered entry card into an inline edit form.
+  // Avoids a full re-render so the user keeps their scroll position
+  // and any unrelated state. Save / cancel restore the normal view.
+  beginEditTextEntry(id) {
+    const card = document.querySelector(`[data-entry-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    const entries = store.get('textEntries') || [];
+    const entry = entries.find(e => e && e.id === id);
+    if (!entry) return;
+    const safeContent = (entry.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeTitle = (entry.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    card.dataset.editing = '1';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text-muted)">編集中</span>
+      </div>
+      <input type="text" id="edit-title-${id}" value="${safeTitle}" placeholder="タイトル（任意）"
+        style="width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;box-sizing:border-box">
+      <textarea id="edit-content-${id}" rows="4"
+        style="width:100%;padding:8px;font-size:13px;line-height:1.6;border:1px solid var(--border);border-radius:6px;resize:vertical;box-sizing:border-box;font-family:inherit">${safeContent}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+        <button onclick="app.cancelEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;cursor:pointer">キャンセル</button>
+        <button onclick="app.saveEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">保存</button>
+      </div>`;
+    const ta = document.getElementById(`edit-content-${id}`);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+
+  saveEditTextEntry(id) {
+    const titleEl = document.getElementById(`edit-title-${id}`);
+    const contentEl = document.getElementById(`edit-content-${id}`);
+    if (!contentEl) return;
+    const newContent = contentEl.value.trim();
+    if (!newContent) {
+      Components.showToast('内容を入力してください', 'error');
+      return;
+    }
+    const newTitle = titleEl ? titleEl.value.trim() : '';
+    const entries = store.get('textEntries') || [];
+    const next = entries.map(e => {
+      if (!e || e.id !== id) return e;
+      return Object.assign({}, e, {
+        content: newContent,
+        title: newTitle || e.title || '',
+        editedAt: new Date().toISOString()
+      });
+    });
+    store.set('textEntries', next);
+    Components.showToast('編集を保存しました', 'success');
+  }
+
+  cancelEditTextEntry(_id) {
+    // Easiest path back to the read-only view: trigger a re-render via
+    // the same store listener everything else uses. Setting textEntries
+    // to its current value still fires the listener.
+    const entries = store.get('textEntries') || [];
+    store.set('textEntries', entries.slice());
+  }
+
   // One-shot purge of aiComments entries matching the old demo
   // output shape. These got persisted before the rejection guards
   // were added and keep resurfacing as garbled JSON in the dashboard.

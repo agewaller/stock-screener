@@ -839,8 +839,20 @@ App.prototype.render_dashboard = function() {
         : '';
       // Border color: highlight integration imports so they pop on the feed
       const borderColor = src ? src.color : 'var(--accent)';
+      const safeEntryId = Components.escapeHtml(e.id || '');
+      const editedTag = e.editedAt ? `<span style="font-size:10px;color:var(--text-muted);font-style:italic">編集済</span>` : '';
+      // Inline ✏️ / 🗑 controls in the expanded view so the user can edit
+      // or delete anything they wrote. Delete uses the confirmAction
+      // double-tap pattern (the inline 2-step pattern used elsewhere).
+      const expandedActions = safeEntryId ? `
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <button onclick="event.stopPropagation();app.beginEditTextEntry('${safeEntryId}')"
+            style="padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px">✏️ 編集</button>
+          <button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteTextEntry('${safeEntryId}'))"
+            style="padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px">🗑 削除</button>
+        </div>` : '';
       return `
-      <div class="card" style="margin-bottom:8px;border-left:3px solid ${borderColor}">
+      <div class="card" data-entry-id="${safeEntryId}" style="margin-bottom:8px;border-left:3px solid ${borderColor}">
         <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
           <div style="flex:1;min-width:0;display:flex;gap:10px;align-items:center">
@@ -850,6 +862,7 @@ App.prototype.render_dashboard = function() {
               <span style="font-size:12px;font-weight:600">${safeTitle}</span>
               ${sourceBadge}
               <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
+              ${editedTag}
             </div>
             <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${isLong ? '...' : ''}</div>
             </div>
@@ -859,6 +872,7 @@ App.prototype.render_dashboard = function() {
         <div id="${eid}" style="display:none;padding:0 16px 12px">
           ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeTitle}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
+          ${expandedActions}
           ${(() => {
             const comment = app.getAIComment(e.id);
             if (!comment) return e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : '';
@@ -1155,11 +1169,27 @@ App.prototype.render_data_input = function() {
         const safeContent = Components.escapeHtml(rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent);
         const safeTitle = e.title ? Components.escapeHtml(e.title) : '';
         const safeCategory = Components.escapeHtml(categoryLabels[e.category] || e.category || '');
+        const safeId = Components.escapeHtml(e.id || '');
+        const editedTag = e.editedAt ? `<span style="font-size:10px;color:var(--text-muted);font-style:italic;margin-left:4px">編集済</span>` : '';
+        // Inline ✏️ / 🗑 buttons let the user freely edit or delete what
+        // they wrote. Delete uses the confirmAction double-tap pattern
+        // (the inline 2-step confirm flow used elsewhere in the app).
+        const actionsHtml = safeId ? `
+          <div style="display:flex;gap:4px;margin-left:8px">
+            <button onclick="app.beginEditTextEntry('${safeId}')" title="編集"
+              style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;line-height:1">✏️</button>
+            <button onclick="app.confirmAction(this,'削除',()=>app.deleteTextEntry('${safeId}'))" title="削除"
+              style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;line-height:1">🗑</button>
+          </div>` : '';
         return `
-        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
-            <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+        <div data-entry-id="${safeId}" style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1">
+              <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
+              <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+              ${editedTag}
+            </div>
+            ${actionsHtml}
           </div>
           ${safeTitle ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${safeTitle}</div>` : ''}
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${safeContent}</div>
