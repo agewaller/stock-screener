@@ -346,10 +346,15 @@ var i18n = {
         node.textContent = node.textContent.replace(original, map.get(original));
         continue;
       }
-      // Partial match for longer strings containing known text
-      for (const [ja, tr] of map) {
-        if (ja.length >= 2 && node.textContent.includes(ja)) {
-          node.textContent = node.textContent.replace(ja, tr);
+      // Partial match for longer strings containing known text.
+      // Uses a renamed loop variable to avoid shadowing the outer `ja`
+      // (this.translations.ja) which is still needed for the title update.
+      // Break after the first replacement so a partially-translated string
+      // isn't fed into subsequent iterations.
+      for (const [jaStr, tr] of map) {
+        if (jaStr.length >= 2 && node.textContent.includes(jaStr)) {
+          node.textContent = node.textContent.replace(jaStr, tr);
+          break;
         }
       }
     }

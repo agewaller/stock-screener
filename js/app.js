@@ -91,7 +91,8 @@ var App = class App {
     // dashboard kept showing the loading spinner forever. The user
     // saw "コメントが出なくなりました". Same for 'isAnalyzing': when
     // it flips to false we need the dashboard to pick it up.
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses',
+     'selectedDisease', 'selectedDiseases']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
     // Start the auto-sync scheduler so connected integrations
@@ -4093,6 +4094,14 @@ ${axisHint}
   }
 
   // ---- Admin Tab Navigation ----
+  confirmClearUsageLogs() {
+    const ui = document.getElementById('usage-clear-ui');
+    if (!ui) return;
+    ui.innerHTML = `<span style="font-size:10px;color:var(--text-muted)">本当にクリアしますか？</span>
+      <button class="btn btn-sm" style="font-size:10px;background:#ef4444;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer" onclick="store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)">はい</button>
+      <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)">いいえ</button>`;
+  }
+
   switchAdminTab(tabId) {
     document.querySelectorAll('.admin-tab-content').forEach(el => el.style.display = 'none');
     document.querySelectorAll('#admin-tabs .tab').forEach(el => el.classList.remove('active'));
@@ -4259,7 +4268,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <span id="usage-clear-ui"><button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.confirmClearUsageLogs()">ログをクリア</button></span>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">

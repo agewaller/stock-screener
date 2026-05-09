@@ -644,6 +644,9 @@ var FirebaseBackend = {
     // page reload, per collection. Must be set before the first store.set.
     this._loading = true;
 
+    // globalConfig is fetched once and reused below to avoid a second
+    // Firestore read for the legacy-key migration check.
+    let _globalConfig = {};
     try {
       // Load global admin-managed config FIRST so API keys are in
       // localStorage before the user can submit any text box on the
@@ -652,7 +655,8 @@ var FirebaseBackend = {
       // keys arrived, landing them in the no-api-key fallback branch
       // that returns "ただいま詳細分析をご用意できません".
       try {
-        const globalConfig = await this.loadGlobalConfig();
+        _globalConfig = await this.loadGlobalConfig();
+        const globalConfig = _globalConfig;
         const hasGlobalKeys = globalConfig && globalConfig.apiKeys
           && Object.values(globalConfig.apiKeys).some(v => v);
         if (hasGlobalKeys) {
@@ -699,10 +703,9 @@ var FirebaseBackend = {
       this.subscribeToCollections();
       this.subscribeToSettings();
 
-      // Legacy per-user keys (backward compatibility). Global config
-      // already ran at the top of this function, so re-fetch just for
-      // the hasGlobalKeys check used by the legacy migration branch.
-      const globalConfig = await this.loadGlobalConfig();
+      // Legacy per-user keys (backward compatibility). Reuse the globalConfig
+      // already fetched at the top of this function — no second Firestore read.
+      const globalConfig = _globalConfig;
       const hasGlobalKeys = globalConfig && globalConfig.apiKeys
         && Object.values(globalConfig.apiKeys).some(v => v);
       const legacyKeys = await this.loadApiKeys();
