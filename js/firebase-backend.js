@@ -93,6 +93,8 @@ var FirebaseBackend = {
     if (!user) return;
     try {
       this.userId = user.uid;
+      // Switch localStorage namespace so user A's data doesn't leak to user B
+      store.switchUser(user.uid);
       const userData = {
         uid: user.uid,
         displayName: user.displayName,
@@ -866,6 +868,11 @@ var FirebaseBackend = {
     store.on('textEntries', syncLatest('textEntries'));
     store.on('symptoms', syncLatest('symptoms'));
     store.on('vitals', syncLatest('vitals'));
+    store.on('sleepData', syncLatest('sleep'));
+    store.on('activityData', syncLatest('activity'));
+    store.on('bloodTests', syncLatest('bloodTests'));
+    store.on('medications', syncLatest('medications'));
+    store.on('conversationHistory', syncLatest('conversations'));
 
     // Watch for settings changes (idempotent; merge:true)
     ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
@@ -881,6 +888,13 @@ var FirebaseBackend = {
       if (this._loading) return;
       if (!this.userId) return;
       this.saveProfile({ userProfile: value });
+    });
+
+    // Watch for AI feedback (dashboard response card)
+    store.on('latestFeedback', (feedback) => {
+      if (this._loading) return;
+      if (!this.userId || !feedback) return;
+      this.saveProfile({ latestFeedback: feedback });
     });
 
     // Watch for analysis history
@@ -964,6 +978,7 @@ var FirebaseBackend = {
         if (p.settings && p.settings.affiliateConfig) store.set('affiliateConfig', p.settings.affiliateConfig);
         if (p.settings && p.settings.dashboardLayout) store.set('dashboardLayout', p.settings.dashboardLayout);
         if (p.userProfile) store.set('userProfile', p.userProfile);
+        if (p.latestFeedback) store.set('latestFeedback', p.latestFeedback);
         if (p.adminEmails) {
           try { app.ADMIN_EMAILS = ['agewaller@gmail.com'].concat(p.adminEmails); } catch(e) {}
         }
