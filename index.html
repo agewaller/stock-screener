@@ -2052,20 +2052,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=20"></script>
-<script src="js/config.js?v=20"></script>
-<script src="js/prompts.js?v=20"></script>
-<script src="js/store.js?v=20"></script>
-<script src="js/privacy.js?v=20"></script>
-<script src="js/ai-engine.js?v=20"></script>
-<script src="js/affiliate.js?v=20"></script>
-<script src="js/components.js?v=20"></script>
-<script src="js/i18n.js?v=20"></script>
-<script src="js/calendar.js?v=20"></script>
-<script src="js/integrations.js?v=20"></script>
-<script src="js/firebase-backend.js?v=20"></script>
-<script src="js/app.js?v=20"></script>
-<script src="js/pages.js?v=20"></script>
+<script src="js/idb.js?v=21"></script>
+<script src="js/config.js?v=21"></script>
+<script src="js/prompts.js?v=21"></script>
+<script src="js/store.js?v=21"></script>
+<script src="js/privacy.js?v=21"></script>
+<script src="js/ai-engine.js?v=21"></script>
+<script src="js/affiliate.js?v=21"></script>
+<script src="js/components.js?v=21"></script>
+<script src="js/i18n.js?v=21"></script>
+<script src="js/calendar.js?v=21"></script>
+<script src="js/integrations.js?v=21"></script>
+<script src="js/firebase-backend.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
+<script src="js/pages.js?v=21"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2073,14 +2073,19 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 // a 404 from the Anthropic endpoint. The system prompt is built by the
 // caller so we can inject the user's selected-disease context.
 //
-// Routing: when the caller doesn't provide an API key (guest mode), we
-// route through the Cloudflare Worker proxy at anthropic_proxy_url so
-// the Worker's env.ANTHROPIC_API_KEY fallback kicks in. Without this,
-// guests who haven't loaded admin/config from Firestore would see a
-// bare "APIキーが未設定です" / 401 and fail hard — CLAUDE.md forbids
-// hitting api.anthropic.com directly without a key.
-function getAnthropicEndpoint(hasKey) {
-  if (hasKey) return 'https://api.anthropic.com/v1/messages';
+// Routing policy: ALL users — guest, registered, even users who set
+// their own personal Anthropic key — go through the Cloudflare Worker
+// proxy. Reasons:
+//   1. The Worker holds the admin's env.ANTHROPIC_API_KEY so first-
+//      time visitors NEVER see a "key not configured" error.
+//   2. Per-user direct api.anthropic.com calls hit CORS / preflight
+//      issues in iOS Safari and every in-app browser (Yahoo, LINE,
+//      FB, etc.), surfacing as "Load failed" with no recovery.
+//   3. Centralizing through Worker lets us inject server-side
+//      system prompts and rate-limit at one place.
+// The `hasKey` argument is now ignored — kept only for call-site
+// signature compatibility so we don't have to chase every caller.
+function getAnthropicEndpoint(_hasKey) {
   var proxy = '';
   try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch(_) {}
   if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
@@ -2097,12 +2102,14 @@ function callClaude(text, apiKey, model, systemPrompt) {
   var sys = systemPrompt || defaultSys;
   var ctrl = ('AbortController' in window) ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
+  // No x-api-key from the client. The Worker always uses its
+  // env.ANTHROPIC_API_KEY so every user — first-time visitor,
+  // guest, registered without a personal key, registered WITH a
+  // personal key — gets the same admin-funded path. cleanKey kept
+  // local in case future caller flows need it for diagnostics.
+  void cleanKey;
   var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-  if (cleanKey) {
-    headers['x-api-key'] = cleanKey;
-    headers['anthropic-dangerous-direct-browser-access'] = 'true';
-  }
-  return fetch(getAnthropicEndpoint(!!cleanKey), {
+  return fetch(getAnthropicEndpoint(false), {
     method: 'POST',
     headers: headers,
     body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: sys, messages: [{ role: 'user', content: text }] }),
@@ -2111,9 +2118,7 @@ function callClaude(text, apiKey, model, systemPrompt) {
     if (timer) clearTimeout(timer);
     if (!r.ok) return r.text().then(function(t){
       var msg = r.status + ': ' + t.substring(0, 300);
-      if (r.status === 401) msg = cleanKey
-        ? 'APIキーが無効です。管理パネルで再設定してください。'
-        : 'ゲストモードの AI 接続に失敗しました (401)。管理者に連絡してください。';
+      if (r.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
       else if (r.status === 403) msg = 'このドメインからの接続が許可されていません (403)。cares.advisers.jp からご利用ください。';
       else if (r.status === 404) msg = 'モデル「' + claudeModel + '」が見つかりません。別のモデルに切り替えてください。';
       else if (r.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
@@ -2157,18 +2162,17 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   var cleanKey = String(apiKey || '').trim();
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var controller = new AbortController();
-  // Same routing policy as the non-streaming callClaude: when no key
-  // is provided, send through the Cloudflare Worker proxy so the
-  // Worker's env.ANTHROPIC_API_KEY fallback handles the request.
-  // Worker passthrough preserves SSE chunks when stream:true is set.
+  // Same routing policy as the non-streaming callClaude: ALL users
+  // go through the Worker proxy so the admin's env.ANTHROPIC_API_KEY
+  // serves every request. No client-side x-api-key — even users who
+  // set their own key get routed through the shared Worker so they
+  // never see "key not configured" errors. Worker passthrough
+  // preserves SSE chunks when stream:true is set.
+  void cleanKey;
   var streamHeaders = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-  if (cleanKey) {
-    streamHeaders['x-api-key'] = cleanKey;
-    streamHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-  }
   var resp;
   try {
-    resp = await fetch(getAnthropicEndpoint(!!cleanKey), {
+    resp = await fetch(getAnthropicEndpoint(false), {
       method: 'POST',
       headers: streamHeaders,
       body: JSON.stringify({
@@ -2193,9 +2197,7 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   if (!resp.ok) {
     var errText = await resp.text().catch(function(){ return ''; });
     var msg = resp.status + ': ' + errText.substring(0, 300);
-    if (resp.status === 401) msg = cleanKey
-      ? 'APIキーが無効です。管理パネルで再設定してください。'
-      : 'ゲスト/共有モードの AI 接続に失敗しました (401)。管理者に連絡してください。';
+    if (resp.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
     else if (resp.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
     else if (resp.status === 529 || resp.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
     throw new Error(msg);
@@ -2782,13 +2784,14 @@ window.addEventListener('load', function() {
     var stallTimer = null;
     var lastByteAt = Date.now();
     try {
-      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      // Route through the Worker proxy so the admin's env API key is
+      // used for every user (no per-user direct-Anthropic calls).
+      void key;
+      var resp = await fetch(getAnthropicEndpoint(false), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': String(key).trim(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
@@ -3088,13 +3091,14 @@ window.addEventListener('load', function() {
     }, 5000);
     var fullText = '';
     try {
-      var resp2 = await fetch('https://api.anthropic.com/v1/messages', {
+      // Route through the Worker proxy so the admin's env API key is
+      // used for every user (no per-user direct-Anthropic calls).
+      void key;
+      var resp2 = await fetch(getAnthropicEndpoint(false), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': String(key).trim(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 3500, system: sys,
@@ -3176,6 +3180,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=20"></script>
+<script defer src="js/inapp-browser-banner.js?v=21"></script>
 </body>
 </html>
