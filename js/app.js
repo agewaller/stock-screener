@@ -1601,6 +1601,11 @@ ${titles}`;
     }, 500);
   }
 
+  async connectGoogleFit() {
+    await Integrations.googleFit.connect();
+    this.navigate('integrations');
+  }
+
   connectFitbit() {
     const clientId = document.getElementById('fitbit-client-id')?.value?.trim();
     if (!clientId) { Components.showToast('Client IDを入力してください', 'error'); return; }
