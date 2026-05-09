@@ -93,8 +93,6 @@ var FirebaseBackend = {
     if (!user) return;
     try {
       this.userId = user.uid;
-      // Switch localStorage namespace so user A's data doesn't leak to user B
-      store.switchUser(user.uid);
       const userData = {
         uid: user.uid,
         displayName: user.displayName,

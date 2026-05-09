@@ -637,10 +637,8 @@ var App = class App {
     } catch(e) {
       console.warn('Logout error:', e);
     }
-    // Clear ALL user data from memory and localStorage.
-    // signOut() calls clearAll() internally, but if Firebase isn't
-    // initialized (offline etc.) we must still clear explicitly.
-    store.clearAll();
+    // Always clear auth state and go to login
+    store.update({ user: null, isAuthenticated: false });
     this.navigate('login');
   }
 
