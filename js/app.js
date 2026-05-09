@@ -2975,6 +2975,39 @@ ${responseText.substring(0, 3000)}`;
     return comments[entryId] || null;
   }
 
+  // ---- Client cache / SW reset ---------------------------------------
+  // Last-resort recovery for users stuck behind a stale Service Worker
+  // or corrupted localStorage proxy URL. Earlier app builds registered
+  // /sw.js with a cache-first strategy — even after we shipped fixes,
+  // those users kept getting cached pre-fix code on every visit, which
+  // is what produced the "永遠にエラー" feedback. This wipes everything
+  // that could be holding them back and hard-reloads.
+  // -------------------------------------------------------------------
+  async resetClientCacheAndReload() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => { try { return r.unregister(); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => { try { return caches.delete(n); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    // Wipe localStorage entries that can route the AI fetch to a dead
+    // proxy or send a stale key. Keep user data (textEntries etc.) so
+    // the user doesn't lose what they wrote.
+    try {
+      ['anthropic_proxy_url', 'apikey_anthropic', 'apikey_openai', 'apikey_google',
+       'sw_purged_v1', 'dismissed_inapp_banner']
+        .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+    } catch (_) {}
+    // Hard reload, bypass HTTP cache.
+    try { location.reload(); } catch (_) { window.location.href = window.location.href; }
+  }
+
   // ---- User content edit / delete -----------------------------------
   // Lets the user freely modify or remove anything they wrote / uploaded
   // (text entries, photos, file uploads). Each entry carries a stable
