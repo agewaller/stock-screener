@@ -200,6 +200,23 @@ export default {
       });
     }
 
+    // Streaming requests (body.stream === true) need the response body
+    // passed through as-is — buffering with response.text() would
+    // collapse the SSE event sequence into a single string and break
+    // the client's incremental parser. The deep-analysis "本格的な分析"
+    // and 医師提出レポート flows both depend on this.
+    if (body.stream === true) {
+      const upstreamCT = response.headers.get('Content-Type') || 'text/event-stream';
+      return new Response(response.body, {
+        status: 200,
+        headers: {
+          'Content-Type': upstreamCT,
+          'Cache-Control': 'no-cache',
+          ...corsHeaders(origin),
+        },
+      });
+    }
+
     // Pass through the Anthropic response as-is. No server-side refusal
     // detection or static fallback substitution — those caused the
     // "every response is the same ME/CFS pacing advice" bug.

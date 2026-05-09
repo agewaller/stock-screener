@@ -2052,20 +2052,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=19"></script>
-<script src="js/config.js?v=19"></script>
-<script src="js/prompts.js?v=19"></script>
-<script src="js/store.js?v=19"></script>
-<script src="js/privacy.js?v=19"></script>
-<script src="js/ai-engine.js?v=19"></script>
-<script src="js/affiliate.js?v=19"></script>
-<script src="js/components.js?v=19"></script>
-<script src="js/i18n.js?v=19"></script>
-<script src="js/calendar.js?v=19"></script>
-<script src="js/integrations.js?v=19"></script>
-<script src="js/firebase-backend.js?v=19"></script>
-<script src="js/app.js?v=19"></script>
-<script src="js/pages.js?v=19"></script>
+<script src="js/idb.js?v=20"></script>
+<script src="js/config.js?v=20"></script>
+<script src="js/prompts.js?v=20"></script>
+<script src="js/store.js?v=20"></script>
+<script src="js/privacy.js?v=20"></script>
+<script src="js/ai-engine.js?v=20"></script>
+<script src="js/affiliate.js?v=20"></script>
+<script src="js/components.js?v=20"></script>
+<script src="js/i18n.js?v=20"></script>
+<script src="js/calendar.js?v=20"></script>
+<script src="js/integrations.js?v=20"></script>
+<script src="js/firebase-backend.js?v=20"></script>
+<script src="js/app.js?v=20"></script>
+<script src="js/pages.js?v=20"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2133,9 +2133,15 @@ function callClaude(text, apiKey, model, systemPrompt) {
     var em = (err && err.message) ? String(err.message) : String(err);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
       var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+      // Even when in-app detection misses (e.g. SFSafariViewController
+      // launched from inside LINE/X uses the system Safari UA), the
+      // most common root cause of "Load failed" is still an in-app
+      // browser blocking cross-origin fetches. Surface that as the
+      // primary fix even on the non-detected path so users get the
+      // actionable hint instead of just being told to reload.
       throw new Error(inApp
-        ? 'アプリ内ブラウザでは接続できません。Safari または Chrome で開いてください。'
-        : 'AI サーバーに接続できませんでした。ページを再読み込み (↻) してお試しください。');
+        ? 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。'
+        : '接続できませんでした。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。通常ブラウザの場合は数秒待ってから再試行してください。');
     }
     throw err;
   });
@@ -2151,27 +2157,45 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   var cleanKey = String(apiKey || '').trim();
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var controller = new AbortController();
-  var resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': cleanKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: claudeModel,
-      max_tokens: maxTokens || 2500,
-      system: systemPrompt || 'あなたは慢性疾患の健康日記アナリストです。',
-      messages: [{ role: 'user', content: text }],
-      stream: true
-    }),
-    signal: controller.signal
-  });
+  // Same routing policy as the non-streaming callClaude: when no key
+  // is provided, send through the Cloudflare Worker proxy so the
+  // Worker's env.ANTHROPIC_API_KEY fallback handles the request.
+  // Worker passthrough preserves SSE chunks when stream:true is set.
+  var streamHeaders = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+  if (cleanKey) {
+    streamHeaders['x-api-key'] = cleanKey;
+    streamHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  var resp;
+  try {
+    resp = await fetch(getAnthropicEndpoint(!!cleanKey), {
+      method: 'POST',
+      headers: streamHeaders,
+      body: JSON.stringify({
+        model: claudeModel,
+        max_tokens: maxTokens || 2500,
+        system: systemPrompt || 'あなたは慢性疾患の健康日記アナリストです。',
+        messages: [{ role: 'user', content: text }],
+        stream: true
+      }),
+      signal: controller.signal
+    });
+  } catch (netErr) {
+    var nem = (netErr && netErr.message) ? String(netErr.message) : String(netErr);
+    if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(nem)) {
+      var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+      throw new Error(inAppHit
+        ? 'アプリ内ブラウザでは接続できません。Safari または Chrome で開いてください。'
+        : '接続できませんでした。Safari / Chrome 等の標準ブラウザで開く、もしくはページを再読み込み (↻) してお試しください。');
+    }
+    throw netErr;
+  }
   if (!resp.ok) {
     var errText = await resp.text().catch(function(){ return ''; });
     var msg = resp.status + ': ' + errText.substring(0, 300);
-    if (resp.status === 401) msg = 'APIキーが無効です。管理パネルで再設定してください。';
+    if (resp.status === 401) msg = cleanKey
+      ? 'APIキーが無効です。管理パネルで再設定してください。'
+      : 'ゲスト/共有モードの AI 接続に失敗しました (401)。管理者に連絡してください。';
     else if (resp.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
     else if (resp.status === 529 || resp.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
     throw new Error(msg);
@@ -2351,8 +2375,12 @@ window.addEventListener('load', function() {
       if (originalAnalyzeViaAPI) return originalAnalyzeViaAPI(input, type, options);
     }
     var key = await resolveKey();
-    if (!key) throw new Error('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
-    var reply = await callClaude(input, key, store.get('selectedModel'), buildSystemPrompt());
+    // No throw on empty key — callClaude routes through the Cloudflare
+    // Worker proxy when key is empty (see getAnthropicEndpoint), which
+    // is exactly the path registered users without a personal API key
+    // need. The previous throw broke every account that hadn't yet
+    // synced admin/secrets to localStorage.
+    var reply = await callClaude(input, key || '', store.get('selectedModel'), buildSystemPrompt());
     // AI応答をそのまま使用（静的差替は削除済み）
     return {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
@@ -2490,10 +2518,9 @@ window.addEventListener('load', function() {
       return;
     }
     var key = await resolveKey();
-    if (!key) {
-      store.set('latestFeedbackError', 'APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
-      return;
-    }
+    // Empty key is fine — callClaudeStream will route through the
+    // Worker proxy fallback. The previous early return blocked every
+    // account that hadn't synced an Anthropic key to localStorage.
     store.set('isDeepAnalyzing', true);
     store.set('latestFeedbackError', null);
     // Force a re-render so the spinner appears immediately. latestFeedback
@@ -2721,7 +2748,11 @@ window.addEventListener('load', function() {
       return;
     }
     var key = await resolveKey();
-    if (!key) { alert('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
+    // Empty key falls through to callClaudeStream's Worker proxy
+    // fallback. The previous popup-dialog guard here also violated
+    // CLAUDE.md mobile rules (some mobile browsers suppress those
+    // dialogs silently) which made the "nothing happens when I click"
+    // reports unfixable.
 
     // Ensure the modal overlay is visible and primed with a placeholder.
     var overlay = document.getElementById('modal-overlay');
@@ -2876,7 +2907,7 @@ window.addEventListener('load', function() {
     }
     try {
       var key = await resolveKey();
-      if (!key) throw new Error('APIキーが未設定です。管理パネルまたはログインでキーを同期してください。');
+      // Empty key flows through to callClaude's Worker proxy fallback.
       // Build a chat-specific system prompt with disease context. We
       // append the most recent few messages so the model has short-term
       // conversational memory without blowing out tokens.
@@ -3128,7 +3159,11 @@ window.addEventListener('load', function() {
     store.set('latestFeedback', null); store.set('latestFeedbackError', null); store.set('isAnalyzing', true);
     app.navigate('dashboard');
     var key = await resolveKey();
-    if (!key) { store.set('isAnalyzing',false); store.set('latestFeedbackError','APIキーが未設定です。管理パネルまたはログインでキーを同期してください。'); return; }
+    // Empty key falls through to callClaude's Worker proxy fallback,
+    // so registered users without a personal Anthropic key can still
+    // get analysis via the Worker's env.ANTHROPIC_API_KEY. The
+    // previous early return blocked the entire flow with a misleading
+    // "APIキーが未設定です" message.
     try {
       var reply = await callClaude(content, key, store.get('selectedModel'), buildSystemPrompt());
       // AI応答をそのまま使用（静的差替は削除済み）
@@ -3141,6 +3176,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=19"></script>
+<script defer src="js/inapp-browser-banner.js?v=20"></script>
 </body>
 </html>
