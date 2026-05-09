@@ -1,0 +1,40 @@
+{
+  "name": "jsrm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Japan Sovereignty Risk Monitor (JSRM) - public-information-based risk observation dashboard",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "fetch": "tsx scripts/fetch_all.ts",
+    "score": "tsx scripts/calculate_daily_score.ts",
+    "validate": "tsx scripts/validate_data.ts",
+    "send-alerts": "tsx scripts/send_alerts.ts",
+    "update": "npm run fetch && npm run score && npm run validate && npm run send-alerts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "date-fns": "^3.6.0",
+    "next": "^14.2.5",
+    "papaparse": "^5.4.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "resend": "^3.4.0",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
