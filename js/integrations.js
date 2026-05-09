@@ -882,7 +882,7 @@ Integrations.googleFit = {
 
   async fetchAndImport(days) {
     days = days || 1;
-    if (!this.accessToken) return 0;
+    if (!this.accessToken) { console.warn('[GoogleFit] no token'); return 0; }
     var endMs = Date.now();
     var startMs = endMs - days * 86400000;
     var dataTypes = [
@@ -897,6 +897,7 @@ Integrations.googleFit = {
       { type: 'com.google.sleep.segment', key: 'sleep', aggregate: false }
     ];
     var total = 0;
+    var diagnostics = [];
     for (var i = 0; i < dataTypes.length; i++) {
       try {
         var dt = dataTypes[i];
@@ -916,11 +917,35 @@ Integrations.googleFit = {
           Components.showToast('Google Fit の認証が切れました。再接続してください。', 'error');
           return total;
         }
-        if (!resp.ok) continue;
+        if (resp.status === 403) {
+          var errBody = await resp.text().catch(function() { return ''; });
+          console.error('[GoogleFit] 403 for', dt.key, errBody);
+          diagnostics.push(dt.key + ': 権限エラー (Fitness API が有効か確認)');
+          continue;
+        }
+        if (!resp.ok) {
+          var errText = await resp.text().catch(function() { return ''; });
+          console.warn('[GoogleFit]', dt.key, 'HTTP', resp.status, errText.substring(0, 200));
+          diagnostics.push(dt.key + ': HTTP ' + resp.status);
+          continue;
+        }
         var data = await resp.json();
-        total += this._parseBuckets(data.bucket || [], dt);
+        var bucketCount = (data.bucket || []).length;
+        var count = this._parseBuckets(data.bucket || [], dt);
+        diagnostics.push(dt.key + ': ' + count + '件 (buckets: ' + bucketCount + ')');
+        total += count;
       } catch (e) {
         console.warn('[GoogleFit]', dataTypes[i].key, e.message);
+        diagnostics.push(dataTypes[i].key + ': エラー ' + e.message);
+      }
+    }
+    console.log('[GoogleFit] 診断:', diagnostics.join(' | '));
+    if (total === 0 && diagnostics.length > 0) {
+      var hasPermError = diagnostics.some(function(d) { return d.includes('権限') || d.includes('403'); });
+      if (hasPermError) {
+        Components.showToast('Google Fit API の権限エラー。Google Cloud Console で Fitness API が有効か確認してください。', 'error');
+      } else {
+        Components.showToast('Google Fit にデータが見つかりません。デバイスが Google Fit と同期されているか確認してください。', 'info');
       }
     }
     if (total > 0) {
@@ -932,6 +957,7 @@ Integrations.googleFit = {
         source: 'google_fit',
         content: 'Google Fit から ' + total + ' 件のヘルスデータを同期'
       });
+      Components.showToast('Google Fit: ' + total + '件取り込みました', 'success');
     }
     return total;
   },
