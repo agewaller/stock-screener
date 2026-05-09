@@ -4,64 +4,48 @@
    Simple reactive store for the application
    ============================================================ */
 var Store = class Store {
+  // Canonical initial state. clearAll() resets to this so types never
+  // break (null stays null, [] stays [], etc.).
+  static DEFAULT_STATE = {
+    user: null,
+    isAuthenticated: false,
+    currentPage: 'login',
+    selectedDisease: null,
+    theme: 'light',
+    sidebarOpen: window.innerWidth > 768,
+    healthScore: 0,
+    symptoms: [],
+    vitals: [],
+    bloodTests: [],
+    medications: [],
+    supplements: [],
+    meals: [],
+    sleepData: [],
+    activityData: [],
+    geneticData: null,
+    photos: [],
+    wearableData: [],
+    conversationHistory: [],
+    latestAnalysis: null,
+    analysisHistory: [],
+    isAnalyzing: false,
+    recommendations: [],
+    actionItems: [],
+    nutritionLog: [],
+    apiUsage: [],
+    adminMode: false,
+    selectedModel: 'claude-opus-4-6',
+    customPrompts: {},
+    dashboardLayout: 'default',
+    affiliateConfig: {},
+    notifications: [],
+    unreadCount: 0
+  };
+
   constructor() {
-    this.state = {
-      // Auth
-      user: null,
-      isAuthenticated: false,
-
-      // App state
-      currentPage: 'login',
-      selectedDisease: null,
-      theme: 'light',
-      sidebarOpen: window.innerWidth > 768,
-
-      // Health data
-      healthScore: 0,
-      symptoms: [],
-      vitals: [],
-      bloodTests: [],
-      medications: [],
-      supplements: [],
-      meals: [],
-      sleepData: [],
-      activityData: [],
-      geneticData: null,
-      photos: [],
-      wearableData: [],
-      conversationHistory: [],
-
-      // AI Analysis
-      latestAnalysis: null,
-      analysisHistory: [],
-      isAnalyzing: false,
-
-      // Actions / Recommendations
-      recommendations: [],
-      actionItems: [],
-
-      // Nutrition / BMR / PFC dashboard
-      nutritionLog: [],
-
-      // API usage tracking (admin dashboard). Each entry:
-      //   { ts: ISO string, model: string, input: int, output: int,
-      //     costJpy: number, source: 'guest'|'auth'|'admin' }
-      // Capped at 5000 records (~3 months at 50 req/day).
-      apiUsage: [],
-
-      // Admin
-      adminMode: false,
-      selectedModel: 'claude-opus-4-6',
-      customPrompts: {},
-      dashboardLayout: 'default',
-      affiliateConfig: {},
-
-      // Notifications
-      notifications: [],
-      unreadCount: 0
-    };
-
+    this.state = Object.assign({}, Store.DEFAULT_STATE);
     this.listeners = new Map();
+    this._currentUid = null;
     this.loadFromStorage();
   }
 
@@ -155,18 +139,46 @@ var Store = class Store {
   ];
 
   saveToStorage(key, value) {
-    if (Store.PERSIST_KEYS.includes(key)) {
-      try {
-        localStorage.setItem(`cc_${key}`, JSON.stringify(value));
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.code === 22) {
-          console.error('[Store] localStorage quota exceeded for key:', key);
-          if (typeof Components !== 'undefined' && Components.showToast) {
-            Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
-          }
-        } else {
-          console.warn('Storage save failed:', e);
+    if (!Store.PERSIST_KEYS.includes(key)) return;
+    try {
+      localStorage.setItem('cc_' + key, JSON.stringify(value));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.warn('[Store] quota exceeded for', key, '— evicting old data');
+        this._evictOldData();
+        try {
+          localStorage.setItem('cc_' + key, JSON.stringify(value));
+        } catch (e2) {
+          console.error('[Store] still exceeded after eviction for', key);
         }
+      } else {
+        console.warn('Storage save failed:', e);
+      }
+    }
+  }
+
+  _evictOldData() {
+    var evictable = ['analysisHistory', 'cachedResearch', 'cachedActions',
+      'researchResults', 'apiUsage', 'applicationLog', 'deepAnalyses'];
+    for (var i = 0; i < evictable.length; i++) {
+      var k = 'cc_' + evictable[i];
+      if (localStorage.getItem(k)) {
+        var size = (localStorage.getItem(k) || '').length;
+        localStorage.removeItem(k);
+        if (Array.isArray(this.state[evictable[i]])) this.state[evictable[i]] = [];
+        console.log('[Store] evicted', evictable[i], '(' + Math.round(size/1024) + 'KB)');
+        return;
+      }
+    }
+    // If evictable keys are empty, trim large arrays (keep last 50)
+    var trimmable = ['conversationHistory', 'textEntries', 'symptoms', 'vitals'];
+    for (var j = 0; j < trimmable.length; j++) {
+      var arr = this.state[trimmable[j]];
+      if (Array.isArray(arr) && arr.length > 50) {
+        this.state[trimmable[j]] = arr.slice(-50);
+        localStorage.setItem('cc_' + trimmable[j], JSON.stringify(this.state[trimmable[j]]));
+        console.log('[Store] trimmed', trimmable[j], 'to 50 entries');
+        return;
       }
     }
   }
@@ -366,51 +378,82 @@ var Store = class Store {
   // integration tokens so the user doesn't have to re-paste their
   // ICS URL / re-OAuth Fitbit / re-enter Firebase config every time
   // they log out and back in.
+  // Device-level keys that survive logout (not per-user data).
+  static PRESERVE_KEYS = [
+    'firebase_config', 'anthropic_proxy_url', 'anthropic_mode',
+    'admin_emails', 'enable_shared_guest_ai',
+    'apikey_anthropic', 'apikey_openai', 'apikey_google',
+    'ics_calendar_url', 'google_calendar_oauth_connected',
+    'fitbit_token', 'fitbit_client_id', 'fitbit_refresh_token',
+    'apple_health_last_import', 'plaud_email',
+    'cc_schema_version', 'cc_language', 'cc_migration_v2_done',
+  ];
+
   clearAll() {
-    // Save device-level config that survives logout. These are not
-    // per-user data — they're per-device integration settings that
-    // a user explicitly configured and expects to persist.
-    const PRESERVE_KEYS = [
-      // System config
-      'firebase_config',
-      'anthropic_proxy_url',
-      'anthropic_mode',
-      'admin_emails',
-      'enable_shared_guest_ai',
-      // API keys (admin-managed, shared across users)
-      'apikey_anthropic',
-      'apikey_openai',
-      'apikey_google',
-      // Calendar integrations
-      'ics_calendar_url',
-      'google_calendar_oauth_connected',
-      // Fitbit integration
-      'fitbit_token',
-      'fitbit_client_id',
-      'fitbit_refresh_token',
-      // Apple Health / Plaud integrations
-      'apple_health_last_import',
-      'plaud_email',
-    ];
-    const preserved = {};
-    PRESERVE_KEYS.forEach(k => {
-      const v = localStorage.getItem(k);
+    // Preserve device-level config across logout
+    var preserved = {};
+    Store.PRESERVE_KEYS.forEach(function(k) {
+      var v = localStorage.getItem(k);
       if (v !== null) preserved[k] = v;
     });
 
-    localStorage.clear();
+    // Remove all cc_ prefixed keys (user data)
+    var toRemove = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('cc_')) toRemove.push(k);
+    }
+    toRemove.forEach(function(k) { localStorage.removeItem(k); });
 
-    // Restore preserved device-level config
-    Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
+    // Restore preserved keys
+    Object.keys(preserved).forEach(function(k) { localStorage.setItem(k, preserved[k]); });
 
-    Object.keys(this.state).forEach(key => {
-      if (Array.isArray(this.state[key])) this.state[key] = [];
-      else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
+    // Reset in-memory state to exact DEFAULT_STATE (type-safe)
+    var defaults = Store.DEFAULT_STATE;
+    for (var key in this.state) {
+      if (key in defaults) {
+        var def = defaults[key];
+        this.state[key] = Array.isArray(def) ? [] :
+          (def !== null && typeof def === 'object') ? Object.assign({}, def) :
+          def;
+      } else {
+        this.state[key] = undefined;
+      }
+    }
+
+    this._currentUid = null;
+    console.log('[Store] clearAll: user data cleared, device config preserved');
+  }
+
+  // Switch localStorage namespace when a different user logs in.
+  // Prevents data from user A leaking to user B on the same device.
+  switchUser(uid) {
+    if (!uid || uid === this._currentUid) return;
+    // Save current user's data under their prefix
+    if (this._currentUid) {
+      Store.PERSIST_KEYS.forEach(function(key) {
+        var v = localStorage.getItem('cc_' + key);
+        if (v !== null) localStorage.setItem('cc_' + this._currentUid + '_' + key, v);
+      }.bind(this));
+    }
+    // Clear generic cc_ keys
+    Store.PERSIST_KEYS.forEach(function(key) {
+      localStorage.removeItem('cc_' + key);
     });
-    this.state.isAuthenticated = false;
-    this.state.user = null;
-    this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    // Restore new user's data if it exists
+    var restored = 0;
+    Store.PERSIST_KEYS.forEach(function(key) {
+      var v = localStorage.getItem('cc_' + uid + '_' + key);
+      if (v !== null) {
+        localStorage.setItem('cc_' + key, v);
+        restored++;
+      }
+    });
+    this._currentUid = uid;
+    if (restored > 0) {
+      this.loadFromStorage();
+      console.log('[Store] switchUser: restored', restored, 'keys for', uid.substring(0, 8));
+    }
   }
 };
 
