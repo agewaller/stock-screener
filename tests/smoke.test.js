@@ -102,22 +102,186 @@ MODULE_ORDER.forEach(f => {
 });
 
 // ================================================================
-section('2. onclick ハンドラの配線');
-test('Every onclick="app.X()" references a real App method', () => {
-  const onclicks = html.match(/onclick="app\.([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g) || [];
-  const methods = new Set();
-  onclicks.forEach(m => {
-    const fn = m.match(/app\.([a-zA-Z_][a-zA-Z0-9_]*)/)[1];
-    methods.add(fn);
+section('2. on* ハンドラの配線');
+// Earlier regressions (e.g. cca607c) dropped class methods while leaving
+// the onclick handlers intact, surfacing only when the user tapped a
+// button. Scan EVERY template-emitting source — index.html and any
+// js/*.js that builds DOM strings — and verify each `app.X(...)` event
+// reference resolves to a real method defined in a JS module. We
+// intentionally exclude inline `app.X = function()` patches in
+// index.html DOMContentLoaded scope from the "defined" set, because
+// those are runtime patches that can fail to apply (parse error, race,
+// SSR snapshot) — class methods are the only durable contract.
+const HANDLER_ATTRS = ['onclick','onchange','oninput','onsubmit','onkeydown','onkeyup','onfocus','onblur','onload','onerror'];
+function collectAppRefs(source) {
+  const out = new Set();
+  const attrPattern = HANDLER_ATTRS.join('|');
+  const re = new RegExp(`(?:${attrPattern})\\s*=\\s*"[^"]*?\\bapp\\.([A-Za-z_]\\w*)\\s*\\(`, 'g');
+  let m;
+  while ((m = re.exec(source)) !== null) out.add(m[1]);
+  return out;
+}
+function collectClassMethods(source) {
+  const out = new Set();
+  // App.prototype.X = ...
+  for (const m of source.matchAll(/App\.prototype\.([A-Za-z_]\w*)\s*=/g)) out.add(m[1]);
+  // class App { ... } body — heuristic balanced-brace extraction
+  const cm = source.match(/class\s+App\b[^{]*\{/);
+  if (cm) {
+    let depth = 1, i = cm.index + cm[0].length;
+    const start = i;
+    while (i < source.length && depth > 0) {
+      const c = source[i];
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+      i++;
+    }
+    const body = source.substring(start, i - 1);
+    // method declarations at one level of indentation
+    for (const mm of body.matchAll(/(?:^|\n)\s{2,}(?:async\s+|static\s+|\*\s*)?([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/g)) {
+      const name = mm[1];
+      if (!['if','for','while','switch','catch','return','do','try','else'].includes(name)) out.add(name);
+    }
+  }
+  return out;
+}
+const TEMPLATE_SOURCES = {
+  'index.html': html,
+  'js/pages.js': fs.readFileSync(path.join(ROOT, 'js/pages.js'), 'utf8'),
+  'js/app.js': fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8'),
+  'js/components.js': fs.readFileSync(path.join(ROOT, 'js/components.js'), 'utf8'),
+  'js/integrations.js': fs.readFileSync(path.join(ROOT, 'js/integrations.js'), 'utf8'),
+  'js/firebase-backend.js': fs.readFileSync(path.join(ROOT, 'js/firebase-backend.js'), 'utf8'),
+};
+const definedMethods = new Set();
+MODULE_ORDER.forEach(f => {
+  const src = fs.readFileSync(path.join(ROOT, 'js', f), 'utf8');
+  collectClassMethods(src).forEach(n => definedMethods.add(n));
+});
+
+Object.entries(TEMPLATE_SOURCES).forEach(([file, src]) => {
+  test(`Every on* "app.X()" in ${file} resolves to a JS-module-defined method`, () => {
+    const refs = collectAppRefs(src);
+    const missing = [...refs].filter(n => !definedMethods.has(n));
+    assert(missing.length === 0, `Missing methods referenced from ${file}: ${missing.join(', ')}`);
   });
-  const missing = [];
-  methods.forEach(fn => {
-    // Check if method exists in script (class method or prototype)
-    const hasMethod = new RegExp(`(?:^|\\s)${fn}\\s*\\(`).test(script) ||
-                      new RegExp(`App\\.prototype\\.${fn}`).test(script);
-    if (!hasMethod) missing.push(fn);
+});
+
+test('Boot canary _verifyHandlerBindings is defined and called from init', () => {
+  // extractFn is too brittle for a method name as common as `init`
+  // (matches setInterval, store.init etc.). Look for the literal
+  // reference inside js/app.js instead.
+  const appSrc = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  assert(/\b_verifyHandlerBindings\s*\(/.test(appSrc),
+    'App.init must call this._verifyHandlerBindings()');
+  assert(/_verifyHandlerBindings\s*\([^)]*\)\s*\{/.test(appSrc),
+    '_verifyHandlerBindings() must be defined as an App method');
+});
+
+test('Guest CTA methods exist as class methods (not just runtime patches)', () => {
+  ['guestSampleSubmit', 'guestSampleReport', 'generateDoctorReport', 'guestAnalyze', 'guestFileAnalyze']
+    .forEach(name => assert(definedMethods.has(name),
+      `${name} must be a class method on App (was previously regressed by a wholesale revert)`));
+});
+
+test('Guest CTA methods tolerate missing DOM (no element / no CONFIG sample)', () => {
+  // Smoke-load all modules into a vm context with stub DOM so the
+  // guest entry points can be invoked safely. They must not throw
+  // when guest-input / guest-result / .guest-disease-tag are absent.
+  const makeEl = () => ({
+    style: {}, classList: { add(){},remove(){},toggle(){}, contains(){return false;} },
+    addEventListener(){}, removeEventListener(){}, setAttribute(){}, getAttribute(){return null;},
+    appendChild(){}, removeChild(){}, dataset: {}, innerHTML: '', textContent: '', value: '',
+    children: [], focus(){}, click(){}, scrollIntoView(){}, querySelector(){return null;}, querySelectorAll(){return [];}
   });
-  assert(missing.length === 0, `Missing App methods: ${missing.join(', ')}`);
+  const stubCtx = {};
+  stubCtx.globalThis = stubCtx;
+  stubCtx.self = stubCtx;
+  stubCtx.global = stubCtx;
+  stubCtx.window = stubCtx;
+  Object.assign(stubCtx, {
+    console, setTimeout, clearTimeout, setInterval, clearInterval,
+    Promise, Date, JSON, Math, Object, Array, Number, String, RegExp, Error, Map, Set, Symbol,
+    URLSearchParams, TextEncoder, TextDecoder,
+    location: { hash: '', href: 'https://test.local/', search: '', reload(){}, replace(){}, origin: 'https://test.local' },
+    history: { pushState(){}, replaceState(){} },
+    document: {
+      readyState: 'complete',
+      documentElement: makeEl(),
+      head: makeEl(),
+      body: makeEl(),
+      addEventListener(){}, removeEventListener(){},
+      getElementById(){ return null; },
+      querySelector(){ return null; },
+      querySelectorAll(){ return []; },
+      createElement(){ return makeEl(); },
+      createTextNode(){ return makeEl(); }
+    },
+    navigator: {
+      userAgent: 'node-test', language: 'ja',
+      serviceWorker: { getRegistrations: () => Promise.resolve([]) },
+      clipboard: { writeText: () => Promise.resolve() }
+    },
+    localStorage: (() => {
+      const m = new Map();
+      return {
+        getItem(k){ return m.has(k) ? m.get(k) : null; },
+        setItem(k,v){ m.set(k, String(v)); },
+        removeItem(k){ m.delete(k); },
+        clear(){ m.clear(); },
+        key(i){ return [...m.keys()][i] || null; },
+        get length(){ return m.size; }
+      };
+    })(),
+    sessionStorage: (() => {
+      const m = new Map();
+      return {
+        getItem(k){ return m.has(k) ? m.get(k) : null; },
+        setItem(k,v){ m.set(k, String(v)); },
+        removeItem(k){ m.delete(k); },
+        clear(){ m.clear(); }
+      };
+    })(),
+    fetch: () => Promise.reject(new Error('network disabled in test')),
+    AbortController: function(){ this.signal = {}; this.abort = function(){}; },
+    requestAnimationFrame: (cb) => setTimeout(cb, 0),
+    cancelAnimationFrame: (id) => clearTimeout(id),
+    addEventListener(){}, removeEventListener(){},
+    morphdom: () => {},
+    HTMLElement: function(){},
+    Image: function(){ return makeEl(); },
+    FileReader: function(){ this.readAsDataURL = function(){}; this.readAsText = function(){}; },
+    Blob: function(){},
+    URL: { createObjectURL: () => '', revokeObjectURL: () => {} },
+    indexedDB: undefined,
+    firebase: undefined,
+    caches: undefined,
+    matchMedia: () => ({ matches: false, addEventListener(){}, removeEventListener(){} }),
+    crypto: { getRandomValues: (arr) => arr, randomUUID: () => Math.random().toString(36).slice(2) }
+  });
+  // Re-bind globalThis after merge so circular ref is intact
+  stubCtx.globalThis = stubCtx;
+  stubCtx.window = stubCtx;
+  vm.createContext(stubCtx);
+  try {
+    vm.runInContext(script, stubCtx, { filename: 'all-modules', timeout: 10000 });
+  } catch (e) {
+    throw new Error('module load threw in stub context: ' + e.message);
+  }
+  // Construct an App and try the guest CTA entry points
+  const ok = vm.runInContext(`
+    const a = new App();
+    let errs = [];
+    try { a.guestSampleSubmit(); } catch (e) { errs.push('guestSampleSubmit:'+e.message); }
+    try { a.guestSampleReport(); } catch (e) { errs.push('guestSampleReport:'+e.message); }
+    try { const p = a.generateDoctorReport(); if (p && p.then) p.catch(()=>{}); } catch (e) { errs.push('generateDoctorReport:'+e.message); }
+    try { a.setReaction('nonexistent','summary','like'); } catch (e) { errs.push('setReaction:'+e.message); }
+    try { a.toggleBookmark('nonexistent','summary'); } catch (e) { errs.push('toggleBookmark:'+e.message); }
+    try { const p = a.runDeepAnalysis(); if (p && p.then) p.catch(()=>{}); } catch (e) { errs.push('runDeepAnalysis:'+e.message); }
+    errs;
+  `, stubCtx, { timeout: 5000 });
+  assert(Array.isArray(ok) && ok.length === 0,
+    `Guest CTA entry points threw: ${(ok || []).join(' | ')}`);
 });
 
 // ================================================================
