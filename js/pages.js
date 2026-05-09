@@ -609,12 +609,23 @@ App.prototype.render_dashboard = function() {
       }
       const err = store.get('latestFeedbackError');
       if (err) {
+        // Surface a 「サービスをリセット」 escape hatch for users who land
+        // here repeatedly. Old PWA builds left a Service Worker active
+        // in some browsers that keeps serving cached pre-fix code, so a
+        // soft retry alone never recovers — they need to wipe the SW,
+        // its cache, and any stale localStorage proxy/key state.
+        const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
+        const resetBtn = isConnFail
+          ? `<button onclick="app.resetClientCacheAndReload()"
+              style="margin-top:10px;padding:8px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔄 サービスをリセットして再読み込み</button>`
+          : '';
         return `
           <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
             <div class="card-body" style="padding:12px 16px">
               <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
               <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
+              ${resetBtn}
             </div>
           </div>`;
       }

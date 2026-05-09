@@ -1613,6 +1613,44 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 </style>
 </head>
 <body>
+<script>
+// Defensive cleanup of any stale Service Worker. Earlier app versions
+// (a9d314a, cf528a4, 738fcd1, etc.) registered '/sw.js' as a PWA worker
+// with a cache-first strategy. Even though the current code no longer
+// registers any SW, users who visited during those builds still have
+// the OLD worker active in their browser, serving cached old HTML/JS
+// FOREVER. That's the root of the "永遠にエラーが続く" reports — those
+// users keep running pre-fix code that throws "APIキーが未設定です" no
+// matter how many times we deploy fixes. Run this on every load to
+// remove the stale worker; on the next page load they'll fall through
+// to the live network and pick up the latest code.
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      var hadAny = regs && regs.length > 0;
+      regs.forEach(function (r) { try { r.unregister(); } catch (_) {} });
+      if (hadAny && 'caches' in window) {
+        // Wipe the SW-managed Cache Storage too — those entries are
+        // what the stale worker was serving from.
+        try {
+          caches.keys().then(function (names) {
+            names.forEach(function (n) { try { caches.delete(n); } catch (_) {} });
+          });
+        } catch (_) {}
+        // Mark the cleanup so we hard-reload exactly once. Skipping the
+        // reload would leave the user on the same broken page-load.
+        try {
+          if (!sessionStorage.getItem('sw_purged_v1')) {
+            sessionStorage.setItem('sw_purged_v1', '1');
+            location.reload();
+          }
+        } catch (_) {}
+      }
+    }).catch(function () { /* ignore — SW unsupported in some browsers */ });
+  } catch (_) {}
+})();
+</script>
 <div class="app-container">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -2052,20 +2090,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=22"></script>
-<script src="js/config.js?v=22"></script>
-<script src="js/prompts.js?v=22"></script>
-<script src="js/store.js?v=22"></script>
-<script src="js/privacy.js?v=22"></script>
-<script src="js/ai-engine.js?v=22"></script>
-<script src="js/affiliate.js?v=22"></script>
-<script src="js/components.js?v=22"></script>
-<script src="js/i18n.js?v=22"></script>
-<script src="js/calendar.js?v=22"></script>
-<script src="js/integrations.js?v=22"></script>
-<script src="js/firebase-backend.js?v=22"></script>
-<script src="js/app.js?v=22"></script>
-<script src="js/pages.js?v=22"></script>
+<script src="js/idb.js?v=23"></script>
+<script src="js/config.js?v=23"></script>
+<script src="js/prompts.js?v=23"></script>
+<script src="js/store.js?v=23"></script>
+<script src="js/privacy.js?v=23"></script>
+<script src="js/ai-engine.js?v=23"></script>
+<script src="js/affiliate.js?v=23"></script>
+<script src="js/components.js?v=23"></script>
+<script src="js/i18n.js?v=23"></script>
+<script src="js/calendar.js?v=23"></script>
+<script src="js/integrations.js?v=23"></script>
+<script src="js/firebase-backend.js?v=23"></script>
+<script src="js/app.js?v=23"></script>
+<script src="js/pages.js?v=23"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2083,13 +2121,13 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 //      FB, etc.), surfacing as "Load failed" with no recovery.
 //   3. Centralizing through Worker lets us inject server-side
 //      system prompts and rate-limit at one place.
-// The `hasKey` argument is now ignored — kept only for call-site
-// signature compatibility so we don't have to chase every caller.
+// The Worker URL is hardcoded — we deliberately ignore any
+// `anthropic_proxy_url` previously written to localStorage by older
+// builds, because admin sync had been writing stale / typo'd URLs
+// that left users permanently unable to reach the Worker.
+var ANTHROPIC_PROXY_URL = 'https://stock-screener.agewaller.workers.dev/v1/messages';
 function getAnthropicEndpoint(_hasKey) {
-  var proxy = '';
-  try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch(_) {}
-  if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
-  return proxy.replace(/\/+$/, '') + '/v1/messages';
+  return ANTHROPIC_PROXY_URL;
 }
 function callClaude(text, apiKey, model, systemPrompt) {
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
@@ -2956,10 +2994,19 @@ window.addEventListener('load', function() {
         // can fix the situation in one tap instead of copying the URL.
         var msg = String(e && e.message || e);
         var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser()) || /アプリ内ブラウザ/.test(msg);
+        var isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(msg);
         var extraBtn = inAppHit
           ? '<button onclick="window.openInExternalBrowser && window.openInExternalBrowser()" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🌐 外部ブラウザで開く</button>'
           : '<button onclick="location.reload(true)" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">↻ ページを再読み込み</button>';
-        el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + '</div>';
+        // Last-resort recovery for users stuck behind stale Service Workers
+        // or corrupted localStorage state. Old PWA builds left workers
+        // active that keep serving cached pre-fix code, so a soft reload
+        // alone never frees them. This unregisters the worker, clears
+        // caches, removes stale proxy/key state, and hard-reloads.
+        var resetBtn = isConnFail
+          ? '<button onclick="app.resetClientCacheAndReload()" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🔄 サービスをリセット</button>'
+          : '';
+        el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + resetBtn + '</div>';
       }
     }
   };
@@ -3180,6 +3227,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=22"></script>
+<script defer src="js/inapp-browser-banner.js?v=23"></script>
 </body>
 </html>

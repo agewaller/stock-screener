@@ -538,34 +538,19 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Route guests (no API key) through the Cloudflare Worker proxy so
-    // the Worker's env.ANTHROPIC_API_KEY fallback handles the request.
-    // Direct calls to api.anthropic.com from a guest browser would 401,
-    // and in Facebook / Instagram / LINE in-app browsers the fetch to
-    // api.anthropic.com itself frequently fails with "Load failed"
-    // before any HTTP response. This mirrors the policy already in
-    // place for the inline text-only callClaude in index.html — photos
-    // previously bypassed it, so guest image analysis was unreachable
-    // from in-app browsers.
-    let url = 'https://api.anthropic.com/v1/messages';
-    if (!apiKey) {
-      let proxy = '';
-      try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
-      url = proxy.replace(/\/+$/, '') + '/v1/messages';
-    }
-
+    // ALL users (guest / registered / personal-key holder) route through
+    // the Cloudflare Worker — same policy as the inline callClaude in
+    // index.html. The Worker holds env.ANTHROPIC_API_KEY so first-time
+    // visitors never see a "key not configured" error, and we avoid
+    // CORS / preflight issues that hit api.anthropic.com directly from
+    // iOS Safari and every in-app browser. URL is hardcoded so a stale
+    // localStorage entry can't strand a user pointing at a dead host.
+    void apiKey;
+    const url = 'https://stock-screener.agewaller.workers.dev/v1/messages';
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
     };
-    if (apiKey) {
-      // `anthropic-dangerous-direct-browser-access` only makes sense
-      // when we're hitting api.anthropic.com directly. The Worker
-      // proxies on our behalf so the header is unnecessary there.
-      headers['x-api-key'] = apiKey;
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    }
 
     // Vision / Documents: when options.imageBase64 or options.pdfBase64
     // is supplied, wrap the prompt and file in a content array per the
