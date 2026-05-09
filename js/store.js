@@ -124,8 +124,17 @@ var Store = class Store {
     'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog',
     'plaudAnalyses', 'apiUsage', 'photos', 'applicationLog',
     'globalProfessionals', 'latestFeedbackError',
+    // Deep-analysis feature additions: archive of past runs + today's
+    // JST date string so the 「本格的な分析」button grays out after use.
+    // doctorReports persists the 医師提出用レポート generator output.
     'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports',
+    // Research tab state — persisted so tab switches don't wipe the
+    // user's keyword / results (B-2 / B-3). researchResults caches the
+    // rendered HTML along with the language it was rendered in so we
+    // can invalidate on language change.
     'researchQuery', 'researchDays', 'researchResults',
+    // Cached セルフケア panel — needs to survive reloads so the 1-per-day
+    // cap and 5-minute throttle (B-7) can be enforced across sessions.
     'cachedActions'
   ];
 
@@ -161,6 +170,7 @@ var Store = class Store {
         return;
       }
     }
+    // If evictable keys are empty, trim large arrays (keep last 50)
     var trimmable = ['conversationHistory', 'textEntries', 'symptoms', 'vitals'];
     for (var j = 0; j < trimmable.length; j++) {
       var arr = this.state[trimmable[j]];
@@ -199,6 +209,7 @@ var Store = class Store {
   _runMigrations(fromVersion) {
     console.log('[Store] migrating schema', fromVersion, '→', Store.SCHEMA_VERSION);
     if (fromVersion < 1) {
+      // v0→v1: ensure arrays are arrays, not null/undefined
       Store.PERSIST_KEYS.forEach(key => {
         if (Array.isArray(this.state[key])) return;
         const defaults = { symptoms:[], vitals:[], bloodTests:[], medications:[],
@@ -212,6 +223,7 @@ var Store = class Store {
       });
     }
     if (fromVersion < 2) {
+      // v1→v2: photos key now persisted (was missing in v0/v1)
       const photos = this.state.photos;
       if (Array.isArray(photos) && photos.length > 0) {
         this.saveToStorage('photos', photos);
@@ -268,14 +280,16 @@ var Store = class Store {
     const recentSymptoms = this.getDataRange('symptoms', 7);
     if (recentSymptoms.length === 0) return 50;
 
+    // Use simple condition_level (1-10) if available
     const conditionScores = recentSymptoms.map(s => s.condition_level).filter(v => v != null);
     if (conditionScores.length > 0) {
       const avg = conditionScores.reduce((a, b) => a + b, 0) / conditionScores.length;
-      const score = Math.round(avg * 10);
+      const score = Math.round(avg * 10); // 1-10 → 10-100
       this.set('healthScore', score);
       return score;
     }
 
+    // Fallback to detailed scores
     const avgFatigue = this.avg(recentSymptoms, 'fatigue_level');
     const avgPain = this.avg(recentSymptoms, 'pain_level');
     const avgBrainFog = this.avg(recentSymptoms, 'brain_fog');
@@ -295,6 +309,10 @@ var Store = class Store {
   }
 
   // ---- Nutrition / BMR / PFC ----
+
+  // Mifflin-St Jeor basal metabolic rate (kcal/day). Returns null if
+  // the user hasn't filled in enough profile info so the caller can
+  // show "--" instead of a misleading number.
   calculateBMR() {
     const profile = this.state.userProfile || {};
     const weight = parseFloat(profile.weight);
@@ -304,9 +322,12 @@ var Store = class Store {
     const base = 10 * weight + 6.25 * height - 5 * age;
     if (profile.gender === 'male') return Math.round(base + 5);
     if (profile.gender === 'female') return Math.round(base - 161);
+    // Unspecified or "other" — midpoint of the two formulas.
     return Math.round(base - 78);
   }
 
+  // Add or overwrite today's nutrition entry. Keeps the log sorted
+  // ascending by date so the chart renders without re-sorting.
   upsertNutritionEntry(entry) {
     if (!entry || !entry.date) return;
     const log = (this.state.nutritionLog || []).filter(e => e.date !== entry.date);
@@ -316,6 +337,9 @@ var Store = class Store {
   }
 
   // ---- API usage tracking ----
+  // Cost-per-million-tokens (USD). Updated to reflect Anthropic /
+  // OpenAI / Google public pricing as of 2026. Multiply tokens × rate
+  // ÷ 1,000,000 ÷ usdJpy to get JPY.
   static COSTS_PER_MTOKEN_USD = {
     'claude-opus-4-6':   { input: 15,   output: 75   },
     'claude-sonnet-4-6': { input: 3,    output: 15   },
@@ -325,6 +349,9 @@ var Store = class Store {
   };
   static USD_JPY = 150;
 
+  // Record one API call. Cost is computed automatically from the
+  // model + token counts. The admin usage dashboard reads from this
+  // log to render daily/monthly stats and trend charts.
   recordApiUsage(model, inputTokens, outputTokens, source) {
     if (!model) return;
     const inT = Number(inputTokens) || 0;
@@ -342,10 +369,15 @@ var Store = class Store {
       costJpy,
       source: source || 'auth'
     });
+    // Cap the log at 5000 entries (~3 months of typical usage)
     if (log.length > 5000) log.splice(0, log.length - 5000);
     this.set('apiUsage', log);
   }
 
+  // Clear user data on logout, but PRESERVE device-level config and
+  // integration tokens so the user doesn't have to re-paste their
+  // ICS URL / re-OAuth Fitbit / re-enter Firebase config every time
+  // they log out and back in.
   // Device-level keys that survive logout (not per-user data).
   static PRESERVE_KEYS = [
     'firebase_config', 'anthropic_proxy_url', 'anthropic_mode',
@@ -426,3 +458,5 @@ var Store = class Store {
 };
 
 var store = new Store();
+
+
