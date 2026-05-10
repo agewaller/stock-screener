@@ -373,6 +373,120 @@ var App = class App {
     setTimeout(() => location.reload(), 1500);
   }
 
+  // ── Data diagnosis ──
+  // Counts the actual document count in each Firestore subcollection
+  // for the current user, and compares with what's currently loaded
+  // into the in-memory store. Reveals discrepancies that explain
+  // "my data disappeared!" panics — typically caused by:
+  //   - listener filtered by orderBy('createdAt') excluding old docs
+  //   - permission-denied silently failing
+  //   - listener never started because userId was null at sub time
+  // Reads are unfiltered (.get() with no orderBy / where) so even
+  // documents missing standard timestamp fields are counted.
+  async runDataDiagnosis() {
+    const out = document.getElementById('data-diagnosis-result');
+    if (!out) return;
+    out.innerHTML = '<div style="color:var(--text-muted)">⏳ 診断中…（Firestore に問い合わせ中）</div>';
+    if (!FirebaseBackend?.userId) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。ログインしてから実行してください。</div>';
+      return;
+    }
+    const subs = [
+      ['textEntries', 'textEntries', 'テキスト記録'],
+      ['symptoms', 'symptoms', '症状'],
+      ['vitals', 'vitals', 'バイタル'],
+      ['sleep', 'sleepData', '睡眠'],
+      ['activity', 'activityData', '活動'],
+      ['bloodTests', 'bloodTests', '血液検査'],
+      ['medications', 'medications', '薬'],
+      ['conversations', 'conversationHistory', 'AI チャット']
+    ];
+    const rows = [];
+    let totalFirestore = 0, totalStore = 0;
+    for (const [fbKey, storeKey, label] of subs) {
+      let cloudCount = 0, oldest = null, newest = null, errMsg = '';
+      try {
+        const snap = await FirebaseBackend.userCollection(fbKey).limit(1000).get();
+        cloudCount = snap.size;
+        snap.forEach(d => {
+          const data = d.data() || {};
+          const t = data.timestamp || data.createdAt || data.date || data.recordedAt;
+          let ms = 0;
+          if (t && typeof t === 'object' && typeof t.toMillis === 'function') ms = t.toMillis();
+          else if (t instanceof Date) ms = t.getTime();
+          else if (typeof t === 'string') { const p = Date.parse(t); ms = isNaN(p) ? 0 : p; }
+          else if (typeof t === 'number') ms = t;
+          if (ms) {
+            if (!oldest || ms < oldest) oldest = ms;
+            if (!newest || ms > newest) newest = ms;
+          }
+        });
+      } catch (err) {
+        errMsg = err.code || err.message || String(err);
+      }
+      const storeArr = store.get(storeKey) || [];
+      const storeCount = Array.isArray(storeArr) ? storeArr.length : 0;
+      totalFirestore += cloudCount;
+      totalStore += storeCount;
+      const fmt = (ms) => {
+        if (!ms) return '—';
+        const d = new Date(ms);
+        return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+      };
+      const mismatch = cloudCount !== storeCount;
+      rows.push(`
+        <tr style="${mismatch ? 'background:#fef3c7' : ''}">
+          <td style="padding:6px 8px;font-size:12px">${label}</td>
+          <td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:${cloudCount > 0 ? '600' : 'normal'}">${errMsg ? '<span style="color:var(--danger,#dc2626)">' + errMsg + '</span>' : cloudCount.toLocaleString()}</td>
+          <td style="padding:6px 8px;font-size:12px;text-align:right">${storeCount.toLocaleString()}</td>
+          <td style="padding:6px 8px;font-size:11px;color:var(--text-muted)">${fmt(oldest)} → ${fmt(newest)}</td>
+        </tr>
+      `);
+    }
+    const verdict = totalFirestore > totalStore
+      ? `<div style="background:#fef3c7;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#92400e"><strong>⚠️ 不一致を検出</strong>: クラウドには ${totalFirestore} 件、画面には ${totalStore} 件のみ。<br>「☁️ クラウドから強制再読込」を押してください。</div>`
+      : totalFirestore === 0 && totalStore === 0
+        ? `<div style="background:#dbeafe;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#1e40af"><strong>ℹ️ データはまだありません。</strong></div>`
+        : `<div style="background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#166534"><strong>✓ クラウドと画面の件数が一致しています。</strong></div>`;
+    out.innerHTML = verdict + `
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <thead><tr style="background:var(--bg-tertiary)">
+          <th style="padding:8px;text-align:left;font-weight:600;font-size:11px">データ種別</th>
+          <th style="padding:8px;text-align:right;font-weight:600;font-size:11px">クラウド件数</th>
+          <th style="padding:8px;text-align:right;font-weight:600;font-size:11px">画面件数</th>
+          <th style="padding:8px;text-align:left;font-weight:600;font-size:11px">期間</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    `;
+  }
+
+  // Force a fresh re-fetch from Firestore (bypasses the local cache).
+  // Useful when the realtime listener missed entries due to a stale
+  // index, an old orderBy filter, or a permission-denied that has
+  // since been fixed.
+  async forceReloadFromCloud() {
+    const out = document.getElementById('data-diagnosis-result');
+    if (!FirebaseBackend?.userId) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ クラウドから再取得中…</div>';
+    try {
+      // Tear down + recreate listeners so the new fetch returns fresh server data.
+      FirebaseBackend.cleanupListeners?.();
+      FirebaseBackend.subscribeToCollections();
+      FirebaseBackend.subscribeToSettings();
+      // Wait briefly for snapshots to arrive, then run diagnosis.
+      await new Promise(r => setTimeout(r, 1500));
+      await this.runDataDiagnosis();
+      Components.showToast?.('クラウドから再読込しました', 'success');
+    } catch (err) {
+      console.error('[forceReloadFromCloud]', err);
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">再読込に失敗しました: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
   loadFirebaseConfigFields() {
     const config = FirebaseBackend.getConfig();
     if (!config) return;

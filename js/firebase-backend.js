@@ -935,26 +935,45 @@ var FirebaseBackend = {
 
     Object.keys(collections).forEach(function(storeKey) {
       var fbColl = collections[storeKey];
+      // NOTE: We deliberately do NOT use .orderBy('createdAt', 'desc')
+      // here. Firestore silently EXCLUDES documents missing the field
+      // used in orderBy. Some older entries (written before
+      // saveHealthEntry stamped serverTimestamp() on every doc, or
+      // hand-imported via Plaud / CSV) lack createdAt — they would
+      // disappear from the user's history even though they exist in
+      // Firestore. We fetch up to 500 docs and sort client-side using
+      // any available timestamp field (timestamp / createdAt / date).
       var unsub = self.userCollection(fbColl)
-        .orderBy('createdAt', 'desc')
         .limit(500)
         .onSnapshot(function(snap) {
           var prev = self._loading;
           self._loading = true;
           try {
             var data = [];
-            snap.forEach(function(d) { data.push(Object.assign({ id: d.id, _synced: true }, d.data())); });
-            data.reverse();
+            snap.forEach(function(d) {
+              data.push(Object.assign({ id: d.id, _synced: true }, d.data()));
+            });
+            // Sort ascending by best-available timestamp so newest is last
+            // (matches the addHealthData order convention used by store.js).
+            var tsOf = function(e) {
+              var t = e.timestamp || e.createdAt || e.date || e.recordedAt;
+              if (!t) return 0;
+              if (typeof t === 'object' && typeof t.toMillis === 'function') return t.toMillis();
+              if (t instanceof Date) return t.getTime();
+              if (typeof t === 'string') { var p = Date.parse(t); return isNaN(p) ? 0 : p; }
+              return Number(t) || 0;
+            };
+            data.sort(function(a, b) { return tsOf(a) - tsOf(b); });
             store.set(storeKey, data);
           } finally {
             self._loading = prev;
           }
         }, function(err) {
-          console.warn('[onSnapshot]', fbColl, err.message);
+          console.warn('[onSnapshot]', fbColl, err.code || '', err.message);
         });
       self._collectionUnsubs.push(unsub);
     });
-    console.log('[Firebase] Real-time collection listeners active (8 collections)');
+    console.log('[Firebase] Real-time collection listeners active (8 collections, no orderBy)');
   },
 
   subscribeToSettings() {
