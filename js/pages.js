@@ -3002,6 +3002,32 @@ App.prototype.render_admin = function() {
       </div>
     </div>
   </div>
+
+  <!-- Data Diagnostic: shows the actual document count in Firestore vs.
+       what's currently loaded into the store. Lets the admin verify
+       that no historical data has been lost (a frequent panic point
+       after sign-out / sign-in cycles). Also offers a re-fetch button
+       if the listener missed entries. -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <span class="card-title">📊 データ診断</span>
+    </div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        Firestore に実際に保存されている件数と、画面に読み込まれている件数を比較できます。<br>
+        画面に表示されないデータがある場合、ここで原因が分かります。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-primary btn-sm" style="font-size:13px" onclick="app.runDataDiagnosis()">
+          🔍 診断を実行
+        </button>
+        <button class="btn btn-outline btn-sm" style="font-size:13px" onclick="app.forceReloadFromCloud()">
+          ☁️ クラウドから強制再読込
+        </button>
+      </div>
+      <div id="data-diagnosis-result" style="font-size:12px;line-height:1.7;margin-top:8px"></div>
+    </div>
+  </div>
   </div>
 
   <!-- TAB: Data -->

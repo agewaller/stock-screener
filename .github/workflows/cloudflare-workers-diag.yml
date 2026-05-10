@@ -1,0 +1,165 @@
+name: Cloudflare Workers 診断 / 自動修復
+
+# 全ての *.agewaller.workers.dev URL が
+#   HTTP 403 / x-deny-reason: host_not_allowed
+# を返すようになる症状を自動診断 + (可能なら) 修復する。
+#
+# 原因の典型: Cloudflare アカウント設定で workers.dev サブドメインが
+# disabled になっている。ダッシュボードからは数タップで戻せるが、
+# iPhone から Cloudflare ダッシュボードを操作するのは大変なので
+# このワークフローで GitHub Actions UI 経由 1 タップ修復を提供する。
+#
+# 使い方: Actions タブ → このワークフロー → Run workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+    steps:
+      - name: Probe all workers from outside
+        id: probe
+        run: |
+          set +e
+          fail=0
+          allowed_count=0
+          deny_count=0
+          declare -A reasons
+          for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+            url="https://$w.agewaller.workers.dev/"
+            code=$(curl -s -o /tmp/body.txt -w "%{http_code}" -m 10 \
+                   -H "User-Agent: gh-actions-diag" "$url" || echo "000")
+            reason=$(grep -i "^x-deny-reason:" /tmp/body.txt 2>/dev/null | sed 's/.*: //;s/[\r\n]//g' || true)
+            echo "  $w → HTTP $code ${reason:+[$reason]}"
+            if [ "$code" = "200" ] || [ "$code" = "404" ] || [ "$code" = "405" ]; then
+              allowed_count=$((allowed_count+1))
+            else
+              deny_count=$((deny_count+1))
+              [ -n "$reason" ] && reasons[$reason]=1
+            fi
+          done
+          echo "allowed=$allowed_count" >> $GITHUB_OUTPUT
+          echo "denied=$deny_count" >> $GITHUB_OUTPUT
+          echo "deny_reasons=${!reasons[*]}" >> $GITHUB_OUTPUT
+          {
+            echo "## Worker 到達性プローブ"
+            echo ""
+            echo "| Worker | 結果 |"
+            echo "|---|---|"
+            for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://$w.agewaller.workers.dev/" || echo "000")
+              if [ "$code" = "200" ] || [ "$code" = "404" ] || [ "$code" = "405" ]; then
+                echo "| $w | ✅ HTTP $code |"
+              else
+                echo "| $w | ❌ HTTP $code |"
+              fi
+            done
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify token + check account
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret missing."
+            exit 1
+          fi
+          echo "## トークン検証" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | python3 -m json.tool >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(verify failed)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Get current subdomain status
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## アカウント subdomain 状態" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain \
+            | python3 -m json.tool >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(subdomain GET failed)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: List Workers scripts (to confirm they exist on the account)
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## デプロイ済み Workers 一覧" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" \
+            | python3 -c "
+import sys, json
+try:
+  d = json.load(sys.stdin)
+  if d.get('success'):
+    for s in d.get('result', []):
+      tags = s.get('placement', {}).get('mode', '-')
+      print(f\"  - {s.get('id', '?'):<35}  modified={s.get('modified_on', '-')}\")
+  else:
+    print(json.dumps(d.get('errors', []), indent=2))
+except Exception as e:
+  print('parse failed:', e)
+" >> $GITHUB_STEP_SUMMARY 2>&1
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check per-script subdomain enable flag
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## 各 script の subdomain 公開状態" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          for s in stock-screener cares-relay plaud-inbox professional-mailer research-updater; do
+            echo "--- $s ---"
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$s/subdomain" \
+              | python3 -m json.tool 2>/dev/null || echo "  (subdomain query failed)"
+          done >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: AUTO-FIX — re-enable workers.dev for each script
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## 自動修復試行 (各 script の subdomain を enable)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          for s in stock-screener cares-relay plaud-inbox professional-mailer research-updater; do
+            echo "--- enabling $s.agewaller.workers.dev ---"
+            curl -s -X POST \
+              -H "Authorization: Bearer $T" \
+              -H "Content-Type: application/json" \
+              -d '{"enabled": true}' \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$s/subdomain" \
+              | python3 -m json.tool 2>/dev/null || echo "  (enable call failed)"
+          done >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Wait + re-probe
+        run: |
+          echo "Waiting 10s for propagation..."
+          sleep 10
+          echo "## 修復後の再プローブ" >> $GITHUB_STEP_SUMMARY
+          {
+            echo ""
+            echo "| Worker | 結果 |"
+            echo "|---|---|"
+            for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater; do
+              code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://$w.agewaller.workers.dev/" || echo "000")
+              if [ "$code" = "200" ] || [ "$code" = "404" ] || [ "$code" = "405" ]; then
+                echo "| $w | ✅ HTTP $code |"
+              else
+                echo "| $w | ❌ HTTP $code |"
+              fi
+            done
+            echo ""
+            echo "もし全て ❌ のままなら、API トークン権限不足の可能性が高い。"
+            echo "Cloudflare ダッシュボード ([dash.cloudflare.com](https://dash.cloudflare.com)) →"
+            echo "Workers & Pages → 各 Worker → Settings → Triggers → "
+            echo "「Workers.dev を有効化 (Enable)」を ON にしてください。"
+          } >> $GITHUB_STEP_SUMMARY
