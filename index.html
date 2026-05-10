@@ -2090,20 +2090,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=24"></script>
-<script src="js/config.js?v=24"></script>
-<script src="js/prompts.js?v=24"></script>
-<script src="js/store.js?v=24"></script>
-<script src="js/privacy.js?v=24"></script>
-<script src="js/ai-engine.js?v=24"></script>
-<script src="js/affiliate.js?v=24"></script>
-<script src="js/components.js?v=24"></script>
-<script src="js/i18n.js?v=24"></script>
-<script src="js/calendar.js?v=24"></script>
-<script src="js/integrations.js?v=24"></script>
-<script src="js/firebase-backend.js?v=24"></script>
-<script src="js/app.js?v=24"></script>
-<script src="js/pages.js?v=24"></script>
+<script src="js/idb.js?v=25"></script>
+<script src="js/config.js?v=25"></script>
+<script src="js/prompts.js?v=25"></script>
+<script src="js/store.js?v=25"></script>
+<script src="js/privacy.js?v=25"></script>
+<script src="js/ai-engine.js?v=25"></script>
+<script src="js/affiliate.js?v=25"></script>
+<script src="js/components.js?v=25"></script>
+<script src="js/i18n.js?v=25"></script>
+<script src="js/calendar.js?v=25"></script>
+<script src="js/integrations.js?v=25"></script>
+<script src="js/firebase-backend.js?v=25"></script>
+<script src="js/app.js?v=25"></script>
+<script src="js/pages.js?v=25"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2176,15 +2176,21 @@ function callClaude(text, apiKey, model, systemPrompt) {
     var em = (err && err.message) ? String(err.message) : String(err);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
       var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
-      // Even when in-app detection misses (e.g. SFSafariViewController
-      // launched from inside LINE/X uses the system Safari UA), the
-      // most common root cause of "Load failed" is still an in-app
-      // browser blocking cross-origin fetches. Surface that as the
-      // primary fix even on the non-detected path so users get the
-      // actionable hint instead of just being told to reload.
-      throw new Error(inApp
+      // Stash the raw fetch URL + underlying error so the error UI can
+      // surface a copyable diagnostic — when neither in-app nor a stale
+      // SW explains the failure, we need to see exactly what the
+      // browser saw to pinpoint Worker / DNS / CORS issues.
+      var thrown = new Error(inApp
         ? 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。'
         : '接続できませんでした。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。通常ブラウザの場合は数秒待ってから再試行してください。');
+      thrown.diag = {
+        url: getAnthropicEndpoint(false),
+        rawErrorName: err && err.name,
+        rawErrorMessage: em,
+        timestamp: new Date().toISOString(),
+        ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+      };
+      throw thrown;
     }
     throw err;
   });
@@ -3006,7 +3012,26 @@ window.addEventListener('load', function() {
         var resetBtn = isConnFail
           ? '<button onclick="app.resetClientCacheAndReload()" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🔄 サービスをリセット</button>'
           : '';
-        el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + resetBtn + '</div>';
+        // 「接続を診断する」: when reset / external browser don't help, run
+        // OPTIONS / GET / POST probes against the Worker URL and display
+        // each result + a copyable diagnostic JSON. This lets us pinpoint
+        // whether the Worker is reachable, whether CORS is correct, and
+        // whether the env API key is configured — without us being able
+        // to reproduce the issue from our side.
+        var diagBtn = isConnFail
+          ? '<button onclick="app.diagnoseAiConnection(document.getElementById(\'guest-ai-diag\'))" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700">🔍 接続を診断する</button>'
+          : '';
+        var diagSlot = isConnFail
+          ? '<div id="guest-ai-diag"></div>'
+          : '';
+        // If the thrown error attached diag info (rawErrorMessage / url /
+        // ua), surface it inside a <details> below the buttons. Users
+        // copy-paste this back when reporting "still doesn't work".
+        var d = e && e.diag;
+        var diagInline = d
+          ? '<details style="margin-top:10px;font-size:11px"><summary style="cursor:pointer;color:#7f1d1d;font-weight:600">詳細を表示（運営者への報告用）</summary><pre style="margin-top:6px;padding:8px;background:#fff;border:1px solid #fecaca;border-radius:6px;font-size:10px;line-height:1.5;white-space:pre-wrap;word-break:break-all">'+esc('URL: '+d.url+'\nError: '+d.rawErrorName+': '+d.rawErrorMessage+'\nTime: '+d.timestamp+'\nUA: '+d.ua)+'</pre></details>'
+          : '';
+        el.innerHTML = '<div style="padding:16px;background:#fef2f2;border-radius:12px;color:#991b1b">'+esc(msg)+'<br><button onclick="app.guestAnalyze()" style="margin-top:8px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer">再試行</button>' + extraBtn + resetBtn + diagBtn + diagInline + diagSlot + '</div>';
       }
     }
   };
@@ -3227,6 +3252,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=24"></script>
+<script defer src="js/inapp-browser-banner.js?v=25"></script>
 </body>
 </html>

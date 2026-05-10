@@ -3346,6 +3346,103 @@ ${bloodText || '記録なし'}
     }
   }
 
+  // ---- AI connection diagnostic --------------------------------------
+  // When users see "接続できませんでした" from the AI proxy and we can't
+  // reproduce the failure ourselves (Worker reachable from our side,
+  // Cloudflare logs absent, etc.), we need an actionable way for the
+  // affected user to surface what their browser actually saw. This
+  // method runs three probes against the Worker URL — preflight,
+  // simple GET, real POST — and renders a copyable diagnostic block
+  // next to the error. Triggered from the "🔍 接続を診断する" button
+  // in the error UI.
+  // -------------------------------------------------------------------
+  async diagnoseAiConnection(targetEl) {
+    const url = (typeof getAnthropicEndpoint === 'function')
+      ? getAnthropicEndpoint(false)
+      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
+    const out = (targetEl && targetEl.tagName) ? targetEl : document.getElementById('ai-diag-output');
+    if (!out) return;
+    out.innerHTML = '<div style="font-size:11px;color:#475569">診断中…（数秒お待ちください）</div>';
+
+    const probe = async (label, init) => {
+      const start = Date.now();
+      try {
+        const r = await fetch(url, init);
+        const ms = Date.now() - start;
+        let bodyPreview = '';
+        try { bodyPreview = (await r.text()).substring(0, 160); } catch (_) {}
+        return {
+          label,
+          ok: r.ok,
+          status: r.status,
+          statusText: r.statusText,
+          ms,
+          cors: r.headers.get('Access-Control-Allow-Origin') || '(none)',
+          contentType: r.headers.get('Content-Type') || '(none)',
+          body: bodyPreview
+        };
+      } catch (err) {
+        return {
+          label,
+          fatal: true,
+          ms: Date.now() - start,
+          name: err && err.name,
+          message: (err && err.message) ? String(err.message) : String(err)
+        };
+      }
+    };
+
+    const results = [];
+    results.push(await probe('OPTIONS preflight', {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': location.origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,anthropic-version'
+      }
+    }));
+    results.push(await probe('GET (no body)', { method: 'GET' }));
+    results.push(await probe('POST minimal payload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 32, messages: [{ role: 'user', content: 'ping' }] })
+    }));
+
+    const summary = {
+      timestamp: new Date().toISOString(),
+      probedUrl: url,
+      origin: location.origin,
+      ua: navigator.userAgent || '',
+      results
+    };
+    const json = JSON.stringify(summary, null, 2);
+
+    const rows = results.map(r => {
+      if (r.fatal) {
+        return `<tr><td style="padding:4px 8px;font-weight:600;color:#991b1b">${Components.escapeHtml(r.label)}</td><td style="padding:4px 8px;color:#991b1b">FATAL: ${Components.escapeHtml(r.name || '?')} — ${Components.escapeHtml(r.message)}</td><td style="padding:4px 8px;color:#64748b">${r.ms}ms</td></tr>`;
+      }
+      const okColor = r.ok ? '#166534' : (r.status >= 400 && r.status < 500 ? '#9a3412' : '#991b1b');
+      return `<tr>
+        <td style="padding:4px 8px;font-weight:600">${Components.escapeHtml(r.label)}</td>
+        <td style="padding:4px 8px;color:${okColor}">${r.status} ${Components.escapeHtml(r.statusText || '')} ／ CORS: ${Components.escapeHtml(r.cors)}</td>
+        <td style="padding:4px 8px;color:#64748b">${r.ms}ms</td>
+      </tr>`;
+    }).join('');
+
+    out.innerHTML = `
+      <div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:11px">
+        <div style="font-weight:700;margin-bottom:6px;color:#1e293b">🔍 接続診断結果</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:6px;font-family:monospace;word-break:break-all">${Components.escapeHtml(url)}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px">${rows}</table>
+        <details style="margin-top:8px">
+          <summary style="cursor:pointer;font-weight:600;color:#475569">詳細（運営者に共有）</summary>
+          <pre style="margin-top:6px;padding:8px;background:#f8fafc;border-radius:6px;font-size:10px;white-space:pre-wrap;word-break:break-all;line-height:1.5">${Components.escapeHtml(json)}</pre>
+          <button onclick="(navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(json)}))?.then(()=>Components.showToast('診断情報をコピーしました','success'))"
+            style="margin-top:6px;padding:6px 12px;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
+        </details>
+      </div>`;
+  }
+
   // ---- Client cache / SW reset ---------------------------------------
   // Last-resort recovery for users stuck behind a stale Service Worker
   // or corrupted localStorage proxy URL. Earlier app builds registered
