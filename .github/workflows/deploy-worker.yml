@@ -1,11 +1,13 @@
 name: Deploy Cloudflare Workers
 
 # 全 Worker を main push で自動デプロイ + workflow_dispatch で手動実行可。
-# 過去の失敗原因: cloudflare/wrangler-action@v3 に accountId が
-# 渡されていなかった。wrangler の auth は token + account の両方
-# が必要なので、token だけだと "Required field 'account_id' missing"
-# で失敗していた。今回 npx wrangler を直接使い、各ステップで詳細
-# ログを出すように変更。
+# Account ID はハードコード (Cloudflare ダッシュボード URL に表示される
+# 公開 ID なので secret 化不要)。CLOUDFLARE_API_TOKEN の権限で
+# Account 一覧を取れない場合でも、Workers Scripts: Edit さえあれば
+# deploy は通る。
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
 
 on:
   push:
@@ -23,10 +25,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  discover-account:
+  verify-token:
     runs-on: ubuntu-latest
-    outputs:
-      account_id: ${{ steps.discover.outputs.account_id }}
     steps:
       - name: Verify CLOUDFLARE_API_TOKEN
         env:
@@ -37,32 +37,13 @@ jobs:
             exit 1
           fi
           echo "✓ token present (length=${#T})"
-
-      - name: Discover account ID via Cloudflare API
-        id: discover
-        env:
-          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          set -e
-          echo "--- Verify token ---"
-          curl -fsS -H "Authorization: Bearer $T" \
+          echo "--- /user/tokens/verify ---"
+          curl -s -H "Authorization: Bearer $T" \
             https://api.cloudflare.com/client/v4/user/tokens/verify \
-            | python3 -m json.tool || echo "(verify failed)"
-          echo ""
-          echo "--- Discover accounts ---"
-          ACC=$(curl -fsS -H "Authorization: Bearer $T" \
-            https://api.cloudflare.com/client/v4/accounts)
-          echo "$ACC" | python3 -m json.tool | head -40
-          ACCOUNT_ID=$(echo "$ACC" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('result',[{}])[0].get('id',''))")
-          if [ -z "$ACCOUNT_ID" ]; then
-            echo "::error::Could not discover account ID. Token may need 'Account → Account Settings → Read'."
-            exit 1
-          fi
-          echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
-          echo "✓ account=$ACCOUNT_ID"
+            | python3 -m json.tool || echo "(verify response not JSON)"
 
   deploy-anthropic-proxy:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,11 +52,11 @@ jobs:
       - name: Deploy stock-screener
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.jsonc
 
   deploy-relay:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -84,7 +65,7 @@ jobs:
       - name: Deploy cares-relay (service binding to stock-screener)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.relay.jsonc
       - name: Probe cares-relay
         run: |
@@ -92,10 +73,10 @@ jobs:
           echo "--- probe cares-relay.agewaller.workers.dev ---"
           curl -is -o /tmp/p.txt -w "HTTP %{http_code} in %{time_total}s\n" \
             https://cares-relay.agewaller.workers.dev/ || true
-          head -c 600 /tmp/p.txt
+          head -c 800 /tmp/p.txt
 
   deploy-plaud-inbox:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,11 +85,11 @@ jobs:
       - name: Deploy Plaud inbox
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.plaud-inbox.toml || echo "::warning::plaud-inbox deploy failed (non-blocking)"
 
   deploy-professional-mailer:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,11 +98,11 @@ jobs:
       - name: Deploy professional mailer
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.professional-mailer.toml || echo "::warning::professional-mailer deploy failed (non-blocking)"
 
   deploy-research-updater:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,11 +111,11 @@ jobs:
       - name: Deploy research updater
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.research-updater.toml || echo "::warning::research-updater deploy failed (non-blocking)"
 
   deploy-learning-orchestrator:
-    needs: discover-account
+    needs: verify-token
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,5 +124,6 @@ jobs:
       - name: Deploy Personal Learning Companion
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ needs.discover-account.outputs.account_id }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.learning.toml || echo "::warning::learning-orchestrator deploy failed (non-blocking)"
+
