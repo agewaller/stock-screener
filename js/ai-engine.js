@@ -539,14 +539,21 @@ ${avoidBlock}
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
     // Same routing policy as the inline callClaude in index.html:
-    // direct to api.anthropic.com when the caller has a key (admin's
-    // shared key from Firestore admin/secrets, or a user's own key
-    // from the admin panel), Worker proxy otherwise. Forcing every
-    // user through the Worker — as we tried in PR #31 — broke every
-    // user the moment env.ANTHROPIC_API_KEY wasn't set on Cloudflare.
-    const url = apiKey
-      ? 'https://api.anthropic.com/v1/messages'
-      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
+    // direct to api.anthropic.com when caller has a key, Worker proxy
+    // otherwise. The proxy URL is read from localStorage (synced from
+    // admin/config.proxyUrl) so the admin can configure the correct
+    // workers.dev hostname for their Cloudflare account — the
+    // hardcoded fallback may be wrong if the account's workers_dev
+    // subdomain isn't `agewaller`.
+    let url;
+    if (apiKey) {
+      url = 'https://api.anthropic.com/v1/messages';
+    } else {
+      let proxy = '';
+      try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+      if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
+      url = proxy.replace(/\/+$/, '') + '/v1/messages';
+    }
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
