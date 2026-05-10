@@ -87,6 +87,8 @@ var App = class App {
     // Defensive: log any onclick handler that resolves to undefined
     // before the user has a chance to tap it.
     setTimeout(() => this._verifyHandlerBindings(), 1500);
+    // 毎日の記録リマインダーを起動時にスケジュール
+    setTimeout(() => this._scheduleReminderCheck && this._scheduleReminderCheck(), 3000);
 
     // Auto-refresh the dashboard whenever new data lands in any of the
     // user-visible collections. This makes Plaud / Apple Health / Fitbit

@@ -779,6 +779,9 @@ App.prototype.render_dashboard = function() {
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
 
+  <!-- 週次サマリーカード（データがある場合のみ） -->
+  ${hasData ? this._buildWeeklySummaryHtml() : ''}
+
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
     const syncs = store.get('integrationSyncs') || {};
@@ -3121,6 +3124,14 @@ App.prototype.render_settings = function() {
         <input type="file" class="form-input" accept=".json" onchange="app.importDataFile(this.files[0])">
       </div>
       <button class="btn btn-secondary" onclick="app.exportData()">すべてのデータをエクスポート (JSON)</button>
+      <button class="btn btn-secondary" onclick="app.openDoctorReport(2)"
+        style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border-color:#bfdbfe;color:#1e40af">
+        🩺 受診準備レポートを作成（過去2週間）
+      </button>
+      <button class="btn btn-secondary" onclick="app.openReminderSettings()"
+        style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-color:#bbf7d0;color:#14532d">
+        📱 記録リマインダーを設定
+      </button>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="btn btn-danger" style="width:100%;padding:14px;font-size:14px" id="logout-btn" onclick="app.confirmLogout()">ログアウト</button>
       </div>
@@ -3939,6 +3950,493 @@ App.prototype.importDataFile = function(file) {
 
 
 
-document.addEventListener('DOMContentLoaded', function() { app.init(); });
+// =========================================================
+// 🩺 受診準備レポート（医師訪問前レポート）
+// 症状・薬・AI分析を印刷用HTMLにまとめる
+// =========================================================
+App.prototype.openDoctorReport = function(weeks) {
+  weeks = weeks || 2;
+  const cutoffMs = Date.now() - weeks * 7 * 86400000;
+  const profile = store.get('userProfile') || {};
+  const userName = profile.name || '記録者';
+
+  const selectedDiseases = store.get('selectedDiseases') || [];
+  const diseaseNames = [];
+  selectedDiseases.forEach(id => {
+    if (id === 'custom') { diseaseNames.push(store.get('customDiseaseName') || 'その他'); return; }
+    for (const cat of CONFIG.DISEASE_CATEGORIES) {
+      const d = cat.diseases.find(x => x.id === id);
+      if (d) { diseaseNames.push(d.name); break; }
+    }
+  });
+
+  const now = new Date();
+  const fmtDate = d => new Date(d).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  const periodLabel = `${fmtDate(cutoffMs)} 〜 ${fmtDate(now)}`;
+
+  // 症状データ集計
+  const symptoms = (store.get('symptoms') || []).filter(s => Date.parse(s.timestamp) >= cutoffMs);
+  const avg = (arr, f) => {
+    const vals = arr.map(s => s[f]).filter(x => x != null && !isNaN(x));
+    return vals.length ? (vals.reduce((a,b) => a+b,0) / vals.length).toFixed(1) : '—';
+  };
+  const fatigueAvg = avg(symptoms, 'fatigue_level');
+  const painAvg = avg(symptoms, 'pain_level');
+  const fogAvg = avg(symptoms, 'brain_fog');
+  const sleepAvg = avg(symptoms, 'sleep_quality');
+  const symptomBar = (val, inverted) => {
+    if (val === '—') return '<span style="color:#999">データなし</span>';
+    const v = parseFloat(val);
+    const pct = v * 10;
+    const color = inverted
+      ? (v <= 3 ? '#22c55e' : v <= 6 ? '#f59e0b' : '#ef4444')
+      : (v >= 7 ? '#22c55e' : v >= 4 ? '#f59e0b' : '#ef4444');
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <span style="font-weight:700;min-width:24px">${val}</span>
+      <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div>
+      </div>
+      <span style="font-size:11px;color:#666">/10</span>
+    </div>`;
+  };
+
+  // 最近のテキスト記録
+  const textEntries = (store.get('textEntries') || []).filter(e => Date.parse(e.timestamp) >= cutoffMs);
+  const recentTexts = textEntries.slice(-10).reverse();
+
+  // 服薬・サプリ
+  const meds = (store.get('medications') || []).filter(m => Date.parse(m.timestamp) >= cutoffMs);
+  const medSet = new Map();
+  meds.forEach(m => {
+    const key = (m.name || m.medication_name || '').trim();
+    if (key && !medSet.has(key)) medSet.set(key, m);
+  });
+  const supps = (store.get('supplements') || []).filter(s => Date.parse(s.timestamp) >= cutoffMs);
+  const suppSet = new Map();
+  supps.forEach(s => {
+    const key = (s.name || s.supplement_name || s.text_note || '').trim();
+    if (key && !suppSet.has(key)) suppSet.set(key, s);
+  });
+
+  // バイタル
+  const vitals = (store.get('vitals') || []).filter(v => Date.parse(v.timestamp) >= cutoffMs);
+  const latestVital = vitals.slice(-1)[0] || null;
+
+  // 血液検査
+  const bloodTests = (store.get('bloodTests') || []).filter(b => Date.parse(b.timestamp) >= cutoffMs);
+  const latestBlood = bloodTests.slice(-1)[0] || null;
+
+  // AI 分析
+  const latestAnalysis = store.get('latestAnalysis');
+  const parsedAI = latestAnalysis?.parsed || latestAnalysis?.result || {};
+  const aiSummary = parsedAI.summary || parsedAI.overallAssessment || '';
+  const aiAlerts = parsedAI.riskAlerts || [];
+  const aiRecs = parsedAI.recommendations || [];
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>受診準備レポート｜健康日記</title>
+<style>
+  @media print { @page { margin: 18mm 14mm; } .no-print { display:none !important; } }
+  body { font-family: "Hiragino Sans","Meiryo",sans-serif; font-size:13px; color:#1e293b; margin:0; padding:0; background:#fff; }
+  .page { max-width:760px; margin:0 auto; padding:28px 24px; }
+  h1 { font-size:20px; font-weight:800; color:#1e293b; margin:0 0 4px; }
+  h2 { font-size:15px; font-weight:700; color:#3b5bdb; border-left:4px solid #3b5bdb; padding-left:10px; margin:24px 0 12px; }
+  h3 { font-size:13px; font-weight:700; color:#334155; margin:12px 0 6px; }
+  .meta { font-size:11px; color:#64748b; margin-bottom:20px; }
+  .section { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:16px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .metric { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; }
+  .metric-label { font-size:11px; color:#64748b; margin-bottom:6px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:#f1f5f9; padding:6px 10px; text-align:left; font-weight:700; color:#475569; }
+  td { padding:6px 10px; border-top:1px solid #e2e8f0; vertical-align:top; }
+  .tag { display:inline-block; padding:2px 8px; background:#dbeafe; color:#1d4ed8; border-radius:20px; font-size:11px; font-weight:700; margin:2px; }
+  .alert-box { background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px 14px; font-size:12px; color:#92400e; margin-bottom:8px; }
+  .note-box { min-height:80px; border:1px solid #e2e8f0; border-radius:8px; padding:12px; color:#94a3b8; font-size:13px; }
+  .print-btn { position:fixed; bottom:24px; right:24px; background:#3b5bdb; color:#fff; border:none; border-radius:10px; padding:12px 22px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(59,91,219,.4); }
+  .print-btn:hover { background:#2d4ece; }
+  .text-entry { border-left:3px solid #c7d2fe; padding:8px 12px; margin-bottom:8px; font-size:12px; line-height:1.7; }
+  .text-entry .ts { font-size:10px; color:#94a3b8; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <button class="print-btn no-print" onclick="window.print()">🖨 印刷する</button>
+
+  <!-- ヘッダー -->
+  <h1>🩺 受診準備レポート</h1>
+  <div class="meta">
+    <strong>作成日:</strong> ${now.toLocaleString('ja-JP')} ／
+    <strong>期間:</strong> ${periodLabel} ／
+    <strong>健康日記</strong> cares.advisers.jp
+  </div>
+
+  <!-- 基本情報 -->
+  <div class="section">
+    <h2 style="margin-top:0">基本情報</h2>
+    <div class="grid2">
+      <div>
+        <div class="metric-label">お名前</div>
+        <div style="font-size:15px;font-weight:700">${Components.escapeHtml(userName)}</div>
+      </div>
+      <div>
+        <div class="metric-label">疾患・病態</div>
+        <div>${diseaseNames.length > 0 ? diseaseNames.map(n => `<span class="tag">${Components.escapeHtml(n)}</span>`).join('') : '<span style="color:#94a3b8">未選択</span>'}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 症状スコア集計 -->
+  <div class="section">
+    <h2 style="margin-top:0">症状スコア（${weeks}週間平均）</h2>
+    ${symptoms.length === 0 ? '<p style="color:#94a3b8;font-size:12px">この期間の症状データがありません。</p>' : `
+    <div class="grid2">
+      <div class="metric">
+        <div class="metric-label">疲労感（低いほど良い）</div>
+        ${symptomBar(fatigueAvg, true)}
+      </div>
+      <div class="metric">
+        <div class="metric-label">痛み（低いほど良い）</div>
+        ${symptomBar(painAvg, true)}
+      </div>
+      <div class="metric">
+        <div class="metric-label">ブレインフォグ（低いほど良い）</div>
+        ${symptomBar(fogAvg, true)}
+      </div>
+      <div class="metric">
+        <div class="metric-label">睡眠の質（高いほど良い）</div>
+        ${symptomBar(sleepAvg, false)}
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#64748b">記録件数: ${symptoms.length}件</div>`}
+  </div>
+
+  <!-- リスクアラート -->
+  ${aiAlerts.length > 0 ? `
+  <div class="section">
+    <h2 style="margin-top:0">⚠ 注意が必要な点</h2>
+    ${aiAlerts.slice(0,4).map(a => `<div class="alert-box">${Components.escapeHtml(typeof a === 'string' ? a : (a.message || JSON.stringify(a)))}</div>`).join('')}
+  </div>` : ''}
+
+  <!-- AI分析サマリー -->
+  ${aiSummary ? `
+  <div class="section">
+    <h2 style="margin-top:0">AI分析サマリー</h2>
+    <div style="font-size:13px;line-height:1.8;white-space:pre-wrap">${Components.escapeHtml(aiSummary)}</div>
+    ${aiRecs.slice(0,3).map(r => `<div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:6px;font-size:12px;line-height:1.6">
+      💡 ${Components.escapeHtml(typeof r === 'string' ? r : (r.text || r.content || JSON.stringify(r)))}</div>`).join('')}
+  </div>` : ''}
+
+  <!-- 最近のテキスト記録 -->
+  ${recentTexts.length > 0 ? `
+  <div class="section">
+    <h2 style="margin-top:0">最近の記録（${recentTexts.length}件）</h2>
+    ${recentTexts.map(e => `
+    <div class="text-entry">
+      <div class="ts">${e.timestamp ? new Date(e.timestamp).toLocaleString('ja-JP') : ''}</div>
+      <div style="white-space:pre-wrap">${Components.escapeHtml((e.content || '').substring(0, 300))}${(e.content || '').length > 300 ? '…' : ''}</div>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <!-- 服薬・サプリ -->
+  ${(medSet.size > 0 || suppSet.size > 0) ? `
+  <div class="section">
+    <h2 style="margin-top:0">服薬・サプリメント</h2>
+    ${medSet.size > 0 ? `
+    <h3>💊 薬</h3>
+    <table>
+      <tr><th>薬名</th><th>用量・備考</th></tr>
+      ${[...medSet.values()].map(m => `<tr>
+        <td>${Components.escapeHtml(m.name || m.medication_name || '')}</td>
+        <td>${Components.escapeHtml(m.dose || m.dosage || m.notes || '')}</td>
+      </tr>`).join('')}
+    </table>` : ''}
+    ${suppSet.size > 0 ? `
+    <h3 style="margin-top:14px">🌿 サプリ</h3>
+    <table>
+      <tr><th>サプリ名</th><th>備考</th></tr>
+      ${[...suppSet.values()].map(s => `<tr>
+        <td>${Components.escapeHtml(s.name || s.supplement_name || s.text_note || '')}</td>
+        <td>${Components.escapeHtml(s.dose || s.notes || '')}</td>
+      </tr>`).join('')}
+    </table>` : ''}
+  </div>` : ''}
+
+  <!-- バイタル -->
+  ${latestVital ? `
+  <div class="section">
+    <h2 style="margin-top:0">最新バイタル（${latestVital.timestamp ? fmtDate(latestVital.timestamp) : ''}）</h2>
+    <div class="grid2">
+      ${latestVital.blood_pressure_systolic ? `<div class="metric"><div class="metric-label">血圧</div>${latestVital.blood_pressure_systolic}/${latestVital.blood_pressure_diastolic || '?'} mmHg</div>` : ''}
+      ${latestVital.heart_rate ? `<div class="metric"><div class="metric-label">心拍数</div>${latestVital.heart_rate} bpm</div>` : ''}
+      ${latestVital.body_temperature ? `<div class="metric"><div class="metric-label">体温</div>${latestVital.body_temperature} ℃</div>` : ''}
+      ${latestVital.weight ? `<div class="metric"><div class="metric-label">体重</div>${latestVital.weight} kg</div>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- 血液検査 -->
+  ${latestBlood ? `
+  <div class="section">
+    <h2 style="margin-top:0">直近の血液検査（${latestBlood.timestamp ? fmtDate(latestBlood.timestamp) : ''}）</h2>
+    <div style="font-size:12px;line-height:1.8;white-space:pre-wrap">${Components.escapeHtml(latestBlood.notes || latestBlood.results || JSON.stringify(latestBlood, null, 2))}</div>
+  </div>` : ''}
+
+  <!-- 先生への質問メモ -->
+  <div class="section">
+    <h2 style="margin-top:0">先生への質問メモ（診察前に記入）</h2>
+    <div class="note-box no-print" contenteditable="true">ここをクリックして質問を入力…</div>
+    <div class="no-print" style="font-size:11px;color:#94a3b8;margin-top:6px">※ 印刷には反映されません。印刷後に手書きでご記入ください。</div>
+    <div style="border:1px solid #e2e8f0;border-radius:8px;min-height:80px;padding:10px"></div>
+  </div>
+
+  <!-- フッター -->
+  <div style="margin-top:24px;padding:12px;background:#f8fafc;border-radius:8px;font-size:10px;color:#94a3b8;line-height:1.7">
+    このレポートは健康日記 (cares.advisers.jp) が生成しました。
+    医療上の診断・治療方針の最終判断は必ず医師・医療従事者にご相談ください。
+    レポートはお使いのデバイスにのみ保存されます。
+  </div>
+</div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    Components.showToast('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。', 'error');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+};
+
+// =========================================================
+// 📱 記録リマインダー設定（Web Push + 未記録バナー）
+// =========================================================
+App.prototype.openReminderSettings = function() {
+  const modal = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  if (!modal || !body) return;
+
+  const notifSupported = 'Notification' in window;
+  const currentPerm = notifSupported ? Notification.permission : 'unsupported';
+  const savedTime = localStorage.getItem('cc_reminder_time') || '20:00';
+  const savedEnabled = localStorage.getItem('cc_reminder_enabled') === '1';
+
+  if (title) title.textContent = '📱 記録リマインダー設定';
+  body.innerHTML = `
+    <div style="padding:4px 0 8px">
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px">
+        毎日の記録を忘れずに続けるためのリマインダーを設定できます。<br>
+        設定した時刻にこのページを開いていると通知が届きます。
+      </p>
+
+      ${currentPerm === 'unsupported' ? `
+      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12px;color:#92400e;margin-bottom:14px">
+        ⚠ このブラウザは通知機能に対応していません。
+      </div>` : currentPerm === 'denied' ? `
+      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12px;color:#92400e;margin-bottom:14px">
+        ⚠ 通知がブロックされています。ブラウザの設定から cares.advisers.jp の通知を許可してください。
+      </div>` : ''}
+
+      <div style="margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="reminder-enabled" ${savedEnabled ? 'checked' : ''}
+            style="width:18px;height:18px;cursor:pointer" ${currentPerm === 'denied' || currentPerm === 'unsupported' ? 'disabled' : ''}>
+          <div>
+            <div style="font-size:14px;font-weight:600">リマインダーを有効にする</div>
+            <div style="font-size:11px;color:var(--text-muted)">毎日の記録を促す通知を送信</div>
+          </div>
+        </label>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:6px">通知時刻</label>
+        <input type="time" id="reminder-time" value="${savedTime}"
+          class="form-select" style="width:auto;font-size:16px"
+          ${currentPerm === 'denied' || currentPerm === 'unsupported' ? 'disabled' : ''}>
+      </div>
+
+      <div style="margin-bottom:16px;padding:12px;background:var(--bg-tertiary);border-radius:8px;font-size:12px;color:var(--text-secondary);line-height:1.6">
+        💡 <strong>ヒント:</strong> ページを毎日同じ時間に開く習慣があると、リマインダーが効果的に機能します。
+        アプリをホーム画面に追加するとより便利です。
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="app.saveReminderSettings()" style="flex:1;padding:12px">保存する</button>
+        <button class="btn btn-secondary" onclick="app.closeModal()" style="padding:12px 20px">キャンセル</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('active');
+};
+
+App.prototype.saveReminderSettings = function() {
+  const enabled = document.getElementById('reminder-enabled')?.checked || false;
+  const time = document.getElementById('reminder-time')?.value || '20:00';
+
+  if (enabled && Notification.permission === 'default') {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        localStorage.setItem('cc_reminder_enabled', '1');
+        localStorage.setItem('cc_reminder_time', time);
+        this._scheduleReminderCheck();
+        Components.showToast('リマインダーを設定しました', 'success');
+        this.closeModal();
+      } else {
+        Components.showToast('通知の許可が必要です', 'error');
+      }
+    });
+    return;
+  }
+
+  localStorage.setItem('cc_reminder_enabled', enabled ? '1' : '0');
+  localStorage.setItem('cc_reminder_time', time);
+  if (enabled) this._scheduleReminderCheck();
+  Components.showToast(enabled ? 'リマインダーを設定しました' : 'リマインダーを無効にしました', 'success');
+  this.closeModal();
+};
+
+App.prototype._scheduleReminderCheck = function() {
+  if (this._reminderTimer) clearTimeout(this._reminderTimer);
+  if (localStorage.getItem('cc_reminder_enabled') !== '1') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const time = localStorage.getItem('cc_reminder_time') || '20:00';
+  const [h, m] = time.split(':').map(Number);
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+
+  const msUntil = target - now;
+  this._reminderTimer = setTimeout(() => {
+    const textEntries = store.get('textEntries') || [];
+    const todayStr = new Date().toDateString();
+    const loggedToday = textEntries.some(e => new Date(e.timestamp).toDateString() === todayStr);
+    if (!loggedToday) {
+      new Notification('健康日記 — 今日の記録', {
+        body: '今日の体調をまだ記録していません。少しだけ記録してみませんか？',
+        icon: '/favicon.ico',
+        tag: 'health-diary-reminder'
+      });
+    }
+    this._scheduleReminderCheck();
+  }, msUntil);
+};
+
+// =========================================================
+// 📊 週次サマリーカード（ダッシュボード用）
+// =========================================================
+App.prototype._buildWeeklySummaryHtml = function() {
+  const now = new Date();
+  const weeks = [0, 1].map(wOffset => {
+    const end = new Date(now);
+    end.setDate(end.getDate() - wOffset * 7);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    start.setHours(0,0,0,0);
+    end.setHours(23,59,59,999);
+    return { start, end, label: wOffset === 0 ? '今週' : '先週' };
+  });
+
+  const symptoms = store.get('symptoms') || [];
+  const textEntries = store.get('textEntries') || [];
+
+  const weekStats = weeks.map(w => {
+    const wSymptoms = symptoms.filter(s => {
+      const t = Date.parse(s.timestamp);
+      return t >= w.start && t <= w.end;
+    });
+    const wEntries = textEntries.filter(e => {
+      const t = Date.parse(e.timestamp);
+      return t >= w.start && t <= w.end;
+    });
+    const avgF = (arr, f) => {
+      const vals = arr.map(s => s[f]).filter(x => x != null && !isNaN(x));
+      return vals.length ? vals.reduce((a,b) => a+b,0)/vals.length : null;
+    };
+    const logDays = new Set();
+    [...wSymptoms, ...wEntries].forEach(e => {
+      const d = new Date(e.timestamp);
+      logDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+    });
+    return {
+      label: w.label,
+      days: logDays.size,
+      fatigue: avgF(wSymptoms, 'fatigue_level'),
+      pain: avgF(wSymptoms, 'pain_level'),
+      sleep: avgF(wSymptoms, 'sleep_quality'),
+      fog: avgF(wSymptoms, 'brain_fog')
+    };
+  });
+
+  const [thisWeek, lastWeek] = weekStats;
+  if (thisWeek.days === 0 && lastWeek.days === 0) return '';
+
+  const delta = (cur, prev, inverted) => {
+    if (cur == null || prev == null) return '';
+    const diff = cur - prev;
+    if (Math.abs(diff) < 0.3) return '<span style="color:#64748b">→ 横ばい</span>';
+    const better = inverted ? diff < 0 : diff > 0;
+    const arrow = diff > 0 ? '↑' : '↓';
+    const color = better ? '#22c55e' : '#ef4444';
+    const sign = diff > 0 ? '+' : '';
+    return `<span style="color:${color}">${arrow} ${sign}${diff.toFixed(1)}</span>`;
+  };
+
+  const metricRow = (label, cur, prev, inverted) => {
+    if (cur == null && prev == null) return '';
+    const fmtV = v => v != null ? v.toFixed(1) : '—';
+    return `<tr>
+      <td style="color:var(--text-secondary);padding:4px 8px 4px 0;font-size:11px">${label}</td>
+      <td style="font-weight:700;padding:4px 8px 4px 0;font-size:12px">${fmtV(cur)}/10</td>
+      <td style="padding:4px 0;font-size:11px">${delta(cur, prev, inverted)}</td>
+    </tr>`;
+  };
+
+  return `
+  <div class="card" style="margin-bottom:16px;border:1px solid #c7d2fe">
+    <div class="card-header" style="background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);cursor:pointer"
+      onclick="var b=document.getElementById('weekly-summary-body');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ws-arrow').textContent=b.style.display==='none'?'▸':'▾'">
+      <span class="card-title" style="color:#3730a3">📊 今週の体調まとめ</span>
+      <span class="ws-arrow" style="font-size:14px;color:#6366f1">▾</span>
+    </div>
+    <div id="weekly-summary-body">
+      <div class="card-body" style="padding:12px 16px">
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">今週</div>
+            <div style="font-size:13px;margin-bottom:8px">📅 <strong>${thisWeek.days}</strong> 日記録</div>
+            <table>
+              ${metricRow('疲労感', thisWeek.fatigue, lastWeek.fatigue, true)}
+              ${metricRow('痛み', thisWeek.pain, lastWeek.pain, true)}
+              ${metricRow('睡眠の質', thisWeek.sleep, lastWeek.sleep, false)}
+              ${metricRow('ブレインフォグ', thisWeek.fog, lastWeek.fog, true)}
+            </table>
+          </div>
+          ${lastWeek.days > 0 ? `
+          <div style="flex:1;min-width:140px;opacity:0.65">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">先週</div>
+            <div style="font-size:13px;margin-bottom:8px">📅 <strong>${lastWeek.days}</strong> 日記録</div>
+            <table>
+              ${metricRow('疲労感', lastWeek.fatigue, null, true)}
+              ${metricRow('痛み', lastWeek.pain, null, true)}
+              ${metricRow('睡眠の質', lastWeek.sleep, null, false)}
+              ${metricRow('ブレインフォグ', lastWeek.fog, null, true)}
+            </table>
+          </div>` : ''}
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" style="font-size:11px;background:#eef2ff;color:#3730a3;border-color:#c7d2fe"
+            onclick="app.openDoctorReport(2)">🩺 受診準備レポートを作成</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+};
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });
