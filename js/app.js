@@ -43,11 +43,50 @@ var App = class App {
     return user && this.ADMIN_EMAILS.includes(user.email);
   }
 
+  // Boot-time canary: walk through every onclick / on* attribute in
+  // index.html and the rendered template files and verify each
+  // `app.X(...)` reference resolves to a real method. This catches the
+  // class of regression where a wholesale revert (e.g. cca607c) drops
+  // a method while leaving the onclick handlers behind, which would
+  // otherwise only surface as a TypeError when the user actually taps
+  // the button. The check runs once on init() and only logs — it does
+  // not throw, so a missing handler can never block the app from
+  // booting. Smoke tests perform the same check statically.
+  _verifyHandlerBindings() {
+    try {
+      const nodes = document.querySelectorAll('[onclick],[onchange],[oninput],[onsubmit],[onkeydown],[onkeyup],[onfocus],[onblur]');
+      const seen = new Set();
+      const missing = new Set();
+      const re = /\bapp\.([A-Za-z_]\w*)\s*\(/g;
+      nodes.forEach(node => {
+        ['onclick','onchange','oninput','onsubmit','onkeydown','onkeyup','onfocus','onblur'].forEach(attr => {
+          const v = node.getAttribute(attr);
+          if (!v) return;
+          let m;
+          while ((m = re.exec(v)) !== null) {
+            const name = m[1];
+            if (seen.has(name)) continue;
+            seen.add(name);
+            if (typeof this[name] !== 'function' && typeof window.app?.[name] !== 'function') {
+              missing.add(name);
+            }
+          }
+        });
+      });
+      if (missing.size > 0) {
+        console.warn('[App] Boot canary: missing handlers referenced from on* attributes →', [...missing]);
+      }
+    } catch (e) { console.warn('[App] handler canary failed:', e.message); }
+  }
+
   init() {
     document.documentElement.removeAttribute('data-theme');
     localStorage.removeItem('cc_theme');
     this._initHashRouter();
     store.on('currentPage', (p) => this.navigate(p));
+    // Defensive: log any onclick handler that resolves to undefined
+    // before the user has a chance to tap it.
+    setTimeout(() => this._verifyHandlerBindings(), 1500);
 
     // Auto-refresh the dashboard whenever new data lands in any of the
     // user-visible collections. This makes Plaud / Apple Health / Fitbit
@@ -2973,6 +3012,466 @@ ${responseText.substring(0, 3000)}`;
   getAIComment(entryId) {
     const comments = store.get('aiComments') || {};
     return comments[entryId] || null;
+  }
+
+  // ---- Guest CTA + 医師レポート: module-level fallbacks --------------
+  // These are also re-bound to richer implementations from the
+  // index.html DOMContentLoaded inline script (which has access to
+  // closures like resolveKey / pickGuestDiseaseKey). The class
+  // versions below exist so that:
+  //   - onclick="app.guestSampleSubmit()" / app.guestSampleReport() /
+  //     app.generateDoctorReport() never resolves to undefined, even
+  //     before DOMContentLoaded fires or in environments where the
+  //     inline script never runs (e.g. unit tests, SSR snapshots).
+  //   - The smoke test (which loads JS modules without index.html)
+  //     can verify that every onclick reference in templates has a
+  //     real method — earlier builds regressed when a wholesale
+  //     revert dropped these definitions.
+  // -------------------------------------------------------------------
+  // Same fallback story as the guest CTA methods above: setReaction /
+  // toggleBookmark / runDeepAnalysis are also re-bound at runtime by
+  // an index.html inline script. Provide module-level fallbacks so the
+  // onclick="app.setReaction(...)" / "app.toggleBookmark(...)" /
+  // "app.runDeepAnalysis()" handlers in js/pages.js never resolve to
+  // undefined even before DOMContentLoaded fires or in test contexts.
+  setReaction(id, section, reaction) {
+    if (!id || !section) return;
+    const archive = (store.get('deepAnalyses') || []).slice();
+    const idx = archive.findIndex(a => a && a.id === id);
+    if (idx < 0) return;
+    const entry = Object.assign({}, archive[idx]);
+    entry.reactions = Object.assign({}, entry.reactions || {});
+    if (entry.reactions[section] === reaction) {
+      delete entry.reactions[section];
+    } else {
+      entry.reactions[section] = reaction;
+    }
+    archive[idx] = entry;
+    store.set('deepAnalyses', archive);
+  }
+
+  toggleBookmark(id, section) {
+    if (!id || !section) return;
+    const archive = (store.get('deepAnalyses') || []).slice();
+    const idx = archive.findIndex(a => a && a.id === id);
+    if (idx < 0) return;
+    const entry = Object.assign({}, archive[idx]);
+    entry.bookmarks = Object.assign({}, entry.bookmarks || {});
+    if (entry.bookmarks[section]) {
+      delete entry.bookmarks[section];
+    } else {
+      entry.bookmarks[section] = true;
+    }
+    archive[idx] = entry;
+    store.set('deepAnalyses', archive);
+  }
+
+  async runDeepAnalysis() {
+    // The richer streaming version lives in index.html (uses
+    // callClaudeStream + token-by-token paint). This module-level
+    // fallback runs the same prompt via the standard non-streaming
+    // aiEngine.callModel so the handler never throws even if the
+    // inline patch failed to apply. Stores the result into deepAnalyses
+    // so the archive UI picks it up.
+    const entries = store.get('textEntries') || [];
+    const last = entries.length ? entries[entries.length - 1] : null;
+    if (!last || !last.content) {
+      try { Components.showToast('分析対象の記録が見つかりません。先に記録を送信してください。', 'info'); } catch (_) {}
+      return;
+    }
+    store.set('isDeepAnalyzing', true);
+    store.set('latestFeedbackError', null);
+    try {
+      const recent = entries.slice(-5).map((e, i) =>
+        `${i + 1}. ${new Date(e.timestamp).toLocaleDateString('ja-JP')} [${e.category || ''}] ${String(e.content || '').substring(0, 300)}`
+      ).join('\n');
+      const userText = `[${last.category || 'symptoms'}] ${last.content}\n\n【直近の記録（最大5件）】\n${recent}`;
+      const sysPrompt = '慢性疾患患者の日記を分析して JSON で返してください。キー: summary (要約), findings (所見), actions (行動配列), new_approach (新しいアプローチ), trend (傾向), next_check (次に確認すること)。前置きなしで JSON のみ。';
+      const response = await aiEngine.callModel(store.get('selectedModel'), userText, {
+        maxTokens: 2500,
+        temperature: 0.3,
+        globalTimeoutMs: 90000,
+        systemPrompt: sysPrompt
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+      let parsed = null;
+      try { parsed = this.parseAIResponse(text); } catch (_) {}
+      const analysis = {
+        id: this.generateId ? this.generateId() : (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+        timestamp: new Date().toISOString(),
+        type: 'text_analysis',
+        parsed: parsed || { summary: '深い分析結果', findings: text },
+        _raw: text,
+        _fromAPI: true,
+        _deepAnalysis: true,
+        sourceContent: last.content
+      };
+      const archive = (store.get('deepAnalyses') || []).slice();
+      archive.push(analysis);
+      store.set('deepAnalyses', archive);
+      store.set('latestFeedback', Object.assign({}, parsed || { findings: text }, { _deepAnalysis: true }));
+      const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+      store.set('deepAnalysisLastRun', todayJst);
+    } catch (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err);
+      store.set('latestFeedbackError', '深い分析に失敗しました: ' + msg);
+    } finally {
+      store.set('isDeepAnalyzing', false);
+    }
+  }
+
+  guestSampleSubmit() {
+    let firstId = 'default';
+    try {
+      const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+      if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
+        firstId = selectedTags[0].dataset.id;
+      }
+    } catch (_) { /* DOM not ready — fall through to default pool */ }
+    const samples = (typeof CONFIG !== 'undefined' && CONFIG.GUEST_SAMPLES) || {};
+    const pool = samples[firstId] || samples['default'] || [];
+    if (!pool.length) {
+      try { Components.showToast('サンプルがまだ読み込まれていません。少し待ってからお試しください。', 'info'); } catch (_) {}
+      return;
+    }
+    const text = pool[Math.floor(Math.random() * pool.length)] || '';
+    const input = document.getElementById('guest-input');
+    if (input) {
+      input.value = text;
+      try { input.focus(); } catch (_) {}
+    }
+    if (typeof this.guestAnalyze === 'function') {
+      this.guestAnalyze();
+    }
+  }
+
+  guestSampleReport() {
+    let diseaseId = 'mecfs';
+    try {
+      const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+      if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
+        diseaseId = selectedTags[0].dataset.id;
+      }
+    } catch (_) {}
+    const reportData = (typeof CONFIG !== 'undefined' && CONFIG.GUEST_REPORT_DATA) || {};
+    const sample = reportData[diseaseId] || reportData.mecfs;
+    const resultEl = document.getElementById('guest-result');
+    if (!resultEl) return;
+    if (!sample) {
+      resultEl.innerHTML = '<div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#991b1b;font-size:12px">サンプルレポートデータがまだ読み込まれていません。ページを再読み込みしてからお試しください。</div>';
+      return;
+    }
+
+    const diseases = (sample.diseases || []).join('、');
+    const profile = sample.profile || {};
+    const entries = sample.textEntries || [];
+    const symptoms = sample.symptoms || [];
+    const meds = sample.medications || [];
+    const blood = sample.bloodTests || [];
+
+    const entryRows = entries.slice(-6).map(e => {
+      const d = new Date(e.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+      return `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-size:11px;color:#64748b;white-space:nowrap">${d}</td><td style="padding:6px 8px;font-size:12px;color:#1e293b">${Components.escapeHtml(e.content || '')}</td></tr>`;
+    }).join('');
+
+    const latestSymptom = symptoms[symptoms.length - 1] || {};
+    const firstSymptom = symptoms[0] || {};
+    const fatigueDelta = latestSymptom.fatigue_level && firstSymptom.fatigue_level
+      ? firstSymptom.fatigue_level - latestSymptom.fatigue_level : 0;
+    const trendText = fatigueDelta > 0 ? `疲労度 ${fatigueDelta} ポイント改善`
+      : fatigueDelta < 0 ? `疲労度 ${-fatigueDelta} ポイント悪化` : '安定';
+
+    const medRows = meds.map(m =>
+      `<li style="font-size:11px;color:#1e293b;margin-bottom:2px">${Components.escapeHtml(m.name || '')}${m.notes ? ' — ' + Components.escapeHtml(m.notes) : ''}</li>`
+    ).join('');
+
+    const bloodRows = blood.map(b =>
+      `<div style="font-size:11px;color:#1e293b;margin-bottom:4px"><span style="font-weight:600">${Components.escapeHtml(b.name || '')}</span>: ${Components.escapeHtml(b.findings || '')}</div>`
+    ).join('');
+
+    resultEl.innerHTML = `
+      <div style="margin-top:12px;padding:16px;background:#fff;border:2px solid #0891b2;border-radius:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:#155e75">🏥 医師提出用レポート（サンプル）</div>
+          <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:2px 8px">架空のサンプルデータ</span>
+        </div>
+        <div style="font-size:12px;color:#0e7490;margin-bottom:12px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          対象疾患: <strong>${Components.escapeHtml(diseases)}</strong> ／
+          ${profile.age ? Components.escapeHtml(String(profile.age)) + '歳 ' : ''}${profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : ''}
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📊 症状推移サマリー</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:12px;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          期間: ${symptoms.length > 0 ? new Date(symptoms[0].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) + ' 〜 ' + new Date(symptoms[symptoms.length-1].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) : '記録なし'} ／
+          ${trendText}
+        </div>
+        ${meds.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">💊 服薬記録</div><ul style="margin:0 0 12px;padding-left:16px">${medRows}</ul>` : ''}
+        ${blood.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">🩸 検査結果</div><div style="margin-bottom:12px">${bloodRows}</div>` : ''}
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📝 日記ハイライト（直近 6 件）</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+          <tbody>${entryRows}</tbody>
+        </table>
+        <div style="padding:12px;background:linear-gradient(135deg,#eef2ff,#fdf4ff);border-radius:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:4px">あなた自身のデータでこのレポートを作成できます</div>
+          <div style="font-size:11px;color:#4338ca;margin-bottom:10px">記録を続けると 90 日分の症状・服薬・検査結果を医師に説明しやすい形にまとめます</div>
+          <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})"
+            style="padding:10px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+            無料で登録して使ってみる
+          </button>
+        </div>
+      </div>`;
+  }
+
+  async generateDoctorReport() {
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const medications = store.get('medications') || [];
+    const bloodTests = store.get('bloodTests') || [];
+    const profile = store.get('userProfile') || {};
+    const selectedDiseases = store.get('selectedDiseases') || [];
+
+    if (textEntries.length + symptoms.length < 3) {
+      try { Components.showToast('レポートを作成するには 3 件以上の記録が必要です', 'info'); } catch (_) {}
+      return;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    if (!overlay || !body) {
+      try { Components.showToast('モーダルを表示できません。ページを再読み込みしてください。', 'error'); } catch (_) {}
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '🏥 医師提出用レポートを作成中…';
+    body.innerHTML = Components.loading('過去の記録を整理しています...', { subtext: '90 日分のデータから医師向けサマリーを生成します（30〜60 秒）' });
+    overlay.classList.add('active');
+
+    let diseases = '未設定';
+    try {
+      diseases = selectedDiseases.map(id => {
+        for (const cat of (CONFIG.DISEASE_CATEGORIES || [])) {
+          const d = (cat.diseases || []).find(x => x.id === id);
+          if (d) return d.name;
+        }
+        return id;
+      }).join('、') || '未設定';
+    } catch (_) {}
+
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+    const recentEntries = textEntries.filter(e => e && e.timestamp >= cutoff).slice(-30);
+    const recentSymptoms = symptoms.filter(s => s && s.timestamp >= cutoff).slice(-30);
+    const recentMeds = medications.filter(m => m && m.timestamp >= cutoff).slice(-10);
+    const recentBlood = bloodTests.filter(b => b && b.timestamp >= cutoff).slice(-5);
+
+    const entryText = recentEntries.map(e =>
+      `${String(e.timestamp).substring(0,10)} [${e.category||'diary'}] ${e.content||''}`
+    ).join('\n');
+    const symptomText = recentSymptoms.map(s =>
+      `${String(s.timestamp).substring(0,10)} 疲労:${s.fatigue_level??'-'} 痛み:${s.pain_level??'-'} 脳霧:${s.brain_fog??'-'} 睡眠:${s.sleep_quality??'-'}`
+    ).join('\n');
+    const medText = recentMeds.map(m => `${m.name||''} ${m.dose||''} ${m.notes||''}`.trim()).join('、');
+    const bloodText = recentBlood.map(b => `${b.name||''}: ${b.findings||''}`).join('；');
+
+    const profileSummary = [
+      profile.age ? profile.age + '歳' : '',
+      profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : '',
+      profile.height ? profile.height + 'cm' : '',
+      profile.weight ? profile.weight + 'kg' : ''
+    ].filter(Boolean).join('、');
+
+    const lang = profile.language || 'ja';
+    const langDir = (typeof aiEngine !== 'undefined' && aiEngine._languageDirectiveFor)
+      ? aiEngine._languageDirectiveFor(lang) : '';
+
+    const prompt = `${langDir}
+あなたは慢性疾患患者が医師に提出する診察レポートを作成するアシスタントです。
+以下のデータから、受診時に医師に手渡せる形式のレポートを生成してください。
+
+【患者基本情報】
+${profileSummary}
+対象疾患: ${diseases}
+
+【過去 90 日の日記（最大 30 件）】
+${entryText || '記録なし'}
+
+【症状スコア推移】
+${symptomText || '記録なし'}
+
+【服薬記録】
+${medText || '記録なし'}
+
+【検査結果】
+${bloodText || '記録なし'}
+
+【出力形式】
+以下の見出しを使った日本語の医師向けレポートを作成してください:
+1. 主訴・経過サマリー（200〜300文字）
+2. 症状の推移と傾向（箇条書き）
+3. 服薬・治療内容
+4. 検査結果ハイライト（あれば）
+5. 医師への質問・確認事項（患者が聞きたいこと 3〜5 点）
+6. 生活への影響度（就労・日常活動への影響）
+
+レポートは医師が 3 分で読める簡潔な形式にしてください。`;
+
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, {
+        maxTokens: 2000,
+        temperature: 0.3,
+        globalTimeoutMs: 60000
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+
+      body.innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:12px">🏥 医師提出用レポート</div>
+        <div style="font-size:11px;color:#0891b2;margin-bottom:14px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          期間: 過去 90 日 ／ 対象: ${Components.escapeHtml(diseases)} ／ ${profileSummary ? Components.escapeHtml(profileSummary) : ''}
+        </div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1e293b;max-height:60vh;overflow-y:auto;padding:4px">${Components.escapeHtml(text)}</div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1" onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>Components.showToast('レポートをクリップボードにコピーしました','success'))">📋 コピーして印刷</button>
+          <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+        </div>`;
+    } catch (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err);
+      body.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">レポートの生成に失敗しました</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(msg)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="app.generateDoctorReport()">🔄 再試行</button>
+            <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+          </div>
+        </div>`;
+    }
+  }
+
+  // ---- Client cache / SW reset ---------------------------------------
+  // Last-resort recovery for users stuck behind a stale Service Worker
+  // or corrupted localStorage proxy URL. Earlier app builds registered
+  // /sw.js with a cache-first strategy — even after we shipped fixes,
+  // those users kept getting cached pre-fix code on every visit, which
+  // is what produced the "永遠にエラー" feedback. This wipes everything
+  // that could be holding them back and hard-reloads.
+  // -------------------------------------------------------------------
+  async resetClientCacheAndReload() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => { try { return r.unregister(); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => { try { return caches.delete(n); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    // Wipe localStorage entries that can route the AI fetch to a dead
+    // proxy or send a stale key. Keep user data (textEntries etc.) so
+    // the user doesn't lose what they wrote.
+    try {
+      ['anthropic_proxy_url', 'apikey_anthropic', 'apikey_openai', 'apikey_google',
+       'sw_purged_v1', 'dismissed_inapp_banner']
+        .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+    } catch (_) {}
+    // Hard reload, bypass HTTP cache.
+    try { location.reload(); } catch (_) { window.location.href = window.location.href; }
+  }
+
+  // ---- User content edit / delete -----------------------------------
+  // Lets the user freely modify or remove anything they wrote / uploaded
+  // (text entries, photos, file uploads). Each entry carries a stable
+  // id, so we look up by that and rewrite the whole textEntries array.
+  // Cleans up linked aiComments and photos so deleted records don't
+  // leave orphan references behind. Re-render is automatic via the
+  // store listener on textEntries (scheduleDashRefresh).
+  // -------------------------------------------------------------------
+  deleteTextEntry(id) {
+    if (!id) return;
+    const entries = store.get('textEntries') || [];
+    const target = entries.find(e => e && e.id === id);
+    const next = entries.filter(e => !e || e.id !== id);
+    store.set('textEntries', next);
+
+    // Remove linked AI comment so it doesn't appear without an entry
+    const comments = store.get('aiComments') || {};
+    if (comments[id]) {
+      delete comments[id];
+      store.set('aiComments', comments);
+    }
+
+    // If this was a photo / file upload, also remove the photo blob
+    if (target && target.photoId) {
+      const photos = store.get('photos') || [];
+      const remainingPhotos = photos.filter(p => p && p.id !== target.photoId);
+      if (remainingPhotos.length !== photos.length) {
+        store.set('photos', remainingPhotos);
+      }
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Switches the rendered entry card into an inline edit form.
+  // Avoids a full re-render so the user keeps their scroll position
+  // and any unrelated state. Save / cancel restore the normal view.
+  beginEditTextEntry(id) {
+    const card = document.querySelector(`[data-entry-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    const entries = store.get('textEntries') || [];
+    const entry = entries.find(e => e && e.id === id);
+    if (!entry) return;
+    const safeContent = (entry.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeTitle = (entry.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    card.dataset.editing = '1';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text-muted)">編集中</span>
+      </div>
+      <input type="text" id="edit-title-${id}" value="${safeTitle}" placeholder="タイトル（任意）"
+        style="width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;box-sizing:border-box">
+      <textarea id="edit-content-${id}" rows="4"
+        style="width:100%;padding:8px;font-size:13px;line-height:1.6;border:1px solid var(--border);border-radius:6px;resize:vertical;box-sizing:border-box;font-family:inherit">${safeContent}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+        <button onclick="app.cancelEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;cursor:pointer">キャンセル</button>
+        <button onclick="app.saveEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">保存</button>
+      </div>`;
+    const ta = document.getElementById(`edit-content-${id}`);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+
+  saveEditTextEntry(id) {
+    const titleEl = document.getElementById(`edit-title-${id}`);
+    const contentEl = document.getElementById(`edit-content-${id}`);
+    if (!contentEl) return;
+    const newContent = contentEl.value.trim();
+    if (!newContent) {
+      Components.showToast('内容を入力してください', 'error');
+      return;
+    }
+    const newTitle = titleEl ? titleEl.value.trim() : '';
+    const entries = store.get('textEntries') || [];
+    const next = entries.map(e => {
+      if (!e || e.id !== id) return e;
+      return Object.assign({}, e, {
+        content: newContent,
+        title: newTitle || e.title || '',
+        editedAt: new Date().toISOString()
+      });
+    });
+    store.set('textEntries', next);
+    Components.showToast('編集を保存しました', 'success');
+  }
+
+  cancelEditTextEntry(_id) {
+    // Easiest path back to the read-only view: trigger a re-render via
+    // the same store listener everything else uses. Setting textEntries
+    // to its current value still fires the listener.
+    const entries = store.get('textEntries') || [];
+    store.set('textEntries', entries.slice());
   }
 
   // One-shot purge of aiComments entries matching the old demo
