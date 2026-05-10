@@ -5346,10 +5346,97 @@ ${axisHint}
       `;
     } catch (err) {
       console.error('[loadUsersDashboard]', err);
-      const msg = err?.code === 'permission-denied'
-        ? 'Firestore が拒否しました。firestore.rules を最新版にデプロイしてください。'
-        : `読み込みエラー: ${err.message || err}`;
-      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;color:var(--danger,#dc2626);font-size:13px">${Components.escapeHtml(msg)}</div></div>`;
+      if (err?.code === 'permission-denied') {
+        container.innerHTML = this._renderFirestoreRulesHelp();
+        this._wireFirestoreRulesHelp();
+      } else {
+        const msg = `読み込みエラー: ${err.message || err}`;
+        container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;color:var(--danger,#dc2626);font-size:13px">${Components.escapeHtml(msg)}</div></div>`;
+      }
+    }
+  }
+
+  // Render an actionable error card when Firestore rules are out of
+  // date. Shows a copy-to-clipboard button + a direct link to the
+  // Firebase Console rules editor so the admin can paste-and-publish
+  // in ~30 seconds without leaving the phone.
+  _renderFirestoreRulesHelp() {
+    const consoleUrl = 'https://console.firebase.google.com/project/care-14c31/firestore/rules';
+    return `
+      <div class="card" style="border:1px solid var(--danger,#dc2626)">
+        <div class="card-header">
+          <span class="card-title" style="color:var(--danger,#dc2626)">⚠️ Firestore ルールの更新が必要です</span>
+        </div>
+        <div class="card-body" style="font-size:13px;line-height:1.7">
+          <p style="margin:0 0 12px">
+            ユーザー一覧を取得できません。<br>
+            最新の <code>firestore.rules</code> がまだ Firebase に反映されていないためです。
+          </p>
+          <div style="background:var(--bg-tertiary);padding:12px;border-radius:8px;margin:12px 0">
+            <div style="font-weight:600;margin-bottom:8px">📋 30 秒で完了する手順</div>
+            <ol style="margin:0;padding-left:20px">
+              <li style="margin-bottom:6px">下の「<strong>ルールをコピー</strong>」を押す</li>
+              <li style="margin-bottom:6px">「<strong>Firebase Console を開く</strong>」を押す（新しいタブ）</li>
+              <li style="margin-bottom:6px">エディタの中身を全選択 → 削除 → 貼り付け</li>
+              <li>右上の「<strong>公開</strong>」ボタンを押す</li>
+            </ol>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+            <button id="btn-copy-fs-rules" class="btn btn-primary btn-sm" style="font-size:13px">
+              📋 ルールをコピー
+            </button>
+            <a href="${consoleUrl}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:13px;text-decoration:none">
+              🔗 Firebase Console を開く
+            </a>
+            <button class="btn btn-outline btn-sm" style="font-size:13px" onclick="app.loadUsersDashboard()">
+              🔄 再読込
+            </button>
+          </div>
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--text-muted)">ルールのプレビューを表示</summary>
+            <pre id="fs-rules-preview" style="margin:8px 0 0;padding:12px;background:var(--bg-tertiary);border-radius:6px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:300px;overflow-y:auto">読み込み中…</pre>
+          </details>
+          <div id="fs-rules-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);min-height:18px"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  async _wireFirestoreRulesHelp() {
+    const status = document.getElementById('fs-rules-status');
+    const preview = document.getElementById('fs-rules-preview');
+    const btn = document.getElementById('btn-copy-fs-rules');
+    let rulesText = '';
+    try {
+      const res = await fetch('firestore.rules?v=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      rulesText = await res.text();
+      if (preview) preview.textContent = rulesText;
+    } catch (e) {
+      const rawUrl = 'https://raw.githubusercontent.com/agewaller/stock-screener/main/firestore.rules';
+      if (preview) {
+        preview.innerHTML = '取得失敗: ' + Components.escapeHtml(e.message || String(e))
+          + '<br><br>こちらから手動でコピーしてください: <a href="' + rawUrl + '" target="_blank" rel="noopener">' + rawUrl + '</a>';
+      }
+      if (status) status.textContent = 'ルールファイルの取得に失敗しました。上のリンクから手動でコピーしてください。';
+      if (btn) btn.disabled = true;
+      return;
+    }
+    if (btn) {
+      btn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(rulesText);
+          if (status) {
+            status.style.color = 'var(--success,#16a34a)';
+            status.textContent = '✓ コピー完了。Firebase Console を開いて貼り付けてください。';
+          }
+        } catch (e) {
+          if (status) {
+            status.style.color = 'var(--danger,#dc2626)';
+            status.textContent = 'コピーに失敗しました: ' + (e.message || e) + '（プレビューから手動でコピーしてください）';
+          }
+        }
+      };
     }
   }
 
