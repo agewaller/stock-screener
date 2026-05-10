@@ -551,7 +551,7 @@ ${avoidBlock}
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://cares-ai-proxy.agewaller.workers.dev';
+      if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
       url = proxy.replace(/\/+$/, '') + '/v1/messages';
     }
     const headers = {
