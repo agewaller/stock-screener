@@ -5372,26 +5372,46 @@ ${axisHint}
             ユーザー一覧を取得できません。<br>
             最新の <code>firestore.rules</code> がまだ Firebase に反映されていないためです。
           </p>
-          <div style="background:var(--bg-tertiary);padding:12px;border-radius:8px;margin:12px 0">
-            <div style="font-weight:600;margin-bottom:8px">📋 30 秒で完了する手順</div>
-            <ol style="margin:0;padding-left:20px">
-              <li style="margin-bottom:6px">下の「<strong>ルールをコピー</strong>」を押す</li>
-              <li style="margin-bottom:6px">「<strong>Firebase Console を開く</strong>」を押す（新しいタブ）</li>
-              <li style="margin-bottom:6px">エディタの中身を全選択 → 削除 → 貼り付け</li>
-              <li>右上の「<strong>公開</strong>」ボタンを押す</li>
-            </ol>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
-            <button id="btn-copy-fs-rules" class="btn btn-primary btn-sm" style="font-size:13px">
-              📋 ルールをコピー
+
+          <!-- Auto deploy via OAuth (recommended) -->
+          <div style="background:linear-gradient(135deg,#ede9fe 0%,#dbeafe 100%);padding:14px;border-radius:8px;margin:12px 0;border:1px solid #c4b5fd">
+            <div style="font-weight:600;margin-bottom:6px;color:#5b21b6">🚀 自動デプロイ（推奨・1 タップ）</div>
+            <div style="font-size:12px;color:#4c1d95;margin-bottom:10px;line-height:1.6">
+              Google で再認証して、ブラウザから直接 Firebase にルールを反映します。<br>
+              （プロジェクト所有者の Google アカウントが必要です）
+            </div>
+            <button id="btn-auto-deploy-rules" class="btn btn-primary btn-sm" style="font-size:13px;background:#7c3aed;border-color:#7c3aed">
+              🚀 Google で認証してデプロイ
             </button>
-            <a href="${consoleUrl}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:13px;text-decoration:none">
-              🔗 Firebase Console を開く
-            </a>
+          </div>
+
+          <!-- Manual fallback -->
+          <details style="margin:12px 0">
+            <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">📋 手動デプロイ（自動が使えない場合）</summary>
+            <div style="background:var(--bg-tertiary);padding:12px;border-radius:8px;margin:8px 0">
+              <ol style="margin:0;padding-left:20px;font-size:12px">
+                <li style="margin-bottom:6px">下の「<strong>ルールをコピー</strong>」を押す</li>
+                <li style="margin-bottom:6px">「<strong>Firebase Console を開く</strong>」を押す（新しいタブ）</li>
+                <li style="margin-bottom:6px">エディタの中身を全選択 → 削除 → 貼り付け</li>
+                <li>右上の「<strong>公開</strong>」ボタンを押す</li>
+              </ol>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <button id="btn-copy-fs-rules" class="btn btn-outline btn-sm" style="font-size:12px">
+                📋 ルールをコピー
+              </button>
+              <a href="${consoleUrl}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:12px;text-decoration:none">
+                🔗 Firebase Console を開く
+              </a>
+            </div>
+          </details>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
             <button class="btn btn-outline btn-sm" style="font-size:13px" onclick="app.loadUsersDashboard()">
               🔄 再読込
             </button>
           </div>
+
           <details style="margin-top:12px">
             <summary style="cursor:pointer;font-size:12px;color:var(--text-muted)">ルールのプレビューを表示</summary>
             <pre id="fs-rules-preview" style="margin:8px 0 0;padding:12px;background:var(--bg-tertiary);border-radius:6px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:300px;overflow-y:auto">読み込み中…</pre>
@@ -5405,7 +5425,8 @@ ${axisHint}
   async _wireFirestoreRulesHelp() {
     const status = document.getElementById('fs-rules-status');
     const preview = document.getElementById('fs-rules-preview');
-    const btn = document.getElementById('btn-copy-fs-rules');
+    const copyBtn = document.getElementById('btn-copy-fs-rules');
+    const autoBtn = document.getElementById('btn-auto-deploy-rules');
     let rulesText = '';
     try {
       const res = await fetch('firestore.rules?v=' + Date.now(), { cache: 'no-store' });
@@ -5419,11 +5440,12 @@ ${axisHint}
           + '<br><br>こちらから手動でコピーしてください: <a href="' + rawUrl + '" target="_blank" rel="noopener">' + rawUrl + '</a>';
       }
       if (status) status.textContent = 'ルールファイルの取得に失敗しました。上のリンクから手動でコピーしてください。';
-      if (btn) btn.disabled = true;
+      if (copyBtn) copyBtn.disabled = true;
+      if (autoBtn) autoBtn.disabled = true;
       return;
     }
-    if (btn) {
-      btn.onclick = async () => {
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
         try {
           await navigator.clipboard.writeText(rulesText);
           if (status) {
@@ -5437,6 +5459,131 @@ ${axisHint}
           }
         }
       };
+    }
+    if (autoBtn) {
+      autoBtn.onclick = () => this._autoDeployFirestoreRules(rulesText);
+    }
+  }
+
+  // OAuth-flow deploy: re-authenticate the admin with an extra Google
+  // scope (https://www.googleapis.com/auth/firebase) to get an access
+  // token that can call the Firebase Rules REST API directly from the
+  // browser. No service account, no GitHub secret, no firebase-tools
+  // — works entirely from the phone.
+  async _autoDeployFirestoreRules(rulesText) {
+    const status = document.getElementById('fs-rules-status');
+    const btn = document.getElementById('btn-auto-deploy-rules');
+    const setStatus = (color, msg) => {
+      if (status) {
+        status.style.color = color;
+        status.innerHTML = msg;
+      }
+    };
+    if (!rulesText) {
+      setStatus('var(--danger,#dc2626)', 'ルールが取得できていません。ページを再読込してください。');
+      return;
+    }
+    if (!window.firebase || !FirebaseBackend?.auth) {
+      setStatus('var(--danger,#dc2626)', 'Firebase が初期化されていません。');
+      return;
+    }
+    const origLabel = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 認証中…'; }
+    try {
+      // Step 1: get OAuth access token with firebase scope
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/firebase');
+      provider.setCustomParameters({ prompt: 'consent', include_granted_scopes: 'true' });
+      const extractToken = (res) => {
+        try {
+          const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(res);
+          if (cred?.accessToken) return cred.accessToken;
+        } catch (_) {}
+        return res?._tokenResponse?.oauthAccessToken || res?.credential?.accessToken || null;
+      };
+      const currentUser = FirebaseBackend.auth.currentUser;
+      if (!currentUser) {
+        throw new Error('ログイン情報が取得できません。一度ログアウトして Google で再ログインしてください。');
+      }
+      const hasGoogle = Array.isArray(currentUser.providerData)
+        && currentUser.providerData.some(p => p.providerId === 'google.com');
+      let accessToken = null;
+      try {
+        const r = hasGoogle
+          ? await currentUser.reauthenticateWithPopup(provider)
+          : await currentUser.linkWithPopup(provider);
+        accessToken = extractToken(r);
+      } catch (e) {
+        if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-blocked') throw e;
+        throw new Error('Google 認証に失敗しました: ' + (e?.message || e?.code || String(e)));
+      }
+      if (!accessToken) throw new Error('Google からアクセストークンを取得できませんでした。Google アカウントで再ログインしてからお試しください。');
+
+      // Step 2: create a new ruleset
+      if (btn) btn.innerHTML = '⏳ ルールをアップロード中…';
+      const projectId = firebase.app?.()?.options?.projectId || 'care-14c31';
+      const rulesetRes = await fetch(
+        `https://firebaserules.googleapis.com/v1/projects/${projectId}/rulesets`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            source: { files: [{ name: 'firestore.rules', content: rulesText }] }
+          })
+        }
+      );
+      if (!rulesetRes.ok) {
+        const txt = await rulesetRes.text();
+        throw new Error('ルール作成失敗 (HTTP ' + rulesetRes.status + '): ' + txt.slice(0, 500));
+      }
+      const ruleset = await rulesetRes.json();
+      if (!ruleset?.name) throw new Error('ルール作成のレスポンスが不正: ' + JSON.stringify(ruleset).slice(0, 300));
+
+      // Step 3: point the cloud.firestore release at the new ruleset
+      if (btn) btn.innerHTML = '⏳ 公開中…';
+      const releaseRes = await fetch(
+        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=release.rulesetName`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            release: {
+              name: `projects/${projectId}/releases/cloud.firestore`,
+              rulesetName: ruleset.name
+            }
+          })
+        }
+      );
+      if (!releaseRes.ok) {
+        const txt = await releaseRes.text();
+        throw new Error('公開失敗 (HTTP ' + releaseRes.status + '): ' + txt.slice(0, 500));
+      }
+      setStatus('var(--success,#16a34a)', '✓ デプロイ成功。3 秒後に再読込します…');
+      Components.showToast?.('Firestore ルールを公開しました', 'success');
+      setTimeout(() => this.loadUsersDashboard(), 3000);
+    } catch (err) {
+      console.error('[autoDeployRules]', err);
+      let msg = err?.message || String(err);
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        msg = 'キャンセルされました';
+      } else if (err?.code === 'auth/popup-blocked') {
+        msg = 'ポップアップがブロックされました。ブラウザ設定でこのサイトのポップアップを許可してください。';
+      } else if (msg.includes('PERMISSION_DENIED') || msg.includes('403')) {
+        msg = '権限不足: このアカウントは Firebase プロジェクトのオーナー / 編集者ではありません。<br>'
+            + '<code>care-14c31</code> プロジェクトの所有者アカウントで再ログインしてください。';
+      } else if (msg.includes('SERVICE_DISABLED') || msg.includes('has not been used')) {
+        msg = 'Firebase Rules API が有効化されていません。<br>'
+            + '<a href="https://console.developers.google.com/apis/api/firebaserules.googleapis.com/overview?project=care-14c31" target="_blank" rel="noopener">こちらから API を有効化</a>してから再度お試しください。';
+      }
+      setStatus('var(--danger,#dc2626)', '✗ ' + msg);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = origLabel; }
     }
   }
 
