@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cares-relay",
+  "main": "worker/relay.js",
+  "compatibility_date": "2026-04-06",
+  "observability": {
+    "enabled": true
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  // Service binding: cares-relay → stock-screener (internal call,
+  // bypasses Cloudflare Access protecting stock-screener's public URL).
+  "services": [
+    { "binding": "PROXY", "service": "stock-screener" }
+  ]
+}
