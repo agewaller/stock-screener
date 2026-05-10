@@ -2090,20 +2090,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=25"></script>
-<script src="js/config.js?v=25"></script>
-<script src="js/prompts.js?v=25"></script>
-<script src="js/store.js?v=25"></script>
-<script src="js/privacy.js?v=25"></script>
-<script src="js/ai-engine.js?v=25"></script>
-<script src="js/affiliate.js?v=25"></script>
-<script src="js/components.js?v=25"></script>
-<script src="js/i18n.js?v=25"></script>
-<script src="js/calendar.js?v=25"></script>
-<script src="js/integrations.js?v=25"></script>
-<script src="js/firebase-backend.js?v=25"></script>
-<script src="js/app.js?v=25"></script>
-<script src="js/pages.js?v=25"></script>
+<script src="js/idb.js?v=26"></script>
+<script src="js/config.js?v=26"></script>
+<script src="js/prompts.js?v=26"></script>
+<script src="js/store.js?v=26"></script>
+<script src="js/privacy.js?v=26"></script>
+<script src="js/ai-engine.js?v=26"></script>
+<script src="js/affiliate.js?v=26"></script>
+<script src="js/components.js?v=26"></script>
+<script src="js/i18n.js?v=26"></script>
+<script src="js/calendar.js?v=26"></script>
+<script src="js/integrations.js?v=26"></script>
+<script src="js/firebase-backend.js?v=26"></script>
+<script src="js/app.js?v=26"></script>
+<script src="js/pages.js?v=26"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2111,23 +2111,23 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 // a 404 from the Anthropic endpoint. The system prompt is built by the
 // caller so we can inject the user's selected-disease context.
 //
-// Routing policy: ALL users — guest, registered, even users who set
-// their own personal Anthropic key — go through the Cloudflare Worker
-// proxy. Reasons:
-//   1. The Worker holds the admin's env.ANTHROPIC_API_KEY so first-
-//      time visitors NEVER see a "key not configured" error.
-//   2. Per-user direct api.anthropic.com calls hit CORS / preflight
-//      issues in iOS Safari and every in-app browser (Yahoo, LINE,
-//      FB, etc.), surfacing as "Load failed" with no recovery.
-//   3. Centralizing through Worker lets us inject server-side
-//      system prompts and rate-limit at one place.
-// The Worker URL is hardcoded — we deliberately ignore any
-// `anthropic_proxy_url` previously written to localStorage by older
-// builds, because admin sync had been writing stale / typo'd URLs
-// that left users permanently unable to reach the Worker.
+// Routing policy: when the client has a key (admin's shared Anthropic
+// key synced from Firestore admin/secrets, or a user's own key from
+// the admin panel), call api.anthropic.com DIRECTLY with that key —
+// this matches the long-standing pre-PR-#31 behavior that the user
+// base depended on. When no key is available (true guest with no
+// admin/secrets sync yet), fall through to the Cloudflare Worker
+// proxy at workers.dev which uses env.ANTHROPIC_API_KEY.
+//
+// Why we reverted "ALL users via Worker": forcing every user through
+// the Worker breaks everyone if env.ANTHROPIC_API_KEY isn't set on
+// Cloudflare. Users who previously had keys synced from Firestore
+// were working fine on the direct path — pulling that out broke them
+// the moment PR #31 deployed.
+var ANTHROPIC_DIRECT_URL = 'https://api.anthropic.com/v1/messages';
 var ANTHROPIC_PROXY_URL = 'https://stock-screener.agewaller.workers.dev/v1/messages';
-function getAnthropicEndpoint(_hasKey) {
-  return ANTHROPIC_PROXY_URL;
+function getAnthropicEndpoint(hasKey) {
+  return hasKey ? ANTHROPIC_DIRECT_URL : ANTHROPIC_PROXY_URL;
 }
 function callClaude(text, apiKey, model, systemPrompt) {
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
@@ -2140,14 +2140,18 @@ function callClaude(text, apiKey, model, systemPrompt) {
   var sys = systemPrompt || defaultSys;
   var ctrl = ('AbortController' in window) ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
-  // No x-api-key from the client. The Worker always uses its
-  // env.ANTHROPIC_API_KEY so every user — first-time visitor,
-  // guest, registered without a personal key, registered WITH a
-  // personal key — gets the same admin-funded path. cleanKey kept
-  // local in case future caller flows need it for diagnostics.
-  void cleanKey;
+  // When we have a client key (admin/secrets-synced), hit Anthropic
+  // directly with x-api-key + the dangerous-direct-browser-access
+  // header that Anthropic requires for browser CORS. Otherwise route
+  // to the Worker which uses env.ANTHROPIC_API_KEY. This restores
+  // the pre-PR-#31 behavior — forcing every user through the Worker
+  // broke everyone when env API key wasn't set on Cloudflare.
   var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-  return fetch(getAnthropicEndpoint(false), {
+  if (cleanKey) {
+    headers['x-api-key'] = cleanKey;
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  return fetch(getAnthropicEndpoint(!!cleanKey), {
     method: 'POST',
     headers: headers,
     body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: sys, messages: [{ role: 'user', content: text }] }),
@@ -2206,17 +2210,16 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   var cleanKey = String(apiKey || '').trim();
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var controller = new AbortController();
-  // Same routing policy as the non-streaming callClaude: ALL users
-  // go through the Worker proxy so the admin's env.ANTHROPIC_API_KEY
-  // serves every request. No client-side x-api-key — even users who
-  // set their own key get routed through the shared Worker so they
-  // never see "key not configured" errors. Worker passthrough
-  // preserves SSE chunks when stream:true is set.
-  void cleanKey;
+  // Same routing policy as non-streaming callClaude: direct to
+  // api.anthropic.com when we have a key, Worker fallback when not.
   var streamHeaders = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+  if (cleanKey) {
+    streamHeaders['x-api-key'] = cleanKey;
+    streamHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
   var resp;
   try {
-    resp = await fetch(getAnthropicEndpoint(false), {
+    resp = await fetch(getAnthropicEndpoint(!!cleanKey), {
       method: 'POST',
       headers: streamHeaders,
       body: JSON.stringify({
@@ -2828,15 +2831,17 @@ window.addEventListener('load', function() {
     var stallTimer = null;
     var lastByteAt = Date.now();
     try {
-      // Route through the Worker proxy so the admin's env API key is
-      // used for every user (no per-user direct-Anthropic calls).
-      void key;
-      var resp = await fetch(getAnthropicEndpoint(false), {
+      // Direct to Anthropic when we have a client key (admin/secrets
+      // sync), Worker proxy otherwise. Mirrors callClaude routing.
+      var hasKey = !!(key && String(key).trim());
+      var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+      if (hasKey) {
+        headers['x-api-key'] = String(key).trim();
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+      var resp = await fetch(getAnthropicEndpoint(hasKey), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        },
+        headers: headers,
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 4000,
@@ -3155,7 +3160,8 @@ window.addEventListener('load', function() {
       return;
     }
 
-    // Authenticated-user path: direct-to-Anthropic with streaming paint.
+    // Authenticated-user path: direct-to-Anthropic with streaming paint
+    // when the client holds a key, Worker proxy otherwise.
     var controller = new AbortController();
     var lastByteAt = Date.now();
     var stallTimer = setInterval(function () {
@@ -3163,15 +3169,15 @@ window.addEventListener('load', function() {
     }, 5000);
     var fullText = '';
     try {
-      // Route through the Worker proxy so the admin's env API key is
-      // used for every user (no per-user direct-Anthropic calls).
-      void key;
-      var resp2 = await fetch(getAnthropicEndpoint(false), {
+      var hasKey2 = !!(key && String(key).trim());
+      var headers2 = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
+      if (hasKey2) {
+        headers2['x-api-key'] = String(key).trim();
+        headers2['anthropic-dangerous-direct-browser-access'] = 'true';
+      }
+      var resp2 = await fetch(getAnthropicEndpoint(hasKey2), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01'
-        },
+        headers: headers2,
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 3500, system: sys,
           messages: [{ role: 'user', content: userMsg }], stream: true
@@ -3252,6 +3258,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=25"></script>
+<script defer src="js/inapp-browser-banner.js?v=26"></script>
 </body>
 </html>
