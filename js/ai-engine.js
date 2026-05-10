@@ -538,19 +538,23 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // ALL users (guest / registered / personal-key holder) route through
-    // the Cloudflare Worker — same policy as the inline callClaude in
-    // index.html. The Worker holds env.ANTHROPIC_API_KEY so first-time
-    // visitors never see a "key not configured" error, and we avoid
-    // CORS / preflight issues that hit api.anthropic.com directly from
-    // iOS Safari and every in-app browser. URL is hardcoded so a stale
-    // localStorage entry can't strand a user pointing at a dead host.
-    void apiKey;
-    const url = 'https://stock-screener.agewaller.workers.dev/v1/messages';
+    // Same routing policy as the inline callClaude in index.html:
+    // direct to api.anthropic.com when the caller has a key (admin's
+    // shared key from Firestore admin/secrets, or a user's own key
+    // from the admin panel), Worker proxy otherwise. Forcing every
+    // user through the Worker — as we tried in PR #31 — broke every
+    // user the moment env.ANTHROPIC_API_KEY wasn't set on Cloudflare.
+    const url = apiKey
+      ? 'https://api.anthropic.com/v1/messages'
+      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
     };
+    if (apiKey) {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    }
 
     // Vision / Documents: when options.imageBase64 or options.pdfBase64
     // is supplied, wrap the prompt and file in a content array per the
