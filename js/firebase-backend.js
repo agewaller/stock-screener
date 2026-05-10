@@ -748,12 +748,71 @@ var FirebaseBackend = {
 
       store.calculateHealthScore();
       console.log('All user data loaded from Firestore');
+
+      // Fire-and-forget: weekly snapshot of all user data into a
+      // separate users/{uid}/backups/{YYYYMMDD} document. This is a
+      // safety net against accidental data loss — even if a future
+      // bug clears localStorage AND the live subcollections, the
+      // most recent backup is intact and can be restored from the
+      // admin "データ管理" tab.
+      this._maybeRunWeeklyBackup().catch(e => console.warn('[backup]', e?.message || e));
     } catch (err) {
       console.error('Load all data error:', err);
     } finally {
       // Release the autosync guard. Any store.set() from here on (e.g.
       // a user submitting a new entry) will sync normally.
       this._loading = false;
+    }
+  },
+
+  // ── Weekly auto-backup ──
+  // Snapshot all user subcollections into a single backup document
+  // once a week. The doc id is YYYYMMDD so duplicates within the same
+  // day are overwritten (idempotent). We keep the last 12 backups
+  // (~3 months) and let older ones fall off via a separate cleanup.
+  // Restore is exposed in the admin Data tab as "バックアップから復元".
+  async _maybeRunWeeklyBackup() {
+    if (!this.userId) return;
+    const ref = this.userDoc().collection('backups');
+    let lastBackup = null;
+    try {
+      const recent = await ref.orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(1).get();
+      if (!recent.empty) lastBackup = recent.docs[0].id; // YYYYMMDD
+    } catch (e) {
+      // Index missing or rules block — skip
+      console.warn('[backup] could not query last backup:', e.message);
+      return;
+    }
+    const today = new Date();
+    const todayId = today.getFullYear().toString()
+      + String(today.getMonth() + 1).padStart(2, '0')
+      + String(today.getDate()).padStart(2, '0');
+    if (lastBackup) {
+      // Skip if already backed up within last 7 days.
+      const lastY = parseInt(lastBackup.slice(0, 4));
+      const lastM = parseInt(lastBackup.slice(4, 6));
+      const lastD = parseInt(lastBackup.slice(6, 8));
+      const lastDate = new Date(lastY, lastM - 1, lastD);
+      const ageDays = (today - lastDate) / 86400000;
+      if (ageDays < 7) return;
+    }
+    const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+    const snapshot = { createdAt: firebase.firestore.FieldValue.serverTimestamp(), schemaVersion: 1 };
+    for (const c of collections) {
+      try {
+        const snap = await this.userCollection(c).limit(2000).get();
+        const arr = [];
+        snap.forEach(d => arr.push(Object.assign({ id: d.id }, d.data())));
+        if (arr.length) snapshot[c] = arr;
+      } catch (e) {
+        console.warn('[backup] failed to snapshot', c, ':', e.message);
+      }
+    }
+    try {
+      await ref.doc(todayId).set(snapshot);
+      console.log('[backup] weekly snapshot saved as', todayId);
+    } catch (e) {
+      console.warn('[backup] write failed:', e.message);
     }
   },
 

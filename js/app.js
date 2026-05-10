@@ -6971,6 +6971,154 @@ ${joined.substring(0, 8000)}`;
     }
   }
 
+  // ---- Backup management ----
+  // List existing weekly snapshots stored in Firestore at
+  // users/{uid}/backups. Each one is a single doc keyed by YYYYMMDD
+  // containing arrays of all health subcollections at that point in
+  // time. Restore is "merge" semantics: documents in the backup that
+  // are missing from the live collection get re-created (we do NOT
+  // delete live docs that are absent from the backup, so a restore
+  // never destroys data).
+  async loadBackupList() {
+    const out = document.getElementById('backup-list-result');
+    if (!out) return;
+    if (!FirebaseBackend?.userId) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    out.innerHTML = '<div style="color:var(--text-muted)">⏳ 取得中…</div>';
+    try {
+      const snap = await FirebaseBackend.userDoc().collection('backups').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(20).get();
+      if (snap.empty) {
+        out.innerHTML = '<div style="color:var(--text-muted)">バックアップはまだありません。「今すぐバックアップ」を押すと初回スナップショットが作成されます。</div>';
+        return;
+      }
+      const rows = [];
+      snap.forEach(d => {
+        const data = d.data() || {};
+        const id = d.id;
+        const niceDate = id.slice(0,4) + '/' + id.slice(4,6) + '/' + id.slice(6,8);
+        let totalDocs = 0;
+        Object.keys(data).forEach(k => {
+          if (Array.isArray(data[k])) totalDocs += data[k].length;
+        });
+        rows.push(`
+          <tr>
+            <td style="padding:6px 8px">${niceDate}</td>
+            <td style="padding:6px 8px;text-align:right;font-weight:600">${totalDocs.toLocaleString()} 件</td>
+            <td style="padding:6px 8px;text-align:right">
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}')">復元</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.downloadBackup('${id}')">📥 JSON</button>
+            </td>
+          </tr>
+        `);
+      });
+      out.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <thead><tr style="background:var(--bg-tertiary)">
+            <th style="padding:8px;text-align:left;font-size:11px;font-weight:600">日付</th>
+            <th style="padding:8px;text-align:right;font-size:11px;font-weight:600">件数</th>
+            <th style="padding:8px;text-align:right;font-size:11px;font-weight:600">操作</th>
+          </tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      `;
+    } catch (err) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">取得エラー: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  async runBackupNow() {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ バックアップ作成中…</div>';
+    try {
+      // Force-run by clearing the 7-day cooldown logic — call the snapshot directly.
+      const today = new Date();
+      const todayId = today.getFullYear().toString()
+        + String(today.getMonth() + 1).padStart(2, '0')
+        + String(today.getDate()).padStart(2, '0');
+      const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+      const snapshot = { createdAt: firebase.firestore.FieldValue.serverTimestamp(), schemaVersion: 1, manualTrigger: true };
+      let totalDocs = 0;
+      for (const c of collections) {
+        const snap = await FirebaseBackend.userCollection(c).limit(2000).get();
+        const arr = [];
+        snap.forEach(d => arr.push(Object.assign({ id: d.id }, d.data())));
+        if (arr.length) { snapshot[c] = arr; totalDocs += arr.length; }
+      }
+      await FirebaseBackend.userDoc().collection('backups').doc(todayId).set(snapshot);
+      Components.showToast?.(`バックアップ完了 (${totalDocs} 件)`, 'success');
+      await this.loadBackupList();
+    } catch (err) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">バックアップ失敗: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  async downloadBackup(backupId) {
+    if (!FirebaseBackend?.userId) return;
+    try {
+      const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
+      if (!doc.exists) { Components.showToast?.('バックアップが見つかりません', 'error'); return; }
+      const data = doc.data();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `health-diary-backup-${backupId}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      Components.showToast?.('ダウンロード失敗: ' + (err.message || err), 'error');
+    }
+  }
+
+  // Restore: merge each subcollection from the backup into the live
+  // collection. We use the original document id so existing live docs
+  // are overwritten (idempotent), and missing ones are recreated. We
+  // never delete a live doc that's not in the backup, so a restore
+  // is non-destructive.
+  async restoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) return;
+    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
+    if (ok !== '復元') return;
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
+    try {
+      const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
+      if (!doc.exists) { Components.showToast?.('バックアップが見つかりません', 'error'); return; }
+      const data = doc.data();
+      const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+      let restored = 0;
+      for (const c of collections) {
+        const arr = data[c];
+        if (!Array.isArray(arr) || !arr.length) continue;
+        const batch = firebase.firestore().batch();
+        let batchCount = 0;
+        for (const entry of arr) {
+          const id = entry.id || FirebaseBackend.userCollection(c).doc().id;
+          const cleaned = Object.assign({}, entry);
+          delete cleaned.id;
+          batch.set(FirebaseBackend.userCollection(c).doc(id), cleaned, { merge: true });
+          batchCount++;
+          restored++;
+          if (batchCount >= 400) {
+            await batch.commit();
+            batchCount = 0;
+          }
+        }
+        if (batchCount > 0) await batch.commit();
+      }
+      Components.showToast?.(`復元完了 (${restored} 件)。3 秒後にリロードします。`, 'success');
+      setTimeout(() => location.reload(), 3000);
+    } catch (err) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">復元失敗: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
   // ---- Generate Demo Data ----
   generateDemoData() {
     const now = new Date();

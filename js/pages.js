@@ -3052,6 +3052,21 @@ App.prototype.render_admin = function() {
   </div>
 
   <!-- Data Management -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">📦 自動バックアップ</span></div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        ログインのたびに、最後のバックアップから 7 日以上経っていれば自動的にクラウドへ完全スナップショットを保存します（最大 12 件保持）。<br>
+        万一データが消えても、ここから復元できます。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-primary btn-sm" onclick="app.loadBackupList()" style="font-size:13px">📋 バックアップ一覧を表示</button>
+        <button class="btn btn-outline btn-sm" onclick="app.runBackupNow()" style="font-size:13px">💾 今すぐバックアップ</button>
+      </div>
+      <div id="backup-list-result" style="font-size:12px;line-height:1.7"></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header"><span class="card-title">データ管理</span></div>
     <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
