@@ -3346,6 +3346,37 @@ ${bloodText || '記録なし'}
     }
   }
 
+  // ---- Manual proxy URL override -------------------------------------
+  // When the hardcoded Worker URL doesn't resolve (e.g. workers.dev
+  // trigger disabled, custom domain used, account subdomain differs)
+  // and admin/config sync hasn't reached the user yet, give them a
+  // way to type the correct URL directly. Stored in localStorage so
+  // it sticks across reloads.
+  // -------------------------------------------------------------------
+  setProxyUrlFromInput() {
+    const input = document.getElementById('proxy-url-override-input');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) {
+      try { Components.showToast('URL を入力してください', 'error'); } catch (_) {}
+      return;
+    }
+    // Strip trailing /v1/messages if user pasted the full path
+    let url = raw.replace(/\/v1\/messages\/?$/, '');
+    // Basic URL sanity check
+    if (!/^https?:\/\//.test(url)) {
+      try { Components.showToast('URL は https:// で始まる必要があります', 'error'); } catch (_) {}
+      return;
+    }
+    try {
+      localStorage.setItem('anthropic_proxy_url', url);
+      try { Components.showToast('Proxy URL を保存しました。リロードします…', 'success'); } catch (_) {}
+      setTimeout(() => location.reload(), 800);
+    } catch (e) {
+      try { Components.showToast('保存に失敗しました: ' + e.message, 'error'); } catch (_) {}
+    }
+  }
+
   // ---- AI connection diagnostic --------------------------------------
   // When users see "接続できませんでした" from the AI proxy and we can't
   // reproduce the failure ourselves (Worker reachable from our side,

@@ -610,11 +610,15 @@ App.prototype.render_dashboard = function() {
       const err = store.get('latestFeedbackError');
       if (err) {
         // Surface escape hatches when the failure is connection-class:
-        //   - サービスをリセット — strips stale SW + cached proxy URL
-        //   - 接続を診断する — runs OPTIONS/GET/POST probes against the
-        //     Worker URL so users can copy back exactly what their
-        //     browser saw (CORS missing, DNS, status code, timing).
+        //   - サービスをリセット — strips stale SW + cached state
+        //   - 接続を診断する — OPTIONS/GET/POST probes against Worker URL
+        //   - 正しい Worker URL を直接入力 — manual override for when
+        //     workers.dev / custom domain isn't what we hardcoded
         const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
+        let currentProxy = '';
+        try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+        if (!currentProxy) currentProxy = 'https://stock-screener.agewaller.workers.dev';
+        const safeProxy = Components.escapeHtml(currentProxy);
         const escapeHatches = isConnFail
           ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
               <button onclick="app.resetClientCacheAndReload()"
@@ -622,6 +626,14 @@ App.prototype.render_dashboard = function() {
               <button onclick="app.diagnoseAiConnection(document.getElementById('dash-ai-diag'))"
                 style="padding:8px 14px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔍 接続を診断する</button>
              </div>
+             <details style="margin-top:10px;font-size:11px">
+               <summary style="cursor:pointer;color:var(--danger);font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>
+               <div style="margin-top:8px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px">
+                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → stock-screener で表示される実際の URL を貼り付けてください。</div>
+                 <input type="text" id="proxy-url-override-input" placeholder="https://stock-screener.xxx.workers.dev" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
+                 <button onclick="app.setProxyUrlFromInput()" style="margin-top:6px;padding:6px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">💾 保存して再読み込み</button>
+               </div>
+             </details>
              <div id="dash-ai-diag"></div>`
           : '';
         return `
