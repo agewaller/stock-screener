@@ -3465,11 +3465,14 @@ ${bloodText || '記録なし'}
       }
     } catch (_) {}
     // Wipe localStorage entries that can route the AI fetch to a dead
-    // proxy or send a stale key. Keep user data (textEntries etc.) so
-    // the user doesn't lose what they wrote.
+    // proxy. We deliberately KEEP `apikey_anthropic` so that users
+    // who previously had the admin's shared key synced from Firestore
+    // remain able to call api.anthropic.com directly after the reset.
+    // (Earlier versions cleared it too, but that stranded users when
+    // the Worker was unreachable AND Firestore re-sync failed —
+    // exactly the "can't recover from reset" scenario reported.)
     try {
-      ['anthropic_proxy_url', 'apikey_anthropic', 'apikey_openai', 'apikey_google',
-       'sw_purged_v1', 'dismissed_inapp_banner']
+      ['anthropic_proxy_url', 'sw_purged_v1', 'dismissed_inapp_banner']
         .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
     } catch (_) {}
     // Hard reload, bypass HTTP cache.

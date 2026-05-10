@@ -2090,20 +2090,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=26"></script>
-<script src="js/config.js?v=26"></script>
-<script src="js/prompts.js?v=26"></script>
-<script src="js/store.js?v=26"></script>
-<script src="js/privacy.js?v=26"></script>
-<script src="js/ai-engine.js?v=26"></script>
-<script src="js/affiliate.js?v=26"></script>
-<script src="js/components.js?v=26"></script>
-<script src="js/i18n.js?v=26"></script>
-<script src="js/calendar.js?v=26"></script>
-<script src="js/integrations.js?v=26"></script>
-<script src="js/firebase-backend.js?v=26"></script>
-<script src="js/app.js?v=26"></script>
-<script src="js/pages.js?v=26"></script>
+<script src="js/idb.js?v=27"></script>
+<script src="js/config.js?v=27"></script>
+<script src="js/prompts.js?v=27"></script>
+<script src="js/store.js?v=27"></script>
+<script src="js/privacy.js?v=27"></script>
+<script src="js/ai-engine.js?v=27"></script>
+<script src="js/affiliate.js?v=27"></script>
+<script src="js/components.js?v=27"></script>
+<script src="js/i18n.js?v=27"></script>
+<script src="js/calendar.js?v=27"></script>
+<script src="js/integrations.js?v=27"></script>
+<script src="js/firebase-backend.js?v=27"></script>
+<script src="js/app.js?v=27"></script>
+<script src="js/pages.js?v=27"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2340,6 +2340,14 @@ window.addEventListener('load', function() {
   // Pull the global API key from Firestore if localStorage is empty.
   // Works for both guest (anonymous) and logged-in users whose session
   // hasn't yet finished loading the shared admin key.
+  //
+  // ensureGuestAuth signs the visitor in anonymously and polls for the
+  // key for up to ~4 seconds. If that initial pass times out (slow
+  // Firestore, throttled mobile network), we retry _loadGlobalConfigOnly
+  // once more synchronously. This is the difference between a stranded
+  // guest (no key → broken Worker → "接続できませんでした") and a working
+  // session — well worth the extra round-trip on the rare slow-network
+  // case.
   var resolveKey = async function() {
     var k = getKey();
     if (k) return k;
@@ -2347,7 +2355,14 @@ window.addEventListener('load', function() {
       if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.ensureGuestAuth) {
         await FirebaseBackend.ensureGuestAuth();
       }
-    } catch(e){}
+      k = getKey();
+      if (k) return k;
+      // Last-ditch: explicit one-shot fetch of admin/config in case the
+      // ensureGuestAuth poll loop didn't catch the snapshot in time.
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend._loadGlobalConfigOnly) {
+        await FirebaseBackend._loadGlobalConfigOnly();
+      }
+    } catch (e) { /* fall through to whatever localStorage has */ }
     return getKey();
   };
 
@@ -3258,6 +3273,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=26"></script>
+<script defer src="js/inapp-browser-banner.js?v=27"></script>
 </body>
 </html>
