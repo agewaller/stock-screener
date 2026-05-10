@@ -3464,15 +3464,17 @@ ${bloodText || '記録なし'}
         await Promise.all(names.map(n => { try { return caches.delete(n); } catch (_) { return null; } }));
       }
     } catch (_) {}
-    // Wipe localStorage entries that can route the AI fetch to a dead
-    // proxy. We deliberately KEEP `apikey_anthropic` so that users
-    // who previously had the admin's shared key synced from Firestore
-    // remain able to call api.anthropic.com directly after the reset.
-    // (Earlier versions cleared it too, but that stranded users when
-    // the Worker was unreachable AND Firestore re-sync failed —
-    // exactly the "can't recover from reset" scenario reported.)
+    // Wipe ONLY the diagnostic / behavioral flags that might be
+    // stuck in a bad state. We deliberately KEEP:
+    //   - `apikey_anthropic` (admin's shared key from Firestore)
+    //   - `anthropic_proxy_url` (admin's Worker URL — wiping it would
+    //     fall through to the hardcoded `agewaller` URL which may be
+    //     wrong for the deployed Cloudflare account)
+    // Both come from admin/config sync; clearing them strands the
+    // user when re-sync also fails, which is exactly the "can't
+    // recover from reset" scenario reported.
     try {
-      ['anthropic_proxy_url', 'sw_purged_v1', 'dismissed_inapp_banner']
+      ['sw_purged_v1', 'dismissed_inapp_banner']
         .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
     } catch (_) {}
     // Hard reload, bypass HTTP cache.
