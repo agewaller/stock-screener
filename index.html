@@ -2107,20 +2107,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=34"></script>
-<script src="js/config.js?v=34"></script>
-<script src="js/prompts.js?v=34"></script>
-<script src="js/store.js?v=34"></script>
-<script src="js/privacy.js?v=34"></script>
-<script src="js/ai-engine.js?v=34"></script>
-<script src="js/affiliate.js?v=34"></script>
-<script src="js/components.js?v=34"></script>
-<script src="js/i18n.js?v=34"></script>
-<script src="js/calendar.js?v=34"></script>
-<script src="js/integrations.js?v=34"></script>
-<script src="js/firebase-backend.js?v=34"></script>
-<script src="js/app.js?v=34"></script>
-<script src="js/pages.js?v=34"></script>
+<script src="js/idb.js?v=35"></script>
+<script src="js/config.js?v=35"></script>
+<script src="js/prompts.js?v=35"></script>
+<script src="js/store.js?v=35"></script>
+<script src="js/privacy.js?v=35"></script>
+<script src="js/ai-engine.js?v=35"></script>
+<script src="js/affiliate.js?v=35"></script>
+<script src="js/components.js?v=35"></script>
+<script src="js/i18n.js?v=35"></script>
+<script src="js/calendar.js?v=35"></script>
+<script src="js/integrations.js?v=35"></script>
+<script src="js/firebase-backend.js?v=35"></script>
+<script src="js/app.js?v=35"></script>
+<script src="js/pages.js?v=35"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2183,7 +2183,17 @@ function callClaude(text, apiKey, model, systemPrompt) {
     if (timer) clearTimeout(timer);
     if (!r.ok) return r.text().then(function(t){
       var msg = r.status + ': ' + t.substring(0, 300);
-      if (r.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
+      // Detect Cloudflare account-level workers.dev disable. When an
+      // account toggles workers.dev off, every Worker URL on
+      // *.workers.dev returns the exact response below — there is no
+      // way for the Worker code to override it. The fix is on
+      // Cloudflare side, not in our code.
+      var denyReason = '';
+      try { denyReason = r.headers.get('x-deny-reason') || ''; } catch(_) {}
+      if (r.status === 403 && (denyReason === 'host_not_allowed' || /Host not in allowlist/.test(t))) {
+        msg = 'AI 機能が一時停止しています（Cloudflare 設定）。'
+            + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。';
+      } else if (r.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
       else if (r.status === 403) msg = 'このドメインからの接続が許可されていません (403)。cares.advisers.jp からご利用ください。';
       else if (r.status === 404) msg = 'モデル「' + claudeModel + '」が見つかりません。別のモデルに切り替えてください。';
       else if (r.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
@@ -3311,6 +3321,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=34"></script>
+<script defer src="js/inapp-browser-banner.js?v=35"></script>
 </body>
 </html>
