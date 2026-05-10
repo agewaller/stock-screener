@@ -609,15 +609,20 @@ App.prototype.render_dashboard = function() {
       }
       const err = store.get('latestFeedbackError');
       if (err) {
-        // Surface a 「サービスをリセット」 escape hatch for users who land
-        // here repeatedly. Old PWA builds left a Service Worker active
-        // in some browsers that keeps serving cached pre-fix code, so a
-        // soft retry alone never recovers — they need to wipe the SW,
-        // its cache, and any stale localStorage proxy/key state.
+        // Surface escape hatches when the failure is connection-class:
+        //   - サービスをリセット — strips stale SW + cached proxy URL
+        //   - 接続を診断する — runs OPTIONS/GET/POST probes against the
+        //     Worker URL so users can copy back exactly what their
+        //     browser saw (CORS missing, DNS, status code, timing).
         const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
-        const resetBtn = isConnFail
-          ? `<button onclick="app.resetClientCacheAndReload()"
-              style="margin-top:10px;padding:8px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔄 サービスをリセットして再読み込み</button>`
+        const escapeHatches = isConnFail
+          ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <button onclick="app.resetClientCacheAndReload()"
+                style="padding:8px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔄 サービスをリセット</button>
+              <button onclick="app.diagnoseAiConnection(document.getElementById('dash-ai-diag'))"
+                style="padding:8px 14px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔍 接続を診断する</button>
+             </div>
+             <div id="dash-ai-diag"></div>`
           : '';
         return `
           <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
@@ -625,7 +630,7 @@ App.prototype.render_dashboard = function() {
               <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
               <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
-              ${resetBtn}
+              ${escapeHatches}
             </div>
           </div>`;
       }
