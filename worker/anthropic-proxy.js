@@ -145,6 +145,9 @@ function extractDiseaseIds(text) {
     anorexia: /摂食障害|拒食症|過食症|神経性食欲不振症|神経性過食症|anorexia nervosa|bulimia nervosa|eating disorder|CBT-E|低体重.*食事|食べること.*恐怖|過食.*嘔吐|過食.*下剤|ボディイメージ.*食事|摂食.*体重.*恐怖|食行動|Maudsley.*食事/i,
     thyroid_cancer: /甲状腺がん|甲状腺癌|thyroid cancer|乳頭がん.*甲状腺|濾胞がん.*甲状腺|チラーヂン|レボチロキシン.*甲状腺|TSH抑制|サイログロブリン|Tg値.*甲状腺|TgAb|甲状腺全摘|放射性ヨウ素.*甲状腺|レンビマ.*甲状腺|レンバチニブ.*甲状腺|甲状腺.*術後|甲状腺.*再発/i,
     sleep_apnea: /睡眠時無呼吸|睡眠時無呼吸症候群|SAS\b|OSAS\b|sleep apnea|無呼吸.*睡眠|いびき.*無呼吸|CPAP|日中.*眠気.*睡眠|AHI\b.*睡眠|無呼吸.*指数|シーパップ|マウスピース.*いびき|口腔内装置.*無呼吸|眠気.*無呼吸|ESS.*眠気/i,
+    copd: /COPD\b|慢性閉塞性肺疾患|肺気腫|慢性気管支炎|スピリーバ|チオトロピウム|ウルティブロ|アノーロ|インダカテロール|ビランテロール|フォステア|シーブリ|グリコピロニウム|息切れ.*肺|FEV1|mMRC.*息切れ|CAT.*COPD|吸入.*COPD|増悪.*肺|在宅酸素.*肺|肺リハビリ|禁煙.*肺/i,
+    liver_disease: /慢性肝疾患|肝硬変|肝炎.*慢性|脂肪肝|NASH\b|MASH\b|liver cirrhosis|AST.*ALT.*肝|ALT.*肝炎|アルブミン.*肝|フィブロスキャン|エンテカビル|バラクルード|テノホビル|ベムリディ|エプクルーサー|ウルソデオキシコール酸|腹水.*肝|AFP.*肝|肝細胞がん|代償性.*肝/i,
+    cancer_fatigue: /がん治療.*副作用|化学療法.*副作用|免疫療法.*副作用|がん関連疲労|CRF\b.*がん|CIPN\b|末梢神経障害.*化学|化学療法誘発.*神経|がん.*倦怠感|制吐薬|グラニセトロン|アプレピタント|好中球減少.*化学|G-CSF.*化学|がんサバイバー.*疲労|ケモブレイン|cancer.*fatigue.*chemo/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

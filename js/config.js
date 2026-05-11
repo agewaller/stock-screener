@@ -1891,6 +1891,87 @@ var CONFIG = {
       ],
       medications: [],
       sleepData: [], activityData: [], meals: []
+    },
+    liver_disease: {
+      diseases: ['慢性肝疾患（MASH・肝硬変）'],
+      profile: { age: 56, gender: 'male', height: 172, weight: 84 },
+      textEntries: [
+        { timestamp: '2026-03-11T08:00:00Z', category: 'vitals', title: '肝機能悪化', content: 'ALT 98（基準値40以下）、AST 74。フィブロスキャン：14.2 kPa（肝硬変ライン12超）。主治医から「代償性肝硬変に進行している可能性がある」と言われた。禁酒継続中（2年）。体重 84kg、腹囲 96cm。' },
+        { timestamp: '2026-03-18T10:00:00Z', category: 'consultation', title: '消化器内科 受診', content: 'フィブロスキャン 14.2 kPa で肝硬変確定（F4）。AFP 4.8（正常範囲）。血小板 11.2万（低下傾向）。食道静脈瘤なし（内視鏡確認）。ウルソ処方継続。「体重を5〜10%減量することで線維化が改善する可能性」と言われた。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'activity', title: '食事・運動記録', content: '今週から食事記録を始めた。塩分は目標6g/日で現在7.5g。週3回30分のウォーキングを開始。体重 83.5kg（先週から-0.5kg）。腹囲 95cm（1cm減）。むくみはなし。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'vitals', title: 'ALT改善傾向', content: 'ALT 72（前回98から改善）。体重 82.5kg（1ヶ月で-1.5kg）。倦怠感は以前より少し軽い（6/10→4/10）。アルコールはゼロを維持。コーヒー1日3杯（肝臓保護効果があると読んだ）を続けている。' },
+        { timestamp: '2026-04-08T09:00:00Z', category: 'nutrition', title: '塩分管理', content: '塩分6g/日達成。味噌汁を週3回→週1回に減らした。魚は塩漬けではなく生鮮を選ぶ。かまぼこ・ウインナー・漬物を控えた。料理が難しいが少しずつ慣れてきた。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'vitals', title: '3ヶ月後 受診', content: 'ALT 55（改善継続）、AST 48、血小板 11.8万（横ばい）、アルブミン 4.0（正常）、PT 88%。体重 81kg（3ヶ月で-3kg）。AFP 4.2（正常）。「体重減少が肝機能改善に効いている。継続して」と言われた。次回エコー・AFP は6ヶ月後。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'symptoms', title: '倦怠感の変化', content: '倦怠感 3/10（開始時 6/10 から大幅改善）。ウォーキングが30分→45分できるようになった。体重 80.5kg（目標 77kg まであと3.5kg）。「体が軽くなった」と感じる。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-15T10:00:00Z', name: '肝機能・線維化マーカー', findings: 'ALT 55（改善）, AST 48, γGTP 62, 血小板 11.8万, アルブミン 4.0, PT 88%, AFP 4.2（正常）, フィブロスキャン 14.2→12.8 kPa（改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'ウルソデオキシコール酸（ウルソ）', notes: '200mg 毎食後3回（肝臓保護・胆汁酸代謝改善）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    cancer_fatigue: {
+      diseases: ['がん治療副作用管理'],
+      profile: { age: 52, gender: 'female', height: 160, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-03-09T09:00:00Z', category: 'symptoms', title: '化学療法2回目後', content: 'パクリタキセル投与3日後。倦怠感 9/10。ベッドから出るのがやっと。悪心 5/10 で食事が半分しか食べられない。足先のしびれが少し出てきた（CIPN初期？）。口内炎1個。体重 55kg（開始時57kgから）。' },
+        { timestamp: '2026-03-16T08:00:00Z', category: 'symptoms', title: '化学療法2週間後', content: '倦怠感 5/10に回復。悪心なし。足のしびれが持続（ピリピリ感・靴下を履いている感覚）。口内炎は治癒。白血球 2,100（好中球 1,200）。体重 56kg。短距離の散歩（10分）ができるようになった。' },
+        { timestamp: '2026-03-23T10:00:00Z', category: 'medication', title: '制吐薬調整', content: '3回目の化学療法前に主治医と相談。アプレピタント（イメンド）を追加。投与後の悪心が7/10→3/10に大幅改善。制吐薬の効果を事前に記録していたおかげで「前回より悪心が強かった」と正確に伝えられた。' },
+        { timestamp: '2026-03-30T09:00:00Z', category: 'activity', title: '軽い運動開始', content: '看護師から「疲れない程度に動いた方が回復が早い」と言われた。20分のウォーキングを3日おきに開始。倦怠感 4/10 の日は外出できた。「疲れたら休む、でも安静すぎない」を意識。' },
+        { timestamp: '2026-04-06T08:00:00Z', category: 'symptoms', title: 'CIPN悪化', content: '足のしびれが足首まで広がった。冷たいものに触ると強い電気刺激のような感覚（冷感過敏）。鍋の取手が持ちにくくなってきた（手もしびれ）。主治医に報告→「パクリタキセルの累積用量が増えているためCIPNが出やすい」。デュロキセチン追加。' },
+        { timestamp: '2026-04-13T09:00:00Z', category: 'medication', title: 'デュロキセチン開始', content: 'デュロキセチン 20mg 開始1週間。足のしびれの強さが7/10→5/10に改善。吐き気（デュロキセチン副作用）が数日あったが収まった。冷感過敏は続くが少し楽。鍼治療の予約も取った。' },
+        { timestamp: '2026-04-20T10:00:00Z', category: 'vitals', title: '4回目化学療法後 受診', content: '倦怠感は4回目後の方が少し楽（3回目より短い回復期間）。CA125 28（前回42から低下）。体重 56.5kg（少し回復）。腫瘍科医から「治療効果あり・5回目に進む」と説明。CIPNは4/10 に改善傾向。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-20T10:00:00Z', name: '化学療法モニタリング', findings: 'WBC 3,200, 好中球 1,900, Hb 10.4（軽度貧血）, Plt 18.5万, CA125 28（改善）, Alb 3.8, Cr 0.72' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T08:00:00Z', name: 'パクリタキセル（化学療法）', notes: '3週毎点滴（卵巣がん標準治療・CIPNリスクあり）' },
+        { timestamp: '2026-03-23T08:00:00Z', name: 'アプレピタント（イメンド）', notes: '化学療法前日・当日・翌日（NK1受容体拮抗薬・強力制吐）' },
+        { timestamp: '2026-04-06T08:00:00Z', name: 'デュロキセチン（サインバルタ）', notes: '20mg 朝食後（CIPN疼痛・しびれ改善）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    copd: {
+      diseases: ['COPD（慢性閉塞性肺疾患）'],
+      profile: { age: 68, gender: 'male', height: 165, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-10T08:00:00Z', category: 'symptoms', title: '息切れの悪化', content: '今日は2階まで上がるのがとても辛かった。途中で休憩が必要だった（mMRC 3相当）。SpO2 93%（いつもより低い）。喀痰が増えて少し黄色っぽい。受診日まであと1週間、このまま待っていいか不安。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '受診・急性増悪', content: '肺炎ではないが軽度の急性増悪と診断。プレドニゾロン30mg 5日間＋アモキシシリン処方。LAMA/LABA（ウルティブロ）に加えてSABA（サルブタモール）頓服を追加。スパイロ：FEV1 42%（重症）' },
+        { timestamp: '2026-03-24T08:00:00Z', category: 'symptoms', title: '増悪改善', content: '喀痰の色が白色に戻った。SpO2 95〜96%（改善）。息切れは mMRC 2 に落ち着いた。プレドニゾロン終了。SABA（頓服）の使用回数：3回/日→0〜1回/日に減少。体重 63kg（増悪中は少し減っていた）。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'activity', title: '肺リハビリ開始', content: '近くの呼吸器リハビリクリニックに週2回通い始めた。最初はほんの5分歩くのが限界だったが、PT（理学療法士）に指導してもらいながら呼吸法を練習している。「口すぼめ呼吸」で少し楽になった。' },
+        { timestamp: '2026-04-07T08:00:00Z', category: 'vitals', title: '肺リハビリ2週間', content: 'リハビリ開始2週間。6分間歩行距離：280m（前回 240m から改善）。SpO2 94〜96%で安定。息切れ mMRC 2 を維持。SABAの頓用なし（この1週間）。体重 63kg で安定。' },
+        { timestamp: '2026-04-14T09:00:00Z', category: 'symptoms', title: '喀痰再び増加', content: '3日前から喀痰の量が増えた。色はまだ白色。SpO2 93〜94%に少し低下。発熱なし。SABA 1日2回使用。主治医に電話報告 → 「プレドニゾロン5日間 経口処方する、悪化したら受診」と指示。' },
+        { timestamp: '2026-04-21T08:00:00Z', category: 'vitals', title: '受診・定期チェック', content: '増悪は軽度で収まった。FEV1 44%（前回より微改善）。肺リハビリ継続を評価された。禁煙22年目（37歳で禁煙）。在宅酸素療法（HOT）のラインはSpO2 88%が基準と再確認。まだHOT不要。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-21T10:00:00Z', name: 'COPD定期検査・スパイロメトリー', findings: 'FEV1 44%（重症COPD）, FEV1/FVC 52%, Hb 15.2, CRP 0.4（正常）, SpO2安静時 95%（6分歩行後 88%）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'グリコピロニウム/インダカテロール（ウルティブロ）', notes: '1カプセル 朝（LAMA/LABA配合・長時間作用型吸入）' },
+        { timestamp: '2026-03-17T08:00:00Z', name: 'サルブタモール（サルタノール）', notes: '頓用・増悪時（SABA・速効性気管支拡張薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };

@@ -734,6 +734,9 @@ App.prototype.render_dashboard = function() {
       anorexia: ['食事内容・食後の気分', '体重(任意)', '過食衝動の強さ・引き金', '回復の小さな進歩'],
       thyroid_cancer: ['チラーヂン服薬確認', 'TSH副作用(動悸・不眠)', 'Tg値(受診時)', '再発症状(頸部腫れ・嗄声)'],
       sleep_apnea: ['CPAP使用時間', '日中眠気(ESS)', '体重・血圧', 'いびき・無呼吸の目撃'],
+      copd: ['息切れ(mMRC/CAT)', 'SpO2・心拍数', '喀痰の色・量', '吸入薬確認・SABA使用回数'],
+      liver_disease: ['倦怠感・腹部膨満(1-10)', '体重・腹囲(毎日)', '検査値(AST/ALT/Alb)', 'アルコール量・服薬確認'],
+      cancer_fatigue: ['倦怠感スコア(0-10)', '悪心・嘔吐の回数', 'CIPN(しびれ・冷感)の強さ', '活動量・食欲'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

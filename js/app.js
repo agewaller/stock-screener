@@ -1322,6 +1322,9 @@ ${recentText || '記録なし'}
       anorexia: { ja: '摂食障害 拒食症 過食症 心療内科 精神科', en: 'eating disorder anorexia bulimia' },
       thyroid_cancer: { ja: '甲状腺がん 乳頭がん 術後管理 内分泌外科 チラーヂン', en: 'thyroid cancer' },
       sleep_apnea: { ja: '睡眠時無呼吸症候群 SAS CPAP いびき 睡眠外来', en: 'sleep apnea syndrome' },
+      copd: { ja: 'COPD 慢性閉塞性肺疾患 息切れ 吸入薬 呼吸器内科', en: 'COPD chronic obstructive pulmonary disease' },
+      liver_disease: { ja: '慢性肝疾患 肝硬変 肝炎 MASH 消化器内科', en: 'chronic liver disease cirrhosis' },
+      cancer_fatigue: { ja: 'がん治療 副作用 倦怠感 化学療法 免疫療法 腫瘍内科', en: 'cancer treatment side effects fatigue' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1455,6 +1458,9 @@ ${recentText || '記録なし'}
       anorexia: 'eating disorder anorexia nervosa bulimia CBT-E treatment',
       thyroid_cancer: 'thyroid cancer papillary follicular treatment lenvatinib',
       sleep_apnea: 'obstructive sleep apnea CPAP cardiovascular outcomes',
+      copd: 'COPD exacerbation LAMA LABA pulmonary rehabilitation',
+      liver_disease: 'liver cirrhosis MASH fibrosis hepatocellular carcinoma',
+      cancer_fatigue: 'cancer related fatigue chemotherapy side effects management',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1618,6 +1624,9 @@ ${titles}`;
       anorexia: 'anorexia nervosa bulimia nervosa recovery CBT-E',
       thyroid_cancer: 'thyroid cancer recurrence surveillance Tg monitoring',
       sleep_apnea: 'sleep apnea CPAP adherence weight loss treatment',
+      copd: 'COPD inhaler therapy smoking cessation lung function',
+      liver_disease: 'liver fibrosis MASH treatment resmetirom cirrhosis',
+      cancer_fatigue: 'cancer related fatigue exercise intervention CIPN',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3017,7 +3026,10 @@ ${responseText.substring(0, 3000)}`;
       sad: '#社会不安障害',
       anorexia: '#摂食障害',
       thyroid_cancer: '#甲状腺がん',
-      sleep_apnea: '#睡眠時無呼吸症候群'
+      sleep_apnea: '#睡眠時無呼吸症候群',
+      copd: '#COPD',
+      liver_disease: '#慢性肝疾患',
+      cancer_fatigue: '#がん治療副作用'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
