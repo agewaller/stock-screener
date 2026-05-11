@@ -1602,6 +1602,60 @@ var CONFIG = {
       ],
       sleepData: [], activityData: [], meals: []
     },
+    heart_failure: {
+      diseases: ['心不全'],
+      profile: { age: 72, gender: 'male', height: 165, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-03-18T07:00:00Z', category: 'vitals', title: '体重増加', content: '昨日から +2.5kg（70kg→72.5kg）。足のむくみが強くなった。息苦しさ 6/10。主治医に電話。フロセミド増量を指示された。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'medication', title: 'フォシーガ追加', content: 'フォシーガ（ダパグリフロジン）10mg 追加。心不全への腎保護・利尿作用。体重 70.5kg に戻った。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'vitals', title: '安定', content: '体重 70.2kg。浮腫ほぼなし。血圧 128/80。息切れ 3/10（歩行時のみ）。安定してきた。' },
+        { timestamp: '2026-04-08T09:00:00Z', category: 'nutrition', title: '減塩', content: '今週から減塩食を徹底。みそ汁を週3回→0回に。外食を避けた。体重の変動が小さくなった気がする。' },
+        { timestamp: '2026-04-15T08:00:00Z', category: 'vitals', title: '心臓リハビリ', content: '心臓リハビリ 2週目。病院の体育室でエルゴメーター10分。疲労はあるが翌日も動ける。先週より歩ける距離が増えた。' },
+        { timestamp: '2026-04-22T10:00:00Z', category: 'vitals', title: '受診結果', content: 'BNP 185（前回 320）。改善！体重コントロールと服薬継続の成果。医師から「この調子で体重管理を続けて」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-22T10:00:00Z', name: '心不全フォロー', findings: 'BNP 185（改善）, Cr 1.3, eGFR 48, Na 139, K 4.3, Hb 11.2（軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'エンレスト（サクビトリル/バルサルタン）', notes: '97/103mg ×2/日（ARNi）' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'カルベジロール（アーチスト）', notes: '5mg ×2/日（βブロッカー）' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'フロセミド', notes: '20mg 朝（利尿薬）' },
+        { timestamp: '2026-03-25T08:00:00Z', name: 'ダパグリフロジン（フォシーガ）', notes: '10mg 朝（SGLT2阻害薬・心不全適応）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gout: {
+      diseases: ['痛風'],
+      profile: { age: 42, gender: 'male', height: 175, weight: 88 },
+      textEntries: [
+        { timestamp: '2026-03-17T03:00:00Z', category: 'symptoms', title: '痛風発作', content: '夜中に右足親指の激痛で目が覚めた。真っ赤に腫れている。触れるだけで激痛（10/10）。昨日は同僚の送別会でビールをたくさん飲んだ。コルヒチン服用。' },
+        { timestamp: '2026-03-24T10:00:00Z', category: 'medication', title: 'フェブリク開始', content: 'フェブキソスタット（フェブリク）20mg 開始。今後尿酸値 6.0 以下を目指す。発作予防にコルヒチン 0.5mg 3ヶ月間継続。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'vitals', title: '尿酸値測定', content: '尿酸値 8.4 mg/dL（目標 6.0 以下）。フェブリク開始1週間では下がりにくい。水分2L/日を目標に継続。' },
+        { timestamp: '2026-04-07T21:00:00Z', category: 'nutrition', title: '食事改善', content: '禁酒2週間達成。プリン体の多い干物・レバーを避けている。外食でも刺身・豆腐・野菜を中心に選んでいる。' },
+        { timestamp: '2026-04-14T09:00:00Z', category: 'vitals', title: '尿酸値再測定', content: '尿酸値 7.1 mg/dL（前回 8.4 から改善）。フェブリク増量（40mg）を医師と相談予定。体重 88→85kg（3kg減）。' },
+        { timestamp: '2026-04-21T21:00:00Z', category: 'symptoms', title: '発作なし', content: '今月の発作ゼロ。コルヒチン継続中。フェブリク40mg で尿酸値 6.5 まで下がってきた。目標まであと一歩。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, pain_level: 0, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-14T10:00:00Z', name: '尿酸・代謝検査', findings: '尿酸 7.1（改善）, Cr 1.0, eGFR 80, TG 220, LDL 138, 空腹時血糖 108' }
+      ],
+      medications: [
+        { timestamp: '2026-03-24T08:00:00Z', name: 'フェブキソスタット（フェブリク）', notes: '20mg→40mg 朝（尿酸産生抑制）' },
+        { timestamp: '2026-03-24T08:00:00Z', name: 'コルヒチン', notes: '0.5mg 朝（発作予防・3ヶ月間）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
     ckd: {
       diseases: ['慢性腎臓病（CKD）'],
       profile: { age: 63, gender: 'male', height: 168, weight: 74 },

@@ -724,6 +724,8 @@ App.prototype.render_dashboard = function() {
       atopy: ['かゆみ(NRS 0-10)', '皮疹の部位・範囲', 'ステロイド塗布量', '悪化要因'],
       asthma: ['ピークフロー(PEF)', '喘鳴・息苦しさの有無', '発作止め吸入回数', '悪化要因'],
       ckd: ['血圧(朝・夕)', '体重・むくみ', '食事の塩分量', '倦怠感・息苦しさ'],
+      heart_failure: ['体重(毎朝)', '血圧・心拍数', '足のむくみ(1-5)', '息切れ・倦怠感(1-10)'],
+      gout: ['発作の有無・関節', '尿酸値(受診時)', '食事(プリン体・アルコール)', '水分摂取量'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

@@ -135,6 +135,8 @@ function extractDiseaseIds(text) {
     atopy: /アトピー性皮膚炎|アトピー|atopic dermatitis|デュピクセント|デュピルマブ|ネモリズマブ|JAK阻害.*皮膚|リンヴォック.*皮膚|サイバインコ|コレクチム|プロトピック|かゆみ.*皮疹|ステロイド.*皮膚炎/i,
     asthma: /気管支喘息|喘息|asthma|吸入ステロイド|シムビコート|フルティフォーム|レルベア|アドエア|ピークフロー|PEF\b|ゾレア|ファセンラ|喘鳴|発作止め.*吸入|ICS\b.*喘/i,
     ckd: /慢性腎臓病|CKD\b|chronic kidney disease|eGFR|腎機能.*低下|透析.*腎|腎臓.*SGLT2|フォシーガ.*腎|ケレンディア|尿タンパク.*腎|腎保護|腎不全.*慢性/i,
+    heart_failure: /心不全|heart failure|HFrEF|HFpEF|エンレスト|サクビトリル|フロセミド|トルバプタン|サムスカ|BNP|NT-proBNP|息切れ.*心臓|浮腫.*心不全|体重.*心不全|再入院.*心臓/i,
+    gout: /痛風|高尿酸血症|gout|hyperuricemia|尿酸値|アロプリノール|フェブリク|フェブキソスタット|ベンズブロマロン|コルヒチン|痛風発作|プリン体.*発作|尿酸.*関節/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

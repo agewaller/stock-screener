@@ -1312,6 +1312,8 @@ ${recentText || '記録なし'}
       atopy: { ja: 'アトピー性皮膚炎 かゆみ デュピクセント 皮膚科', en: 'atopic dermatitis' },
       asthma: { ja: '気管支喘息 発作 吸入ステロイド 呼吸器内科', en: 'asthma' },
       ckd: { ja: '慢性腎臓病 CKD eGFR 腎臓内科 透析', en: 'chronic kidney disease' },
+      heart_failure: { ja: '心不全 体重管理 息切れ 循環器内科', en: 'heart failure' },
+      gout: { ja: '痛風 高尿酸血症 発作記録 尿酸値', en: 'gout hyperuricemia' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1435,6 +1437,8 @@ ${recentText || '記録なし'}
       atopy: 'atopic dermatitis treatment dupilumab',
       asthma: 'asthma control inhaled corticosteroids treatment',
       ckd: 'chronic kidney disease progression SGLT2',
+      heart_failure: 'heart failure treatment SGLT2 ARNi mortality',
+      gout: 'gout uric acid management febuxostat',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1588,6 +1592,8 @@ ${titles}`;
       atopy: 'atopic dermatitis dupilumab JAK inhibitor',
       asthma: 'asthma biologics inhaled corticosteroids',
       ckd: 'chronic kidney disease SGLT2 inhibitor renal protection',
+      heart_failure: 'heart failure quadruple therapy SGLT2 ARNi',
+      gout: 'gout urate lowering therapy prevention',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2979,7 +2985,8 @@ ${responseText.substring(0, 3000)}`;
       ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
       panic: '#パニック障害', endometriosis: '#子宮内膜症',
       diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎',
-      asthma: '#気管支喘息', ckd: '#慢性腎臓病'
+      asthma: '#気管支喘息', ckd: '#慢性腎臓病',
+      heart_failure: '#心不全', gout: '#痛風'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
