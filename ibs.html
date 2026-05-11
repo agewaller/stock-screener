@@ -27,7 +27,14 @@
 {
   "@context": "https://schema.org",
   "@graph": [
-    {"@type":"MedicalWebPage","name":"IBS（過敏性腸症候群）完全ガイド","url":"https://cares.advisers.jp/ibs.html","inLanguage":"ja","lastReviewed":"2026-04-23"},
+    {"@type":"FAQPage","@id":"https://cares.advisers.jp/ibs.html#faq","mainEntity":[
+      {"@type":"Question","name":"IBS（過敏性腸症候群）とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"IBS（Irritable Bowel Syndrome / 過敏性腸症候群）は、腸に器質的な異常がないにもかかわらず、反復する腹痛・腹部膨満感・下痢・便秘などの消化器症状が続く機能性腸疾患です。世界の有病率は 10-15%、日本では約 1,200 万人（人口の 10%）と推計されています。ICD-11 コード DD91.0 として分類されています。"}},
+      {"@type":"Question","name":"IBS の下痢型・便秘型・混合型の違いは何ですか？","acceptedAnswer":{"@type":"Answer","text":"IBS-D（下痢型）は便形状が軟便・水様便が多く、急に便意を催すことが多い。IBS-C（便秘型）は硬便・ころころ便が多く、便が出にくい。IBS-M（混合型）は下痢と便秘が交互に現れます。各型で推奨薬が異なり、IBS-D にはラモセトロン（イリボー）・ポリカルボフィルカルシウム、IBS-C にはリナクロチド・ルビプロストンが使われます。"}},
+      {"@type":"Question","name":"低 FODMAP 食とは何ですか？IBS に効果がありますか？","acceptedAnswer":{"@type":"Answer","text":"低 FODMAP 食は、腸内で発酵しやすい短鎖炭水化物（F：発酵性糖質、O：オリゴ糖、D：二糖類、M：単糖類、A：and、P：ポリオール）を制限する食事療法です。モナッシュ大学の研究では IBS 患者の約 75% で症状改善が報告されており、現在最もエビデンスが強い非薬物療法です。2-6 週間の除去期 → 再導入期で自分のトリガー食品を特定します。"}},
+      {"@type":"Question","name":"IBS の症状記録が重要な理由は？","acceptedAnswer":{"@type":"Answer","text":"腹痛・腹部膨満感・排便回数・便形状（ブリストルスケール）・食事内容・ストレスを毎日記録することで、自分の症状トリガー（特定の食材・ストレス・月経周期）を特定できます。低 FODMAP 食の再導入期には特に記録が不可欠で、記録データを医師に示すことで投薬調整が迅速になります。"}},
+      {"@type":"Question","name":"IBS の症状を悪化させる主なトリガーは何ですか？","acceptedAnswer":{"@type":"Answer","text":"高 FODMAP 食（小麦・乳製品・タマネギ・リンゴ等）、過度のストレス・不安、睡眠不足、カフェイン・アルコール過剰、月経周期（特に月経前後）が主なトリガーです。患者によって個人差が大きく、記録なしに特定することは困難です。"}}
+    ]},
+    {"@type":"MedicalWebPage","name":"IBS（過敏性腸症候群）完全ガイド","url":"https://cares.advisers.jp/ibs.html","inLanguage":"ja","lastReviewed":"2026-05-11"},
     {"@type":"MedicalCondition","name":"過敏性腸症候群","alternateName":["IBS","Irritable Bowel Syndrome"],"code":{"@type":"MedicalCode","code":"DD91.0","codingSystem":"ICD-11"},"epidemiology":"世界で約 10-15% の有病率、日本で約 1,200 万人（人口の 10%）と推計","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"反復する腹痛"},{"@type":"MedicalSignOrSymptom","name":"腹部膨満感"},{"@type":"MedicalSignOrSymptom","name":"下痢（IBS-D）"},{"@type":"MedicalSignOrSymptom","name":"便秘（IBS-C）"},{"@type":"MedicalSignOrSymptom","name":"排便異常の反復"}],"possibleTreatment":[{"@type":"DietarySupplement","name":"低 FODMAP 食"},{"@type":"DrugLegalStatus","name":"ポリカルボフィルカルシウム"},{"@type":"DrugLegalStatus","name":"ラモセトロン（IBS-D）"},{"@type":"DrugLegalStatus","name":"リナクロチド（IBS-C）"},{"@type":"MedicalTherapy","name":"プロバイオティクス・食物繊維"}]}
   ]
 }
