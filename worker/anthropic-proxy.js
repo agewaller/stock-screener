@@ -118,6 +118,9 @@ function extractDiseaseIds(text) {
     migraine: /片頭痛|偏頭痛|migraine|頭痛ダイアリー|トリプタン/i,
     ptsd: /PTSD|心的外傷|フラッシュバック|トラウマ|EMDR|複雑性PTSD/i,
     ra: /関節リウマチ|RA\b|リウマチ|rheumatoid|MTX|メトトレキサート|生物学的製剤|JAK阻害薬/i,
+    sle: /SLE\b|全身性エリテマトーデス|ループス|lupus|蝶形紅斑|ループス腎炎|プラケニル|ベンリスタ|抗dsDNA/i,
+    asd: /ASD\b|自閉スペクトラム|自閉症|アスペルガー|autism|感覚過敏|マスキング|発達障害|バーンアウト|ステレオタイプ行動/i,
+    crohns: /クローン病|Crohn|クローン|IBD|炎症性腸疾患|エンタイビオ|ステラーラ|エレンタール|痔瘻|カルプロテクチン/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

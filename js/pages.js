@@ -707,6 +707,9 @@ App.prototype.render_dashboard = function() {
       adhd: ['集中力', '睡眠', 'タスク達成'],
       migraine: ['頭痛強度(1-10)', 'トリガー', '服薬記録'],
       ra: ['朝のこわばり(分)', '腫れ関節の部位', '服薬記録(MTX)'],
+      sle: ['皮膚症状', '関節痛', '倦怠感(1-10)', '日光曝露'],
+      asd: ['感覚過敏度(1-10)', '社会的消耗', 'バーンアウト兆候'],
+      crohns: ['排便回数', '腹痛(1-10)', '食事内容', '体重'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

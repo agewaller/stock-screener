@@ -159,6 +159,36 @@
         { kind: 'supplement', label: 'オメガ 3（抗炎症 EPA+DHA 2g/日）', q: 'オメガ3 EPA DHA 2000mg 抗炎症' },
         { kind: 'supplement', label: 'ターメリック（クルクミン 抗炎症）', q: 'クルクミン ターメリック 関節 抗炎症' }
       ]
+    },
+    sle: {
+      title: '📚 SLE（ループス）管理に役立つリソース',
+      items: [
+        { kind: 'book', label: '『ループス（SLE）と生きる — 難病との向き合い方』', q: 'ループス SLE 全身性エリテマトーデス 本' },
+        { kind: 'book', label: '『自己免疫疾患の食事療法』', q: '自己免疫疾患 食事療法 抗炎症 本' },
+        { kind: 'device', label: 'UVカット日焼け止め SPF50+ PA++++ 無添加', q: '日焼け止め SPF50 PA++++ 無添加 低刺激' },
+        { kind: 'device', label: 'UVカット長袖インナー（光線過敏対策）', q: 'UVカット インナー 長袖 日焼け対策' },
+        { kind: 'supplement', label: 'ビタミンD3（免疫調整・骨保護）', q: 'ビタミンD3 2000IU 免疫 骨密度' }
+      ]
+    },
+    asd: {
+      title: '📚 ASD（自閉スペクトラム症）に役立つリソース',
+      items: [
+        { kind: 'book', label: '『自閉スペクトラム症を生きる — 当事者からのガイド』', q: 'ASD 自閉スペクトラム症 当事者 本' },
+        { kind: 'book', label: '『発達障害の仕事術 — 合理的配慮の活用法』', q: '発達障害 仕事術 合理的配慮 本' },
+        { kind: 'device', label: 'ノイズキャンセリングイヤーホン（聴覚過敏対策）', q: 'ノイズキャンセリング イヤーホン 聴覚過敏' },
+        { kind: 'device', label: 'アイマスク・遮光グッズ（視覚過敏対策）', q: '遮光 アイマスク 光過敏 視覚過敏' },
+        { kind: 'supplement', label: 'マグネシウム（睡眠・神経系サポート）', q: 'マグネシウム グリシン 睡眠 神経' }
+      ]
+    },
+    crohns: {
+      title: '📚 クローン病管理に役立つリソース',
+      items: [
+        { kind: 'book', label: '『クローン病・潰瘍性大腸炎を生きる』', q: 'クローン病 潰瘍性大腸炎 生きる 本' },
+        { kind: 'book', label: '『IBDのための食事ガイド』', q: 'IBD 炎症性腸疾患 食事 ガイド 本' },
+        { kind: 'supplement', label: 'ラクトバチルス プロバイオティクス（腸内環境）', q: 'プロバイオティクス ラクトバチルス 腸内細菌 IBD' },
+        { kind: 'supplement', label: 'オメガ 3（腸炎症の抑制 EPA）', q: 'オメガ3 EPA DHA 腸 抗炎症' },
+        { kind: 'device', label: '電子体重計（体重管理・低栄養チェック）', q: '体重計 体組成計 スマート 体脂肪' }
+      ]
     }
   };
 
