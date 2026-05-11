@@ -706,6 +706,7 @@ App.prototype.render_dashboard = function() {
       ptsd: ['気分', '睡眠', 'フラッシュバック'],
       adhd: ['集中力', '睡眠', 'タスク達成'],
       migraine: ['頭痛強度(1-10)', 'トリガー', '服薬記録'],
+      ra: ['朝のこわばり(分)', '腫れ関節の部位', '服薬記録(MTX)'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

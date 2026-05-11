@@ -149,6 +149,16 @@
         { kind: 'book', label: '『EMDR — トラウマを癒す』', q: 'EMDR トラウマ 癒す' },
         { kind: 'supplement', label: 'アシュワガンダ（コルチゾール調整・不安軽減）', q: 'アシュワガンダ KSM-66 ストレス' }
       ]
+    },
+    ra: {
+      title: '📚 関節リウマチ（RA）管理に役立つリソース',
+      items: [
+        { kind: 'book', label: '『関節リウマチ 最新治療と生活のヒント』', q: '関節リウマチ 最新治療 生活' },
+        { kind: 'book', label: '『リウマチと向き合う — 寛解をめざして』', q: 'リウマチ 寛解 向き合う 本' },
+        { kind: 'device', label: '電動ハンドグリップ（握力リハビリ）', q: '電動ハンドグリップ リハビリ 関節' },
+        { kind: 'supplement', label: 'オメガ 3（抗炎症 EPA+DHA 2g/日）', q: 'オメガ3 EPA DHA 2000mg 抗炎症' },
+        { kind: 'supplement', label: 'ターメリック（クルクミン 抗炎症）', q: 'クルクミン ターメリック 関節 抗炎症' }
+      ]
     }
   };
 

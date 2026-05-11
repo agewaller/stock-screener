@@ -1294,6 +1294,7 @@ ${recentText || '記録なし'}
       migraine: { ja: '片頭痛 偏頭痛', en: 'migraine' },
       mcas: { ja: 'MCAS マスト細胞', en: 'MCAS mast cell' },
       eds: { ja: 'EDS エーラスダンロス', en: 'Ehlers-Danlos syndrome' },
+      ra: { ja: '関節リウマチ RA', en: 'rheumatoid arthritis' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1400,6 +1401,7 @@ ${recentText || '記録なし'}
       migraine: 'migraine treatment prevention',
       mcas: 'mast cell activation syndrome',
       eds: 'Ehlers-Danlos syndrome',
+      ra: 'rheumatoid arthritis treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1535,6 +1537,7 @@ ${titles}`;
       eds: 'Ehlers-Danlos syndrome',
       migraine: 'migraine treatment prevention',
       ptsd: 'post-traumatic stress disorder treatment',
+      ra: 'rheumatoid arthritis treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2919,7 +2922,7 @@ ${responseText.substring(0, 3000)}`;
       adhd: '#ADHD', long_covid: '#LongCOVID', fibromyalgia: '#線維筋痛症',
       pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
       insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
-      migraine: '#片頭痛', ptsd: '#PTSD'
+      migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

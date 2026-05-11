@@ -117,6 +117,7 @@ function extractDiseaseIds(text) {
     insomnia: /不眠症|불眠|insomnia/i,
     migraine: /片頭痛|偏頭痛|migraine|頭痛ダイアリー|トリプタン/i,
     ptsd: /PTSD|心的外傷|フラッシュバック|トラウマ|EMDR|複雑性PTSD/i,
+    ra: /関節リウマチ|RA\b|リウマチ|rheumatoid|MTX|メトトレキサート|生物学的製剤|JAK阻害薬/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
