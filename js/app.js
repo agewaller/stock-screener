@@ -1316,6 +1316,8 @@ ${recentText || '記録なし'}
       gout: { ja: '痛風 高尿酸血症 発作記録 尿酸値', en: 'gout hyperuricemia' },
       osteoporosis: { ja: '骨粗鬆症 骨密度 整形外科 骨折予防', en: 'osteoporosis' },
       menopause: { ja: '更年期障害 ホットフラッシュ HRT 婦人科', en: 'menopause syndrome' },
+      schizophrenia: { ja: '統合失調症 幻聴 妄想 精神科 デイケア', en: 'schizophrenia' },
+      alzheimers: { ja: 'アルツハイマー病 認知症 物忘れ 神経内科', en: 'Alzheimer disease' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1443,6 +1445,8 @@ ${recentText || '記録なし'}
       gout: 'gout uric acid management febuxostat',
       osteoporosis: 'osteoporosis bisphosphonate bone density treatment',
       menopause: 'menopause hormone replacement therapy HRT',
+      schizophrenia: 'schizophrenia antipsychotic treatment relapse prevention',
+      alzheimers: 'Alzheimer disease lecanemab cholinesterase inhibitor treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1600,6 +1604,8 @@ ${titles}`;
       gout: 'gout urate lowering therapy prevention',
       osteoporosis: 'osteoporosis fracture prevention bone mineral density',
       menopause: 'menopause hormone therapy symptom management',
+      schizophrenia: 'schizophrenia cognitive behavioral therapy psychosis relapse',
+      alzheimers: "Alzheimer disease biomarker amyloid progression",
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2993,7 +2999,9 @@ ${responseText.substring(0, 3000)}`;
       diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎',
       asthma: '#気管支喘息', ckd: '#慢性腎臓病',
       heart_failure: '#心不全', gout: '#痛風',
-      osteoporosis: '#骨粗鬆症', menopause: '#更年期障害'
+      osteoporosis: '#骨粗鬆症', menopause: '#更年期障害',
+      schizophrenia: '#統合失調症',
+      alzheimers: '#アルツハイマー病'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

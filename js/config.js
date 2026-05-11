@@ -1736,6 +1736,59 @@ var CONFIG = {
         { timestamp: '2026-04-07T08:00:00Z', name: 'ジドロゲステロン（デュファストン）', notes: '10mg 月15日間（HRTの子宮保護・黄体ホルモン）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    schizophrenia: {
+      diseases: ['統合失調症'],
+      profile: { age: 28, gender: 'male', height: 172, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-03-11T09:00:00Z', category: 'symptoms', title: '幻聴が強くなった', content: '昨日から幻聴がひどい。「お前はダメだ」という声が1日に何度も聞こえる（強さ7/10）。眠れなくて夜中に何度も目が覚めた。外出が怖くなってきた。デイケアを休んだ。主治医に連絡した。' },
+        { timestamp: '2026-03-18T10:00:00Z', category: 'medication', title: 'オランザピン増量', content: 'オランザピンを10mgから15mgに増量。主治医から「幻聴が強いときは無理に外出しなくていい」と言われた。服薬を続けることが最重要と再確認。体重が増えてきている（78→80kg）。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'symptoms', title: '幻聴が少し落ち着いた', content: '幻聴の強さが7/10→4/10に下がった。睡眠も改善（5時間→7時間）。外出が少しできるようになった。デイケアに1回参加した。スタッフから「表情が明るくなった」と言われた。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'activity', title: 'デイケア再開', content: 'デイケアに週2回参加。陶芸クラスとSSTに出席。他のメンバーと会話できた。陰性症状（意欲低下・社会引きこもり）はまだあるが、少しずつ動けるようになっている。' },
+        { timestamp: '2026-04-08T09:00:00Z', category: 'symptoms', title: '薬の副作用', content: 'アカシジア（じっとしていられない、脚がムズムズ）が出てきた。主治医に相談したところ、ビペリデン（アキネトン）を追加処方された。体重は81kg（継続増加中）。食事を意識して減らしている。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'vitals', title: '受診と経過確認', content: '受診。幻聴ほぼなし（1/10）。陰性症状は継続中だが「デイケアに通えているので良い」と評価された。就労支援（IPS）への参加を提案された。血糖値 110、HbA1c 5.9（薬の影響で少し高め）。' },
+        { timestamp: '2026-04-22T09:00:00Z', category: 'activity', title: '就労支援見学', content: '就労移行支援施設を見学した。パソコンを使った作業訓練があると知った。来月から週1〜2回通ってみることに。「働けるかも」という希望が少し出てきた。デイケア週2回も継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-15T10:00:00Z', name: '代謝検査（抗精神病薬副作用モニタリング）', findings: '空腹時血糖 110, HbA1c 5.9, TG 180, LDL 125, 体重 81kg, BMI 27.4（オランザピン副作用で増加傾向）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'オランザピン（ジプレキサ）', notes: '10→15mg 就寝前（抗精神病薬）' },
+        { timestamp: '2026-04-08T08:00:00Z', name: 'ビペリデン（アキネトン）', notes: '1mg 朝（EPS・アカシジア対策）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    alzheimers: {
+      diseases: ['アルツハイマー病'],
+      profile: { age: 74, gender: 'female', height: 152, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-10T08:00:00Z', category: 'symptoms', title: '同じことを何度も聞く', content: '（娘が記録）母が今日の夕食のメニューを3回聞いた。先週の孫の誕生日パーティーを覚えていない。「さっき話したでしょ」と言ってしまった。もの忘れ外来の予約を取ることにした。', },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: 'もの忘れ外来 受診', content: 'MMSE 22点（軽度認知症レベル）。MRIで海馬萎縮あり。血液検査でpTau217高値。アルツハイマー型認知症と診断。ドネペジル（アリセプト）3mgから開始することになった。' },
+        { timestamp: '2026-03-24T09:00:00Z', category: 'medication', title: 'アリセプト開始', content: 'ドネペジル3mg 就寝前に開始。最初の1週間は吐き気があったが徐々に落ち着いた。服薬管理は娘が担当。就寝前の服薬ルーティンを確立。' },
+        { timestamp: '2026-03-31T10:00:00Z', category: 'activity', title: 'デイサービス見学', content: 'デイサービスを見学。歌・体操・塗り絵のプログラムがあった。「私は元気だからこういうところには行かない」と本人は抵抗。来週もう一度見学して慣れてもらう予定。' },
+        { timestamp: '2026-04-07T09:00:00Z', category: 'symptoms', title: 'BPSD 夕暮れ症候群', content: '（娘が記録）夕方になると落ち着かなくなり「家に帰りたい」と言い出す（今いる場所が自宅なのに）。夕暮れ症候群と説明を受けた。夕方に散歩・音楽を聞かせると少し落ち着く。' },
+        { timestamp: '2026-04-14T10:00:00Z', category: 'medication', title: 'アリセプト増量', content: 'アリセプト 3→5mg に増量。副作用は吐き気が少しあったが食後服薬に変更して改善。デイサービスに週2回通い始めた。スタッフから「歌が上手と笑顔が出るようになった」との報告。' },
+        { timestamp: '2026-04-21T09:00:00Z', category: 'vitals', title: '受診・経過確認', content: 'MMSE 23点（前回 22 → 横ばい。アリセプトが効いている可能性）。「デイサービスに行くのが楽しみ」と本人が言うようになった。睡眠は改善。夕暮れ症候群は減少傾向。次回は6ヶ月後。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-17T10:00:00Z', name: '認知症鑑別検査', findings: 'MMSE 22点, pTau217 高値（アルツハイマー型確認）, MRI 海馬萎縮, TSH 正常, Vit B12 正常, 血糖 98, HbA1c 5.4' }
+      ],
+      medications: [
+        { timestamp: '2026-03-24T08:00:00Z', name: 'ドネペジル（アリセプト）', notes: '3→5mg 就寝後（コリンエステラーゼ阻害薬・認知機能維持）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };

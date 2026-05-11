@@ -728,6 +728,8 @@ App.prototype.render_dashboard = function() {
       gout: ['発作の有無・関節', '尿酸値(受診時)', '食事(プリン体・アルコール)', '水分摂取量'],
       osteoporosis: ['骨密度(YAM%)', '転倒・ヒヤリハット', '服薬記録', 'カルシウム/ビタミンD摂取'],
       menopause: ['ほてり回数・強さ(1-10)', '睡眠時間・夜間覚醒', '気分・イライラ(1-10)', 'HRT/漢方服薬記録'],
+      schizophrenia: ['陽性症状(幻聴・妄想)の強さ(1-10)', '陰性症状(意欲・感情)の変化', '服薬確認・副作用', 'デイケア参加・睡眠リズム'],
+      alzheimers: ['物忘れエピソード(内容・頻度)', 'BPSD(徘徊・興奮・幻覚)', '服薬確認', 'ADL介助量の変化'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
