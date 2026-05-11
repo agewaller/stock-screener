@@ -1314,6 +1314,52 @@ var CONFIG = {
         { timestamp: '2026-03-01T08:00:00Z', name: 'ヒュミラ (アダリムマブ)', notes: '40mg 2週おき 皮下注射（TNFα阻害薬）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    depression: {
+      diseases: ['うつ病（大うつ病性障害）'],
+      profile: { age: 41, gender: 'female', height: 163, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-03-18T22:00:00Z', category: 'symptoms', title: '気分', content: '気分 2/10。布団から出られない。シャワーも無理だった。昨日の休職診断書を職場に送れた。' },
+        { timestamp: '2026-03-25T11:00:00Z', category: 'medication', title: 'レクサプロ開始', content: 'エスシタロプラム（レクサプロ）10mg 開始。最初の1週間は眠気と吐き気あり。' },
+        { timestamp: '2026-04-01T13:00:00Z', category: 'symptoms', title: '', content: '気分 4/10。少し外に出られた（近所のコンビニまで）。小さな前進。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'symptoms', title: '睡眠', content: '睡眠が少し改善。朝 7 時に起きられた。気分 4〜5/10。読書できた（30分）。' },
+        { timestamp: '2026-04-15T12:00:00Z', category: 'symptoms', title: '', content: '気分 5/10。カウンセリング2回目。認知のゆがみについて話し合った。「べき思考」が多いと気づいた。' },
+        { timestamp: '2026-04-22T14:00:00Z', category: 'symptoms', title: '', content: '気分 6/10。散歩 20分できた。気分が良くなると焦りが出るので、ペースを守ることを意識。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-25T08:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '10mg 朝1錠。副作用: 初週は眠気・吐き気' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    adhd: {
+      diseases: ['ADHD（注意欠如多動性障害）'],
+      profile: { age: 29, gender: 'male', height: 175, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-03-19T21:00:00Z', category: 'symptoms', title: '仕事', content: '締め切りを2つ忘れた。タスク管理アプリを試したがすぐ使わなくなる。上司に謝罪。集中力 2/10。' },
+        { timestamp: '2026-03-26T18:00:00Z', category: 'medication', title: 'コンサータ開始', content: 'メチルフェニデート（コンサータ）18mg 開始。初日: 集中できた！午後はやや心拍増加。' },
+        { timestamp: '2026-04-02T20:00:00Z', category: 'symptoms', title: '', content: 'コンサータ1週間。午前中の集中力が劇的改善。夕方以降は効果切れ（ウェアリングオフ）。' },
+        { timestamp: '2026-04-09T19:00:00Z', category: 'medication', title: '増量', content: '36mg に増量。食欲がやや低下（昼食をあまり食べられない）。夜の睡眠は大丈夫。' },
+        { timestamp: '2026-04-16T21:00:00Z', category: 'symptoms', title: 'コーチング', content: 'ADHDコーチング2回目。タスクを15分ブロックに分割する技法を試している。仕事への遅刻が今週ゼロ。' },
+        { timestamp: '2026-04-23T20:00:00Z', category: 'symptoms', title: '', content: '集中力 7/10（コンサータ服薬日）。タスク達成率も改善。睡眠は7時間確保できてきた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-26T08:00:00Z', name: 'メチルフェニデート（コンサータ）', notes: '18mg→36mg 朝1回。効果時間約8時間。食欲低下に注意' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
