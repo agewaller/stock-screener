@@ -137,6 +137,8 @@ function extractDiseaseIds(text) {
     ckd: /慢性腎臓病|CKD\b|chronic kidney disease|eGFR|腎機能.*低下|透析.*腎|腎臓.*SGLT2|フォシーガ.*腎|ケレンディア|尿タンパク.*腎|腎保護|腎不全.*慢性/i,
     heart_failure: /心不全|heart failure|HFrEF|HFpEF|エンレスト|サクビトリル|フロセミド|トルバプタン|サムスカ|BNP|NT-proBNP|息切れ.*心臓|浮腫.*心不全|体重.*心不全|再入院.*心臓/i,
     gout: /痛風|高尿酸血症|gout|hyperuricemia|尿酸値|アロプリノール|フェブリク|フェブキソスタット|ベンズブロマロン|コルヒチン|痛風発作|プリン体.*発作|尿酸.*関節/i,
+    osteoporosis: /骨粗鬆症|osteoporosis|骨密度|骨量減少|ビスフォスフォネート|アレンドロネート|リセドロネート|デノスマブ|プラリア|テリパラチド|フォルテオ|ロモソズマブ|イベニティ|骨折.*予防|YAM.*骨|圧迫骨折|脆弱性骨折|骨粗しょう症/i,
+    menopause: /更年期障害|更年期症状|閉経|menopausal|menopause|ホットフラッシュ|ほてり.*更年|HRT.*更年|ホルモン補充療法|エストロゲン.*閉経|加味逍遙散|桂枝茯苓丸|フェゾリネタント|ニュエリア|エクオール|イソフラボン.*更年|のぼせ.*更年|夜間発汗.*閉経/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

@@ -726,6 +726,8 @@ App.prototype.render_dashboard = function() {
       ckd: ['血圧(朝・夕)', '体重・むくみ', '食事の塩分量', '倦怠感・息苦しさ'],
       heart_failure: ['体重(毎朝)', '血圧・心拍数', '足のむくみ(1-5)', '息切れ・倦怠感(1-10)'],
       gout: ['発作の有無・関節', '尿酸値(受診時)', '食事(プリン体・アルコール)', '水分摂取量'],
+      osteoporosis: ['骨密度(YAM%)', '転倒・ヒヤリハット', '服薬記録', 'カルシウム/ビタミンD摂取'],
+      menopause: ['ほてり回数・強さ(1-10)', '睡眠時間・夜間覚醒', '気分・イライラ(1-10)', 'HRT/漢方服薬記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

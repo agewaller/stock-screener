@@ -1681,6 +1681,61 @@ var CONFIG = {
         { timestamp: '2026-03-26T08:00:00Z', name: 'ダパグリフロジン（フォシーガ）', notes: '10mg 朝（SGLT2阻害薬・CKD腎保護適応）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    osteoporosis: {
+      diseases: ['骨粗鬆症'],
+      profile: { age: 67, gender: 'female', height: 155, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-12T09:00:00Z', category: 'vitals', title: '骨密度検査結果', content: 'DXA検査の結果。腰椎YAM 68%、大腿骨YAM 71%。骨粗鬆症と診断。昨年より5%低下しているとのこと。整形外科でアレンドロネートを処方された。' },
+        { timestamp: '2026-03-19T08:00:00Z', category: 'medication', title: 'アレンドロネート開始', content: 'アレンドロネート（ボナロン）週1回35mg 開始。飲み方の注意：起床後すぐ、コップ1杯の水で飲む、30分は横にならない。逆流性食道炎に注意するよう言われた。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'symptoms', title: '転倒ヒヤリ', content: '夜中にトイレへ行くとき、廊下で足がもつれてヒヤリとした。転ばなかったけれど怖かった。足元灯を購入しようと決めた。バランス運動を始めることにした。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'nutrition', title: 'カルシウム食品記録', content: '今日の食事：ヨーグルト1個（カルシウム約120mg）、豆腐半丁（約120mg）、小魚の佃煮（約150mg）。合計約400mgで目標の700mgに届いていない。牛乳を追加しよう。' },
+        { timestamp: '2026-04-08T11:00:00Z', category: 'activity', title: 'バランス体操', content: '整形外科士に教えてもらったバランス体操を毎朝10分実施中。片足立ち10秒×3回、スクワット15回。最初は5秒しかできなかった片足立ちが10秒できるようになった。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'vitals', title: '受診と薬剤確認', content: 'アレンドロネート1ヶ月後の受診。副作用なし。カルシウム700mg＋ビタミンD400IUサプリを追加で処方された。次回DXA検査は6ヶ月後。' },
+        { timestamp: '2026-04-22T10:00:00Z', category: 'symptoms', title: '腰背部痛の経過', content: '腰の鈍痛が続いているが先月より軽くなった（5/10→3/10）。圧迫骨折はないと説明された。バランス体操と減痛薬（ロキソニン頓服）で管理中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-15T10:00:00Z', name: '骨代謝マーカー・一般検査', findings: 'ALP 98（正常）, Ca 9.1, P 3.5, 25(OH)D 18（不足）, 骨型ALP 12.8（骨吸収マーカー改善中）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-19T08:00:00Z', name: 'アレンドロネート（ボナロン）', notes: '35mg 週1回 起床後（ビスフォスフォネート・骨吸収抑制）' },
+        { timestamp: '2026-04-15T08:00:00Z', name: 'カルシウム＋ビタミンD3', notes: '700mg/400IU 朝食後（骨密度維持・骨折予防）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    menopause: {
+      diseases: ['更年期障害'],
+      profile: { age: 51, gender: 'female', height: 158, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-03-10T07:00:00Z', category: 'symptoms', title: 'ほてり・夜間発汗', content: '今朝も4時に夜間発汗で目が覚めた。パジャマが濡れるくらいの発汗。昼間は突然のほてりが5〜6回（強さ7/10）。最後の月経から8ヶ月。閉経になったのかも。婦人科に予約した。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '婦人科受診', content: 'FSH 63 mIU/mL（閉経レベル）、E2 15 pg/mL（低値）。更年期障害と診断。HRTか漢方か相談。まず加味逍遙散を試してみることになった。' },
+        { timestamp: '2026-03-24T08:00:00Z', category: 'medication', title: '加味逍遙散開始', content: '加味逍遙散 2.5g 朝晩2回開始。漢方なので効果が出るまで2〜4週間かかると説明された。夜間発汗は変わらず。イライラは少し楽になった気がする。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'symptoms', title: '睡眠改善', content: '加味逍遙散2週間。夜間覚醒が3回→1〜2回に減った。ほてりはまだ5回程度/日だが強さが5/10に下がった。気分のムラは漢方で落ち着いてきている。' },
+        { timestamp: '2026-04-07T10:00:00Z', category: 'medication', title: 'HRTへの切り替え相談', content: '再受診。加味逍遙散で気分は改善したが、ほてりが続くためHRTも相談。エストラジオールパッチ（ル・エストロジェル）＋黄体ホルモン処方。1〜2週間で効果出ると説明。' },
+        { timestamp: '2026-04-14T08:00:00Z', category: 'symptoms', title: 'HRT開始1週間', content: 'HRT開始1週間。ほてり2〜3回/日（強さ4/10）に大幅改善。夜間発汗がほぼなくなった！睡眠7時間取れた。エネルギーが戻ってきた感じ。乳房の張りはあるが許容範囲。' },
+        { timestamp: '2026-04-21T09:00:00Z', category: 'vitals', title: '骨密度・定期検査', content: '骨密度検査（DXA）：腰椎YAM 82%（正常範囲）。エストロゲン低下で骨密度も下がるとのこと。カルシウムサプリと日光浴を継続するよう指示。次回は6ヶ月後。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-17T10:00:00Z', name: 'ホルモン検査', findings: 'FSH 63 mIU/mL（閉経レベル）, LH 42, E2 15 pg/mL（低値）, TSH 2.1（正常）, コレステロール LDL 142（やや高め）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-24T08:00:00Z', name: '加味逍遙散', notes: '2.5g 朝晩2回（気分不安定・ほてり軽減）' },
+        { timestamp: '2026-04-07T08:00:00Z', name: 'エストラジオールジェル（ル・エストロジェル）', notes: '1g 腕に塗布 就寝前（HRT・ほてり治療）' },
+        { timestamp: '2026-04-07T08:00:00Z', name: 'ジドロゲステロン（デュファストン）', notes: '10mg 月15日間（HRTの子宮保護・黄体ホルモン）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
