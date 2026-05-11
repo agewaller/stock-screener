@@ -129,6 +129,8 @@ function extractDiseaseIds(text) {
     parkinsons: /パーキンソン病|パーキンソン|Parkinson|振戦|固縮|寡動|レボドパ|メネシット|ミラペックス|ウェアリングオフ|DBS.*パーキンソン/i,
     ms: /多発性硬化症|MS\b|Multiple Sclerosis|視神経炎|MSファティーグ|ウートホフ|タイサブリ|オクレバス|フィンゴリモド|イムセラ|ナタリズマブ|オクレリズマブ|インターフェロンβ/i,
     chronic_pain: /慢性疼痛|慢性痛|神経障害性疼痛|ペインクリニック|リリカ|プレガバリン|タリージェ|中枢感作|アロディニア|脊髄刺激|SCS\b|神経ブロック|CRPS|複合性局所疼痛/i,
+    panic: /パニック障害|パニック症|パニック発作|広場恐怖症|panic disorder|予期不安|動悸.*恐怖|息苦しさ.*発作|パキシル.*パニック|広場恐怖/i,
+    endometriosis: /子宮内膜症|子宮腺筋症|endometriosis|月経痛.*悪化|ジエノゲスト|ビジュアリン|チョコレート嚢胞|深部子宮内膜症|骨盤痛|GnRH.*子宮|生理痛.*年々/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

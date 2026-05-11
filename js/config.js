@@ -1481,6 +1481,53 @@ var CONFIG = {
         { timestamp: '2026-03-26T08:00:00Z', name: 'ミロガバリン（タリージェ）', notes: '5mg→10mg ×2/日（神経障害性疼痛）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    panic: {
+      diseases: ['パニック障害'],
+      profile: { age: 27, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-17T22:00:00Z', category: 'symptoms', title: 'パニック発作', content: '電車内で突然の動悸・息苦しさ・「死ぬかも」という恐怖。10分で自然に治まったが怖かった。次から電車が乗れなくなりそう。' },
+        { timestamp: '2026-03-24T11:00:00Z', category: 'medication', title: 'レクサプロ開始', content: 'エスシタロプラム 10mg 開始。「最初の1〜2週間は不安が増すことがある」と医師に言われた。' },
+        { timestamp: '2026-03-31T20:00:00Z', category: 'symptoms', title: '予期不安', content: '電車に乗れず、職場まで歩いた（40分）。発作は3日に1回程度。職場でも発作が来ないか心配。' },
+        { timestamp: '2026-04-07T10:00:00Z', category: 'symptoms', title: 'CBT 開始', content: 'CBT 初回。発作日誌を付けることと、腹式呼吸の練習。「発作は20分で治まる」を覚えることが大事とのこと。' },
+        { timestamp: '2026-04-14T09:00:00Z', category: 'symptoms', title: '曝露療法', content: '1駅だけ電車に乗った（曝露療法）。怖かったが発作は来なかった。達成感あり。レクサプロ効果が出始めたか。' },
+        { timestamp: '2026-04-21T21:00:00Z', category: 'symptoms', title: '', content: '今週の発作は1回。乗れる電車の範囲が広がってきた。3駅までOK。来月には職場まで電車で行きたい。' },
+        { timestamp: '2026-04-28T20:00:00Z', category: 'symptoms', title: '', content: '今月の発作: 4回（先月12回）。電車5駅まで乗れた。予期不安も軽くなってきた。CBT続けたい。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-24T08:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '10mg 朝1錠（SSRI・パニック障害予防薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    endometriosis: {
+      diseases: ['子宮内膜症'],
+      profile: { age: 31, gender: 'female', height: 161, weight: 53 },
+      textEntries: [
+        { timestamp: '2026-03-18T07:00:00Z', category: 'symptoms', title: '月経痛', content: '月経1日目。NRS 8/10。ロキソプロフェン2錠服用。仕事を休んだ。右下腹部の強い痛みと腰痛。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'medication', title: 'ジエノゲスト開始', content: 'ジエノゲスト（ビジュアリン）2mg/日 開始。「月経周期を止めて痛みを軽減する」と婦人科で説明を受けた。' },
+        { timestamp: '2026-04-01T09:00:00Z', category: 'symptoms', title: '不正出血', content: 'ジエノゲスト2週目。不正出血が続いている（ビジュアリンの副作用と説明された）。腹痛は 5/10 に軽減。' },
+        { timestamp: '2026-04-08T11:00:00Z', category: 'symptoms', title: '気分変化', content: 'ジエノゲスト 3週目。骨盤痛がさらに軽減（3/10）。気分が少し沈みやすい。気分の変化を記録しておこう。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'symptoms', title: '', content: '今週は骨盤痛ほぼなし。不正出血は減ってきた。仕事にフル出勤できた。ジエノゲスト効いている実感。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: 'チョコレート嚢胞', content: '婦人科MRI 結果: 右卵巣チョコレート嚢胞 4cm（前回4.2cm→縮小傾向）。ジエノゲスト継続で経過観察。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-25T08:00:00Z', name: 'ジエノゲスト（ビジュアリン）', notes: '2mg/日（子宮内膜症の第一選択ホルモン薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };

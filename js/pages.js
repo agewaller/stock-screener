@@ -718,6 +718,8 @@ App.prototype.render_dashboard = function() {
       parkinsons: ['振戦の強さ(1-10)', 'ウェアリングオフ', '服薬タイミング', '転倒'],
       ms: ['再発疑い症状', 'MSファティーグ(1-10)', 'DMT注射・副作用', 'ウートホフ現象'],
       chronic_pain: ['痛みの強さNRS(0-10)', '痛みの部位・性質', '誘因', '服薬効果時間'],
+      panic: ['発作の有無・強さ(1-10)', '発作の場所・状況', '回避した場所', '予期不安(1-10)'],
+      endometriosis: ['月経痛NRS(0-10)', '骨盤痛の有無', '鎮痛薬使用', '不正出血（ジエノゲスト副作用）'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

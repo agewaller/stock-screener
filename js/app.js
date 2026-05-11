@@ -1306,6 +1306,8 @@ ${recentText || '記録なし'}
       parkinsons: { ja: 'パーキンソン病 振戦', en: "Parkinson's disease" },
       ms: { ja: '多発性硬化症 MS 神経内科', en: 'multiple sclerosis' },
       chronic_pain: { ja: '慢性疼痛 ペインクリニック 神経障害性疼痛', en: 'chronic pain' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖症', en: 'panic disorder' },
+      endometriosis: { ja: '子宮内膜症 月経痛 ジエノゲスト 婦人科', en: 'endometriosis' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1423,6 +1425,8 @@ ${recentText || '記録なし'}
       parkinsons: "Parkinson's disease treatment",
       ms: 'multiple sclerosis disease modifying therapy',
       chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder treatment anxiety',
+      endometriosis: 'endometriosis treatment pain management',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1570,6 +1574,8 @@ ${titles}`;
       parkinsons: "Parkinson's disease treatment",
       ms: 'multiple sclerosis disease modifying therapy',
       chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder cognitive behavioral therapy',
+      endometriosis: 'endometriosis treatment hormonal',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2958,7 +2964,8 @@ ${responseText.substring(0, 3000)}`;
       sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
       gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
       ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
-      ms: '#多発性硬化症', chronic_pain: '#慢性疼痛'
+      ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
+      panic: '#パニック障害', endometriosis: '#子宮内膜症'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
