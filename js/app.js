@@ -2908,7 +2908,14 @@ ${responseText.substring(0, 3000)}`;
       .replace(/\s+/g, ' ')
       .trim()
       .substring(0, 100);
-    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 #ME_CFS #慢性疾患 #健康日記`;
+    const primaryId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+    const diseaseHashtag = {
+      mecfs: '#ME_CFS', depression: '#うつ病', bipolar: '#双極性障害',
+      adhd: '#ADHD', long_covid: '#LongCOVID', fibromyalgia: '#線維筋痛症',
+      pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
+      insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS'
+    }[primaryId] || '#慢性疾患';
+    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
 
   // Copy share text to clipboard + toast feedback. Used by the 📋
