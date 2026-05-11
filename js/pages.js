@@ -1950,7 +1950,7 @@ App.prototype.render_research = function() {
     ? savedResults.html
     : (updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。'));
+      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとあなたの疾患の最新論文が表示されます。'));
   const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
 
   return `
@@ -1994,6 +1994,19 @@ App.prototype.render_chat = function() {
   const history = store.get('conversationHistory') || [];
   const messages = history.map(m => Components.chatMessage(m)).join('');
 
+  const selectedDiseases = store.get('selectedDiseases') || [];
+  const diseaseNames = [];
+  selectedDiseases.forEach(id => {
+    if (id === 'custom') { diseaseNames.push(store.get('customDiseaseName') || 'その他'); return; }
+    for (const cat of CONFIG.DISEASE_CATEGORIES) {
+      const found = cat.diseases.find(d => d.id === id);
+      if (found) { diseaseNames.push(found.name); break; }
+    }
+  });
+  const diseaseLabelForChat = diseaseNames.length > 0
+    ? diseaseNames.slice(0, 2).join('・') + (diseaseNames.length > 2 ? 'など' : '')
+    : store.get('selectedDisease')?.name || '健康';
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
@@ -2005,7 +2018,7 @@ App.prototype.render_chat = function() {
         ${messages || `
           <div style="text-align:center;padding:40px;color:var(--text-muted)">
             <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>ME/CFSについて何でも質問してください</p>
+            <p>${Components.escapeHtml(diseaseLabelForChat)}について何でも質問してください</p>
             <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
           </div>
         `}
