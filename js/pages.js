@@ -434,7 +434,7 @@ App.prototype._getEarnedBadges = function(stats) {
 
 App.prototype.render_dashboard = function() {
   try {
-  const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
+  const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
   const score = store.get('healthScore') || 50;
   const symptoms = store.get('symptoms') || [];
   const latest = symptoms[symptoms.length - 1] || {};

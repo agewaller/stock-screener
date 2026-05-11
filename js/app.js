@@ -150,6 +150,17 @@ var App = class App {
         localStorage.setItem('referrer_id', ref);
         console.log('[Referral] captured ref=' + ref);
       }
+      // ?d= pre-selects a disease from LP CTAs (e.g. /bipolar.html → ?d=bipolar).
+      // Only apply if the user hasn't already chosen diseases, so we don't
+      // clobber an existing selection on return visits.
+      const dParam = params.get('d');
+      if (dParam && !(store.get('selectedDiseases') || []).length) {
+        const allIds = (CONFIG.DISEASE_CATEGORIES || []).flatMap(c => c.diseases.map(d => d.id));
+        if (allIds.includes(dParam)) {
+          store.set('selectedDiseases', [dParam]);
+          console.log('[d-param] pre-selected disease:', dParam);
+        }
+      }
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
