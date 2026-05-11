@@ -1591,6 +1591,49 @@ ME/CFSとの重複症状にも注意して分析してください。
   }
 };
 
+  sleep_apnea_research: { name: '睡眠時無呼吸症候群 最新研究', disease: 'sleep_apnea', schedule: 'daily', active: true, description: '睡眠時無呼吸症候群の最新治療・研究',
+    prompt: PROMPT_HEADER + `睡眠時無呼吸症候群（SAS/OSAS）の最新研究を報告してください。重点：GLP-1受容体作動薬（セマグルチド）による減量とSAS改善（SURMOUNT-OSA試験）、テポチニブ・中枢型SASへのASV療法の安全性再評価、低酸素誘導因子（HIF）と心血管リスクの新知見、デジタル健康ツール（スマートフォン・ウェアラブル）によるSAS診断・モニタリング、CPAP非使用者への代替治療（舌下神経刺激療法・Inspire Medical）、口腔内装置とCPAPの長期比較、肥満外科手術とSAS改善。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・イベント情報\n今後予定されている関連学会（日本睡眠学会・AASM等）を報告。URL付きで提示すること。` },
+
+  sleep_apnea_daily: {
+    name: '睡眠時無呼吸症候群 日次分析',
+    disease: 'sleep_apnea',
+    description: 'CPAP使用・日中眠気・体重・血圧の追跡',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは睡眠専門医（睡眠時無呼吸症候群専門）です。
+ユーザーの日記・CPAP記録から睡眠時無呼吸症候群の状態を評価してください。
+
+1. CPAP使用時間（目標4時間/日以上）・リーク値・機器AHI値の評価
+2. 日中眠気（ESSスコア・居眠りした場面）の変化
+3. 起床時の頭痛・口渇・倦怠感（CPAP効果のモニタリング）
+4. 体重変化（肥満とAHIの相関）・腹囲・BMI
+5. 血圧（朝夕測定）・心拍数の変化（心血管合併症の予防）
+6. CPAP継続の障害（マスク不快感・リーク・圧迫感）の記録
+7. 次の受診前に報告すべきCPAP使用状況・症状変化の要約`
+  },
+
+  thyroid_cancer_research: { name: '甲状腺がん 最新研究', disease: 'thyroid_cancer', schedule: 'daily', active: true, description: '甲状腺がんの最新治療・術後管理・研究',
+    prompt: PROMPT_HEADER + `甲状腺がん（Thyroid Cancer）の最新研究を報告してください。重点：低リスク乳頭がんのアクティブサーベイランス（即時手術vs経過観察）の長期データ、レンバチニブ（レンビマ）の新適応・耐性機序・次世代薬、RET融合陽性甲状腺がんへのセルペルカチニブ（Retevmo）・プラルセチニブ（Gavreto）の有効性、血液バイオマーカー（セルフリーDNA）による再発早期検出、TSH抑制療法の至適レベル（リスク分類別の新ガイドライン）、甲状腺がんサバイバーのQOL・心理的課題への対応。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・イベント情報\n今後予定されている関連学会（日本甲状腺学会・日本内分泌外科学会等）を報告。URL付きで提示すること。` },
+
+  thyroid_cancer_daily: {
+    name: '甲状腺がん 日次分析',
+    disease: 'thyroid_cancer',
+    description: 'チラーヂン服薬・TSH副作用・Tg値・再発症状の追跡',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは内分泌外科・甲状腺専門医です。
+ユーザーの日記・服薬記録・検査値から甲状腺がんの術後管理状態を評価してください。
+
+1. チラーヂン（レボチロキシン）の服薬確認（空腹時・他薬との間隔30〜60分）
+2. TSH抑制療法の副作用（動悸・不整脈・不眠・体重減少・骨密度低下リスク）の評価
+3. 最新のTg値・TgAb値・TSH値と前回比較（再発モニタリング）
+4. 再発疑い症状（頸部腫れ・嗄声・嚥下障害・呼吸困難）の有無
+5. 骨密度・心拍数・血圧の変化（TSH抑制の長期副作用）
+6. 次回の定期検査（頸部超音波・CT・シンチグラフィ）の準備
+7. 次の受診前に報告すべき服薬・症状・検査値の変化の要約`
+  }
+};
+
 // Build DEFAULT_PROMPTS by merging universal + disease-specific
 var DEFAULT_PROMPTS = { ...UNIVERSAL_PROMPTS, ...DISEASE_PROMPTS };
 

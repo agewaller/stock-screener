@@ -143,6 +143,8 @@ function extractDiseaseIds(text) {
     alzheimers: /アルツハイマー|Alzheimer|認知症.*記憶|物忘れ.*外来|アリセプト|ドネペジル|レミニール|ガランタミン|リバスタッチ|リバスチグミン|メマリー|メマンチン|レカネマブ|レケンビ|BPSD|認知機能.*低下|物忘れ.*外来|MCI.*認知|軽度認知障害|抑肝散.*認知/i,
     sad: /社会不安障害|社交不安症|社会恐怖症|social anxiety|SAD\b.*不安|対人恐怖|赤面恐怖|視線恐怖|スピーチ.*恐怖|電話.*恐怖|パロキセチン.*不安|エスシタロプラム.*不安|レクサプロ.*不安|対人場面.*不安|回避行動.*対人/i,
     anorexia: /摂食障害|拒食症|過食症|神経性食欲不振症|神経性過食症|anorexia nervosa|bulimia nervosa|eating disorder|CBT-E|低体重.*食事|食べること.*恐怖|過食.*嘔吐|過食.*下剤|ボディイメージ.*食事|摂食.*体重.*恐怖|食行動|Maudsley.*食事/i,
+    thyroid_cancer: /甲状腺がん|甲状腺癌|thyroid cancer|乳頭がん.*甲状腺|濾胞がん.*甲状腺|チラーヂン|レボチロキシン.*甲状腺|TSH抑制|サイログロブリン|Tg値.*甲状腺|TgAb|甲状腺全摘|放射性ヨウ素.*甲状腺|レンビマ.*甲状腺|レンバチニブ.*甲状腺|甲状腺.*術後|甲状腺.*再発/i,
+    sleep_apnea: /睡眠時無呼吸|睡眠時無呼吸症候群|SAS\b|OSAS\b|sleep apnea|無呼吸.*睡眠|いびき.*無呼吸|CPAP|日中.*眠気.*睡眠|AHI\b.*睡眠|無呼吸.*指数|シーパップ|マウスピース.*いびき|口腔内装置.*無呼吸|眠気.*無呼吸|ESS.*眠気/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

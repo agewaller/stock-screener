@@ -1320,6 +1320,8 @@ ${recentText || '記録なし'}
       alzheimers: { ja: 'アルツハイマー病 認知症 物忘れ 神経内科', en: 'Alzheimer disease' },
       sad: { ja: '社会不安障害 社交不安症 対人恐怖 精神科 心療内科', en: 'social anxiety disorder' },
       anorexia: { ja: '摂食障害 拒食症 過食症 心療内科 精神科', en: 'eating disorder anorexia bulimia' },
+      thyroid_cancer: { ja: '甲状腺がん 乳頭がん 術後管理 内分泌外科 チラーヂン', en: 'thyroid cancer' },
+      sleep_apnea: { ja: '睡眠時無呼吸症候群 SAS CPAP いびき 睡眠外来', en: 'sleep apnea syndrome' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1451,6 +1453,8 @@ ${recentText || '記録なし'}
       alzheimers: 'Alzheimer disease lecanemab cholinesterase inhibitor treatment',
       sad: 'social anxiety disorder CBT SSRI treatment',
       anorexia: 'eating disorder anorexia nervosa bulimia CBT-E treatment',
+      thyroid_cancer: 'thyroid cancer papillary follicular treatment lenvatinib',
+      sleep_apnea: 'obstructive sleep apnea CPAP cardiovascular outcomes',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1612,6 +1616,8 @@ ${titles}`;
       alzheimers: "Alzheimer disease biomarker amyloid progression",
       sad: 'social anxiety disorder exposure therapy cognitive behavioral',
       anorexia: 'anorexia nervosa bulimia nervosa recovery CBT-E',
+      thyroid_cancer: 'thyroid cancer recurrence surveillance Tg monitoring',
+      sleep_apnea: 'sleep apnea CPAP adherence weight loss treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3009,7 +3015,9 @@ ${responseText.substring(0, 3000)}`;
       schizophrenia: '#統合失調症',
       alzheimers: '#アルツハイマー病',
       sad: '#社会不安障害',
-      anorexia: '#摂食障害'
+      anorexia: '#摂食障害',
+      thyroid_cancer: '#甲状腺がん',
+      sleep_apnea: '#睡眠時無呼吸症候群'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

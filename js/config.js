@@ -1840,6 +1840,57 @@ var CONFIG = {
         { timestamp: '2026-03-15T08:00:00Z', name: 'ビタミンD3', notes: '1000IU 朝食後（欠乏補正）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    thyroid_cancer: {
+      diseases: ['甲状腺がん'],
+      profile: { age: 46, gender: 'female', height: 158, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'vitals', title: '術後3ヶ月 受診', content: 'Tg値 0.08（術後低値維持）、TgAb 陰性、TSH 0.08（抑制目標範囲）。頸部超音波は異常なし。「術後経過は良好」と言われた。チラーヂン 100μgを継続。' },
+        { timestamp: '2026-03-12T08:00:00Z', category: 'symptoms', title: 'TSH抑制の副作用', content: '動悸が気になる。安静時の心拍数が90〜100。眠りが浅く夜中に目が覚める。体重が54→53kgに減少。TSH抑制のせい？次の受診で相談しようと思う。' },
+        { timestamp: '2026-03-19T08:00:00Z', category: 'medication', title: 'チラーヂン微調整', content: 'TSH 0.04（低すぎる）と指摘。チラーヂン 100μg→88μg に微調整。「術後3年経過で低リスクになってきたので少し緩める」と説明された。ホッとした。' },
+        { timestamp: '2026-03-26T09:00:00Z', category: 'vitals', title: '骨密度検査', content: 'DXA検査：腰椎YAM 83%（正常範囲）。TSH抑制療法2年で若干の低下が見られると言われた。カルシウム＋ビタミンD3を処方された。定期的な体重負荷運動も勧められた。' },
+        { timestamp: '2026-04-02T08:00:00Z', category: 'symptoms', title: '動悸改善', content: 'チラーヂン微調整後2週間。安静時心拍数 82〜88に改善。夜の眠りも良くなった。体重は53kg で安定。副作用が減って生活しやすくなった。' },
+        { timestamp: '2026-04-09T11:00:00Z', category: 'vitals', title: '受診・Tg確認', content: 'Tg 0.10（前回 0.08 から微増だが許容範囲）。TgAb 陰性。TSH 0.15（調整後の目標範囲に入った）。動悸の改善を報告したら医師から「調整成功」と言われた。次回は6ヶ月後。' },
+        { timestamp: '2026-04-16T09:00:00Z', category: 'activity', title: 'ウォーキング開始', content: '骨密度維持のため毎日30分のウォーキングを開始。カルシウムサプリも継続中。術後の体調は安定していて、ほぼ手術前と変わらない生活に戻れた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-09T10:00:00Z', name: '甲状腺がん術後モニタリング', findings: 'Tg 0.10（術後低値維持）, TgAb 陰性, TSH 0.15（抑制目標範囲）, FT4 1.8（やや高め・TSH抑制反映）, Ca 9.3, ALP 88' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'レボチロキシン（チラーヂン）', notes: '100→88μg 朝空腹時（TSH抑制・甲状腺ホルモン補充）' },
+        { timestamp: '2026-03-26T08:00:00Z', name: 'カルシウム＋ビタミンD3', notes: '700mg/400IU 朝食後（骨密度低下予防・TSH抑制副作用対策）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    sleep_apnea: {
+      diseases: ['睡眠時無呼吸症候群'],
+      profile: { age: 48, gender: 'male', height: 170, weight: 88 },
+      textEntries: [
+        { timestamp: '2026-03-08T08:00:00Z', category: 'symptoms', title: '日中の強い眠気', content: '会議中に2回居眠りしてしまった。毎朝頭が重く、起床時に頭痛がある。妻から「いびきがひどくて息が止まっている」と指摘された。ESS（眠気スコア）を測ったら15点（重度眠気）。睡眠外来に予約した。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: '睡眠外来 受診・検査', content: '簡易ポリグラフ検査の結果：AHI 38（重症OSA）。血液検査で血圧 148/92、空腹時血糖 112（やや高め）。CPAP療法を開始することになった。機器レンタル（レスメド）を処方。' },
+        { timestamp: '2026-03-22T08:00:00Z', category: 'medication', title: 'CPAP開始1週間', content: 'CPAP開始1週間。最初の2日は呼吸に合わせる感覚が難しかった。3日目からは自然に眠れた。使用時間：平均5.2時間/日。機器AHI：4.8（良好）。朝の頭痛が消えた。' },
+        { timestamp: '2026-03-29T08:00:00Z', category: 'symptoms', title: '眠気改善', content: 'ESS 15→9 に改善（正常範囲内）。日中の居眠りがなくなった。体重 88kg（変化なし）。妻から「いびきが全くなくなった」と言われた。マスクのリーク値が少し高い→調整した。' },
+        { timestamp: '2026-04-05T08:00:00Z', category: 'vitals', title: '血圧改善', content: '朝の血圧 132/84（CPAP前 148/92 から改善）。CPAP使用時間：5.8時間/日（目標4時間以上を達成）。体重を減らすことにした。食事管理を始め、夕食の炭水化物を半減した。' },
+        { timestamp: '2026-04-12T08:00:00Z', category: 'vitals', title: '受診・1ヶ月後', content: 'CPAP使用時間 平均6時間。AHI 3.2（目標5以下達成）。ESS 8（正常）。血圧 128/82。「CPAP は大成功」と評価された。体重 86kg（2kg減）。体重 85kg 以下が次の目標。' },
+        { timestamp: '2026-04-19T08:00:00Z', category: 'activity', title: '体重管理継続', content: '食事管理2週間。体重 85.5kg（-2.5kg）。CPAPの使用時間 6.5時間/日に増えた。朝の起床が楽になった。仕事の集中力が戻ってきた感じ。次の目標は体重 80kg 以下。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T10:00:00Z', name: 'SAS合併症スクリーニング', findings: 'AHI 38（重症OSA）, 血圧 148/92, 空腹時血糖 112, HbA1c 5.8, TG 210, LDL 142, BMI 30.4' }
+      ],
+      medications: [],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
