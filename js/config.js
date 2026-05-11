@@ -72,7 +72,8 @@ var CONFIG = {
         { id: 'insomnia', name: '不眠障害', icd: '7A00' },
         { id: 'substance', name: '物質依存症', icd: '6C4' },
         { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
-        { id: 'dissociative', name: '解離性障害', icd: '6B6' }
+        { id: 'dissociative', name: '解離性障害', icd: '6B6' },
+        { id: 'panic', name: 'パニック障害', icd: 'F41.0' }
       ]
     },
     {
@@ -171,7 +172,8 @@ var CONFIG = {
         { id: 'gerd', name: '逆流性食道炎（GERD）', icd: 'DA22' },
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
-        { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' }
+        { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
+        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
       ]
     },
     {
@@ -258,6 +260,10 @@ var CONFIG = {
                           japan:  22_000_000, japanLabel: '約 2,200 万人',         japanSource: '日本涙液学会' },
     chronic_prostatitis:{ world:    50_000_000, label: '約 5,000 万人（推計）', tier: 2, density: 'low', source: '男性成人 5〜10%',
                           japan:   3_000_000, japanLabel: '約 300 万人（推計）',   japanSource: '国内推計' },
+    ulcerative_colitis: { world:    10_000_000, label: '約 1,000 万人',         tier: 2, density: 'medium', source: '世界推計（西洋・日本に多い）',
+                          japan:    230_000, japanLabel: '約 23 万人（指定難病）', japanSource: '厚生労働省 2022年' },
+    panic:              { world:   240_000_000, label: '約 2.4 億人',           tier: 1, density: 'high',   source: '生涯有病率 3〜4%',
+                          japan:   2_400_000, japanLabel: '約 240 万人（推計）',  japanSource: '日本精神神経学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2330,6 +2336,58 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-27T10:00:00Z', name: 'タムスロシン塩酸塩（ハルナール）0.2mg', notes: '朝食後 1錠（α1遮断薬・平滑筋弛緩・排尿改善）' },
         { timestamp: '2026-03-17T10:00:00Z', name: 'タダラフィル（シアリス）5mg', notes: '週3回（PDE5阻害薬・骨盤血流改善・勃起機能）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ulcerative_colitis: {
+      diseases: ['潰瘍性大腸炎（UC）'],
+      profile: { age: 27, gender: 'male', height: 178, weight: 65 },
+      textEntries: [
+        { timestamp: '2026-01-12T08:00:00Z', category: 'symptoms', title: '血便・腹痛が再燃', content: '3ヶ月間の寛解後、先週から血便（排便の1/4が血液混じり）と腹痛（NRS 6）が再現。排便回数が1日3〜4回から7〜8回に増加。緊急排便も1日3回。診断から2年目、2回目の再燃。「また再燃してしまった」という焦りと疲れがある。明日消化器内科を受診する。' },
+        { timestamp: '2026-01-13T10:00:00Z', category: 'consultation', title: '消化器内科受診・中等症再燃の診断', content: 'Mayoスコア: 8点（中等症。排便回数3・血便2・内視鏡所見2（前回）・医師評価2）。血液検査：CRP 2.8mg/dL上昇、白血球10,200。「中等症の再燃です。プレドニゾロン30mgを開始してメサラジンを増量（2.4→4.0g）します。2週後に効果を確認します」。' },
+        { timestamp: '2026-01-27T10:00:00Z', category: 'consultation', title: '2週後の経過評価', content: 'プレドニゾロン2週間後。血便スコア: 2→1（改善傾向）。排便回数: 7〜8→4〜5回/日。CRP: 0.8mg/dL（改善）。先生「ステロイドは効いていますが、今回2回目の再燃です。ステロイド依存を防ぐためにインフリキシマブへの生物学的製剤導入を検討しましょう」。' },
+        { timestamp: '2026-02-10T10:00:00Z', category: 'vitals', title: 'インフリキシマブ初回投与', content: 'インフリキシマブ（レミケード）5mg/kg初回点滴。3時間かけて点滴。輸液反応なし。「2週間後・6週間後に2回目・3回目、その後は8週間ごと」の予定。ステロイドは毎週5mgずつ減量予定。「生物学的製剤を使うことへの不安はあったが、寛解維持のためと決意した」。' },
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '3回目投与（6週）・効果確認', content: 'インフリキシマブ3回目投与（6週）前の評価。Mayoスコア: 8→3点（軽症〜寛解境界）。排便回数: 4→2〜3回/日。血便: ほぼ消失（微量のみ）。CRP: 0.3mg/dL（正常範囲）。ステロイドは10mgに減量完了。先生「良い反応です。8週間隔の維持療法に移行します」。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '3ヶ月後・寛解確認', content: 'インフリキシマブ4回目（14週）投与。Mayoスコア: 1点（寛解）。排便1〜2回/日。血便なし。CRP 0.1mg/dL。ステロイドは完全離脱（0mg）。「就活の面接に集中できるようになった」。次の内視鏡は3ヶ月後。食事制限も緩和中（乳製品以外はほぼ制限なし）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 8 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-13T10:00:00Z', name: 'UC再燃時評価', findings: 'CRP 2.8mg/dL（高値）, 白血球 10,200, Hb 12.8g/dL（軽度低下）, アルブミン 3.5g/dL（低下傾向）, 便潜血（++++）, カルプロテクチン 1,250μg/g（高値）, Mayoスコア 8（中等症）' },
+        { timestamp: '2026-04-22T10:00:00Z', name: '寛解時評価', findings: 'CRP 0.1mg/dL（正常）, Hb 14.2g/dL（正常）, アルブミン 4.1g/dL, カルプロテクチン 85μg/g（正常化傾向）, Mayoスコア 1（寛解）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-10T10:00:00Z', name: 'インフリキシマブ（レミケード）5mg/kg', notes: '8週ごと点滴（TNF-α阻害生物学的製剤・維持療法）' },
+        { timestamp: '2026-01-13T10:00:00Z', name: 'メサラジン（アサコール）400mg', notes: '3錠×3回 = 3,600mg/日（5-ASA・寛解維持基本薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    panic: {
+      diseases: ['パニック障害'],
+      profile: { age: 32, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-15T09:00:00Z', category: 'symptoms', title: '電車で突然の発作', content: '電車の中で突然、激しい動悸・息苦しさ・「このまま死ぬかもしれない」という恐怖感に襲われた。次の駅で降りて20分休んでようやく回復。過去2ヶ月で5回同じような発作があった。救急を2回受診したが心電図・血液検査は正常。心療内科を予約した。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: '心療内科受診・パニック障害診断', content: 'パニック障害の診断（ICD-10: F41.0）。発作は「過換気が引き起こす身体感覚の誤認」という心理教育を受けた。「今の発作は危険ではない。しかし回避を続けると広場恐怖に進展する」との説明。パロキセチン（パキシル）10mgを開始。「最初の2週間は気分が揺れることがある」。' },
+        { timestamp: '2026-02-05T08:00:00Z', category: 'vitals', title: 'SSRI2週間後・副作用と発作減少', content: 'パロキセチン10mg→20mgに増量。最初の1週は吐き気・眠気あり（徐々に軽減）。発作頻度: 5回/2ヶ月→2回/2週間（まだある）。電車は今も怖くて乗れない。先生「薬が効いてくるまで4〜6週かかります。CBTも並行して始めましょう」。CBT担当のカウンセラー予約。' },
+        { timestamp: '2026-02-19T09:00:00Z', category: 'activity', title: 'CBT第2回・腹式呼吸と認知再構成', content: 'CBT2回目。「発作中に"死ぬかもしれない"という考えは実際に起きていない。次に同じ考えが浮かんだら"これは不安感覚であって危険信号ではない"とリフレーミングする」。腹式呼吸（4秒吸・2秒止・6秒吐）の練習。呼吸法を1日2回練習することにした。' },
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '2ヶ月後・薬効確認と曝露療法開始', content: '発作頻度: 0回/3週間（寛解傾向！）。先生「パロキセチンの効果が出ています。次のステップとして、電車の曝露療法を段階的に行いましょう」。CBTセラピストと「曝露ヒエラルキー」を作成（①駅のホームに立つ→②1駅乗る→③朝の混雑時間に乗る）。' },
+        { timestamp: '2026-04-15T08:00:00Z', category: 'vitals', title: '3ヶ月後・電車に乗れた', content: 'パロキセチン20mg継続中。発作: 過去6週間で1回（軽度・自分でコントロールできた）。曝露ヒエラルキー: ①②③すべて完了！「朝の混雑した電車で3駅乗れた」。予期不安スコア: 8→3に大幅改善。「まだ少し怖いが"怖いけど乗れる"に変わった」。CBTセッションを月1回に移行。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'パニック障害初回評価', findings: '心電図 正常（QT正常・不整脈なし）, 甲状腺機能 正常（TSH 1.8）, 血糖 88mg/dL（低血糖除外）, 24時間Holter心電図 正常（頻脈エピソードなし）, 心エコー 正常（WPW症候群除外）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'パロキセチン（パキシル）20mg', notes: '朝食後 1錠（SSRI・パニック障害第一選択・最低12ヶ月継続）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

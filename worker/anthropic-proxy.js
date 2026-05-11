@@ -160,6 +160,8 @@ function extractDiseaseIds(text) {
     vertigo: /めまい|BPPV\b|良性発作性頭位めまい|メニエール病|前庭神経炎|vertigo|Meniere|エプリー法|Epley|耳石置換法|前庭リハビリ|vestibular rehabilitation|イソバイド.*めまい|ベタヒスチン|メリスロン|回転性めまい|浮動性めまい|頭位変換.*めまい|内リンパ水腫|耳閉感.*難聴.*めまい/i,
     dry_eye: /ドライアイ|乾性角結膜炎|dry eye|DED\b|VDT.*目|目.*乾き|目.*充血.*乾|人工涙液|ジクアホソル|ジクアス|レバミピド|ムコスタ点眼|ヒアルロン酸.*点眼|マイボーム腺|MGD\b|涙点プラグ|サイクロスポリン.*眼|眼精疲労.*乾燥|まばたき.*減少|コンタクト.*乾き/i,
     chronic_prostatitis: /慢性前立腺炎|CP\/CPPS|慢性骨盤痛|CPPS\b|NIH-CPSI|前立腺炎|prostatitis|会陰部痛|骨盤痛.*男性|前立腺.*痛み|排尿痛.*前立腺|ハルナール.*前立腺|タムスロシン.*前立腺|骨盤底.*男性|射精痛.*前立腺|慢性.*骨盤.*疼痛/i,
+    ulcerative_colitis: /潰瘍性大腸炎|UC\b.*大腸|炎症性腸疾患|IBD\b|ulcerative colitis|血便.*腹痛|Mayoスコア|メサラジン|アサコール|ペンタサ|インフリキシマブ|レミケード.*UC|ベドリズマブ|エンタイビオ|ウステキヌマブ.*UC|ステラーラ.*UC|アザチオプリン.*大腸|大腸炎.*再燃|大腸粘膜.*炎症/i,
+    panic: /パニック障害|パニック発作|panic disorder|panic attack|広場恐怖|動悸.*息苦しさ.*恐怖|死の恐怖.*発作|予期不安|パキシル.*パニック|パロキセチン.*パニック|CBT.*パニック|認知行動療法.*パニック|曝露療法.*恐怖|発作.*電車.*恐怖|パニック.*SSRI/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

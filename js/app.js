@@ -1337,6 +1337,8 @@ ${recentText || '記録なし'}
       vertigo: { ja: 'めまい BPPV 良性発作性頭位めまい症 メニエール病 耳鼻咽喉科', en: 'vertigo BPPV Menieres disease' },
       dry_eye: { ja: 'ドライアイ 乾性角結膜炎 眼精疲労 眼科 マイボーム腺 人工涙液', en: 'dry eye disease DED' },
       chronic_prostatitis: { ja: '慢性前立腺炎 CP/CPPS 慢性骨盤痛 泌尿器科 NIH-CPSI α遮断薬', en: 'chronic prostatitis CPPS pelvic pain' },
+      ulcerative_colitis: { ja: '潰瘍性大腸炎 炎症性腸疾患 IBD 血便 メサラジン 消化器内科', en: 'ulcerative colitis IBD mesalazine' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖 SSRI 認知行動療法 心療内科', en: 'panic disorder panic attack CBT' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1485,6 +1487,8 @@ ${recentText || '記録なし'}
       vertigo: 'vertigo BPPV Epley maneuver Meniere disease treatment',
       dry_eye: 'dry eye disease DED diquafosol artificial tears meibomian gland',
       chronic_prostatitis: 'chronic prostatitis CPPS alpha blocker pelvic pain treatment',
+      ulcerative_colitis: 'ulcerative colitis mesalazine vedolizumab infliximab remission maintenance',
+      panic: 'panic disorder SSRI CBT exposure therapy panic attack treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1663,6 +1667,8 @@ ${titles}`;
       vertigo: 'BPPV canalith repositioning Meniere endolymphatic hydrops',
       dry_eye: 'dry eye disease diquafosol rebamipide meibomian gland dysfunction tear film',
       chronic_prostatitis: 'chronic pelvic pain syndrome NIH-CPSI alpha blocker pelvic floor therapy',
+      ulcerative_colitis: 'ulcerative colitis biologics vedolizumab ustekinumab mucosal healing',
+      panic: 'panic disorder cognitive behavioral therapy SSRI interoceptive exposure',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3077,7 +3083,9 @@ ${responseText.substring(0, 3000)}`;
       tinnitus: '#耳鳴り',
       vertigo: '#めまい',
       dry_eye: '#ドライアイ',
-      chronic_prostatitis: '#慢性前立腺炎'
+      chronic_prostatitis: '#慢性前立腺炎',
+      ulcerative_colitis: '#潰瘍性大腸炎',
+      panic: '#パニック障害'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
