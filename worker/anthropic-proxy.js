@@ -154,6 +154,8 @@ function extractDiseaseIds(text) {
     allergic_rhinitis: /アレルギー性鼻炎|花粉症|スギ花粉|ヒノキ花粉|ハウスダスト.*鼻|allergic rhinitis|hay fever|抗ヒスタミン薬|フェキソフェナジン|アレグラ|ビラスチン|ビラノア|セチリジン|ジルテック|ロラタジン|クラリチン|舌下免疫療法|シダキュア|アシテア|点鼻ステロイド|フルナーゼ|ナゾネックス|モンテルカスト|くしゃみ.*鼻水.*鼻炎|鼻閉.*花粉|花粉飛散/i,
     psoriasis: /乾癬|尋常性乾癬|関節症性乾癬|psoriasis|psoriatic arthritis|PASIスコア|PASI\b|BSA.*皮疹|生物学的製剤.*乾癬|セクキヌマブ|コセンティクス|イキセキズマブ|トルツ|グセルクマブ|トレムフィア|リサンキズマブ|スキリージ|アダリムマブ.*乾癬|エタネルセプト.*乾癬|アプレミラスト|オテズラ|ドボベット|ケブネル|乾癬.*フレア|乾癬.*プラーク/i,
     chronic_urticaria: /慢性蕁麻疹|慢性特発性蕁麻疹|CSU\b|chronic urticaria|chronic spontaneous urticaria|UAS7\b|UAS スコア|膨疹.*かゆみ|蕁麻疹.*6週|蕁麻疹.*慢性|オマリズマブ|ゾレア\b|omalizumab.*urticaria|抗IgE.*蕁麻疹|蕁麻疹.*抗ヒスタミン|DLQI.*蕁麻疹/i,
+    pms_pmdd: /PMS\b|月経前症候群|PMDD\b|月経前不快気分障害|premenstrual syndrome|premenstrual dysphoric|黄体期.*気分|黄体期.*症状|月経前.*イライラ|月経前.*うつ|月経前.*不安|月経前.*むくみ|月経前.*乳房痛|SSRI.*月経|加味逍遙散.*月経|月経周期.*気分変動|排卵後.*症状/i,
+    overactive_bladder: /過活動膀胱|OAB\b|頻尿.*膀胱|尿意切迫感|切迫性尿失禁|夜間頻尿.*目が覚|overactive bladder|ベシケア|ソリフェナシン|ウリトス|イミダフェナシン|ビベグロン|ベオーバ|ミラベグロン|ベタニス|骨盤底筋.*頻尿|膀胱訓練|排尿日誌|ケーゲル体操|1日.*トイレ.*8回/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

@@ -99,6 +99,19 @@ var CONFIG = {
       ]
     },
     {
+      id: 'reproductive',
+      name: '生殖器・泌尿器疾患',
+      icon: '🌺',
+      icd: 'ICD-11: 16-17',
+      diseases: [
+        { id: 'endometriosis', name: '子宮内膜症', icd: 'GA10' },
+        { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
+        { id: 'menopause', name: '更年期障害', icd: 'GA30' },
+        { id: 'pms_pmdd', name: 'PMS・PMDD（月経前症候群）', icd: 'GA34' },
+        { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' }
+      ]
+    },
+    {
       id: 'endocrine',
       name: '内分泌・代謝疾患',
       icon: '⚗️',
@@ -229,6 +242,10 @@ var CONFIG = {
                           japan:      430_000, japanLabel: '約 43 万人',           japanSource: '日本皮膚科学会' },
     chronic_urticaria:  { world:    75_000_000, label: '約 7,500 万人',   tier: 2, density: 'medium', source: '世界人口の約1%',
                           japan:     1_500_000, japanLabel: '約 150 万人',          japanSource: '国内推計' },
+    pms_pmdd:           { world: 1_800_000_000, label: '月経女性の 70〜80%', tier: 1, density: 'high', source: 'WHO 世界推計',
+                          japan:  22_000_000, japanLabel: '約 2,200 万人（推計）', japanSource: '国内有病率推計' },
+    overactive_bladder: { world:   500_000_000, label: '約 5 億人',       tier: 1, density: 'medium', source: '世界推計 40歳以上',
+                          japan:  10_800_000, japanLabel: '約 1,080 万人',         japanSource: '日本排尿機能学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2147,6 +2164,57 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-02-17T08:00:00Z', name: 'ビラスチン（ビラノア）40mg', notes: '朝食前1錠（第2世代抗ヒスタミン薬2倍量・眠気少ない）' },
         { timestamp: '2026-04-14T09:00:00Z', name: 'オマリズマブ（ゾレア）300mg', notes: '月1回 皮下注射（抗IgE抗体・重症慢性蕁麻疹）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    pms_pmdd: {
+      diseases: ['月経前不快気分障害（PMDD）'],
+      profile: { age: 29, gender: 'female', height: 160, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-06T09:00:00Z', category: 'symptoms', title: '月経前の3日間がつらい', content: '排卵から月経まで、特に月経前3〜7日がひどい。抑うつ・過敏・イライラが 9/10。「なぜ自分はこんなにダメなんだろう」と思い詰めることがある。むくみ（+1.5kg）・乳房痛・頭痛も毎回。月経が来ると1日で嘘のように楽になる。これがもう3年続いている。' },
+        { timestamp: '2026-03-13T10:00:00Z', category: 'consultation', title: '心療内科受診・PMDD診断', content: '先生「症状が月経周期に連動していること、黄体期に限定していること、日常生活に著しく支障があること——これはPMDDの診断基準を満たしています」。エスシタロプラム（レクサプロ）10mgを月経予定日14日前から月経開始まで服用する「黄体期間欠投与」を提案された。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: '黄体期間欠SSRI開始', content: 'レクサプロ10mg、排卵後に服用開始（基礎体温で排卵を確認）。初日は少し眠気と吐き気があったが2日目から消えた。月経前1週間の気分スコア 9→6 に改善（初月）。まだ効果が出始めたところ。' },
+        { timestamp: '2026-04-03T09:00:00Z', category: 'vitals', title: '2周期目・効果確認', content: '2周期目のSSRI黄体期服用。気分スコア 月経前 8日間平均 5/10（以前は 9/10）。「死にたい」「消えたい」という思考は今月は出なかった。むくみ・乳房痛は残るが気分が安定すると対処しやすい。職場での過敏反応も少し落ち着いた。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'activity', title: '生活習慣改善の効果', content: '卵胞期（月経終了後）は気分が良い週。この時期に運動（ランニング30分×週3回）・減塩食・カフェイン制限を習慣化。黄体期に入っても以前より開始が遅く・軽度になっている感じ。睡眠8時間確保が特に効いている気がする。' },
+        { timestamp: '2026-04-24T09:00:00Z', category: 'vitals', title: '3周期目：SSRI安定効果', content: '3周期目。気分スコア月経前平均 4/10（3ヶ月前：9/10 から大幅改善）。パートナーからも「月経前でも落ち着いてる」と言われた。職場での人間関係トラブルもほぼなし。月経来る3日前まで仕事が普通にできるようになった。副作用はほぼなし。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-13T09:00:00Z', name: 'PMS/PMDD スクリーニング', findings: 'TSH 1.8（正常）, FSH 6.2, LH 8.4, E2 42（卵胞期）, プロゲステロン 0.3（卵胞期・正常）, Hb 12.8, フェリチン 28（軽度低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-20T08:00:00Z', name: 'エスシタロプラム（レクサプロ）10mg', notes: '排卵日〜月経開始まで服用（SSRI・黄体期間欠投与・PMDDに有効）' },
+        { timestamp: '2026-03-20T08:00:00Z', name: 'マグネシウム 300mg', notes: '就寝前 毎日（PMS症状・睡眠質改善の補助）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    overactive_bladder: {
+      diseases: ['過活動膀胱（OAB）'],
+      profile: { age: 62, gender: 'female', height: 155, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-03-04T08:00:00Z', category: 'symptoms', title: '頻尿で外出が怖い', content: '1日15回以上トイレに行く。夜も2〜3回起きる。外出すると「トイレが近くにあるか」が頭から離れない。電車の中で急に我慢できなくなって1度漏れた。恥ずかしくて誰にも言えなかった。更年期からひどくなった気がする。泌尿器科を受診しようと思う。' },
+        { timestamp: '2026-03-11T10:00:00Z', category: 'consultation', title: '泌尿器科受診・OAB診断', content: '排尿日誌を持参（1日14回・夜2回・切迫感エピソード8回/日）。尿流量測定・残尿測定（20mL・正常）・尿細胞診（陰性）。「過活動膀胱（OAB）の診断です。まず骨盤底筋訓練と膀胱訓練を試しましょう」。ベシケア5mgが処方された。' },
+        { timestamp: '2026-03-18T08:00:00Z', category: 'activity', title: '骨盤底筋訓練開始', content: '理学療法士に骨盤底筋訓練を教わった。「肛門・膣・尿道口を締める→10秒→緩める→10回×1日3セット」。最初は正しくできているか不安だったが、コツを掴んだ気がする。膀胱訓練（切迫感が来ても10分待つ練習）も開始。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'vitals', title: 'ベシケア2週間後', content: 'ベシケア5mg開始2週間。1日14回→10回に減少。夜間2〜3回→1〜2回に改善。切迫感強度 8→5に改善。口が渇く（副作用）が軽度。便秘には今のところなし。外出時に少し余裕が出てきた。電車に乗れるようになった。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'consultation', title: '1ヶ月後の受診', content: '1日10回・夜1〜2回・切迫感エピソード3〜4回/日（改善傾向）。先生「ベシケアの効果が出ています。β3作動薬のビベグロン（ベオーバ）に変更すると口渇が少なくなる可能性があります」とのこと。切替えを検討中。骨盤底筋訓練は毎日継続できている。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '2ヶ月目・安定化', content: 'ビベグロン50mg に変更2週間。口渇がほぼなくなった！排尿回数 8〜9回/日に改善（目標8回未満に近い）。夜間1回。切迫感エピソード2回/日。「スーパーで試着室に行けた」「電車で座席を離れず過ごせた」という小さな達成が嬉しい。骨盤底筋訓練を続ける。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-11T09:00:00Z', name: 'OABスクリーニング', findings: '尿細胞診 陰性, 残尿量 20mL（正常）, PSA N/A（女性）, 尿一般 白血球（-）感染なし, 血糖 105, HbA1c 5.8%（境界域）, eGFR 68' }
+      ],
+      medications: [
+        { timestamp: '2026-04-08T08:00:00Z', name: 'ビベグロン（ベオーバ）50mg', notes: '朝食後 1錠（β3作動薬・口渇少ない・高齢者に安全）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

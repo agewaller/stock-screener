@@ -743,6 +743,8 @@ App.prototype.render_dashboard = function() {
       allergic_rhinitis: ['くしゃみ・鼻水・鼻閉スコア(0-3)', '目かゆみ・充血スコア', '服薬確認・副作用', '花粉飛散量・外出状況'],
       psoriasis: ['PASIスコア・皮疹面積', '生物学的製剤注射確認・副作用', '関節痛・朝のこわばり', 'フレアの引き金（ストレス・飲酒）'],
       chronic_urticaria: ['UAS7スコア（膨疹×かゆみ）', '抗ヒスタミン薬服薬確認', 'オマリズマブ投与確認', 'フレアのトリガー記録'],
+      pms_pmdd: ['月経周期（開始日・排卵日）', '気分症状スコア（抑うつ・過敏）', '身体症状（むくみ・乳房痛）', '服薬確認・睡眠記録'],
+      overactive_bladder: ['1日の排尿回数・夜間頻尿回数', '尿意切迫感強さ(1-10)', '服薬確認・副作用（口渇）', '骨盤底筋訓練の実施記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

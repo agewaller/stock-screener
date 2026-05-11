@@ -1331,6 +1331,8 @@ ${recentText || '記録なし'}
       allergic_rhinitis: { ja: 'アレルギー性鼻炎 花粉症 鼻炎 耳鼻咽喉科 舌下免疫療法', en: 'allergic rhinitis hay fever' },
       psoriasis: { ja: '乾癬 尋常性乾癬 関節症性乾癬 生物学的製剤 皮膚科 リウマチ科', en: 'psoriasis psoriatic arthritis' },
       chronic_urticaria: { ja: '慢性蕁麻疹 蕁麻疹 皮膚科 アレルギー科 オマリズマブ', en: 'chronic urticaria CSU' },
+      pms_pmdd: { ja: 'PMS 月経前症候群 PMDD 月経前不快気分障害 婦人科 心療内科', en: 'premenstrual syndrome PMDD' },
+      overactive_bladder: { ja: '過活動膀胱 OAB 頻尿 尿失禁 夜間頻尿 泌尿器科', en: 'overactive bladder OAB' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1473,6 +1475,8 @@ ${recentText || '記録なし'}
       allergic_rhinitis: 'allergic rhinitis pollen sublingual immunotherapy antihistamine',
       psoriasis: 'psoriasis biologics IL-17 IL-23 TNF inhibitor treatment',
       chronic_urticaria: 'chronic spontaneous urticaria omalizumab antihistamine UAS7',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI hormonal treatment',
+      overactive_bladder: 'overactive bladder pelvic floor training beta-3 agonist',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1645,6 +1649,8 @@ ${titles}`;
       allergic_rhinitis: 'allergic rhinitis sublingual immunotherapy pollen season',
       psoriasis: 'psoriasis biologic therapy PASI skin clearance real world',
       chronic_urticaria: 'chronic urticaria omalizumab treatment response biomarker',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI luteal phase treatment',
+      overactive_bladder: 'overactive bladder OAB anticholinergic pelvic floor',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3053,7 +3059,9 @@ ${responseText.substring(0, 3000)}`;
       anemia: '#貧血',
       allergic_rhinitis: '#アレルギー性鼻炎',
       psoriasis: '#乾癬',
-      chronic_urticaria: '#慢性蕁麻疹'
+      chronic_urticaria: '#慢性蕁麻疹',
+      pms_pmdd: '#PMS月経前症候群',
+      overactive_bladder: '#過活動膀胱'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
