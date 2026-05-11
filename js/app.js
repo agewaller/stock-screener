@@ -5656,31 +5656,103 @@ ${axisHint}
       const ruleset = await rulesetRes.json();
       if (!ruleset?.name) throw new Error('ルール作成のレスポンスが不正: ' + JSON.stringify(ruleset).slice(0, 300));
 
-      // Step 3: point the cloud.firestore release at the new ruleset
+      // Step 3: point the cloud.firestore release at the new ruleset.
+      // Firebase Rules API's PATCH endpoint is documented inconsistently
+      // across Google sources. firebase-tools uses unwrapped body +
+      // updateMask=rulesetName; the public REST docs say wrapped body
+      // + updateMask=release.rulesetName. Some accounts accept only
+      // one. We try each variant in sequence and fall through on 400.
+      // The DELETE-then-CREATE path is the ultimate fallback (always
+      // works because there's no PATCH involved).
       if (btn) btn.innerHTML = '⏳ 公開中…';
-      // Per firebase-tools source: PATCH the release with just the
-      // Release object as body (NOT wrapped in { release: ... }) and
-      // pass updateMask=rulesetName (NOT "release.rulesetName"). Our
-      // earlier double-wrapped body + "release.rulesetName" mask hit
-      // INVALID_ARGUMENT 400. This matches what `firebase deploy
-      // --only firestore:rules` sends internally.
-      const releaseRes = await fetch(
-        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=rulesetName`,
+      const baseUrl = `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore`;
+      const releaseFullName = `projects/${projectId}/releases/cloud.firestore`;
+      const variants = [
         {
+          label: 'unwrapped + mask=rulesetName',
+          url: baseUrl + '?updateMask=rulesetName',
           method: 'PATCH',
-          headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: `projects/${projectId}/releases/cloud.firestore`,
-            rulesetName: ruleset.name
-          })
+          body: { name: releaseFullName, rulesetName: ruleset.name }
+        },
+        {
+          label: 'wrapped + mask=release.rulesetName',
+          url: baseUrl + '?updateMask=release.rulesetName',
+          method: 'PATCH',
+          body: { release: { name: releaseFullName, rulesetName: ruleset.name } }
+        },
+        {
+          label: 'unwrapped, no mask',
+          url: baseUrl,
+          method: 'PATCH',
+          body: { name: releaseFullName, rulesetName: ruleset.name }
+        },
+        {
+          label: 'wrapped, mask in body',
+          url: baseUrl,
+          method: 'PATCH',
+          body: {
+            release: { name: releaseFullName, rulesetName: ruleset.name },
+            updateMask: 'rulesetName'
+          }
         }
-      );
-      if (!releaseRes.ok) {
-        const txt = await releaseRes.text();
-        throw new Error('公開失敗 (HTTP ' + releaseRes.status + '): ' + txt.slice(0, 500));
+      ];
+      let releaseOk = false;
+      let lastErr = '';
+      for (const v of variants) {
+        try {
+          const r = await fetch(v.url, {
+            method: v.method,
+            headers: {
+              'Authorization': 'Bearer ' + accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(v.body)
+          });
+          if (r.ok) {
+            console.log('[autoDeployRules] variant succeeded:', v.label);
+            releaseOk = true;
+            break;
+          }
+          const t = await r.text();
+          lastErr = 'HTTP ' + r.status + ' [' + v.label + ']: ' + t.slice(0, 400);
+          console.warn('[autoDeployRules] variant failed:', v.label, r.status, t.slice(0, 200));
+        } catch (e) {
+          lastErr = 'network [' + v.label + ']: ' + (e.message || String(e));
+          console.warn('[autoDeployRules] variant network error:', v.label, e);
+        }
+      }
+      // Last resort: DELETE the release, then POST a new one.
+      if (!releaseOk) {
+        console.log('[autoDeployRules] all PATCH variants failed; trying DELETE + POST');
+        try {
+          await fetch(baseUrl, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+          });
+          const createR = await fetch(
+            `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ name: releaseFullName, rulesetName: ruleset.name })
+            }
+          );
+          if (createR.ok) {
+            releaseOk = true;
+            console.log('[autoDeployRules] DELETE + POST succeeded');
+          } else {
+            const t = await createR.text();
+            lastErr = 'DELETE/POST HTTP ' + createR.status + ': ' + t.slice(0, 400);
+          }
+        } catch (e) {
+          lastErr += ' | DELETE/POST error: ' + (e.message || String(e));
+        }
+      }
+      if (!releaseOk) {
+        throw new Error('公開失敗 (全方式試行): ' + lastErr);
       }
       setStatus('var(--success,#16a34a)', '✓ デプロイ成功。3 秒後に再読込します…');
       Components.showToast?.('Firestore ルールを公開しました', 'success');
