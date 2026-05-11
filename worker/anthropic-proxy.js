@@ -152,6 +152,8 @@ function extractDiseaseIds(text) {
     hyperlipidemia: /脂質異常症|高コレステロール|高LDL|高脂血症|dyslipidemia|hyperlipidemia|LDLコレステロール|HDLコレステロール|中性脂肪.*高|高TG血症|スタチン|ロスバスタチン|アトルバスタチン|ピタバスタチン|エゼチミブ|PCSK9阻害薬|エボロクマブ|アリロクマブ|EPA製剤|エパデール|フィブラート|LDL.*目標|動脈硬化.*コレステロール/i,
     anemia: /貧血|鉄欠乏性貧血|鉄欠乏|iron deficiency anemia|フェリチン.*低下|ヘモグロビン.*低下|Hb.*低下|ヘマトクリット.*低下|MCV.*低下|赤血球.*少ない|鉄剤|フェロミア|スローフィー|フェジン|モノヴァー|腎性貧血|エリスロポエチン|ネスプ|鉄補充|鉄不足|月経.*貧血|出血.*貧血|巨赤芽球.*貧血|葉酸欠乏/i,
     allergic_rhinitis: /アレルギー性鼻炎|花粉症|スギ花粉|ヒノキ花粉|ハウスダスト.*鼻|allergic rhinitis|hay fever|抗ヒスタミン薬|フェキソフェナジン|アレグラ|ビラスチン|ビラノア|セチリジン|ジルテック|ロラタジン|クラリチン|舌下免疫療法|シダキュア|アシテア|点鼻ステロイド|フルナーゼ|ナゾネックス|モンテルカスト|くしゃみ.*鼻水.*鼻炎|鼻閉.*花粉|花粉飛散/i,
+    psoriasis: /乾癬|尋常性乾癬|関節症性乾癬|psoriasis|psoriatic arthritis|PASIスコア|PASI\b|BSA.*皮疹|生物学的製剤.*乾癬|セクキヌマブ|コセンティクス|イキセキズマブ|トルツ|グセルクマブ|トレムフィア|リサンキズマブ|スキリージ|アダリムマブ.*乾癬|エタネルセプト.*乾癬|アプレミラスト|オテズラ|ドボベット|ケブネル|乾癬.*フレア|乾癬.*プラーク/i,
+    chronic_urticaria: /慢性蕁麻疹|慢性特発性蕁麻疹|CSU\b|chronic urticaria|chronic spontaneous urticaria|UAS7\b|UAS スコア|膨疹.*かゆみ|蕁麻疹.*6週|蕁麻疹.*慢性|オマリズマブ|ゾレア\b|omalizumab.*urticaria|抗IgE.*蕁麻疹|蕁麻疹.*抗ヒスタミン|DLQI.*蕁麻疹/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

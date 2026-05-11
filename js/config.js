@@ -93,7 +93,9 @@ var CONFIG = {
         { id: 'psoriasis', name: '乾癬', icd: 'EA90' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
-        { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' }
+        { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
+        { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'L40' },
+        { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' }
       ]
     },
     {
@@ -223,6 +225,10 @@ var CONFIG = {
                           japan: 15_000_000, japanLabel: '約 1,500 万人（推計）', japanSource: 'WHO・国内推計' },
     allergic_rhinitis:  { world: 1_000_000_000, label: '約 10 億人',      tier: 1, density: 'medium', source: 'WHO成人・小児',
                           japan: 42_000_000, japanLabel: '約 4,200 万人（花粉症含む）', japanSource: '環境省・日本アレルギー学会' },
+    psoriasis:          { world:   125_000_000, label: '約 1.25 億人',    tier: 2, density: 'medium', source: 'WHO 2016',
+                          japan:      430_000, japanLabel: '約 43 万人',           japanSource: '日本皮膚科学会' },
+    chronic_urticaria:  { world:    75_000_000, label: '約 7,500 万人',   tier: 2, density: 'medium', source: '世界人口の約1%',
+                          japan:     1_500_000, japanLabel: '約 150 万人',          japanSource: '国内推計' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2087,6 +2093,60 @@ var CONFIG = {
         { timestamp: '2026-02-15T07:00:00Z', name: 'ビラスチン（ビラノア）20mg', notes: '起床後すぐ空腹時に1錠（第2世代抗ヒスタミン薬・眠気少ない）' },
         { timestamp: '2026-02-22T07:00:00Z', name: 'モメタゾン点鼻薬（ナゾネックス）', notes: '1日2回 各鼻孔2プッシュ（鼻噴霧ステロイド・毎日継続が重要）' },
         { timestamp: '2026-02-22T07:00:00Z', name: 'ケトチフェン点眼液（ザジテン）', notes: '1日2回 目のかゆみ・充血（抗アレルギー点眼）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    psoriasis: {
+      diseases: ['乾癬（尋常性乾癬）'],
+      profile: { age: 42, gender: 'male', height: 175, weight: 80 },
+      textEntries: [
+        { timestamp: '2026-03-03T09:00:00Z', category: 'symptoms', title: 'フレア開始', content: 'ストレスの多かった2月末から皮疹が再燃。両肘・膝・頭皮に赤い鱗屑プラーク。PASIスコア 14（中等症）。かゆみは 5/10。外用薬（ドボベット）を再開した。仕事のプレゼンが近くてストレスが続いている。' },
+        { timestamp: '2026-03-10T09:00:00Z', category: 'consultation', title: '皮膚科受診', content: '主治医「このフレアの重症度からすると外用薬だけでは難しい。セクキヌマブ（コセンティクス）の皮下注射を始めましょう」と提案された。2年前にアダリムマブを使ったが効果が落ちてきた経緯がある。インフォームドコンセントを受けてセクキヌマブ同意書にサイン。' },
+        { timestamp: '2026-03-17T09:00:00Z', category: 'medication', title: 'セクキヌマブ開始', content: 'セクキヌマブ初回投与（300mg 皮下注射）。注射部位の発赤が少し。初回投与4回を週1回、その後月1回のスケジュール。副作用（口腔カンジダ・上気道感染・炎症性腸疾患リスク）について説明を受けた。外用薬は継続。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'vitals', title: '3週後の変化', content: 'セクキヌマブ3回終了。PASIスコア 14→7 に改善（50%減）。肘の皮疹が薄くなってきた。かゆみ 2/10 に大幅改善。睡眠が楽になった（かゆみで目覚めなくなった）。頭皮の鱗屑もかなり減少。体調全般は良好。' },
+        { timestamp: '2026-04-07T09:00:00Z', category: 'vitals', title: '4回目・誘導終了', content: '週1回の誘導投与4回目終了。次回から月1回の維持療法。PASI 14→3（PASI 75達成！）。BSA（体表面積）5%未満に改善。膝の皮疹がほぼ消えた。肘にわずかに残るが生活の質は大幅改善（DLQI 6→2）。' },
+        { timestamp: '2026-04-21T09:00:00Z', category: 'vitals', title: '維持療法1ヶ月目', content: '月1回の維持療法開始。PASI 2（PASI 90近い）。皮疹がほぼ消失。関節痛は以前から少しあったが「もしかして関節症性乾癬？」とリウマチ科受診の提案を受けた。膝・指のこわばり（朝15分程度）が週に数回ある。' },
+        { timestamp: '2026-04-28T10:00:00Z', category: 'consultation', title: 'リウマチ科受診', content: '関節エコーで「手指に早期滑膜炎の所見」。CASPAR基準で関節症性乾癬の診断。「セクキヌマブはPsAにも効果があるのでこのまま継続」と言われた。関節の進行を定期エコーでモニタリング予定。早期発見でよかった。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-07T09:00:00Z', name: '乾癬・生物学的製剤開始前スクリーニング', findings: 'QFT（結核）陰性, HBs抗原陰性, 抗HCV陰性, CRP 1.2（炎症あり）, WBC 6,800, 尿酸 7.2, AST 28, ALT 32（正常）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-17T09:00:00Z', name: 'セクキヌマブ（コセンティクス）300mg', notes: '皮下注射 週1×4回→月1回（IL-17A阻害薬・尋常性乾癬・関節症性乾癬）' },
+        { timestamp: '2026-03-03T09:00:00Z', name: 'カルポトリオール/ベタメタゾン（ドボベット）', notes: '1日1回 皮疹部位に塗布（ビタミンD3/ステロイド配合軟膏・外用）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chronic_urticaria: {
+      diseases: ['慢性蕁麻疹（慢性特発性蕁麻疹）'],
+      profile: { age: 38, gender: 'female', height: 163, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-02-10T09:00:00Z', category: 'symptoms', title: '蕁麻疹が3ヶ月続いている', content: '昨年11月から蕁麻疹が出ている。毎日ではないが週4〜5日、特に夕方から夜にかけて全身に膨疹（ミミズ腫れ）が出る。かゆみ 7/10。抗ヒスタミン薬（アレグラ）を飲んでいるが翌朝にはまた出る。UAS7スコア 21（重症）。皮膚科受診予約した。' },
+        { timestamp: '2026-02-17T10:00:00Z', category: 'consultation', title: '皮膚科受診・慢性蕁麻疹診断', content: '皮膚科「6週間以上続いているので慢性特発性蕁麻疹の診断です。アレルギー検査で原因を探りましたが特定のアレルゲンは見つかりません」。アレグラを ビラノア（より眠気が少ない）に変更。4週間後に再診。' },
+        { timestamp: '2026-02-24T09:00:00Z', category: 'medication', title: 'ビラノア開始1週間', content: 'ビラノア 20mg 1日1回。眠気はなくなった（アレグラより明らかに楽）。しかし蕁麻疹の出現頻度はほとんど変わらない。UAS7スコア 19。夜にかゆくて目が覚めることが1〜2回/週。仕事中に膨疹が出てくるのが恥ずかしい。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '再診・増量', content: 'UAS7 19（改善不十分）。先生「ビラノアを2倍量（40mg）に増やしましょう」。2倍量での副作用（眠気・口渇）について説明を受けた。「まだ改善なければオマリズマブ（ゾレア）の選択肢もある」と話があった。' },
+        { timestamp: '2026-03-24T09:00:00Z', category: 'vitals', title: '増量2週間', content: 'ビラノア 40mg に増量して2週間。UAS7 19→13（中等度に改善）。膨疹の大きさが少し小さくなった気がする。かゆみ 4/10（7→4）。睡眠中に目が覚めることはなくなった。もう少し続けて様子を見る。' },
+        { timestamp: '2026-04-14T10:00:00Z', category: 'consultation', title: 'オマリズマブ導入', content: 'UAS7 12（まだ中等度）。先生「このまま長期間続けるよりオマリズマブを導入しましょう。重症難治性蕁麻疹に保険適用あり」。ゾレア 300mg 皮下注射 月1回を開始。抗ヒスタミン薬は継続。' },
+        { timestamp: '2026-04-28T09:00:00Z', category: 'vitals', title: 'ゾレア初回後2週間', content: 'ゾレア 初回投与2週間後。UAS7 12→4（著明改善）！！蕁麻疹が4日以上出ていない。かゆみが 1/10 にまで下がった。「こんなに楽になれると思っていなかった」と先生に報告。次回投与まで日記を続ける。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-17T09:00:00Z', name: '慢性蕁麻疹スクリーニング', findings: 'CRP 0.3, 好酸球 2.8%, 総IgE 142 IU/mL, 甲状腺（TSH正常）, 抗TPO抗体 陰性, 血算正常, 食物アレルゲン特異的IgE 陰性' }
+      ],
+      medications: [
+        { timestamp: '2026-02-17T08:00:00Z', name: 'ビラスチン（ビラノア）40mg', notes: '朝食前1錠（第2世代抗ヒスタミン薬2倍量・眠気少ない）' },
+        { timestamp: '2026-04-14T09:00:00Z', name: 'オマリズマブ（ゾレア）300mg', notes: '月1回 皮下注射（抗IgE抗体・重症慢性蕁麻疹）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

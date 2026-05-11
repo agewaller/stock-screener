@@ -741,6 +741,8 @@ App.prototype.render_dashboard = function() {
       hyperlipidemia: ['LDL・TG値(受診時)', 'スタチン服薬確認・筋肉痛', '食事の脂質評価', '体重・運動量'],
       anemia: ['Hb・フェリチン値(受診時)', '鉄剤服薬確認・副作用', '倦怠感・息切れ(1-10)', '月経量・食事の鉄摂取'],
       allergic_rhinitis: ['くしゃみ・鼻水・鼻閉スコア(0-3)', '目かゆみ・充血スコア', '服薬確認・副作用', '花粉飛散量・外出状況'],
+      psoriasis: ['PASIスコア・皮疹面積', '生物学的製剤注射確認・副作用', '関節痛・朝のこわばり', 'フレアの引き金（ストレス・飲酒）'],
+      chronic_urticaria: ['UAS7スコア（膨疹×かゆみ）', '抗ヒスタミン薬服薬確認', 'オマリズマブ投与確認', 'フレアのトリガー記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
