@@ -120,6 +120,7 @@ var CONFIG = {
       icd: 'ICD-11: 11',
       diseases: [
         { id: 'hypertension', name: '高血圧症', icd: 'BA00' },
+        { id: 'hyperlipidemia', name: '脂質異常症', icd: 'E78' },
         { id: 'heart_failure', name: '心不全', icd: 'BD10' },
         { id: 'arrhythmia', name: '不整脈', icd: 'BC6' },
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
@@ -214,6 +215,8 @@ var CONFIG = {
                           japan: 20_000_000, japanLabel: '約 2,000 万人',      japanSource: '厚労省' },
     hypertension:       { world: 1_400_000_000, label: '約 14 億人',       tier: 1, density: 'medium', source: 'WHO 30-79歳',
                           japan: 43_000_000, japanLabel: '約 4,300 万人',      japanSource: '日本高血圧学会' },
+    hyperlipidemia:     { world:   500_000_000, label: '約 5 億人（推計）', tier: 1, density: 'medium', source: '成人推計',
+                          japan: 22_000_000, japanLabel: '約 2,200 万人',      japanSource: '国民健康栄養調査' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -1970,6 +1973,59 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-01T08:00:00Z', name: 'グリコピロニウム/インダカテロール（ウルティブロ）', notes: '1カプセル 朝（LAMA/LABA配合・長時間作用型吸入）' },
         { timestamp: '2026-03-17T08:00:00Z', name: 'サルブタモール（サルタノール）', notes: '頓用・増悪時（SABA・速効性気管支拡張薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    hypertension: {
+      diseases: ['高血圧'],
+      profile: { age: 58, gender: 'female', height: 158, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-10T07:00:00Z', category: 'vitals', title: '朝の血圧測定', content: '起床後5分安静にして測定。朝 158/96 mmHg（高い…）、脈拍 78。夕方 144/88 mmHg。アムロジピン飲み始めて2週間、まだ目標（135/85未満）に届かない。頭が重い感じがする朝があるが血圧が高い日と一致する気がする。' },
+        { timestamp: '2026-03-17T07:00:00Z', category: 'vitals', title: '1週間の平均血圧', content: '朝平均 150/92 mmHg。少し下がってきた。先生に記録を見せたら「降圧薬の効果が出てきている」と言われた。塩分制限を続けている（みそ汁は週3回、外食は控えて）。体重 62kg 変わらず。' },
+        { timestamp: '2026-03-24T08:00:00Z', category: 'medication', title: '降圧薬追加', content: '診察でアムロジピン5mgにテルミサルタン40mgを追加。「ARBとCa拮抗薬の組み合わせは相性が良い」と説明された。副作用（足のむくみ）がないか注意するよう言われた。帰りに減塩レシピ本を買った。' },
+        { timestamp: '2026-03-31T07:00:00Z', category: 'vitals', title: '2剤目開始1週間', content: '朝 138/86 mmHg（初めて目標に近い値）。脈拍 72。嬉しい！足のむくみは今のところなし。塩分摂取量を意識して5g/日以下を目標に。夕食は塩を使わず出汁の旨味で調理。体重 61.5kg（500g減）。' },
+        { timestamp: '2026-04-07T07:00:00Z', category: 'activity', title: '運動開始', content: '内科医から「有酸素運動が血圧を5〜8mmHg下げる」と聞いて、毎朝20分のウォーキングを開始。1週間続いた。血圧 朝 136/84 mmHg（目標達成！）、夕 132/82 mmHg。歩くと気分が上がる。' },
+        { timestamp: '2026-04-14T07:00:00Z', category: 'vitals', title: '白衣高血圧の可能性', content: '先週の診察では 152/94 mmHg（緊張した）、家庭血圧は 136/84 mmHg で安定。先生に報告 →「家庭血圧の方が信頼性が高い。白衣効果の可能性がある。このまま家庭血圧を記録し続けてください」と言われ安心。' },
+        { timestamp: '2026-04-21T07:00:00Z', category: 'vitals', title: '3ヶ月目の報告', content: '朝平均 134/83 mmHg（3ヶ月で 158→134 に改善）。体重 60.5kg（1.5kg減）。塩分制限・運動・降圧薬3種の組み合わせが効いた。副作用は今のところなし。次回は3ヶ月後の受診。血圧手帳（アプリ）のグラフを見せたら先生に褒められた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T07:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-08T07:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T07:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T07:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-21T09:00:00Z', name: '高血圧定期検査', findings: '血圧 134/83（家庭血圧平均）、Cr 0.68（正常）、eGFR 82、Na 140、K 4.1、尿アルブミン/Cr比 18（正常範囲）、LDL 118、TG 95' }
+      ],
+      medications: [
+        { timestamp: '2026-03-03T08:00:00Z', name: 'アムロジピン（ノルバスク）5mg', notes: '朝食後 1錠（Ca拮抗薬・長時間作用型）' },
+        { timestamp: '2026-03-24T08:00:00Z', name: 'テルミサルタン（ミカルディス）40mg', notes: '朝食後 1錠（ARB・腎保護作用あり）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    hyperlipidemia: {
+      diseases: ['脂質異常症'],
+      profile: { age: 53, gender: 'male', height: 172, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-03-08T09:00:00Z', category: 'symptoms', title: '健診でLDL高値を指摘', content: '健診結果が届いた。LDL 168 mg/dL（要精検）、TG 185 mg/dL（高め）、HDL 42 mg/dL（低め）。初めて指摘されて驚いた。父が55歳で心筋梗塞を起こしているので不安。来週かかりつけ医に相談予定。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: '脂質異常症の診断', content: '内科受診。詳しい採血：LDL 172、TG 198、HDL 40、non-HDL-C 205。「脂質異常症（混合型）の診断。まず3ヶ月間の食事・運動療法を試しましょう」と言われた。父の家族性高コレステロール血症の可能性は「LDL 200を超えたら検査」とのこと。' },
+        { timestamp: '2026-03-22T08:00:00Z', category: 'activity', title: '食事改善スタート', content: '管理栄養士のオンライン指導を受けた。飽和脂肪酸（バター・肉の脂身・全脂肪乳製品）を減らし、青魚（サバ・イワシ）を週3回に増やす目標。食物繊維（大麦・豆類・野菜）を意識的に摂取。ランチの唐揚げ定食→サバ定食に変えた。' },
+        { timestamp: '2026-03-29T08:00:00Z', category: 'activity', title: 'ウォーキング開始', content: '毎朝30分のウォーキングを開始。3週間で体重 78kg → 77.2kg（800g減）。HDLは食事改善と運動で上がるらしい。腹囲を毎週測定：93cm → 92cm（1cm減）。内臓脂肪が落ちるとTGも下がると聞いた。' },
+        { timestamp: '2026-04-12T08:00:00Z', category: 'vitals', title: '1ヶ月後採血', content: '3ヶ月待つ前に自己判断で採血検査（人間ドック）。LDL 152（168→152）、TG 156（198→156）、HDL 45（40→45）。食事・運動で少し改善！でも先生の「LDL 140未満を目標」にはまだ届かない。' },
+        { timestamp: '2026-04-19T10:00:00Z', category: 'consultation', title: 'スタチン開始', content: '3ヶ月食事療法の中間レビュー。「改善傾向はあるが目標LDL 140には届かない。父の心筋梗塞歴を考えるとリスクが高い。ロスバスタチン2.5mg を追加しましょう」と説明された。副作用（筋肉痛・CK上昇）の注意事項を聞いた。' },
+        { timestamp: '2026-04-26T08:00:00Z', category: 'medication', title: 'スタチン開始1週間', content: 'ロスバスタチン 2.5mg 朝食後を開始。今のところ副作用（筋肉痛・倦怠感）はなし。筋肉痛が出たらCK検査を受けるよう言われている。食事改善・運動も継続。1ヶ月後に採血予定（LDL目標 120mg/dL未満）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-12T09:00:00Z', name: '脂質異常症 採血（1ヶ月後）', findings: 'LDL 152（目標140未満に向けて改善中）、TG 156、HDL 45、non-HDL-C 178、AST 22、ALT 24（肝酵素正常）、CK 112（正常）、血糖 98、HbA1c 5.4' }
+      ],
+      medications: [
+        { timestamp: '2026-04-19T08:00:00Z', name: 'ロスバスタチン（クレストール）2.5mg', notes: '朝食後 1錠（スタチン・HMG-CoA還元酵素阻害薬・筋肉痛に注意）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

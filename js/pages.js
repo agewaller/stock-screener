@@ -737,6 +737,8 @@ App.prototype.render_dashboard = function() {
       copd: ['息切れ(mMRC/CAT)', 'SpO2・心拍数', '喀痰の色・量', '吸入薬確認・SABA使用回数'],
       liver_disease: ['倦怠感・腹部膨満(1-10)', '体重・腹囲(毎日)', '検査値(AST/ALT/Alb)', 'アルコール量・服薬確認'],
       cancer_fatigue: ['倦怠感スコア(0-10)', '悪心・嘔吐の回数', 'CIPN(しびれ・冷感)の強さ', '活動量・食欲'],
+      hypertension: ['血圧(朝・夕)', '服薬確認・副作用', '塩分摂取量', '体重・歩数'],
+      hyperlipidemia: ['LDL・TG値(受診時)', 'スタチン服薬確認・筋肉痛', '食事の脂質評価', '体重・運動量'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

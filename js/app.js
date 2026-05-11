@@ -1325,6 +1325,8 @@ ${recentText || '記録なし'}
       copd: { ja: 'COPD 慢性閉塞性肺疾患 息切れ 吸入薬 呼吸器内科', en: 'COPD chronic obstructive pulmonary disease' },
       liver_disease: { ja: '慢性肝疾患 肝硬変 肝炎 MASH 消化器内科', en: 'chronic liver disease cirrhosis' },
       cancer_fatigue: { ja: 'がん治療 副作用 倦怠感 化学療法 免疫療法 腫瘍内科', en: 'cancer treatment side effects fatigue' },
+      hypertension: { ja: '高血圧 血圧管理 降圧薬 循環器内科', en: 'hypertension' },
+      hyperlipidemia: { ja: '脂質異常症 高コレステロール スタチン 循環器内科', en: 'hyperlipidemia dyslipidemia' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1461,6 +1463,8 @@ ${recentText || '記録なし'}
       copd: 'COPD exacerbation LAMA LABA pulmonary rehabilitation',
       liver_disease: 'liver cirrhosis MASH fibrosis hepatocellular carcinoma',
       cancer_fatigue: 'cancer related fatigue chemotherapy side effects management',
+      hypertension: 'hypertension blood pressure management antihypertensive treatment',
+      hyperlipidemia: 'hyperlipidemia statin LDL cholesterol cardiovascular prevention',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1627,6 +1631,8 @@ ${titles}`;
       copd: 'COPD inhaler therapy smoking cessation lung function',
       liver_disease: 'liver fibrosis MASH treatment resmetirom cirrhosis',
       cancer_fatigue: 'cancer related fatigue exercise intervention CIPN',
+      hypertension: 'hypertension blood pressure home measurement cardiovascular risk',
+      hyperlipidemia: 'dyslipidemia statin PCSK9 inhibitor LDL lowering outcomes',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3029,7 +3035,9 @@ ${responseText.substring(0, 3000)}`;
       sleep_apnea: '#睡眠時無呼吸症候群',
       copd: '#COPD',
       liver_disease: '#慢性肝疾患',
-      cancer_fatigue: '#がん治療副作用'
+      cancer_fatigue: '#がん治療副作用',
+      hypertension: '#高血圧',
+      hyperlipidemia: '#脂質異常症'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

@@ -148,6 +148,8 @@ function extractDiseaseIds(text) {
     copd: /COPD\b|慢性閉塞性肺疾患|肺気腫|慢性気管支炎|スピリーバ|チオトロピウム|ウルティブロ|アノーロ|インダカテロール|ビランテロール|フォステア|シーブリ|グリコピロニウム|息切れ.*肺|FEV1|mMRC.*息切れ|CAT.*COPD|吸入.*COPD|増悪.*肺|在宅酸素.*肺|肺リハビリ|禁煙.*肺/i,
     liver_disease: /慢性肝疾患|肝硬変|肝炎.*慢性|脂肪肝|NASH\b|MASH\b|liver cirrhosis|AST.*ALT.*肝|ALT.*肝炎|アルブミン.*肝|フィブロスキャン|エンテカビル|バラクルード|テノホビル|ベムリディ|エプクルーサー|ウルソデオキシコール酸|腹水.*肝|AFP.*肝|肝細胞がん|代償性.*肝/i,
     cancer_fatigue: /がん治療.*副作用|化学療法.*副作用|免疫療法.*副作用|がん関連疲労|CRF\b.*がん|CIPN\b|末梢神経障害.*化学|化学療法誘発.*神経|がん.*倦怠感|制吐薬|グラニセトロン|アプレピタント|好中球減少.*化学|G-CSF.*化学|がんサバイバー.*疲労|ケモブレイン|cancer.*fatigue.*chemo/i,
+    hypertension: /高血圧|本態性高血圧|hypertension|blood pressure.*high|降圧薬|ARB\b|ACE阻害薬|Ca拮抗薬|カルシウム拮抗薬|アムロジピン|テルミサルタン|オルメサルタン|エナラプリル|ロサルタン|バルサルタン|インダパミド|ビソプロロール|家庭血圧|収縮期血圧|拡張期血圧|塩分制限.*血圧|白衣高血圧|仮面高血圧|血圧.*mmHg/i,
+    hyperlipidemia: /脂質異常症|高コレステロール|高LDL|高脂血症|dyslipidemia|hyperlipidemia|LDLコレステロール|HDLコレステロール|中性脂肪.*高|高TG血症|スタチン|ロスバスタチン|アトルバスタチン|ピタバスタチン|エゼチミブ|PCSK9阻害薬|エボロクマブ|アリロクマブ|EPA製剤|エパデール|フィブラート|LDL.*目標|動脈硬化.*コレステロール/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
