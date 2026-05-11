@@ -716,6 +716,8 @@ App.prototype.render_dashboard = function() {
       epilepsy: ['発作の有無', '発作の種類', '服薬（飲み忘れ）', '誘因'],
       burnout: ['消耗感(1-10)', '達成感(1-10)', '活動量', '睡眠時間'],
       parkinsons: ['振戦の強さ(1-10)', 'ウェアリングオフ', '服薬タイミング', '転倒'],
+      ms: ['再発疑い症状', 'MSファティーグ(1-10)', 'DMT注射・副作用', 'ウートホフ現象'],
+      chronic_pain: ['痛みの強さNRS(0-10)', '痛みの部位・性質', '誘因', '服薬効果時間'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

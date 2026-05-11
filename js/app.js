@@ -1304,6 +1304,8 @@ ${recentText || '記録なし'}
       epilepsy: { ja: 'てんかん 発作日誌', en: 'epilepsy seizure' },
       burnout: { ja: 'バーンアウト症候群 燃え尽き症候群', en: 'burnout syndrome' },
       parkinsons: { ja: 'パーキンソン病 振戦', en: "Parkinson's disease" },
+      ms: { ja: '多発性硬化症 MS 神経内科', en: 'multiple sclerosis' },
+      chronic_pain: { ja: '慢性疼痛 ペインクリニック 神経障害性疼痛', en: 'chronic pain' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1419,6 +1421,8 @@ ${recentText || '記録なし'}
       epilepsy: 'epilepsy seizure treatment',
       burnout: 'burnout syndrome occupational',
       parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1564,6 +1568,8 @@ ${titles}`;
       epilepsy: 'epilepsy seizure treatment',
       burnout: 'burnout syndrome work stress',
       parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2951,7 +2957,8 @@ ${responseText.substring(0, 3000)}`;
       migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ',
       sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
       gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
-      ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病'
+      ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
+      ms: '#多発性硬化症', chronic_pain: '#慢性疼痛'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

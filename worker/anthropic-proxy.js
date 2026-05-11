@@ -127,6 +127,8 @@ function extractDiseaseIds(text) {
     epilepsy: /てんかん|epilepsy|発作日誌|抗てんかん薬|デパケン|バルプロ酸|ラミクタール|イーケプラ|発作.*日誌|てんかん.*発作/i,
     burnout: /バーンアウト|燃え尽き症候群|burnout|情緒的消耗|脱人格化|リワーク|職場復帰プログラム|休職.*回復/i,
     parkinsons: /パーキンソン病|パーキンソン|Parkinson|振戦|固縮|寡動|レボドパ|メネシット|ミラペックス|ウェアリングオフ|DBS.*パーキンソン/i,
+    ms: /多発性硬化症|MS\b|Multiple Sclerosis|視神経炎|MSファティーグ|ウートホフ|タイサブリ|オクレバス|フィンゴリモド|イムセラ|ナタリズマブ|オクレリズマブ|インターフェロンβ/i,
+    chronic_pain: /慢性疼痛|慢性痛|神経障害性疼痛|ペインクリニック|リリカ|プレガバリン|タリージェ|中枢感作|アロディニア|脊髄刺激|SCS\b|神経ブロック|CRPS|複合性局所疼痛/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
