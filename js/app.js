@@ -1341,6 +1341,8 @@ ${recentText || '記録なし'}
       panic: { ja: 'パニック障害 パニック発作 広場恐怖 SSRI 認知行動療法 心療内科', en: 'panic disorder panic attack CBT' },
       ankylosing_spondylitis: { ja: '強直性脊椎炎 体軸性脊椎関節炎 axSpA 炎症性腰痛 BASDAI リウマチ科', en: 'ankylosing spondylitis axSpA inflammatory back pain' },
       hyperthyroidism: { ja: '甲状腺機能亢進症 バセドウ病 Graves病 TSH FT4 チアマゾール 内分泌科', en: 'hyperthyroidism Graves disease thyroid' },
+      narcolepsy: { ja: 'ナルコレプシー 特発性過眠症 過度の眠気 情動脱力発作 ESS モダフィニル 睡眠専門', en: 'narcolepsy excessive daytime sleepiness cataplexy' },
+      osteoarthritis: { ja: '変形性関節症 変形性膝関節症 変形性股関節症 OA WOMAC ヒアルロン酸 整形外科', en: 'osteoarthritis OA knee hip joint pain' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1493,6 +1495,8 @@ ${recentText || '記録なし'}
       panic: 'panic disorder SSRI CBT exposure therapy panic attack treatment',
       ankylosing_spondylitis: 'ankylosing spondylitis TNF inhibitor IL-17 BASDAI exercise therapy',
       hyperthyroidism: 'hyperthyroidism Graves disease methimazole radioiodine thyrotoxicosis',
+      narcolepsy: 'narcolepsy pitolisant modafinil orexin cataplexy treatment',
+      osteoarthritis: 'osteoarthritis knee pain hyaluronic acid duloxetine exercise weight loss',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1675,6 +1679,8 @@ ${titles}`;
       panic: 'panic disorder cognitive behavioral therapy SSRI interoceptive exposure',
       ankylosing_spondylitis: 'ankylosing spondylitis secukinumab upadacitinib ASDAS MRI sacroiliitis',
       hyperthyroidism: 'Graves disease methimazole relapse radioiodine thyroid ablation outcome',
+      narcolepsy: 'narcolepsy orexin deficiency MSLT multiple sleep latency cataplexy treatment outcome',
+      osteoarthritis: 'osteoarthritis intraarticular hyaluronic acid duloxetine WOMAC exercise therapy',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3093,7 +3099,9 @@ ${responseText.substring(0, 3000)}`;
       ulcerative_colitis: '#潰瘍性大腸炎',
       panic: '#パニック障害',
       ankylosing_spondylitis: '#強直性脊椎炎',
-      hyperthyroidism: '#バセドウ病甲状腺機能亢進症'
+      hyperthyroidism: '#バセドウ病甲状腺機能亢進症',
+      narcolepsy: '#ナルコレプシー過眠症',
+      osteoarthritis: '#変形性関節症'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

@@ -164,6 +164,8 @@ function extractDiseaseIds(text) {
     panic: /パニック障害|パニック発作|panic disorder|panic attack|広場恐怖|動悸.*息苦しさ.*恐怖|死の恐怖.*発作|予期不安|パキシル.*パニック|パロキセチン.*パニック|CBT.*パニック|認知行動療法.*パニック|曝露療法.*恐怖|発作.*電車.*恐怖|パニック.*SSRI/i,
     ankylosing_spondylitis: /強直性脊椎炎|体軸性脊椎関節炎|axSpA\b|AS\b.*脊椎|ankylosing spondylitis|炎症性腰痛|仙腸関節.*炎|BASDAIスコア|ASDAS\b|HLA-B27|竹節様脊椎|エタネルセプト.*脊椎|ヒュミラ.*脊椎|アダリムマブ.*脊椎|セクキヌマブ.*脊椎|コセンティクス.*脊椎|イキセキズマブ.*脊椎|ウパダシチニブ.*脊椎|朝のこわばり.*腰/i,
     hyperthyroidism: /甲状腺機能亢進症|バセドウ病|Graves病|Graves disease|hyperthyroidism|甲状腺クリーゼ|thyroid storm|TSH.*低下|FT4.*上昇|FT3.*上昇|チアマゾール|メルカゾール|MMI\b.*甲状腺|プロピルチオウラシル|PTU\b.*甲状腺|放射線.*ヨウ素.*甲状腺|無顆粒球症.*甲状腺|バセドウ眼症|眼球突出.*甲状腺|頻脈.*甲状腺|体重減少.*甲状腺/i,
+    narcolepsy: /ナルコレプシー|特発性過眠症|narcolepsy|過度の眠気|EDS\b.*眠|情動脱力発作|カタプレキシー|cataplexy|睡眠麻痺.*ナルコ|入眠時幻覚|ESSスコア|エプワース眠気|MSLT\b|モダフィニル|モディオダール|ピトリサント|ウェイクリックス|オレキシン.*欠乏|ヒポクレチン|過眠症.*診断/i,
+    osteoarthritis: /変形性関節症|変形性膝関節症|変形性股関節症|osteoarthritis|OA\b.*膝|OA\b.*股|WOMACスコア|KOOSスコア|ヒアルロン酸.*注射|関節内注射.*ヒアルロン|変形性.*膝.*痛み|膝.*軟骨.*摩耗|変形性.*股関節.*痛|セレコキシブ.*膝|デュロキセチン.*関節|人工膝関節|TKA\b|THA\b.*股|骨棘.*形成/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

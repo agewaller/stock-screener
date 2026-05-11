@@ -51,7 +51,8 @@ var CONFIG = {
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
         { id: 'pots', name: 'POTS（体位性頻脈症候群）', icd: '8D40' },
         { id: 'tbi', name: '外傷性脳損傷後遺症', icd: '8B20' },
-        { id: 'chronic_pain', name: '慢性疼痛症候群', icd: 'MG30' }
+        { id: 'chronic_pain', name: '慢性疼痛症候群', icd: 'MG30' },
+        { id: 'narcolepsy', name: 'ナルコレプシー・特発性過眠症', icd: 'G47.4' }
       ]
     },
     {
@@ -186,6 +187,7 @@ var CONFIG = {
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
         { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
+        { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' }
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
       ]
@@ -270,6 +272,10 @@ var CONFIG = {
                           japan:    50_000, japanLabel: '約 5 万人（推計）',       japanSource: '国内推計（指定難病）' },
     hyperthyroidism:    { world:   200_000_000, label: '約 2 億人',              tier: 2, density: 'medium',  source: '甲状腺機能亢進症全体推計',
                           japan:   1_000_000, japanLabel: '約 60〜100 万人',      japanSource: '日本甲状腺学会' },
+    narcolepsy:         { world:     3_000_000, label: '約 300 万人（推計）',     tier: 2, density: 'low',    source: '有病率 0.025〜0.05%',
+                          japan:    20_000, japanLabel: '約 2 万人（指定難病）',   japanSource: '厚生労働省' },
+    osteoarthritis:     { world: 528_000_000,   label: '約 5 億 2,800 万人',     tier: 1, density: 'high',   source: 'GBD 2019',
+                          japan:  25_300_000, japanLabel: '約 2,530 万人（変形性膝関節症）', japanSource: '日本整形外科学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2446,6 +2452,58 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-01-17T10:00:00Z', name: 'チアマゾール（メルカゾール）5mg', notes: '1錠/日（30mg→5mg に減量・低用量維持療法）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    narcolepsy: {
+      diseases: ['ナルコレプシー・特発性過眠症'],
+      profile: { age: 19, gender: 'male', height: 174, weight: 65 },
+      textEntries: [
+        { timestamp: '2026-01-06T08:00:00Z', category: 'symptoms', title: '高校からの居眠りが大学でも続く', content: '高校1年から授業中に止められない眠気が続いていた。当時は「怠け者」と思われた。大学入学後もひどくなる一方で、笑ったり驚いたりすると膝が崩れる感覚（情動脱力発作？）が月2〜3回ある。ESS（エプワース眠気尺度）: 19/24点（重度過眠）。大学の保健センターで睡眠専門科を紹介された。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: '睡眠専門科受診・ナルコレプシー1型診断', content: '終夜睡眠検査（PSG）：REM潜時8分（正常>20分）・REM 4エピソード/夜。反復睡眠潜時検査（MSLT）：平均睡眠潜時3.2分（<8分で異常）・SOREMPsあり。髄液オレキシン（ヒポクレチン-1）：68pg/mL（基準値<110で1型確定）。HLA-DQB1*06:02 陽性。「ナルコレプシー1型の確定診断です。モダフィニルを開始しましょう」。' },
+        { timestamp: '2026-01-27T08:00:00Z', category: 'vitals', title: 'モダフィニル開始1週間後', content: 'モダフィニル200mg 朝食後 開始1週間。日中の眠気が「劇的に改善」。午後の授業を初めて最後まで起きていられた。ESS: 19→13点（改善）。情動脱力発作は継続（笑うと膝が崩れる）。計画仮眠（昼食後12時15分〜12時35分・20分）も開始。' },
+        { timestamp: '2026-02-10T10:00:00Z', category: 'consultation', title: '3週後・情動脱力への追加治療', content: 'ESS: 13→9点（10点未満・目標達成）。モダフィニルの効果は良好。「情動脱力発作はモダフィニルでは改善しません。クロミプラミン（アナフラニール）10mgを就寝前に追加しましょう」。クロミプラミン追加。1週間後に情動脱力が月2〜3回→0〜1回に激減。' },
+        { timestamp: '2026-03-10T08:00:00Z', category: 'activity', title: '計画仮眠の効果が定着', content: '計画仮眠（昼・夕方×各20分）を習慣化。「仮眠後30分は頭が非常に鮮明」。1限の授業（8:30〜）が一番辛いため、7時15分に自宅を出て大学の仮眠室を利用するルーティンが確立した。指定難病の申請も完了し、医療費助成を受けられるようになった。' },
+        { timestamp: '2026-04-15T08:00:00Z', category: 'vitals', title: '大学2年・安定した日常', content: 'ESS: 8点（正常範囲内！）。情動脱力発作: 月0〜1回（ほぼ消失）。「サークル活動に参加できるようになった」「友達に病気を打ち明けたら理解してもらえた」。モダフィニル+クロミプラミン継続。指定難病の公的サポートで医療費の自己負担が軽減されている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'ナルコレプシー確定診断', findings: 'MSLT 平均睡眠潜時 3.2分（<8分・異常）, SOREMPs 4/5回, PSG REM潜時 8分（<15分・異常）, 髄液オレキシン-1 68pg/mL（<110pg/mL・1型確定）, HLA-DQB1*06:02 陽性' }
+      ],
+      medications: [
+        { timestamp: '2026-01-27T08:00:00Z', name: 'モダフィニル（モディオダール）200mg', notes: '朝食後 1錠（覚醒促進薬・日中過眠の第一選択）' },
+        { timestamp: '2026-02-10T10:00:00Z', name: 'クロミプラミン（アナフラニール）10mg', notes: '就寝前 1錠（三環系抗うつ薬・情動脱力発作の抑制）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    osteoarthritis: {
+      diseases: ['変形性関節症（OA）'],
+      profile: { age: 68, gender: 'female', height: 155, weight: 65 },
+      textEntries: [
+        { timestamp: '2026-01-08T08:00:00Z', category: 'symptoms', title: '膝の痛みで階段が辛い', content: '両膝の痛みが1年前から悪化。特に右膝がひどく、朝起きて15分ほどこわばる。階段の上り下りがつらく、買い物も短時間しかできない。体重が10年で8kg増加した。近所の整形外科でX線を撮ると「変形性膝関節症のグレード3（中等度）」と言われた。' },
+        { timestamp: '2026-01-15T10:00:00Z', category: 'consultation', title: '整形外科受診・OAグレード3診断', content: 'X線：Kellgren-Lawrence分類 右膝Grade 3（関節裂隙狭小・骨棘形成・硬化）、左膝Grade 2。WOMAC初期スコア: 疼痛16/20・機能49/68・こわばり6/8。「変形性膝関節症の中等症です。ヒアルロン酸注射・ロキソプロフェン・体重管理・大腿四頭筋訓練から始めましょう」。週1回のヒアルロン酸注射（5回コース）開始。' },
+        { timestamp: '2026-02-05T10:00:00Z', category: 'vitals', title: 'ヒアルロン酸5回コース終了', content: 'ヒアルロン酸関節内注射5回終了。右膝痛NRS: 8→5（改善）。朝のこわばり: 15分→8分。歩行距離: 100m→300m（大幅改善）。「スーパーの買い物をカートなしでできた」。体重: 65kg→63.5kg（1.5kg減）。大腿四頭筋訓練（膝伸展運動・1日2回）を毎日実施。' },
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '2ヶ月後の再診・デュロキセチン追加', content: 'WOMAC: 疼痛16→11・機能49→36（改善）。「ヒアルロン酸の効果はあります。ただ、夜間痛が残っているため中枢性疼痛感作への対策としてデュロキセチン（サインバルタ）20mgを追加しましょう」。次のヒアルロン酸注射コースを3ヶ月後に予定。' },
+        { timestamp: '2026-04-07T08:00:00Z', category: 'vitals', title: '3ヶ月後・体重減少で症状改善', content: '体重: 65kg→61kg（4kg減・目標5%達成）。右膝痛NRS: 5→3（「電車の座席でも楽に座れるようになった」）。夜間痛: ほぼ消失。朝のこわばり: 5分以内。歩行距離: 500m以上。「週3回の水中ウォーキングと膝体操が習慣に。デュロキセチンも夜間痛に効いている」。' },
+        { timestamp: '2026-04-22T10:00:00Z', category: 'vitals', title: '4ヶ月目・安定した生活', content: 'WOMAC: 疼痛8・機能28・こわばり3（全項目改善）。体重: 60.5kg（当初から4.5kg減）。「孫を連れて公園を30分歩けた」。次のヒアルロン酸コースは6月予定。人工関節手術は今のところ検討していない。リハビリを続けて現在の状態を維持する。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'OA初回評価', findings: 'X線 右膝 Kellgren-Lawrence Grade 3, 左膝 Grade 2, WOMAC初期スコア 71/96（中等症）, CRP 0.2mg/dL（正常）, 尿酸 4.8mg/dL（正常）, RF 陰性（RA除外）, 血糖 108, HbA1c 6.1%' }
+      ],
+      medications: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'ヒアルロン酸ナトリウム注射（サイビスク）', notes: '週1回 関節内注射×5回コース（潤滑・衝撃吸収・軟骨保護）' },
+        { timestamp: '2026-03-10T10:00:00Z', name: 'デュロキセチン（サインバルタ）20mg', notes: '夕食後 1錠（中枢性疼痛感作・夜間痛に有効）' }
       ],
       sleepData: [], activityData: [], meals: []
     }
