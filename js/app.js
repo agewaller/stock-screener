@@ -5658,8 +5658,14 @@ ${axisHint}
 
       // Step 3: point the cloud.firestore release at the new ruleset
       if (btn) btn.innerHTML = '⏳ 公開中…';
+      // Per firebase-tools source: PATCH the release with just the
+      // Release object as body (NOT wrapped in { release: ... }) and
+      // pass updateMask=rulesetName (NOT "release.rulesetName"). Our
+      // earlier double-wrapped body + "release.rulesetName" mask hit
+      // INVALID_ARGUMENT 400. This matches what `firebase deploy
+      // --only firestore:rules` sends internally.
       const releaseRes = await fetch(
-        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=release.rulesetName`,
+        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=rulesetName`,
         {
           method: 'PATCH',
           headers: {
@@ -5667,10 +5673,8 @@ ${axisHint}
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            release: {
-              name: `projects/${projectId}/releases/cloud.firestore`,
-              rulesetName: ruleset.name
-            }
+            name: `projects/${projectId}/releases/cloud.firestore`,
+            rulesetName: ruleset.name
           })
         }
       );
