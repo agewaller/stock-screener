@@ -95,7 +95,8 @@ var CONFIG = {
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'L40' },
-        { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' }
+        { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
+        { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' }
       ]
     },
     {
@@ -110,7 +111,8 @@ var CONFIG = {
         { id: 'pms_pmdd', name: 'PMS・PMDD（月経前症候群）', icd: 'GA34' },
         { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' },
         { id: 'tinnitus', name: '耳鳴り・感音性難聴', icd: 'H93.1' },
-        { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' }
+        { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' },
+        { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' }
       ]
     },
     {
@@ -252,6 +254,10 @@ var CONFIG = {
                           japan:  30_000_000, japanLabel: '約 3,000 万人（成人の約30%）', japanSource: '国内推計' },
     vertigo:            { world:   300_000_000, label: '約 3 億人（推計）', tier: 2, density: 'medium', source: '成人推計',
                           japan:  15_000_000, japanLabel: '約 1,500 万人（推計）', japanSource: '国内推計' },
+    dry_eye:            { world: 1_000_000_000, label: '約 10 億人',       tier: 2, density: 'high',   source: '世界推計（診断基準差あり）',
+                          japan:  22_000_000, japanLabel: '約 2,200 万人',         japanSource: '日本涙液学会' },
+    chronic_prostatitis:{ world:    50_000_000, label: '約 5,000 万人（推計）', tier: 2, density: 'low', source: '男性成人 5〜10%',
+                          japan:   3_000_000, japanLabel: '約 300 万人（推計）',   japanSource: '国内推計' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2272,6 +2278,58 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-04-03T09:00:00Z', name: 'イソバイドシロップ 70% 30mL', notes: '朝夕食後（浸透圧利尿薬・内リンパ水腫軽減）' },
         { timestamp: '2026-04-03T09:00:00Z', name: 'ベタヒスチンメシル酸塩（メリスロン）12mg', notes: '毎食後 1錠（前庭機能改善・内耳血流）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    dry_eye: {
+      diseases: ['ドライアイ（乾性角結膜炎）'],
+      profile: { age: 39, gender: 'female', height: 162, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-02-17T09:00:00Z', category: 'symptoms', title: '目の乾き・充血が悪化', content: 'テレワーク開始から1年、目の乾き・充血がひどくなった。市販の目薬（ロートドライエイド）を1日10回以上使っても改善しない。午後になると視界がかすむ。コンタクトレンズが痛くて使えなくなった。眼科を受診しようと思う。' },
+        { timestamp: '2026-02-24T11:00:00Z', category: 'consultation', title: '眼科受診・MGD型ドライアイ診断', content: '涙液量（シルマーテスト）: 8mm（境界域）。BUT（涙液層破壊時間）: 3秒（正常10秒以上）。フルオレセイン染色：点状表層角膜症あり。マイボーム腺評価：分泌物白濁・閉塞あり（MGD）。「マイボーム腺機能不全型ドライアイです」。ジクアス・ムコスタ点眼が処方された。' },
+        { timestamp: '2026-03-03T08:00:00Z', category: 'activity', title: 'ホットアイマスク・点眼開始', content: 'ジクアス（ジクアホソル）6回/日・ムコスタ（レバミピド）4回/日の点眼開始。就寝前に蒸気ホットアイマスク（10分）開始。「マイボーム腺の脂を溶かして排出を促す」と説明を受けた。VDT作業中に20-20-20ルール（20分→20フィート→20秒休眠）を実践開始。' },
+        { timestamp: '2026-03-17T09:00:00Z', category: 'vitals', title: '3週間後・充血改善', content: '目の乾きVAS: 8→5に改善。充血スコア: 3→1（写真で記録）。BUT: 再測定3秒→6秒に改善。コンタクトレンズをデイリーに変更して装用時間を8時間以内に制限。VDT作業時間を1日10時間→8時間に短縮。点眼回数が守れている。' },
+        { timestamp: '2026-04-07T11:00:00Z', category: 'consultation', title: '1.5ヶ月後の再診', content: 'BUT: 7秒（改善傾向）。点状角膜症：軽快。「ジクアスとムコスタの2剤が効いています。引き続き温罨法を継続してください。コンタクトレンズの装用時間制限は守って」。オフィスに加湿器（湿度50〜60%）を設置したことで午後の悪化が改善。' },
+        { timestamp: '2026-04-21T08:00:00Z', category: 'vitals', title: '2ヶ月目・安定化', content: '目の乾きVAS: 3。「1年ぶりにコンタクトレンズを1日6時間装用できた」。ホットアイマスクが就寝前の習慣になった。デスクの加湿器を買い足してリモートワーク環境も整えた。次回受診で涙点プラグの必要性を再評価する予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-24T10:00:00Z', name: 'ドライアイ初回評価', findings: 'シルマーテスト 8mm（境界域）, BUT 3秒（異常: 正常10秒以上）, フルオレセイン染色 点状角膜症あり（grade 2）, マイボーム腺 MGD grade 2, 抗核抗体 陰性（シェーグレン除外）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-24T10:00:00Z', name: 'ジクアホソルナトリウム（ジクアス）3%', notes: '1日6回点眼（ムチン分泌促進・涙液量増加）' },
+        { timestamp: '2026-02-24T10:00:00Z', name: 'レバミピド（ムコスタ点眼）2%', notes: '1日4回点眼（角膜上皮修復・ムチン産生促進）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chronic_prostatitis: {
+      diseases: ['慢性前立腺炎（CP/CPPS）'],
+      profile: { age: 34, gender: 'male', height: 175, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-01-20T09:00:00Z', category: 'symptoms', title: '会陰部の慢性的な痛み', content: '3ヶ月前から会陰部・睾丸・下腹部に鈍痛が続く。排尿後に痛みが増す。射精後に翌日まで痛みが残ることがある。頻尿（1日10〜12回）・残尿感もある。泌尿器科を受診した。NIH-CPSIスコアをネットで確認したら29点（重症）だった。' },
+        { timestamp: '2026-01-27T10:00:00Z', category: 'consultation', title: '泌尿器科受診・CP/CPPS診断', content: '尿検査：細菌（-）、白血球少量。PSA：1.2ng/mL（正常）。エコー：前立腺やや腫大・石灰化あり。NIH-CPSI：29点（重症）。「細菌は検出されないため慢性骨盤痛症候群（CPPS）の診断です。α遮断薬とニューキノロン系抗生剤を試します」。ハルナール0.2mg・シプロフロキサシン500mg処方。' },
+        { timestamp: '2026-02-10T08:00:00Z', category: 'vitals', title: '抗生剤2週間後・効果なし', content: 'シプロフロキサシン2週間後。会陰部痛：NRS 7→6（変化少ない）。頻尿：11回→10回。先生「細菌性でなかったため抗生剤の効果は限定的でした。ハルナールを継続して理学療法士による骨盤底筋弛緩療法を試しましょう」。骨盤底PT予約を入れた。' },
+        { timestamp: '2026-02-24T09:00:00Z', category: 'activity', title: '骨盤底筋弛緩療法開始', content: '骨盤底PT第1回。「CPPSの多くは骨盤底筋の過緊張が原因」と説明。「CPの8割は筋緊張型」。骨盤底を締めるのでなく「緩める」エクササイズを指導された。深呼吸・ダウントレーニング・仙骨マッサージ。座位を減らすことの重要性を説明された。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '2ヶ月後・再評価', content: 'NIH-CPSI: 29→18点（11点改善・中等度に改善）。「骨盤底PTの効果が出ています。頻尿も9回/日に減少。タダラフィル5mgを追加で骨盤血流を改善しましょう」。スタンディングデスク導入・自転車通勤中止・エルゴノミクスクッション使用開始。' },
+        { timestamp: '2026-04-21T08:00:00Z', category: 'vitals', title: '3ヶ月後・安定化', content: '会陰部痛NRS: 7→3（大幅改善）。NIH-CPSI: 18→12点（中等度）。頻尿：8〜9回/日。「以前は電車でも痛みを気にしていたが、今は仕事に集中できる」。タダラフィルは週3回服用。骨盤底PTは月2回のメンテナンスに移行。CBTのワークも自宅で継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-27T10:00:00Z', name: 'CP初回精査', findings: '尿一般 細菌（-）, 白血球（+/-)（軽度）, PSA 1.2ng/mL（正常: <4.0）, 残尿測定 38mL（軽度増加）, 腹部エコー 前立腺やや腫大 28mL, 血液 正常範囲' }
+      ],
+      medications: [
+        { timestamp: '2026-01-27T10:00:00Z', name: 'タムスロシン塩酸塩（ハルナール）0.2mg', notes: '朝食後 1錠（α1遮断薬・平滑筋弛緩・排尿改善）' },
+        { timestamp: '2026-03-17T10:00:00Z', name: 'タダラフィル（シアリス）5mg', notes: '週3回（PDE5阻害薬・骨盤血流改善・勃起機能）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

@@ -747,6 +747,8 @@ App.prototype.render_dashboard = function() {
       overactive_bladder: ['1日の排尿回数・夜間頻尿回数', '尿意切迫感強さ(1-10)', '服薬確認・副作用（口渇）', '骨盤底筋訓練の実施記録'],
       tinnitus: ['耳鳴り強度(0-10)・音質', 'THIスコア（生活影響）', '睡眠への影響・夜間覚醒', 'ストレス・騒音曝露との相関'],
       vertigo: ['めまい発作の日時・持続時間・強さ', '誘発姿勢・発作のパターン', '難聴・耳鳴り・耳閉感の変化', '服薬確認・塩分摂取量'],
+      dry_eye: ['目の乾き・異物感VAS(0-10)', '点眼薬の種類・回数', 'VDT作業時間・コンタクト装用時間', 'ホットアイマスク実施記録'],
+      chronic_prostatitis: ['骨盤痛・会陰部痛NRS(0-10)', 'NIH-CPSIスコア（疼痛・排尿・QOL）', '排尿回数・夜間頻尿・残尿感', '服薬確認・長時間座位との相関'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

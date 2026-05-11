@@ -158,6 +158,8 @@ function extractDiseaseIds(text) {
     overactive_bladder: /過活動膀胱|OAB\b|頻尿.*膀胱|尿意切迫感|切迫性尿失禁|夜間頻尿.*目が覚|overactive bladder|ベシケア|ソリフェナシン|ウリトス|イミダフェナシン|ビベグロン|ベオーバ|ミラベグロン|ベタニス|骨盤底筋.*頻尿|膀胱訓練|排尿日誌|ケーゲル体操|1日.*トイレ.*8回/i,
     tinnitus: /耳鳴り|慢性耳鳴|tinnitus|THIスコア|TRT.*耳鳴|耳鳴り再訓練|感音性難聴|sensorineural hearing loss|耳鳴り.*ピー音|耳鳴り.*ジー音|耳鳴り.*ザー音|耳鳴り.*睡眠|耳鳴り.*ストレス|耳鳴り.*補聴器|耳鳴り.*CBT|メチコバール.*耳鳴|ホワイトノイズ.*耳鳴|サウンドセラピー.*耳鳴/i,
     vertigo: /めまい|BPPV\b|良性発作性頭位めまい|メニエール病|前庭神経炎|vertigo|Meniere|エプリー法|Epley|耳石置換法|前庭リハビリ|vestibular rehabilitation|イソバイド.*めまい|ベタヒスチン|メリスロン|回転性めまい|浮動性めまい|頭位変換.*めまい|内リンパ水腫|耳閉感.*難聴.*めまい/i,
+    dry_eye: /ドライアイ|乾性角結膜炎|dry eye|DED\b|VDT.*目|目.*乾き|目.*充血.*乾|人工涙液|ジクアホソル|ジクアス|レバミピド|ムコスタ点眼|ヒアルロン酸.*点眼|マイボーム腺|MGD\b|涙点プラグ|サイクロスポリン.*眼|眼精疲労.*乾燥|まばたき.*減少|コンタクト.*乾き/i,
+    chronic_prostatitis: /慢性前立腺炎|CP\/CPPS|慢性骨盤痛|CPPS\b|NIH-CPSI|前立腺炎|prostatitis|会陰部痛|骨盤痛.*男性|前立腺.*痛み|排尿痛.*前立腺|ハルナール.*前立腺|タムスロシン.*前立腺|骨盤底.*男性|射精痛.*前立腺|慢性.*骨盤.*疼痛/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

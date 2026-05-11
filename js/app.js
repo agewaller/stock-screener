@@ -1335,6 +1335,8 @@ ${recentText || '記録なし'}
       overactive_bladder: { ja: '過活動膀胱 OAB 頻尿 尿失禁 夜間頻尿 泌尿器科', en: 'overactive bladder OAB' },
       tinnitus: { ja: '耳鳴り 慢性耳鳴 感音性難聴 難聴 耳鼻咽喉科 TRT', en: 'tinnitus hearing loss' },
       vertigo: { ja: 'めまい BPPV 良性発作性頭位めまい症 メニエール病 耳鼻咽喉科', en: 'vertigo BPPV Menieres disease' },
+      dry_eye: { ja: 'ドライアイ 乾性角結膜炎 眼精疲労 眼科 マイボーム腺 人工涙液', en: 'dry eye disease DED' },
+      chronic_prostatitis: { ja: '慢性前立腺炎 CP/CPPS 慢性骨盤痛 泌尿器科 NIH-CPSI α遮断薬', en: 'chronic prostatitis CPPS pelvic pain' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1481,6 +1483,8 @@ ${recentText || '記録なし'}
       overactive_bladder: 'overactive bladder pelvic floor training beta-3 agonist',
       tinnitus: 'tinnitus TRT cognitive behavioral therapy sound therapy',
       vertigo: 'vertigo BPPV Epley maneuver Meniere disease treatment',
+      dry_eye: 'dry eye disease DED diquafosol artificial tears meibomian gland',
+      chronic_prostatitis: 'chronic prostatitis CPPS alpha blocker pelvic pain treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1657,6 +1661,8 @@ ${titles}`;
       overactive_bladder: 'overactive bladder OAB anticholinergic pelvic floor',
       tinnitus: 'tinnitus sound therapy habituation THI treatment outcome',
       vertigo: 'BPPV canalith repositioning Meniere endolymphatic hydrops',
+      dry_eye: 'dry eye disease diquafosol rebamipide meibomian gland dysfunction tear film',
+      chronic_prostatitis: 'chronic pelvic pain syndrome NIH-CPSI alpha blocker pelvic floor therapy',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3069,7 +3075,9 @@ ${responseText.substring(0, 3000)}`;
       pms_pmdd: '#PMS月経前症候群',
       overactive_bladder: '#過活動膀胱',
       tinnitus: '#耳鳴り',
-      vertigo: '#めまい'
+      vertigo: '#めまい',
+      dry_eye: '#ドライアイ',
+      chronic_prostatitis: '#慢性前立腺炎'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
