@@ -2107,20 +2107,20 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=35"></script>
-<script src="js/config.js?v=35"></script>
-<script src="js/prompts.js?v=35"></script>
-<script src="js/store.js?v=35"></script>
-<script src="js/privacy.js?v=35"></script>
-<script src="js/ai-engine.js?v=35"></script>
-<script src="js/affiliate.js?v=35"></script>
-<script src="js/components.js?v=35"></script>
-<script src="js/i18n.js?v=35"></script>
-<script src="js/calendar.js?v=35"></script>
-<script src="js/integrations.js?v=35"></script>
-<script src="js/firebase-backend.js?v=35"></script>
-<script src="js/app.js?v=35"></script>
-<script src="js/pages.js?v=35"></script>
+<script src="js/idb.js?v=37"></script>
+<script src="js/config.js?v=37"></script>
+<script src="js/prompts.js?v=37"></script>
+<script src="js/store.js?v=37"></script>
+<script src="js/privacy.js?v=37"></script>
+<script src="js/ai-engine.js?v=37"></script>
+<script src="js/affiliate.js?v=37"></script>
+<script src="js/components.js?v=37"></script>
+<script src="js/i18n.js?v=37"></script>
+<script src="js/calendar.js?v=37"></script>
+<script src="js/integrations.js?v=37"></script>
+<script src="js/firebase-backend.js?v=37"></script>
+<script src="js/app.js?v=37"></script>
+<script src="js/pages.js?v=37"></script>
 <script>
 // Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
 // error messages. Non-Claude selectedModel values fall back to Sonnet so
@@ -2145,6 +2145,48 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 // — the URL itself was wrong. Restore the pre-PR-#31 behavior of
 // reading the correct URL from admin/config sync.
 var ANTHROPIC_DIRECT_URL = 'https://api.anthropic.com/v1/messages';
+
+// Gemini direct-from-browser endpoint. Google's generative-language API
+// supports CORS for browser callers when the key is passed as a query
+// parameter — no Worker / proxy needed. We use this as the FALLBACK
+// when Anthropic (Worker or direct) fails for infrastructure reasons
+// (workers.dev disabled, network blocked, etc.). As long as the admin
+// has saved a Gemini key in admin/config, AI keeps working even when
+// the Cloudflare Worker chain is dead.
+var GEMINI_DIRECT_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+async function callGemini(text, apiKey, systemPrompt, modelName) {
+  var key = String(apiKey || '').trim();
+  if (!key) throw new Error('Gemini key missing');
+  var model = modelName || 'gemini-2.5-flash';
+  var ctrl = ('AbortController' in window) ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
+  var body = {
+    contents: [{ role: 'user', parts: [{ text: String(text || '') }] }],
+    generationConfig: { maxOutputTokens: 800, temperature: 0.7 }
+  };
+  if (systemPrompt) body.systemInstruction = { parts: [{ text: String(systemPrompt) }] };
+  try {
+    var r = await fetch(GEMINI_DIRECT_URL + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    if (!r.ok) {
+      var t = await r.text();
+      throw new Error('Gemini ' + r.status + ': ' + t.slice(0, 300));
+    }
+    var d = await r.json();
+    var reply = (d && d.candidates && d.candidates[0] && d.candidates[0].content
+                && d.candidates[0].content.parts && d.candidates[0].content.parts[0]
+                && d.candidates[0].content.parts[0].text) || '';
+    if (!reply) throw new Error('Gemini returned empty response');
+    return reply;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function getAnthropicEndpoint(hasKey) {
   if (hasKey) return ANTHROPIC_DIRECT_URL;
   var proxy = '';
@@ -2152,6 +2194,33 @@ function getAnthropicEndpoint(hasKey) {
   if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
   return proxy.replace(/\/+$/, '') + '/v1/messages';
 }
+// Top-level entry point used by every guest / inline AI call. Tries
+// Claude first; on infrastructure failure (Worker down, network blocked,
+// host_not_allowed), automatically falls back to Gemini if a Gemini key
+// is present in localStorage. This means a single failing provider
+// (e.g. Cloudflare Worker disabled by an account-level subdomain
+// toggle) never takes the whole site down — as long as one provider
+// is configured, the app keeps working.
+async function callAI(text, apiKey, model, systemPrompt) {
+  try {
+    return await callClaude(text, apiKey, model, systemPrompt);
+  } catch (err) {
+    var em = String((err && err.message) || err);
+    var isInfra = /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed|一時停止|接続できません|タイムアウト|Cloudflare/i.test(em);
+    if (!isInfra) throw err;
+    var geminiKey = '';
+    try { geminiKey = (localStorage.getItem('apikey_google') || '').trim(); } catch (_) {}
+    if (!geminiKey) throw err;
+    console.warn('[callAI] Anthropic failed (' + em.slice(0, 80) + '), falling back to Gemini');
+    try {
+      return await callGemini(text, geminiKey, systemPrompt);
+    } catch (gErr) {
+      console.warn('[callAI] Gemini fallback also failed:', gErr.message);
+      throw err;
+    }
+  }
+}
+
 function callClaude(text, apiKey, model, systemPrompt) {
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var cleanKey = String(apiKey || '').trim();
@@ -2477,7 +2546,7 @@ window.addEventListener('load', function() {
     // is exactly the path registered users without a personal API key
     // need. The previous throw broke every account that hadn't yet
     // synced admin/secrets to localStorage.
-    var reply = await callClaude(input, key || '', store.get('selectedModel'), buildSystemPrompt());
+    var reply = await callAI(input, key || '', store.get('selectedModel'), buildSystemPrompt());
     // AI応答をそのまま使用（静的差替は削除済み）
     return {
       id: Date.now().toString(36) + Math.random().toString(36).substr(2),
@@ -3016,7 +3085,7 @@ window.addEventListener('load', function() {
       }).join('\n');
       var userMsg = '【直近の会話】\n' + recentHistory + '\n\n【今回のメッセージ】\n' + msg;
       var sys = buildSystemPrompt() + '\n\nあなたは健康相談のチャットパートナーです。会話形式で、必要に応じて箇条書きを織り交ぜながら返答してください。返答は 200-400 字程度で簡潔に。';
-      var reply = await callClaude(userMsg, key, store.get('selectedModel'), sys);
+      var reply = await callAI(userMsg, key, store.get('selectedModel'), sys);
       // AI応答をそのまま使用（静的差替は削除済み）
       history.push({ role: 'assistant', content: reply, timestamp: new Date().toISOString() });
       store.set('conversationHistory', history);
@@ -3040,7 +3109,7 @@ window.addEventListener('load', function() {
     // env.ANTHROPIC_API_KEY secret for origin-verified requests.
     var key = await resolveKey();
     try {
-      var reply = await callClaude(input.value.trim(), key || '', 'claude-haiku-4-5', buildSystemPrompt());
+      var reply = await callAI(input.value.trim(), key || '', 'claude-haiku-4-5', buildSystemPrompt());
       // AI応答をそのまま使用（静的差替は削除済み）
       if (el) el.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px"><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">'+esc(reply)+'</div></div>';
     } catch(e) {
@@ -3310,7 +3379,7 @@ window.addEventListener('load', function() {
     // previous early return blocked the entire flow with a misleading
     // "APIキーが未設定です" message.
     try {
-      var reply = await callClaude(content, key, store.get('selectedModel'), buildSystemPrompt());
+      var reply = await callAI(content, key, store.get('selectedModel'), buildSystemPrompt());
       // AI応答をそのまま使用（静的差替は削除済み）
       store.set('isAnalyzing', false);
       store.set('latestFeedback', { summary:'分析結果', findings: reply, actions:[], _fromAPI:true });
@@ -3321,6 +3390,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=35"></script>
+<script defer src="js/inapp-browser-banner.js?v=37"></script>
 </body>
 </html>
