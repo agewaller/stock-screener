@@ -1263,6 +1263,57 @@ var CONFIG = {
         { timestamp: '2026-04-10T08:00:00Z', name: 'デュロキセチン (サインバルタ)', notes: '20mg 朝' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    migraine: {
+      diseases: ['片頭痛'],
+      profile: { age: 34, gender: 'female', height: 162, weight: 53 },
+      textEntries: [
+        { timestamp: '2026-03-18T06:30:00Z', category: 'symptoms', title: '片頭痛発作', content: '左側の拍動性頭痛 8/10。嘔気あり。光・音が辛い。トリプタン（イミグラン50mg）服薬。2時間後に 3/10 まで改善。' },
+        { timestamp: '2026-03-25T07:00:00Z', category: 'symptoms', title: '前駆症状', content: '昨日から首のこわばりと光の感受性↑。今日は発作来なかった。気圧低下（台風接近）と関係か。' },
+        { timestamp: '2026-04-01T22:00:00Z', category: 'medication', title: 'アジョビ開始', content: 'フレマネズマブ（アジョビ）初回注射。自己注射器で皮下投与。注射部位の軽い発赤あり。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'symptoms', title: '頭痛', content: '頭痛 4/10。アジョビ後初の発作。前より軽い気がする。イブプロフェン400mgで対応（トリプタン使わず）。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'symptoms', title: 'トリガー記録', content: '赤ワイン飲んだ翌日に発作（4時間後）。チーズも要注意。今月の発作は3回→アジョビ前は8回/月。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'vitals', title: '月間集計', content: '4月の頭痛日数8日（うち片頭痛3日）。アジョビ前（1月）は片頭痛10日。服薬日数8日→3日に改善。' },
+        { timestamp: '2026-04-30T09:00:00Z', category: 'symptoms', title: '', content: '今月の片頭痛は2回のみ。仕事への影響が大幅に減った。次回注射前に効果を医師と共有したい。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'イミグラン (スマトリプタン)', notes: '50mg 頓服。発作時1錠' },
+        { timestamp: '2026-04-01T22:00:00Z', name: 'アジョビ (フレマネズマブ)', notes: '225mg 月1回皮下注射 (CGRP抗体、予防薬)' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ra: {
+      diseases: ['関節リウマチ'],
+      profile: { age: 52, gender: 'female', height: 156, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-03-20T08:00:00Z', category: 'symptoms', title: '朝のこわばり', content: '朝のこわばり 90 分。両手指の腫脹あり（MCP関節・PIP関節）。疲労感強い。' },
+        { timestamp: '2026-03-27T10:00:00Z', category: 'medication', title: 'ヒュミラ注射', content: 'ヒュミラ（アダリムマブ）2週おき注射。MTX 8mg/週継続。葉酸 5mg/週も継続。' },
+        { timestamp: '2026-04-03T09:00:00Z', category: 'symptoms', title: '', content: 'こわばり 60 分に短縮。腫脹は右人差し指のみ継続。疲労 5/10。' },
+        { timestamp: '2026-04-10T08:00:00Z', category: 'vitals', title: '検査結果', content: 'CRP 0.8（前回 2.1）。ESR 28。RF 42（陽性継続）。抗CCP抗体は未変更。改善傾向。' },
+        { timestamp: '2026-04-17T10:00:00Z', category: 'symptoms', title: 'ヒュミラ後', content: 'ヒュミラ注射翌日は少し疲れる。こわばり 30 分まで改善。握力が戻ってきた。' },
+        { timestamp: '2026-04-24T09:00:00Z', category: 'symptoms', title: '', content: '今週は腫れた関節ゼロ。こわばり 20 分以下。DAS28改善を医師に報告したい。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-10T10:00:00Z', name: '定期血液検査', findings: 'CRP 0.8（改善）, ESR 28, RF 42（陽性）, WBC 5200, Hb 11.8（軽度貧血）, AST/ALT 正常（MTX副作用モニタ）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'メトトレキサート (MTX)', notes: '8mg 週1回（月曜）+ 葉酸 5mg 週1回（火曜）' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'ヒュミラ (アダリムマブ)', notes: '40mg 2週おき 皮下注射（TNFα阻害薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
