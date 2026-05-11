@@ -1333,6 +1333,8 @@ ${recentText || '記録なし'}
       chronic_urticaria: { ja: '慢性蕁麻疹 蕁麻疹 皮膚科 アレルギー科 オマリズマブ', en: 'chronic urticaria CSU' },
       pms_pmdd: { ja: 'PMS 月経前症候群 PMDD 月経前不快気分障害 婦人科 心療内科', en: 'premenstrual syndrome PMDD' },
       overactive_bladder: { ja: '過活動膀胱 OAB 頻尿 尿失禁 夜間頻尿 泌尿器科', en: 'overactive bladder OAB' },
+      tinnitus: { ja: '耳鳴り 慢性耳鳴 感音性難聴 難聴 耳鼻咽喉科 TRT', en: 'tinnitus hearing loss' },
+      vertigo: { ja: 'めまい BPPV 良性発作性頭位めまい症 メニエール病 耳鼻咽喉科', en: 'vertigo BPPV Menieres disease' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1477,6 +1479,8 @@ ${recentText || '記録なし'}
       chronic_urticaria: 'chronic spontaneous urticaria omalizumab antihistamine UAS7',
       pms_pmdd: 'premenstrual dysphoric disorder SSRI hormonal treatment',
       overactive_bladder: 'overactive bladder pelvic floor training beta-3 agonist',
+      tinnitus: 'tinnitus TRT cognitive behavioral therapy sound therapy',
+      vertigo: 'vertigo BPPV Epley maneuver Meniere disease treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1651,6 +1655,8 @@ ${titles}`;
       chronic_urticaria: 'chronic urticaria omalizumab treatment response biomarker',
       pms_pmdd: 'premenstrual dysphoric disorder SSRI luteal phase treatment',
       overactive_bladder: 'overactive bladder OAB anticholinergic pelvic floor',
+      tinnitus: 'tinnitus sound therapy habituation THI treatment outcome',
+      vertigo: 'BPPV canalith repositioning Meniere endolymphatic hydrops',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3061,7 +3067,9 @@ ${responseText.substring(0, 3000)}`;
       psoriasis: '#乾癬',
       chronic_urticaria: '#慢性蕁麻疹',
       pms_pmdd: '#PMS月経前症候群',
-      overactive_bladder: '#過活動膀胱'
+      overactive_bladder: '#過活動膀胱',
+      tinnitus: '#耳鳴り',
+      vertigo: '#めまい'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

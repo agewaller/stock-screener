@@ -156,6 +156,8 @@ function extractDiseaseIds(text) {
     chronic_urticaria: /慢性蕁麻疹|慢性特発性蕁麻疹|CSU\b|chronic urticaria|chronic spontaneous urticaria|UAS7\b|UAS スコア|膨疹.*かゆみ|蕁麻疹.*6週|蕁麻疹.*慢性|オマリズマブ|ゾレア\b|omalizumab.*urticaria|抗IgE.*蕁麻疹|蕁麻疹.*抗ヒスタミン|DLQI.*蕁麻疹/i,
     pms_pmdd: /PMS\b|月経前症候群|PMDD\b|月経前不快気分障害|premenstrual syndrome|premenstrual dysphoric|黄体期.*気分|黄体期.*症状|月経前.*イライラ|月経前.*うつ|月経前.*不安|月経前.*むくみ|月経前.*乳房痛|SSRI.*月経|加味逍遙散.*月経|月経周期.*気分変動|排卵後.*症状/i,
     overactive_bladder: /過活動膀胱|OAB\b|頻尿.*膀胱|尿意切迫感|切迫性尿失禁|夜間頻尿.*目が覚|overactive bladder|ベシケア|ソリフェナシン|ウリトス|イミダフェナシン|ビベグロン|ベオーバ|ミラベグロン|ベタニス|骨盤底筋.*頻尿|膀胱訓練|排尿日誌|ケーゲル体操|1日.*トイレ.*8回/i,
+    tinnitus: /耳鳴り|慢性耳鳴|tinnitus|THIスコア|TRT.*耳鳴|耳鳴り再訓練|感音性難聴|sensorineural hearing loss|耳鳴り.*ピー音|耳鳴り.*ジー音|耳鳴り.*ザー音|耳鳴り.*睡眠|耳鳴り.*ストレス|耳鳴り.*補聴器|耳鳴り.*CBT|メチコバール.*耳鳴|ホワイトノイズ.*耳鳴|サウンドセラピー.*耳鳴/i,
+    vertigo: /めまい|BPPV\b|良性発作性頭位めまい|メニエール病|前庭神経炎|vertigo|Meniere|エプリー法|Epley|耳石置換法|前庭リハビリ|vestibular rehabilitation|イソバイド.*めまい|ベタヒスチン|メリスロン|回転性めまい|浮動性めまい|頭位変換.*めまい|内リンパ水腫|耳閉感.*難聴.*めまい/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

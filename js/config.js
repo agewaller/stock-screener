@@ -108,7 +108,9 @@ var CONFIG = {
         { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
         { id: 'menopause', name: '更年期障害', icd: 'GA30' },
         { id: 'pms_pmdd', name: 'PMS・PMDD（月経前症候群）', icd: 'GA34' },
-        { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' }
+        { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' },
+        { id: 'tinnitus', name: '耳鳴り・感音性難聴', icd: 'H93.1' },
+        { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' }
       ]
     },
     {
@@ -246,6 +248,10 @@ var CONFIG = {
                           japan:  22_000_000, japanLabel: '約 2,200 万人（推計）', japanSource: '国内有病率推計' },
     overactive_bladder: { world:   500_000_000, label: '約 5 億人',       tier: 1, density: 'medium', source: '世界推計 40歳以上',
                           japan:  10_800_000, japanLabel: '約 1,080 万人',         japanSource: '日本排尿機能学会' },
+    tinnitus:           { world:   748_000_000, label: '約 7.5 億人',     tier: 1, density: 'medium', source: '世界推計',
+                          japan:  30_000_000, japanLabel: '約 3,000 万人（成人の約30%）', japanSource: '国内推計' },
+    vertigo:            { world:   300_000_000, label: '約 3 億人（推計）', tier: 2, density: 'medium', source: '成人推計',
+                          japan:  15_000_000, japanLabel: '約 1,500 万人（推計）', japanSource: '国内推計' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2215,6 +2221,57 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-04-08T08:00:00Z', name: 'ビベグロン（ベオーバ）50mg', notes: '朝食後 1錠（β3作動薬・口渇少ない・高齢者に安全）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    tinnitus: {
+      diseases: ['耳鳴り・感音性難聴'],
+      profile: { age: 55, gender: 'male', height: 172, weight: 74 },
+      textEntries: [
+        { timestamp: '2026-02-18T09:00:00Z', category: 'symptoms', title: '耳鳴りが3ヶ月続く', content: '右耳に「ピー」という高音の耳鳴りが3ヶ月前から続いている。最初は気にならなかったが、最近は静かな場所で特に気になり、夜眠れないことがある。THIスコアをネットで調べたら28点（軽中等度）。耳鼻科を受診しようと思う。' },
+        { timestamp: '2026-02-25T10:00:00Z', category: 'consultation', title: '耳鼻科受診・感音性難聴+耳鳴り診断', content: '純音聴力検査：右4000Hz 55dB（中等度感音性難聴）、左30dB。「騒音性難聴による高音域難聴と慢性耳鳴りです。TRT（耳鳴り再訓練療法）とサウンドセラピーが有効です。まずは補聴器の評価と、寝る前のホワイトノイズ生成器を試しましょう」。メコバラミン500μgが処方された。' },
+        { timestamp: '2026-03-04T08:00:00Z', category: 'vitals', title: 'THIスコア測定・ホワイトノイズ開始', content: 'THI（耳鳴りハンディキャップ検査）: 28点（軽中等度）。就寝時にホワイトノイズマシン開始。最初の夜は違和感があったが、耳鳴りが「紛れる」感覚で入眠が少し楽だった。メコバラミン1錠朝食後も開始。騒音職場（印刷工場）での耳栓着用を徹底することにした。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'activity', title: 'TRTカウンセリング開始', content: 'TRT（耳鳴り再訓練療法）のカウンセリング第1回。「耳鳴りは危険信号ではない」「脳が雑音として無視できるよう再訓練する」と説明を受けた。サウンドジェネレーターの設定（耳鳴りより小さい音量）。「耳鳴りに集中しないようにする」という考え方が目からウロコ。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'consultation', title: '6週間後の受診', content: 'THIスコア: 28点→18点（12点改善）。「就寝時の影響が改善している」と報告。先生「TRTのカウンセリング効果と音響療法が機能しています。引き続きサウンドセラピーを継続してください。耳栓着用も継続を」。補聴器は「もう少し様子を見ましょう」。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '2ヶ月目・日常の変化', content: '耳鳴り強度: 7→5（VAS）。THIスコア: 18点。「静かすぎる環境（風呂・就寝前）で気になる」というパターンが明確になった。対策としてBGMを常に流すように変更。職場の騒音対策（耳栓+イヤーマフ）で「仕事中は悪化していない」と実感。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-25T09:00:00Z', name: '聴力・耳鳴り初回評価', findings: '純音聴力検査 右4kHz 55dB（中等度難聴）, 左4kHz 30dB, 耳鳴りマッチング 右 4000Hz 55dBHL, MRI 正常（聴神経腫瘍除外）, 甲状腺 正常, 血圧 128/82' }
+      ],
+      medications: [
+        { timestamp: '2026-02-25T09:00:00Z', name: 'メコバラミン（メチコバール）500μg', notes: '朝食後 1錠（末梢神経・聴覚神経保護）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    vertigo: {
+      diseases: ['めまい・BPPV・メニエール病'],
+      profile: { age: 48, gender: 'female', height: 158, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-02-10T09:00:00Z', category: 'symptoms', title: '突然の回転性めまい発作', content: '朝起き上がった瞬間に激しい回転性めまい。「部屋がぐるぐる回る」感覚で立てなかった。30秒ほどで治まったが、その後もフワフワ感が続いた。耳鳴り・難聴はない。頭を動かすと症状が再現する。ネットで調べるとBPPVかもしれない。翌日耳鼻科を受診した。' },
+        { timestamp: '2026-02-11T10:00:00Z', category: 'consultation', title: '耳鼻科受診・BPPV診断', content: 'ディックス・ホールパイク検査：陽性（右後半規管型BPPV）。眼振あり。「耳石が後半規管に入り込んでいます。エプリー法で治します」とその場で施術。「耳石を元の位置に戻す操作です」。施術後30分の安静。「1〜3回で80%が改善します」。自宅での注意点も指導された。' },
+        { timestamp: '2026-02-14T08:00:00Z', category: 'vitals', title: 'エプリー法1回後', content: 'エプリー法施術から3日後。めまい発作の頻度が激減（3回/日→1回/日）。まだ「寝返りで少し揺れる感じ」があるが、立てないほどの発作はなくなった。高い棚のものを取る時はまだ不安。2週間後に再診予約あり。' },
+        { timestamp: '2026-02-25T10:00:00Z', category: 'consultation', title: '2週間後の受診・完全改善確認', content: 'ディックス・ホールパイク検査：陰性。「BPPVは完全に解消されました」。「再発率は年30%程度あります。同じ症状が出たらすぐ受診してください。ビタミンD不足がBPPV再発と関連するという研究があります」。ビタミンD3 1000IU サプリ開始を提案された。' },
+        { timestamp: '2026-04-03T09:00:00Z', category: 'symptoms', title: 'BPPV再発＋左耳の変化', content: '2ヶ月後に再発。今度は左耳側。さらに左耳の「こもり感」と低音の耳鳴りが出現。翌日耳鼻科を受診。今回はエプリー法＋「左耳側の低音難聴がある」と指摘。「メニエール病の可能性も考慮します」。イソバイドシロップとベタヒスチン（メリスロン）が処方された。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'consultation', title: 'メニエール病疑い・治療開始', content: 'グリセロールテスト実施（低音域改善→内リンパ水腫の示唆）。「メニエール病疑いとして治療を始めます」。塩分制限（6g/日）・ストレス管理・十分な睡眠を指導。イソバイドシロップ30mL 朝夕2回＋ベタヒスチン12mg 毎食後継続。発作日誌の記録を依頼された。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-03T09:00:00Z', name: '聴力・めまい精査', findings: '純音聴力検査 左低音（250Hz 50dB, 500Hz 45dB）感音性難聴, グリセロールテスト 陽性（低音域改善）, MRI 正常, 血圧 118/74, 甲状腺 正常, 抗核抗体 陰性' }
+      ],
+      medications: [
+        { timestamp: '2026-04-03T09:00:00Z', name: 'イソバイドシロップ 70% 30mL', notes: '朝夕食後（浸透圧利尿薬・内リンパ水腫軽減）' },
+        { timestamp: '2026-04-03T09:00:00Z', name: 'ベタヒスチンメシル酸塩（メリスロン）12mg', notes: '毎食後 1錠（前庭機能改善・内耳血流）' }
       ],
       sleepData: [], activityData: [], meals: []
     }
