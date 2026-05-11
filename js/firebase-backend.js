@@ -1000,6 +1000,176 @@ var FirebaseBackend = {
     }
   },
 
+  // ============================================================
+  // Family invitations (invitations/{token})
+  // ------------------------------------------------------------
+  // 娘→親（または家族・介助者）の招待リンクを管理する。
+  // token はそのまま doc id として使い、URL に乗る secret。
+  // 双方向の互参照は users/{uid}.invitedBy / sharedWith[] に書く。
+  // ============================================================
+
+  _generateToken(prefix) {
+    var t = '';
+    var alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    if (window.crypto && window.crypto.getRandomValues) {
+      var buf = new Uint8Array(12);
+      window.crypto.getRandomValues(buf);
+      for (var i = 0; i < buf.length; i++) t += alphabet[buf[i] % alphabet.length];
+    } else {
+      for (var j = 0; j < 12; j++) t += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    return prefix + '_' + t;
+  },
+
+  async createInvitation(opts) {
+    if (!this.userId) throw new Error('Not authenticated');
+    var token = this._generateToken('inv');
+    var inviterName = '';
+    try {
+      var auth = firebase.auth().currentUser;
+      inviterName = (auth && (auth.displayName || (auth.email || '').split('@')[0])) || '';
+    } catch (_) {}
+    var now = new Date();
+    var expiresAt = new Date(now.getTime() + 30 * 86400000);
+    var doc = {
+      token: token,
+      inviterUid: this.userId,
+      inviterName: inviterName,
+      role: (opts && opts.role) || 'family',
+      draftProfile: (opts && opts.draftProfile) || null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      expiresAt: expiresAt.toISOString(),
+      acceptedByUid: null,
+      acceptedAt: null,
+      revoked: false
+    };
+    await this.db.collection('invitations').doc(token).set(doc);
+    return token;
+  },
+
+  async getInvitation(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+      var snap = await this.db.collection('invitations').doc(token).get();
+      if (!snap.exists) return null;
+      return snap.data();
+    } catch (err) {
+      console.warn('[getInvitation]', err.message);
+      return null;
+    }
+  },
+
+  async acceptInvitation(token) {
+    if (!this.userId) throw new Error('Not authenticated');
+    var ref = this.db.collection('invitations').doc(token);
+    var snap = await ref.get();
+    if (!snap.exists) throw new Error('招待が見つかりません');
+    var inv = snap.data();
+    if (inv.revoked) throw new Error('この招待は取り消されました');
+    if (inv.acceptedByUid && inv.acceptedByUid !== this.userId) {
+      throw new Error('この招待は別の方が既に受諾しています');
+    }
+    if (inv.expiresAt && new Date(inv.expiresAt).getTime() < Date.now()) {
+      throw new Error('この招待は期限が切れています');
+    }
+    if (inv.inviterUid === this.userId) {
+      throw new Error('自分が発行した招待は受諾できません');
+    }
+    await ref.update({
+      acceptedByUid: this.userId,
+      acceptedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // Reciprocal pointers — best-effort. The inviter's doc may not
+    // be writable by us; in that case the field stays on our side.
+    try {
+      await this.userDoc().set({
+        invitedBy: inv.inviterUid,
+        sharedWith: firebase.firestore.FieldValue.arrayUnion(inv.inviterUid)
+      }, { merge: true });
+    } catch (e) {
+      console.warn('[acceptInvitation:self]', e.message);
+    }
+    try {
+      await this.db.collection('users').doc(inv.inviterUid).set({
+        sharedWith: firebase.firestore.FieldValue.arrayUnion(this.userId)
+      }, { merge: true });
+    } catch (e) {
+      // Not fatal — inviter's sharedWith[] will just lack the back-pointer.
+      console.warn('[acceptInvitation:inviter]', e.message);
+    }
+    return inv;
+  },
+
+  async revokeInvitation(token) {
+    if (!this.userId) throw new Error('Not authenticated');
+    await this.db.collection('invitations').doc(token).update({ revoked: true });
+    return true;
+  },
+
+  async listMyInvitations() {
+    if (!this.userId) return [];
+    try {
+      var snap = await this.db.collection('invitations')
+        .where('inviterUid', '==', this.userId)
+        .get();
+      var out = [];
+      snap.forEach(function (d) { out.push(d.data()); });
+      out.sort(function (a, b) {
+        return (b.expiresAt || '').localeCompare(a.expiresAt || '');
+      });
+      return out;
+    } catch (err) {
+      console.warn('[listMyInvitations]', err.message);
+      return [];
+    }
+  },
+
+  // ============================================================
+  // Doctor briefs (doctorBriefs/{shareId})
+  // ------------------------------------------------------------
+  // 医師宛 / 家族宛に共有する 1 枚ブリーフィングのスナップショット。
+  // リンク自体が secret。読み取りは公開（誰でも閲覧可）、書き込みは
+  // 所有者のみ。expiresAt は 90 日。
+  // ============================================================
+
+  async createDoctorBrief(payload) {
+    if (!this.userId) throw new Error('Not authenticated');
+    var id = this._generateToken('brief');
+    var now = new Date();
+    var expiresAt = new Date(now.getTime() + 90 * 86400000);
+    var doc = {
+      id: id,
+      ownerUid: this.userId,
+      diseases: (payload && payload.diseases) || [],
+      reportMarkdown: (payload && payload.reportMarkdown) || '',
+      profileSummary: (payload && payload.profileSummary) || '',
+      periodLabel: (payload && payload.periodLabel) || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      expiresAt: expiresAt.toISOString(),
+      revoked: false
+    };
+    await this.db.collection('doctorBriefs').doc(id).set(doc);
+    return id;
+  },
+
+  async getDoctorBrief(id) {
+    if (!id || typeof id !== 'string') return null;
+    try {
+      var snap = await this.db.collection('doctorBriefs').doc(id).get();
+      if (!snap.exists) return null;
+      return snap.data();
+    } catch (err) {
+      console.warn('[getDoctorBrief]', err.message);
+      return null;
+    }
+  },
+
+  async revokeDoctorBrief(id) {
+    if (!this.userId) throw new Error('Not authenticated');
+    await this.db.collection('doctorBriefs').doc(id).update({ revoked: true });
+    return true;
+  },
+
   // Check if Firebase is configured
   isConfigured() {
     const cfg = this.getConfig();

@@ -152,9 +152,22 @@ var App = class App {
       }
     } catch (_) {}
 
+    // Parse #/accept-invite?token=... / #/brief?id=... — these are
+    // deep-links handed out by 家族招待 / 診察前ブリーフィング, both
+    // of which carry their secret in the hash, not the search.
+    // _consumeHashRoute() also caches the parsed query in
+    // this.routeQuery so renderers can pick it up.
+    const deepLink = this._consumeHashRoute();
+
     // Show immediate content from localStorage while Firebase loads
     const hasLocalAuth = store.get('isAuthenticated') && store.get('user');
-    if (hasLocalAuth) {
+    if (deepLink) {
+      // Public deep-links (brief, accept-invite) bypass auth-gating:
+      // - /brief works without sign-in (it's a public link)
+      // - /accept-invite shows the inviter / CTA, sign-in happens
+      //   inline on that page
+      this.navigate(deepLink);
+    } else if (hasLocalAuth) {
       // Show dashboard immediately from cached data
       this.navigate(store.get('selectedDisease') ? 'dashboard' : 'disease-select');
     } else {
@@ -185,11 +198,34 @@ var App = class App {
   // #10 Hash routing — enables browser back/forward and bookmarks
   _initHashRouter() {
     window.addEventListener('hashchange', () => {
-      const hash = location.hash.replace('#/', '').replace('#', '') || 'dashboard';
-      if (hash !== this.currentPage && !this._navigating) {
-        this.navigate(hash, true);
+      const page = this._consumeHashRoute() || 'dashboard';
+      if (page !== this.currentPage && !this._navigating) {
+        this.navigate(page, true);
       }
     });
+  }
+
+  // Parse "#/page?key=value&..." → returns "page" and stashes the
+  // query in this.routeQuery for the renderer to read. The hash is
+  // the only place we can carry secrets like invite tokens or brief
+  // share ids without leaking them to the Referer header on third-
+  // party requests.
+  _consumeHashRoute() {
+    let raw = (location.hash || '').replace(/^#\/?/, '');
+    if (!raw) { this.routeQuery = {}; return ''; }
+    const qIdx = raw.indexOf('?');
+    let page = raw;
+    let query = {};
+    if (qIdx >= 0) {
+      page = raw.slice(0, qIdx);
+      const qs = raw.slice(qIdx + 1);
+      try {
+        const params = new URLSearchParams(qs);
+        params.forEach((v, k) => { query[k] = v; });
+      } catch (_) {}
+    }
+    this.routeQuery = query;
+    return page;
   }
 
   navigate(page, fromHash = false) {
@@ -218,7 +254,10 @@ var App = class App {
     // Show/hide sidebar for login/disease-select. The 'privacy'
     // page is accessible both before and after login, so only
     // hide the sidebar when the user is not yet authenticated.
-    const hideChrome = ['login', 'disease-select'].includes(page)
+    // 'brief' and 'accept-invite' are public deep-link pages that
+    // anyone can open without being signed in — keep their chrome
+    // clean as well.
+    const hideChrome = ['login', 'disease-select', 'brief', 'accept-invite'].includes(page)
       || (page === 'privacy' && !store.get('isAuthenticated'));
     if (hideChrome) {
       if (sidebar) sidebar.style.display = 'none';
@@ -247,7 +286,10 @@ var App = class App {
       timeline: 'タイムライン',
       admin: '管理パネル',
       settings: '設定',
-      privacy: 'プライバシーと安全'
+      privacy: 'プライバシーと安全',
+      'family-invite': '家族を招待',
+      'accept-invite': '家族からの招待',
+      brief: '診察前ブリーフィング'
     };
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
@@ -341,6 +383,21 @@ var App = class App {
     if (page === 'analysis') this.loadLatestAnalysis();
     if (page === 'admin') { this.loadApiKeyFields(); this.loadFirebaseConfigFields(); }
     if (page === 'settings') this.loadProfileFields();
+    if (page === 'family-invite') {
+      setTimeout(() => { try { this.refreshInvitationList(); } catch (_) {} }, 100);
+    }
+    if (page === 'accept-invite') {
+      // Wait for Firebase auth to settle before accepting; if the
+      // user is not signed in, the renderer shows a sign-in CTA.
+      setTimeout(() => {
+        if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+          try { this.acceptFamilyInvitation(); } catch (_) {}
+        }
+      }, 400);
+    }
+    if (page === 'brief') {
+      setTimeout(() => { try { this.loadDoctorBriefView(); } catch (_) {} }, 50);
+    }
   }
 
   // ---- API Key Management ----
@@ -6884,6 +6941,545 @@ ${joined.substring(0, 8000)}`;
     store.calculateHealthScore();
     Components.showToast('デモデータを生成しました', 'success');
     this.navigate('dashboard');
+  }
+
+  // ============================================================
+  // 診察前ブリーフィング — 医師向け 1 枚出力
+  // ============================================================
+
+  _briefDiseaseNames(ids) {
+    const cats = (typeof CONFIG !== 'undefined' && CONFIG.DISEASE_CATEGORIES) || [];
+    return (ids || []).map(id => {
+      for (const cat of cats) {
+        const d = (cat.diseases || []).find(x => x.id === id);
+        if (d) return d.name;
+      }
+      return id;
+    });
+  }
+
+  async generateDoctorBrief() {
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const vitals = store.get('vitals') || [];
+    const medications = store.get('medications') || [];
+    const supplements = store.get('supplements') || [];
+    const bloodTests = store.get('bloodTests') || [];
+    const profile = store.get('userProfile') || {};
+    const selectedDiseases = store.get('selectedDiseases') || [];
+
+    if (textEntries.length + symptoms.length < 3) {
+      try { Components.showToast('ブリーフィングを作成するには 3 件以上の記録が必要です', 'info'); } catch (_) {}
+      return;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    if (!overlay || !body) {
+      try { Components.showToast('モーダルを表示できません。ページを再読み込みしてください。', 'error'); } catch (_) {}
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '🩺 診察前ブリーフィングを作成中…';
+    body.innerHTML = Components.loading('過去の記録を 1 枚に整理しています...', {
+      subtext: '90 日分のデータから A4 1 枚 / 診察 3 分のサマリーを生成します（20〜40 秒）'
+    });
+    overlay.classList.add('active');
+
+    const diseaseNames = this._briefDiseaseNames(selectedDiseases);
+    const diseasesLabel = diseaseNames.join('、') || '未設定';
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+    const periodLabel = '過去 90 日';
+
+    const recentEntries = textEntries.filter(e => e && e.timestamp >= cutoff).slice(-40);
+    const recentSymptoms = symptoms.filter(s => s && s.timestamp >= cutoff).slice(-40);
+    const recentVitals = vitals.filter(v => v && v.timestamp >= cutoff).slice(-20);
+    const recentMeds = medications.filter(m => m && m.timestamp >= cutoff).slice(-15);
+    const recentSupp = supplements.filter(s => s && s.timestamp >= cutoff).slice(-15);
+    const recentBlood = bloodTests.filter(b => b && b.timestamp >= cutoff).slice(-8);
+
+    const entryText = recentEntries.map(e =>
+      `${String(e.timestamp).substring(0,10)} [${e.category||'diary'}] ${(e.content||'').slice(0, 200)}`
+    ).join('\n') || '記録なし';
+    const symptomText = recentSymptoms.map(s =>
+      `${String(s.timestamp).substring(0,10)} 疲労:${s.fatigue_level??'-'} 痛み:${s.pain_level??'-'} 脳霧:${s.brain_fog??'-'} 睡眠:${s.sleep_quality??'-'}`
+    ).join('\n') || '記録なし';
+    const vitalsText = recentVitals.map(v =>
+      `${String(v.timestamp).substring(0,10)} HR:${v.heart_rate??'-'} SpO2:${v.spo2??'-'} BP:${v.bp_sys??'-'}/${v.bp_dia??'-'}`
+    ).join('\n') || '記録なし';
+    const medText = recentMeds.map(m => `${m.name||''} ${m.dose||''} ${m.notes||''}`.trim()).join('、') || '記録なし';
+    const suppText = recentSupp.map(s => `${s.name||''} ${s.dose||''}`.trim()).join('、') || '記録なし';
+    const bloodText = recentBlood.map(b => `${b.name||''}: ${b.findings||b.value||''}`).join('；') || '記録なし';
+
+    const profileSummary = [
+      profile.age ? profile.age + '歳' : '',
+      profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : '',
+      profile.height ? profile.height + 'cm' : '',
+      profile.weight ? profile.weight + 'kg' : ''
+    ].filter(Boolean).join('、') || '未設定';
+
+    const lang = profile.language || 'ja';
+    const langDir = (typeof aiEngine !== 'undefined' && aiEngine._languageDirectiveFor)
+      ? aiEngine._languageDirectiveFor(lang) : '';
+
+    const prompt = (typeof DOCTOR_BRIEF_PROMPT === 'string' ? DOCTOR_BRIEF_PROMPT : '')
+      .replace('{{LANG_DIRECTIVE}}', langDir)
+      .replace('{{PROFILE_SUMMARY}}', profileSummary)
+      .replace('{{DISEASES}}', diseasesLabel)
+      .replace('{{PERIOD}}', periodLabel)
+      .replace('{{TEXT_ENTRIES}}', entryText)
+      .replace('{{SYMPTOMS}}', symptomText)
+      .replace('{{VITALS}}', vitalsText)
+      .replace('{{MEDICATIONS}}', medText)
+      .replace('{{SUPPLEMENTS}}', suppText)
+      .replace('{{BLOOD_TESTS}}', bloodText);
+
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, {
+        maxTokens: 2200,
+        temperature: 0.2,
+        globalTimeoutMs: 60000
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+      this._lastDoctorBrief = {
+        text: text,
+        diseases: selectedDiseases.slice(),
+        profileSummary: profileSummary,
+        periodLabel: periodLabel
+      };
+      this._renderDoctorBriefModal(text, diseasesLabel, profileSummary, periodLabel);
+    } catch (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err);
+      body.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">ブリーフィングの生成に失敗しました</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(msg)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="app.generateDoctorBrief()">🔄 再試行</button>
+            <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+          </div>
+        </div>`;
+    }
+  }
+
+  _renderDoctorBriefModal(text, diseasesLabel, profileSummary, periodLabel) {
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    if (!body) return;
+    if (titleEl) titleEl.textContent = '🩺 診察前ブリーフィング（A4 1 枚）';
+    const safeText = Components.escapeHtml(text);
+    body.innerHTML = `
+      <div style="font-size:11px;color:#0891b2;margin-bottom:10px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+        期間: ${Components.escapeHtml(periodLabel)} ／ 対象: ${Components.escapeHtml(diseasesLabel)} ／ ${Components.escapeHtml(profileSummary)}
+      </div>
+      <div class="doctor-brief-preview" style="font-size:12px;line-height:1.7;white-space:pre-wrap;color:#1e293b;max-height:55vh;overflow-y:auto;padding:10px 14px;background:#fafafa;border:1px solid #e5e7eb;border-radius:10px">${safeText}</div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="app.printDoctorBrief()">📄 印刷 / PDF として保存</button>
+        <button class="btn btn-secondary" onclick="app.shareDoctorBriefLink()">🔗 共有リンクを作る</button>
+        <button class="btn btn-outline" onclick="app.openDoctorBriefMailForm()">✉️ 医師にメールで送る</button>
+        <button class="btn btn-outline" onclick="app.copyDoctorBriefText()">📋 コピー</button>
+        <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+      </div>`;
+  }
+
+  copyDoctorBriefText() {
+    const brief = this._lastDoctorBrief;
+    if (!brief) return;
+    try {
+      navigator.clipboard && navigator.clipboard.writeText(brief.text).then(() => {
+        Components.showToast('クリップボードにコピーしました', 'success');
+      });
+    } catch (_) {}
+  }
+
+  printDoctorBrief() {
+    const brief = this._lastDoctorBrief;
+    if (!brief) return;
+    const safeMd = Components.escapeHtml(brief.text);
+    const headerLine = `${Components.escapeHtml(brief.periodLabel)} ／ ${Components.escapeHtml(this._briefDiseaseNames(brief.diseases).join('、') || '未設定')} ／ ${Components.escapeHtml(brief.profileSummary)}`;
+    const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<title>診察前ブリーフィング</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: "Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,sans-serif; font-size: 11pt; line-height: 1.45; }
+  .doctor-brief { padding: 0; }
+  .brief-meta { font-size: 9.5pt; color: #475569; margin-bottom: 8pt; }
+  .brief-body { white-space: pre-wrap; }
+  .brief-body h1, .brief-body h2, .brief-body h3 { margin: 8pt 0 4pt; }
+  @media print { .no-print { display: none; } }
+</style></head><body>
+<div class="doctor-brief">
+  <div class="brief-meta">${headerLine}</div>
+  <div class="brief-body">${safeMd}</div>
+</div>
+<div class="no-print" style="position:fixed;top:8px;right:8px;background:#fff;padding:6px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:11px">印刷ダイアログで「PDF として保存」を選んでください</div>
+<script>window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 150); });<\/script>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) {
+      Components.showToast('ポップアップがブロックされました。ブラウザ設定を確認してください', 'error');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  async shareDoctorBriefLink() {
+    const brief = this._lastDoctorBrief;
+    if (!brief) return;
+    if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.userId) {
+      Components.showToast('共有リンクを作るにはログインが必要です', 'info');
+      return;
+    }
+    try {
+      const id = await FirebaseBackend.createDoctorBrief({
+        diseases: brief.diseases,
+        reportMarkdown: brief.text,
+        profileSummary: brief.profileSummary,
+        periodLabel: brief.periodLabel
+      });
+      const url = location.origin + location.pathname + '#/brief?id=' + encodeURIComponent(id);
+      this._lastDoctorBriefShareId = id;
+      this._lastDoctorBriefShareUrl = url;
+      try { await navigator.clipboard.writeText(url); } catch (_) {}
+      const body = document.getElementById('modal-body');
+      if (body) {
+        const existing = body.querySelector('.brief-share-row');
+        if (existing) existing.remove();
+        const row = document.createElement('div');
+        row.className = 'brief-share-row';
+        row.style.cssText = 'margin-top:12px;padding:10px 12px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:10px;font-size:12px;color:#155e75';
+        row.innerHTML = `
+          <div style="font-weight:700;margin-bottom:6px">共有リンクを作成しました（90 日間有効）</div>
+          <input type="text" readonly value="${Components.escapeHtml(url)}" style="width:100%;padding:6px 8px;border:1px solid #67e8f9;border-radius:6px;font-size:11px;background:#fff" onfocus="this.select()">
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-outline" onclick="app.shareDoctorBriefViaSystem()">📤 共有</button>
+            <button class="btn btn-sm btn-outline" onclick="app.revokeDoctorBriefLink()">🚫 リンクを取り消す</button>
+          </div>`;
+        body.appendChild(row);
+      }
+      Components.showToast('リンクをコピーしました', 'success');
+    } catch (err) {
+      Components.showToast('共有リンクの作成に失敗しました: ' + (err.message || ''), 'error');
+    }
+  }
+
+  async shareDoctorBriefViaSystem() {
+    const url = this._lastDoctorBriefShareUrl;
+    if (!url) return;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: '診察前ブリーフィング', text: '次の診察に向けたサマリーをまとめました。', url });
+      } catch (_) { /* user cancelled */ }
+    } else {
+      try { await navigator.clipboard.writeText(url); } catch (_) {}
+      Components.showToast('リンクをコピーしました', 'success');
+    }
+  }
+
+  async revokeDoctorBriefLink() {
+    const id = this._lastDoctorBriefShareId;
+    if (!id) return;
+    try {
+      await FirebaseBackend.revokeDoctorBrief(id);
+      this._lastDoctorBriefShareId = null;
+      this._lastDoctorBriefShareUrl = null;
+      const body = document.getElementById('modal-body');
+      const row = body && body.querySelector('.brief-share-row');
+      if (row) row.innerHTML = '<div style="font-size:12px;color:#7f1d1d;font-weight:700">このリンクは取り消されました</div>';
+      Components.showToast('リンクを取り消しました', 'success');
+    } catch (err) {
+      Components.showToast('取り消しに失敗しました: ' + (err.message || ''), 'error');
+    }
+  }
+
+  openDoctorBriefMailForm() {
+    const brief = this._lastDoctorBrief;
+    if (!brief) return;
+    const body = document.getElementById('modal-body');
+    if (!body) return;
+    const existing = body.querySelector('.brief-mail-row');
+    if (existing) { existing.scrollIntoView({ behavior: 'smooth' }); return; }
+    const profile = store.get('userProfile') || {};
+    let senderEmail = profile.email || '';
+    let senderName = profile.displayName || '';
+    try {
+      const cu = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+      if (cu) {
+        if (!senderEmail) senderEmail = cu.email || '';
+        if (!senderName) senderName = cu.displayName || '';
+      }
+    } catch (_) {}
+    const row = document.createElement('div');
+    row.className = 'brief-mail-row';
+    row.style.cssText = 'margin-top:12px;padding:12px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;font-size:12px';
+    row.innerHTML = `
+      <div style="font-weight:700;margin-bottom:8px;color:#7c2d12">医師にメールで送る</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label>医師のメール<input type="email" id="brief-mail-to" class="form-input" placeholder="doctor@example.jp" style="width:100%"></label>
+        <label>医師のお名前<input type="text" id="brief-mail-to-name" class="form-input" placeholder="山田 医師" style="width:100%"></label>
+        <label>あなたのお名前<input type="text" id="brief-mail-from-name" class="form-input" value="${Components.escapeHtml(senderName)}" style="width:100%"></label>
+        <label>あなたのメール（返信先）<input type="email" id="brief-mail-from" class="form-input" value="${Components.escapeHtml(senderEmail)}" style="width:100%"></label>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="app.sendDoctorBriefByEmail()">送信</button>
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.brief-mail-row').remove()">キャンセル</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:#9a3412">本文に「ブラウザで開く」リンクを自動で添えます。共有リンクをまだ作っていない場合は自動で作成されます。</div>`;
+    body.appendChild(row);
+  }
+
+  async sendDoctorBriefByEmail() {
+    const brief = this._lastDoctorBrief;
+    if (!brief) return;
+    const toEl = document.getElementById('brief-mail-to');
+    const toNameEl = document.getElementById('brief-mail-to-name');
+    const fromEl = document.getElementById('brief-mail-from');
+    const fromNameEl = document.getElementById('brief-mail-from-name');
+    const to = (toEl && toEl.value || '').trim();
+    const toName = (toNameEl && toNameEl.value || '').trim();
+    const from = (fromEl && fromEl.value || '').trim();
+    const fromName = (fromNameEl && fromNameEl.value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+      Components.showToast('医師のメールアドレスを正しく入力してください', 'error');
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(from)) {
+      Components.showToast('あなたのメールアドレス（返信先）を入力してください', 'error');
+      return;
+    }
+    const mailerUrl = store.get('mailerUrl') || '';
+    if (!mailerUrl) {
+      Components.showToast('メール送信が未設定です。共有リンクをコピーして直接お送りください', 'info');
+      return;
+    }
+
+    // Ensure a share link exists so the body has a "ブラウザで開く" URL.
+    if (!this._lastDoctorBriefShareUrl) {
+      try {
+        await this.shareDoctorBriefLink();
+      } catch (_) {}
+    }
+    const shareUrl = this._lastDoctorBriefShareUrl || '';
+    const diseasesLabel = this._briefDiseaseNames(brief.diseases).join('、') || '未設定';
+    const subject = `【診察前ブリーフィング】${fromName || '患者'}（${diseasesLabel}）`;
+    const lines = [
+      (toName ? toName + ' 先生' : '先生') + '',
+      '',
+      'いつもお世話になっております。',
+      `次の診察に向けて、${brief.periodLabel} の体調・服薬・症状経過を 1 枚にまとめました。`,
+      '診察 3 分で読み切れるよう要点に絞っています。お目通しいただけますと幸いです。',
+      '',
+      '────────────────────',
+      brief.text,
+      '────────────────────',
+      ''
+    ];
+    if (shareUrl) {
+      lines.push('ブラウザでご覧になりたい場合はこちらからお開きください（90 日間有効・リンクは取り消し可能）:');
+      lines.push(shareUrl);
+      lines.push('');
+    }
+    lines.push('どうぞよろしくお願いいたします。');
+    if (fromName) lines.push(fromName);
+    const bodyText = lines.join('\n');
+
+    try {
+      const res = await fetch(mailerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: to,
+          toName: toName,
+          replyTo: from,
+          replyToName: fromName,
+          fromName: '健康日記 診察前ブリーフィング',
+          subject: subject,
+          text: bodyText,
+          meta: {
+            programId: 'doctor-brief',
+            programName: '診察前ブリーフィング',
+            applicationId: this._lastDoctorBriefShareId || 'brief_local',
+            userUid: (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) || ''
+          }
+        })
+      });
+      if (res.ok) {
+        Components.showToast('医師にメールを送信しました', 'success');
+        const row = document.querySelector('.brief-mail-row');
+        if (row) row.remove();
+      } else {
+        Components.showToast(`送信に失敗しました（HTTP ${res.status}）`, 'error');
+      }
+    } catch (err) {
+      Components.showToast('送信に失敗しました: ' + (err.message || ''), 'error');
+    }
+  }
+
+  // ============================================================
+  // 家族招待 — 娘→親オンボーディング
+  // ============================================================
+
+  async createFamilyInvitation() {
+    if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.userId) {
+      Components.showToast('招待リンクを作るにはログインが必要です', 'info');
+      return;
+    }
+    const ageEl = document.getElementById('invite-age');
+    const genderEl = document.getElementById('invite-gender');
+    const notesEl = document.getElementById('invite-notes');
+    const draftProfile = {};
+    if (ageEl && ageEl.value) draftProfile.age = ageEl.value.trim();
+    if (genderEl && genderEl.value) draftProfile.gender = genderEl.value;
+    if (notesEl && notesEl.value) draftProfile.notes = notesEl.value.trim();
+    // Carry over diseases the inviter has already selected — they're
+    // most likely the same for the parent (rough heuristic, parent
+    // can change later).
+    const selected = store.get('selectedDiseases') || [];
+    if (selected.length) draftProfile.diseases = selected.slice();
+
+    try {
+      const token = await FirebaseBackend.createInvitation({ role: 'parent', draftProfile });
+      const url = location.origin + location.pathname + '#/accept-invite?token=' + encodeURIComponent(token);
+      this._lastInviteUrl = url;
+      const wrap = document.getElementById('invite-link-wrap');
+      if (wrap) {
+        wrap.style.display = 'block';
+        const out = document.getElementById('invite-link-output');
+        if (out) out.value = url;
+      }
+      try { await navigator.clipboard.writeText(url); } catch (_) {}
+      Components.showToast('招待リンクをコピーしました', 'success');
+      this.refreshInvitationList();
+    } catch (err) {
+      Components.showToast('招待リンクの作成に失敗しました: ' + (err.message || ''), 'error');
+    }
+  }
+
+  async shareFamilyInvitationLink() {
+    const url = this._lastInviteUrl;
+    if (!url) return;
+    const msg = 'お母さんへ — 健康日記の招待を送ります。診察前に医師に渡せる1枚ブリーフィングが作れます。下のリンクから始められます。';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: '健康日記', text: msg, url });
+      } catch (_) { /* cancelled */ }
+    } else {
+      try { await navigator.clipboard.writeText(url); } catch (_) {}
+      Components.showToast('リンクをコピーしました', 'success');
+    }
+  }
+
+  async refreshInvitationList() {
+    const listEl = document.getElementById('invitation-list');
+    if (!listEl) return;
+    listEl.innerHTML = '読み込み中...';
+    try {
+      const invs = await FirebaseBackend.listMyInvitations();
+      if (!invs.length) { listEl.innerHTML = '<div style="font-size:12px;color:#94a3b8">まだ発行した招待はありません</div>'; return; }
+      listEl.innerHTML = invs.map(inv => {
+        const expired = inv.expiresAt && new Date(inv.expiresAt).getTime() < Date.now();
+        const status = inv.revoked ? '🚫 取消済'
+                     : inv.acceptedByUid ? '✅ 受諾済'
+                     : expired ? '⏳ 期限切れ'
+                     : '📤 受諾待ち';
+        const exp = inv.expiresAt ? String(inv.expiresAt).substring(0, 10) : '';
+        const url = location.origin + location.pathname + '#/accept-invite?token=' + encodeURIComponent(inv.token);
+        return `<div style="padding:10px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px">
+            <div><strong>${Components.escapeHtml(status)}</strong> <span style="color:#94a3b8">期限 ${Components.escapeHtml(exp)}</span></div>
+            ${(!inv.revoked && !inv.acceptedByUid && !expired)
+              ? `<button class="btn btn-sm btn-outline" onclick="app.revokeFamilyInvitation('${Components.escapeHtml(inv.token)}')">取り消す</button>`
+              : ''}
+          </div>
+          <input type="text" readonly value="${Components.escapeHtml(url)}" style="width:100%;padding:4px 6px;border:1px solid #e5e7eb;border-radius:6px;font-size:10px;background:#f8fafc" onfocus="this.select()">
+        </div>`;
+      }).join('');
+    } catch (err) {
+      listEl.innerHTML = '<div style="font-size:12px;color:#dc2626">招待一覧の取得に失敗しました</div>';
+    }
+  }
+
+  async revokeFamilyInvitation(token) {
+    if (!token) return;
+    try {
+      await FirebaseBackend.revokeInvitation(token);
+      Components.showToast('招待を取り消しました', 'success');
+      this.refreshInvitationList();
+    } catch (err) {
+      Components.showToast('取り消しに失敗しました: ' + (err.message || ''), 'error');
+    }
+  }
+
+  async acceptFamilyInvitation() {
+    const token = (this.routeQuery && this.routeQuery.token) || '';
+    if (!token) {
+      Components.showToast('招待トークンが見つかりません', 'error');
+      return;
+    }
+    if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.userId) {
+      Components.showToast('まずログインしてください', 'info');
+      this.navigate('login');
+      return;
+    }
+    try {
+      const inv = await FirebaseBackend.acceptInvitation(token);
+      // Merge draft profile if the parent doesn't have one yet.
+      const profile = store.get('userProfile') || {};
+      const selected = store.get('selectedDiseases') || [];
+      if (inv && inv.draftProfile) {
+        const dp = inv.draftProfile;
+        const next = { ...profile };
+        if (!next.age && dp.age) next.age = dp.age;
+        if (!next.gender && dp.gender) next.gender = dp.gender;
+        if (!next.notes && dp.notes) next.notes = dp.notes;
+        store.set('userProfile', next);
+        if (!selected.length && Array.isArray(dp.diseases) && dp.diseases.length) {
+          store.set('selectedDiseases', dp.diseases);
+        }
+      }
+      Components.showToast('家族とつながりました', 'success');
+      this.navigate('dashboard');
+    } catch (err) {
+      Components.showToast(err.message || '招待の受諾に失敗しました', 'error');
+    }
+  }
+
+  // Renderer for #/brief?id=... — public, no auth required.
+  async loadDoctorBriefView() {
+    const container = document.getElementById('public-brief-content');
+    if (!container) return;
+    const id = (this.routeQuery && this.routeQuery.id) || '';
+    if (!id) { container.innerHTML = '<p>リンクが正しくありません</p>'; return; }
+    container.innerHTML = '<p style="color:#64748b">読み込み中...</p>';
+    try {
+      // Best-effort: ensure firebase is initialized for read.
+      if (typeof FirebaseBackend !== 'undefined' && !FirebaseBackend.initialized && FirebaseBackend.isConfigured()) {
+        try { FirebaseBackend.init(FirebaseBackend.getConfig()); } catch (_) {}
+      }
+      const brief = await FirebaseBackend.getDoctorBrief(id);
+      if (!brief) { container.innerHTML = '<p>このブリーフィングは見つかりません</p>'; return; }
+      if (brief.revoked) { container.innerHTML = '<p>このブリーフィングは取り消されました</p>'; return; }
+      if (brief.expiresAt && new Date(brief.expiresAt).getTime() < Date.now()) {
+        container.innerHTML = '<p>このブリーフィングの公開期限が切れています</p>';
+        return;
+      }
+      const diseaseNames = this._briefDiseaseNames(brief.diseases || []).join('、') || '未設定';
+      container.innerHTML = `
+        <div class="doctor-brief">
+          <div class="brief-meta" style="font-size:12px;color:#475569;margin-bottom:10px">
+            ${Components.escapeHtml(brief.periodLabel || '')} ／ ${Components.escapeHtml(diseaseNames)} ／ ${Components.escapeHtml(brief.profileSummary || '')}
+          </div>
+          <div class="brief-body" style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#0f172a">${Components.escapeHtml(brief.reportMarkdown || '')}</div>
+        </div>
+        <div class="no-print" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="window.print()">📄 印刷 / PDF として保存</button>
+        </div>`;
+    } catch (err) {
+      container.innerHTML = '<p style="color:#dc2626">読み込みに失敗しました: ' + Components.escapeHtml(err.message || '') + '</p>';
+    }
   }
 };
 

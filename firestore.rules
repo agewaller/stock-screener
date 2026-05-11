@@ -162,5 +162,62 @@ service cloud.firestore {
                    && resource.data.licenseStatus == 'approved';
       allow write: if false;
     }
+
+    // ───────────────────────────────────────────────────────────────
+    // Family invitations (invitations/{token}) — 健康日記
+    //
+    // The token IS the doc id and serves as the shared secret on the
+    // invite URL. Read is granted to anyone so the recipient can fetch
+    // the invitation before signing in to display "[inviter] さんから
+    // 招待が届きました". Create is owner-only (inviterUid == auth.uid).
+    // Update is split into two narrow paths:
+    //   (a) The recipient flipping acceptedByUid from null to their
+    //       own uid — exactly once.
+    //   (b) The inviter setting revoked=true on their own invitation.
+    // Delete is inviter-only.
+    // ───────────────────────────────────────────────────────────────
+    match /invitations/{token} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.inviterUid == request.auth.uid
+                    && request.resource.data.acceptedByUid == null
+                    && request.resource.data.revoked == false;
+      allow update: if request.auth != null && (
+        // Recipient accepting an open invitation.
+        (resource.data.acceptedByUid == null
+         && resource.data.revoked == false
+         && request.resource.data.acceptedByUid == request.auth.uid
+         && resource.data.inviterUid != request.auth.uid
+         && request.resource.data.inviterUid == resource.data.inviterUid
+         && request.resource.data.revoked == resource.data.revoked)
+        ||
+        // Inviter revoking their own invitation.
+        (resource.data.inviterUid == request.auth.uid
+         && request.resource.data.revoked == true
+         && request.resource.data.inviterUid == resource.data.inviterUid)
+      );
+      allow delete: if request.auth != null
+                    && resource.data.inviterUid == request.auth.uid;
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // Doctor briefs (doctorBriefs/{shareId}) — 健康日記
+    //
+    // 1-page disease-aligned summary the user shares with their
+    // physician via email link. The shareId is the secret; anyone
+    // with the link can read. Only the owner may create / update /
+    // delete. Once revoked=true is set the client renders a tombstone.
+    // ───────────────────────────────────────────────────────────────
+    match /doctorBriefs/{shareId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.revoked == false;
+      allow update: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
   }
 }

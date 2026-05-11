@@ -1608,6 +1608,18 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
   .sidebar, .top-bar { display: none !important; }
   .main-content { margin-left: 0 !important; }
   .card { break-inside: avoid; }
+  .no-print { display: none !important; }
+
+  /* 診察前ブリーフィング (A4 1 枚) — 公開閲覧ページ向け。
+     A4 1 枚に必ず収まるよう余白・フォントサイズを固定する。 */
+  @page { size: A4; margin: 12mm 14mm; }
+  .doctor-brief-public { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .doctor-brief-public .card { border: none !important; box-shadow: none !important; background: #fff !important; }
+  .doctor-brief-public .card-body { padding: 0 !important; }
+  .doctor-brief, .doctor-brief-public { font-size: 11pt; line-height: 1.45; color: #111; }
+  .doctor-brief .brief-meta { font-size: 9.5pt; color: #475569; margin-bottom: 8pt; }
+  .doctor-brief .brief-body { white-space: pre-wrap; }
+  .doctor-brief .brief-body h1, .doctor-brief .brief-body h2 { margin: 8pt 0 4pt; }
 }
 
 </style>

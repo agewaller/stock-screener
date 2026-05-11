@@ -761,19 +761,47 @@ App.prototype.render_dashboard = function() {
     return `
     <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#ecfeff 0%,#cffafe 100%);border:1px solid #a5f3fc">
       <div class="card-body" style="padding:14px 18px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
           <div style="flex:1;min-width:180px">
-            <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:2px">🏥 医師提出用レポートを作成</div>
-            <div style="font-size:11px;color:#0e7490;line-height:1.6">過去 90 日の記録を AI が統合し、受診時に持参できる形式でまとめます。</div>
+            <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:2px">🩺 診察前ブリーフィング（A4 1 枚）</div>
+            <div style="font-size:11px;color:#0e7490;line-height:1.6">次の診察に向けて、症状経過・服薬・検査値・医師への質問を 1 枚に整理。診察 3 分で読めます。</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="app.generateDoctorReport()"
+          <button class="btn btn-primary btn-sm" onclick="app.generateDoctorBrief()"
             style="padding:10px 18px;font-size:12px;font-weight:700;background:#0891b2;border-color:#0e7490;flex:0 0 auto">
-            レポート作成
+            1 枚にまとめる
+          </button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px dashed #a5f3fc;padding-top:10px">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:12px;font-weight:700;color:#155e75;margin-bottom:2px">🏥 詳細レポート（長文）</div>
+            <div style="font-size:11px;color:#0e7490;line-height:1.6">経過の詳細を含む長文版。じっくり読みたい医師・専門家向け。</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="app.generateDoctorReport()"
+            style="padding:8px 14px;font-size:11px;font-weight:600;flex:0 0 auto">
+            詳細レポート
           </button>
         </div>
       </div>
     </div>`;
   })()}
+
+  <!-- 👨‍👩‍👧 家族を招待 — 娘→親（または家族・介助者）のオンボーディング
+       導線。共有データ ACL は phase 2、ここでは招待リンクの確立まで。 -->
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#fdf4ff 0%,#fae8ff 100%);border:1px solid #f0abfc">
+    <div class="card-body" style="padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:14px;font-weight:700;color:#86198f;margin-bottom:2px">👨‍👩‍👧 家族を招待する</div>
+          <div style="font-size:11px;color:#a21caf;line-height:1.6">親御さんや配偶者を招待。プロフィールを事前に入力すれば、相手は 3 タップで始められます。</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.navigate('family-invite')"
+          style="padding:10px 18px;font-size:12px;font-weight:700;background:#a21caf;border-color:#86198f;flex:0 0 auto">
+          招待リンクを作る
+        </button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- 🔬 Latest Research widget — moved from the dashboard's deep-scroll
        region so users see relevant new papers without scrolling past
@@ -3956,6 +3984,153 @@ App.prototype.importDataFile = function(file) {
 
 
 
-document.addEventListener('DOMContentLoaded', function() { app.init(); });
+// ============================================================
+// 家族招待 — render_family_invite
+// ------------------------------------------------------------
+// 娘（既存ユーザー）が親の招待リンクを作る画面。代理プロフィール
+// （年齢・性別・備考）と、自分が選んでいる疾患を draftProfile に
+// 載せて、親が初回サインインしたときに自動でプロフィールに反映
+// される。
+// ============================================================
+App.prototype.render_family_invite = function() {
+  const myDiseases = (function () {
+    const ids = store.get('selectedDiseases') || [];
+    const cats = (typeof CONFIG !== 'undefined' && CONFIG.DISEASE_CATEGORIES) || [];
+    return ids.map(id => {
+      for (const cat of cats) {
+        const d = (cat.diseases || []).find(x => x.id === id);
+        if (d) return d.name;
+      }
+      return id;
+    });
+  })();
+  return `
+  <div style="max-width:640px;margin:0 auto">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body" style="padding:18px 20px">
+        <div style="font-size:16px;font-weight:800;color:#86198f;margin-bottom:8px">👨‍👩‍👧 家族を招待する</div>
+        <div style="font-size:12px;color:#475569;line-height:1.7;margin-bottom:14px">
+          親御さんや配偶者を招待します。下のプロフィール（任意）を入力しておくと、
+          相手は招待リンクから始めたときに最初の入力が省けます。<br>
+          ${myDiseases.length ? '<strong>選択中の疾患（' + Components.escapeHtml(myDiseases.join('、')) + '）は自動で引き継ぎます。</strong>' : ''}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <label>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">相手の年齢（任意）</div>
+            <input id="invite-age" type="text" class="form-input" placeholder="例: 68" style="width:100%">
+          </label>
+          <label>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px">性別（任意）</div>
+            <select id="invite-gender" class="form-input" style="width:100%">
+              <option value="">未選択</option>
+              <option value="female">女性</option>
+              <option value="male">男性</option>
+              <option value="other">その他</option>
+            </select>
+          </label>
+        </div>
+        <label style="display:block;margin-bottom:14px">
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px">相手への伝言や既往歴のメモ（任意）</div>
+          <textarea id="invite-notes" class="form-textarea" rows="3" placeholder="例: 高血圧の薬を服用中。慢性腎臓病で通院中。" style="width:100%"></textarea>
+        </label>
+
+        <button class="btn btn-primary" onclick="app.createFamilyInvitation()"
+          style="background:#a21caf;border-color:#86198f">
+          🔗 招待リンクを作る
+        </button>
+
+        <div id="invite-link-wrap" style="display:none;margin-top:14px;padding:12px 14px;background:#fdf4ff;border:1px solid #f0abfc;border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:#86198f;margin-bottom:6px">招待リンク（30 日間有効）</div>
+          <input id="invite-link-output" type="text" readonly style="width:100%;padding:8px 10px;border:1px solid #f0abfc;border-radius:8px;font-size:12px;background:#fff" onfocus="this.select()">
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="app.shareFamilyInvitationLink()" style="background:#a21caf;border-color:#86198f">📤 共有（LINE / メッセージ等）</button>
+          </div>
+          <div style="font-size:10px;color:#9d174d;margin-top:6px">届いた相手はリンクを開いて「開始する」を押すだけで始められます。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" style="padding:18px 20px">
+        <div style="font-size:13px;font-weight:700;color:#475569;margin-bottom:10px">発行済みの招待</div>
+        <div id="invitation-list">読み込み中...</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;text-align:center">
+      <a href="#" onclick="event.preventDefault();app.navigate('dashboard')" style="font-size:12px;color:#64748b">← ダッシュボードに戻る</a>
+    </div>
+  </div>`;
+};
+
+// ============================================================
+// 招待を受諾 — render_accept_invite
+// ------------------------------------------------------------
+// 親（招待された人）が招待リンクを開いたときに表示する画面。
+// サインイン済みなら自動で受諾、未サインインならログイン誘導。
+// ============================================================
+App.prototype.render_accept_invite = function() {
+  const token = (this.routeQuery && this.routeQuery.token) || '';
+  const isSignedIn = (typeof FirebaseBackend !== 'undefined' && !!FirebaseBackend.userId);
+  return `
+  <div style="max-width:520px;margin:40px auto;padding:0 16px">
+    <div class="card" style="border:1px solid #f0abfc">
+      <div class="card-body" style="padding:24px 22px;text-align:center">
+        <div style="font-size:42px;margin-bottom:10px">👨‍👩‍👧</div>
+        <div style="font-size:18px;font-weight:800;color:#86198f;margin-bottom:8px">家族から招待が届きました</div>
+        <div id="invite-inviter" style="font-size:13px;color:#475569;line-height:1.7;margin-bottom:18px">招待を確認しています...</div>
+        ${isSignedIn
+          ? `<button class="btn btn-primary" onclick="app.acceptFamilyInvitation()" style="background:#a21caf;border-color:#86198f">開始する</button>`
+          : `<button class="btn btn-primary" onclick="app.navigate('login')" style="background:#a21caf;border-color:#86198f">ログインして開始する</button>
+             <div style="font-size:11px;color:#64748b;margin-top:10px">ログイン後、自動的に家族とつながります。</div>`}
+        <div style="font-size:10px;color:#94a3b8;margin-top:18px">招待ID: ${Components.escapeHtml(token || '不明')}</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      try {
+        var token = ${JSON.stringify(token)};
+        if (!token) return;
+        if (typeof FirebaseBackend !== 'undefined' && typeof FirebaseBackend.getInvitation === 'function') {
+          FirebaseBackend.getInvitation(token).then(function (inv) {
+            var el = document.getElementById('invite-inviter');
+            if (!el) return;
+            if (!inv) { el.textContent = 'この招待は見つかりませんでした。リンクをご確認ください。'; return; }
+            if (inv.revoked) { el.textContent = 'この招待は取り消されました。'; return; }
+            if (inv.expiresAt && new Date(inv.expiresAt).getTime() < Date.now()) { el.textContent = 'この招待は期限が切れています。'; return; }
+            var name = inv.inviterName || 'ご家族';
+            el.innerHTML = '<strong>' + name + '</strong> さんから招待が届いています。<br>「開始する」を押すと家族とつながり、健康日記を始められます。';
+          });
+        }
+      } catch (e) {}
+    })();
+  </script>`;
+};
+
+// ============================================================
+// 公開ブリーフィング閲覧 — render_brief
+// ------------------------------------------------------------
+// 医師など、リンクを受け取った人が認証なしで閲覧できる公開ページ。
+// app.loadDoctorBriefView() が afterRender で内容を読み込む。
+// ============================================================
+App.prototype.render_brief = function() {
+  return `
+  <div class="doctor-brief-public" style="max-width:780px;margin:24px auto;padding:0 16px">
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:8px" class="no-print">健康日記 — 診察前ブリーフィング</div>
+    <div class="card">
+      <div class="card-body" style="padding:18px 22px">
+        <div id="public-brief-content">読み込み中...</div>
+      </div>
+    </div>
+    <div class="no-print" style="text-align:center;margin-top:16px;font-size:11px;color:#94a3b8">
+      このページは患者本人が発行したリンクで公開されています。
+      <a href="https://cares.advisers.jp/" style="color:#6366f1">健康日記について</a>
+    </div>
+  </div>`;
+};
+
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });
+
