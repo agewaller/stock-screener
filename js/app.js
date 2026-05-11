@@ -39,8 +39,41 @@ var App = class App {
   }
 
   isAdmin() {
-    const user = store.get('user');
-    return user && this.ADMIN_EMAILS.includes(user.email);
+    // Multi-source admin check. Previously this only read from
+    // store.get('user').email, which silently returned false whenever
+    // the in-memory store was stale or never populated (e.g. right
+    // after a hard refresh before the auth state listener ran). The
+    // user got "管理者権限がない" even though they were signed in as
+    // agewaller@gmail.com. We now consult three sources in order:
+    //   1. store.get('user').email
+    //   2. FirebaseBackend.auth.currentUser.email
+    //   3. firebase.auth().currentUser.email
+    // Any matching one grants admin. The hardcoded owner email is
+    // ALWAYS admin (matches removeAdmin's owner-protect logic).
+    const email = this.currentUserEmail();
+    if (!email) return false;
+    if (email === 'agewaller@gmail.com') return true;
+    return Array.isArray(this.ADMIN_EMAILS) && this.ADMIN_EMAILS.includes(email);
+  }
+
+  currentUserEmail() {
+    try {
+      const u = store.get('user');
+      if (u && u.email) return u.email;
+    } catch (_) {}
+    try {
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth
+          && FirebaseBackend.auth.currentUser && FirebaseBackend.auth.currentUser.email) {
+        return FirebaseBackend.auth.currentUser.email;
+      }
+    } catch (_) {}
+    try {
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        const fu = firebase.auth().currentUser;
+        if (fu && fu.email) return fu.email;
+      }
+    } catch (_) {}
+    return null;
   }
 
   // Boot-time canary: walk through every onclick / on* attribute in
@@ -538,7 +571,13 @@ var App = class App {
 
   async saveApiKeys() {
     if (!this.isAdmin()) {
-      Components.showToast('APIキー設定は管理者専用です', 'error');
+      const seen = this.currentUserEmail() || '(未ログイン)';
+      Components.showToast(
+        'APIキー設定は管理者専用です。現在のログイン: ' + seen
+        + '\n管理者は agewaller@gmail.com です。一度ログアウト → 再ログインしてください。',
+        'error'
+      );
+      console.warn('[saveApiKeys] admin check failed. seen email:', seen, 'ADMIN_EMAILS:', this.ADMIN_EMAILS);
       return;
     }
     const keys = ['anthropic', 'openai', 'google'];
