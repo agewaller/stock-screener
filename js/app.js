@@ -1291,6 +1291,9 @@ ${recentText || '記録なし'}
       bipolar: { ja: '双極性障害', en: 'bipolar disorder' },
       ptsd: { ja: 'PTSD トラウマ', en: 'PTSD trauma' },
       adhd: { ja: 'ADHD 発達障害', en: 'ADHD' },
+      migraine: { ja: '片頭痛 偏頭痛', en: 'migraine' },
+      mcas: { ja: 'MCAS マスト細胞', en: 'MCAS mast cell' },
+      eds: { ja: 'EDS エーラスダンロス', en: 'Ehlers-Danlos syndrome' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1394,6 +1397,9 @@ ${recentText || '記録なし'}
       ibs: 'irritable bowel syndrome treatment',
       pots: 'postural orthostatic tachycardia',
       insomnia: 'insomnia treatment',
+      migraine: 'migraine treatment prevention',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1527,6 +1533,8 @@ ${titles}`;
       insomnia: 'insomnia treatment',
       mcas: 'mast cell activation syndrome',
       eds: 'Ehlers-Danlos syndrome',
+      migraine: 'migraine treatment prevention',
+      ptsd: 'post-traumatic stress disorder treatment',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2910,7 +2918,8 @@ ${responseText.substring(0, 3000)}`;
       mecfs: '#ME_CFS', depression: '#うつ病', bipolar: '#双極性障害',
       adhd: '#ADHD', long_covid: '#LongCOVID', fibromyalgia: '#線維筋痛症',
       pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
-      insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS'
+      insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
+      migraine: '#片頭痛', ptsd: '#PTSD'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

@@ -115,6 +115,8 @@ function extractDiseaseIds(text) {
     mcas: /MCAS|マスト細胞/i,
     eds: /EDS|エーラス.ダンロス/i,
     insomnia: /不眠症|불眠|insomnia/i,
+    migraine: /片頭痛|偏頭痛|migraine|頭痛ダイアリー|トリプタン/i,
+    ptsd: /PTSD|心的外傷|フラッシュバック|トラウマ|EMDR|複雑性PTSD/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

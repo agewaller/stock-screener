@@ -130,6 +130,25 @@
         { kind: 'device', label: 'ノイズキャンセリングヘッドフォン（集中支援）', q: 'ノイズキャンセリング ヘッドフォン 集中' },
         { kind: 'supplement', label: 'オメガ 3（ADHD 小児〜成人の補助エビデンスあり）', q: 'オメガ3 EPA DHA ADHD' }
       ]
+    },
+    migraine: {
+      title: '📚 片頭痛（偏頭痛）管理に役立つリソース',
+      items: [
+        { kind: 'book', label: '『頭痛の正しい治し方』日本頭痛学会監修', q: '片頭痛 頭痛 治し方 日本頭痛学会' },
+        { kind: 'book', label: '『偏頭痛と上手に付き合う本』', q: '偏頭痛 片頭痛 付き合う 本' },
+        { kind: 'supplement', label: 'マグネシウム（400mg/日 — 片頭痛予防エビデンスあり）', q: 'マグネシウム 400mg 片頭痛 予防' },
+        { kind: 'supplement', label: 'リボフラビン（ビタミン B2 400mg）片頭痛予防', q: 'ビタミンB2 リボフラビン 400mg 片頭痛' },
+        { kind: 'device', label: '気圧計（天気トリガー把握）', q: '気圧計 デジタル 片頭痛' }
+      ]
+    },
+    ptsd: {
+      title: '📚 PTSD・トラウマ回復に役立つリソース',
+      items: [
+        { kind: 'book', label: '『身体はトラウマを記録する』ベッセル・ヴァン・デア・コーク', q: '身体はトラウマを記録する ヴァン デア コーク' },
+        { kind: 'book', label: '『複雑性 PTSD から回復する』', q: '複雑性PTSD 回復 本 CPTSD' },
+        { kind: 'book', label: '『EMDR — トラウマを癒す』', q: 'EMDR トラウマ 癒す' },
+        { kind: 'supplement', label: 'アシュワガンダ（コルチゾール調整・不安軽減）', q: 'アシュワガンダ KSM-66 ストレス' }
+      ]
     }
   };
 
