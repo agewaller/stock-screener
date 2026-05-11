@@ -720,6 +720,8 @@ App.prototype.render_dashboard = function() {
       chronic_pain: ['痛みの強さNRS(0-10)', '痛みの部位・性質', '誘因', '服薬効果時間'],
       panic: ['発作の有無・強さ(1-10)', '発作の場所・状況', '回避した場所', '予期不安(1-10)'],
       endometriosis: ['月経痛NRS(0-10)', '骨盤痛の有無', '鎮痛薬使用', '不正出血（ジエノゲスト副作用）'],
+      diabetes: ['空腹時血糖(mg/dL)', '食後2時間血糖', '体重', '服薬・インスリン記録'],
+      atopy: ['かゆみ(NRS 0-10)', '皮疹の部位・範囲', 'ステロイド塗布量', '悪化要因'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

@@ -131,6 +131,8 @@ function extractDiseaseIds(text) {
     chronic_pain: /慢性疼痛|慢性痛|神経障害性疼痛|ペインクリニック|リリカ|プレガバリン|タリージェ|中枢感作|アロディニア|脊髄刺激|SCS\b|神経ブロック|CRPS|複合性局所疼痛/i,
     panic: /パニック障害|パニック症|パニック発作|広場恐怖症|panic disorder|予期不安|動悸.*恐怖|息苦しさ.*発作|パキシル.*パニック|広場恐怖/i,
     endometriosis: /子宮内膜症|子宮腺筋症|endometriosis|月経痛.*悪化|ジエノゲスト|ビジュアリン|チョコレート嚢胞|深部子宮内膜症|骨盤痛|GnRH.*子宮|生理痛.*年々/i,
+    diabetes: /糖尿病|diabetes|血糖値|HbA1c|SGLT2|フォシーガ|ジャディアンス|オゼンピック|リベルサス|メトホルミン|インスリン.*糖尿|血糖.*管理|DPP-4/i,
+    atopy: /アトピー性皮膚炎|アトピー|atopic dermatitis|デュピクセント|デュピルマブ|ネモリズマブ|JAK阻害.*皮膚|リンヴォック.*皮膚|サイバインコ|コレクチム|プロトピック|かゆみ.*皮疹|ステロイド.*皮膚炎/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

@@ -1308,6 +1308,8 @@ ${recentText || '記録なし'}
       chronic_pain: { ja: '慢性疼痛 ペインクリニック 神経障害性疼痛', en: 'chronic pain' },
       panic: { ja: 'パニック障害 パニック発作 広場恐怖症', en: 'panic disorder' },
       endometriosis: { ja: '子宮内膜症 月経痛 ジエノゲスト 婦人科', en: 'endometriosis' },
+      diabetes: { ja: '糖尿病 血糖値 HbA1c 糖尿病内科', en: 'type 2 diabetes' },
+      atopy: { ja: 'アトピー性皮膚炎 かゆみ デュピクセント 皮膚科', en: 'atopic dermatitis' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1427,6 +1429,8 @@ ${recentText || '記録なし'}
       chronic_pain: 'chronic pain management treatment',
       panic: 'panic disorder treatment anxiety',
       endometriosis: 'endometriosis treatment pain management',
+      diabetes: 'type 2 diabetes management glycemic control',
+      atopy: 'atopic dermatitis treatment dupilumab',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1576,6 +1580,8 @@ ${titles}`;
       chronic_pain: 'chronic pain management treatment',
       panic: 'panic disorder cognitive behavioral therapy',
       endometriosis: 'endometriosis treatment hormonal',
+      diabetes: 'type 2 diabetes SGLT2 GLP-1 treatment',
+      atopy: 'atopic dermatitis dupilumab JAK inhibitor',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2965,7 +2971,8 @@ ${responseText.substring(0, 3000)}`;
       gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
       ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
       ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
-      panic: '#パニック障害', endometriosis: '#子宮内膜症'
+      panic: '#パニック障害', endometriosis: '#子宮内膜症',
+      diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

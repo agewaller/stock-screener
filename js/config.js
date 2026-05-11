@@ -1528,6 +1528,55 @@ var CONFIG = {
         { timestamp: '2026-03-25T08:00:00Z', name: 'ジエノゲスト（ビジュアリン）', notes: '2mg/日（子宮内膜症の第一選択ホルモン薬）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    diabetes: {
+      diseases: ['2型糖尿病'],
+      profile: { age: 54, gender: 'male', height: 170, weight: 82 },
+      textEntries: [
+        { timestamp: '2026-03-17T08:00:00Z', category: 'vitals', title: '血糖値', content: '空腹時血糖 156 mg/dL。HbA1c 先月 8.2%。医師から「SGLT2阻害薬を追加しましょう」と提案された。' },
+        { timestamp: '2026-03-24T20:00:00Z', category: 'medication', title: 'フォシーガ開始', content: 'ダパグリフロジン（フォシーガ）10mg 朝食前 開始。尿量が増えた。頻尿は副作用とのこと。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'vitals', title: '血糖・体重', content: '空腹時血糖 138 mg/dL（改善）。体重 82kg→80.5kg（1.5kg減）。フォシーガの尿糖排泄効果。' },
+        { timestamp: '2026-04-07T21:00:00Z', category: 'nutrition', title: '食事記録', content: '今週から白米→玄米に変更。食後2時間血糖が 168→142 mg/dL に改善。炭水化物量を意識するだけで変わる。' },
+        { timestamp: '2026-04-14T08:00:00Z', category: 'symptoms', title: '運動', content: '食後30分歩行（20分）を毎日継続。食後2時間血糖が 130 mg/dL まで下がった日も。運動の効果を実感。' },
+        { timestamp: '2026-04-21T10:00:00Z', category: 'vitals', title: 'HbA1c 結果', content: '受診日: HbA1c 7.4%（前回 8.2%）。食事・運動・フォシーガの相乗効果。医師から「この調子で続けて」とのこと。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-21T10:00:00Z', name: '定期血液検査', findings: 'HbA1c 7.4%（改善）, 空腹時血糖 128, eGFR 72（CKD G2）, LDL 118, TG 185, 尿タンパク (-)' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'メトホルミン（メトグルコ）', notes: '500mg ×2/日（食直後）' },
+        { timestamp: '2026-03-24T08:00:00Z', name: 'ダパグリフロジン（フォシーガ）', notes: '10mg 朝食前（SGLT2阻害薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    atopy: {
+      diseases: ['アトピー性皮膚炎'],
+      profile: { age: 26, gender: 'female', height: 158, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-19T22:00:00Z', category: 'symptoms', title: 'かゆみ・不眠', content: 'かゆみ 8/10。夜中に引っ掻いて目が覚めた。顔・首・肘の内側に皮疹。ストレスで悪化している気がする。' },
+        { timestamp: '2026-03-26T10:00:00Z', category: 'medication', title: 'デュピクセント開始', content: 'デュピルマブ（デュピクセント）初回注射（600mg）。2週後から 300mg を自己注射。少し期待している。' },
+        { timestamp: '2026-04-02T09:00:00Z', category: 'symptoms', title: '結膜炎', content: 'デュピクセント開始1週間。目の充血・かゆみが出た（よくある副作用とのこと）。目薬を処方された。' },
+        { timestamp: '2026-04-09T21:00:00Z', category: 'symptoms', title: 'かゆみ改善', content: 'かゆみ 5/10 まで低下。デュピクセント2回目の注射後。夜中に目が覚める頻度が週 5→2 回に減った。' },
+        { timestamp: '2026-04-16T08:00:00Z', category: 'symptoms', title: '皮疹改善', content: '顔の皮疹がほぼ消えた。首はまだ少し残っている。保湿剤（ヒルドイド）毎日2回塗布継続。' },
+        { timestamp: '2026-04-23T22:00:00Z', category: 'symptoms', title: '', content: 'かゆみ 2/10（3回目注射後）。ステロイドを塗らずに過ごせた週が初めて。睡眠が改善し、仕事のパフォーマンスも戻った。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-26T10:00:00Z', name: 'デュピルマブ（デュピクセント）', notes: '初回600mg→300mg 2週おき 皮下注射（IL-4/13阻害生物学的製剤）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
