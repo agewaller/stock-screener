@@ -1577,6 +1577,56 @@ var CONFIG = {
         { timestamp: '2026-03-26T10:00:00Z', name: 'デュピルマブ（デュピクセント）', notes: '初回600mg→300mg 2週おき 皮下注射（IL-4/13阻害生物学的製剤）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    asthma: {
+      diseases: ['気管支喘息'],
+      profile: { age: 35, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-18T07:00:00Z', category: 'symptoms', title: '夜間発作', content: '夜中 3時に喘鳴で目が覚めた。メプチン吸入1回で改善。今月3回目の夜間発作。コントロール不良かも。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'vitals', title: 'ピークフロー', content: '朝の PEF 280 L/min（最良値 380 の74%）。黄色ゾーン。吸入ステロイドの量を増やすか要検討。' },
+        { timestamp: '2026-04-01T11:00:00Z', category: 'medication', title: 'シムビコート増量', content: 'シムビコート（ブデソニド/ホルモテロール）を 2吸入→4吸入/日 に増量。スマート療法で発作時追加も可。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'vitals', title: 'PEF 改善', content: '朝の PEF 330 L/min（最良値の87%）。緑ゾーンに入った。夜間発作なし。メプチン使用 0回/週。' },
+        { timestamp: '2026-04-15T21:00:00Z', category: 'symptoms', title: '悪化要因特定', content: '花粉シーズンが発作増加と関係していた。マスク着用と空気清浄機で改善。花粉が主な誘因だと分かった。' },
+        { timestamp: '2026-04-22T09:00:00Z', category: 'vitals', title: '', content: '朝の PEF 355 L/min（最良値の93%）。今週は喘鳴なし。発作止め吸入ゼロ。コントロール良好になった。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'シムビコート（ブデソニド/ホルモテロール）', notes: '2→4吸入/日（ICS/LABA配合剤）。スマート療法（発作時追加吸入可）。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'メプチン（プロカテロール）', notes: '頓服。発作時1〜2吸入（SABA）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ckd: {
+      diseases: ['慢性腎臓病（CKD）'],
+      profile: { age: 63, gender: 'male', height: 168, weight: 74 },
+      textEntries: [
+        { timestamp: '2026-03-19T08:00:00Z', category: 'vitals', title: 'eGFR・血圧', content: 'eGFR 42（前回 47、6ヶ月前 51）。低下速度が年間 -9。血圧 148/92。降圧薬を増量する必要がありそう。' },
+        { timestamp: '2026-03-26T10:00:00Z', category: 'medication', title: 'フォシーガ追加', content: 'フォシーガ（ダパグリフロジン）10mg 追加処方。腎保護目的。糖尿病なくても使えると説明された。' },
+        { timestamp: '2026-04-02T08:00:00Z', category: 'vitals', title: '血圧改善', content: '朝の血圧 132/82。フォシーガ開始後1週間。浮腫がやや減った（体重 74→73kg）。利尿効果。' },
+        { timestamp: '2026-04-09T09:00:00Z', category: 'nutrition', title: '食事記録', content: '減塩食を開始。味噌汁を1日1杯→0杯に。おひたしは素材だけ。塩分 6g/日の目標を初めて達成した日。' },
+        { timestamp: '2026-04-16T11:00:00Z', category: 'vitals', title: '血圧安定', content: '朝 128/80・夕 130/82。目標達成。体重 73kg で安定。むくみはほぼなし。食事管理の効果が出ている。' },
+        { timestamp: '2026-04-23T10:00:00Z', category: 'vitals', title: '受診結果', content: 'eGFR 44（前回 42 から改善）。尿タンパク/Cr比 0.8（前回 1.2 から低下）。フォシーガ・減塩が効いた。医師「この調子で続けましょう」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-23T10:00:00Z', name: '腎機能検査', findings: 'eGFR 44（改善）, Cr 1.42, BUN 22, 尿タンパク/Cr 0.8（改善）, K 4.2, Hb 11.6（軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'テルミサルタン（ミカルディス）', notes: '40mg 朝（ARB・腎保護降圧薬）' },
+        { timestamp: '2026-03-26T08:00:00Z', name: 'ダパグリフロジン（フォシーガ）', notes: '10mg 朝（SGLT2阻害薬・CKD腎保護適応）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };

@@ -1310,6 +1310,8 @@ ${recentText || '記録なし'}
       endometriosis: { ja: '子宮内膜症 月経痛 ジエノゲスト 婦人科', en: 'endometriosis' },
       diabetes: { ja: '糖尿病 血糖値 HbA1c 糖尿病内科', en: 'type 2 diabetes' },
       atopy: { ja: 'アトピー性皮膚炎 かゆみ デュピクセント 皮膚科', en: 'atopic dermatitis' },
+      asthma: { ja: '気管支喘息 発作 吸入ステロイド 呼吸器内科', en: 'asthma' },
+      ckd: { ja: '慢性腎臓病 CKD eGFR 腎臓内科 透析', en: 'chronic kidney disease' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1431,6 +1433,8 @@ ${recentText || '記録なし'}
       endometriosis: 'endometriosis treatment pain management',
       diabetes: 'type 2 diabetes management glycemic control',
       atopy: 'atopic dermatitis treatment dupilumab',
+      asthma: 'asthma control inhaled corticosteroids treatment',
+      ckd: 'chronic kidney disease progression SGLT2',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1582,6 +1586,8 @@ ${titles}`;
       endometriosis: 'endometriosis treatment hormonal',
       diabetes: 'type 2 diabetes SGLT2 GLP-1 treatment',
       atopy: 'atopic dermatitis dupilumab JAK inhibitor',
+      asthma: 'asthma biologics inhaled corticosteroids',
+      ckd: 'chronic kidney disease SGLT2 inhibitor renal protection',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2972,7 +2978,8 @@ ${responseText.substring(0, 3000)}`;
       ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
       ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
       panic: '#パニック障害', endometriosis: '#子宮内膜症',
-      diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎'
+      diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎',
+      asthma: '#気管支喘息', ckd: '#慢性腎臓病'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

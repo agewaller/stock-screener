@@ -133,6 +133,8 @@ function extractDiseaseIds(text) {
     endometriosis: /子宮内膜症|子宮腺筋症|endometriosis|月経痛.*悪化|ジエノゲスト|ビジュアリン|チョコレート嚢胞|深部子宮内膜症|骨盤痛|GnRH.*子宮|生理痛.*年々/i,
     diabetes: /糖尿病|diabetes|血糖値|HbA1c|SGLT2|フォシーガ|ジャディアンス|オゼンピック|リベルサス|メトホルミン|インスリン.*糖尿|血糖.*管理|DPP-4/i,
     atopy: /アトピー性皮膚炎|アトピー|atopic dermatitis|デュピクセント|デュピルマブ|ネモリズマブ|JAK阻害.*皮膚|リンヴォック.*皮膚|サイバインコ|コレクチム|プロトピック|かゆみ.*皮疹|ステロイド.*皮膚炎/i,
+    asthma: /気管支喘息|喘息|asthma|吸入ステロイド|シムビコート|フルティフォーム|レルベア|アドエア|ピークフロー|PEF\b|ゾレア|ファセンラ|喘鳴|発作止め.*吸入|ICS\b.*喘/i,
+    ckd: /慢性腎臓病|CKD\b|chronic kidney disease|eGFR|腎機能.*低下|透析.*腎|腎臓.*SGLT2|フォシーガ.*腎|ケレンディア|尿タンパク.*腎|腎保護|腎不全.*慢性/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

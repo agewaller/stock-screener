@@ -722,6 +722,8 @@ App.prototype.render_dashboard = function() {
       endometriosis: ['月経痛NRS(0-10)', '骨盤痛の有無', '鎮痛薬使用', '不正出血（ジエノゲスト副作用）'],
       diabetes: ['空腹時血糖(mg/dL)', '食後2時間血糖', '体重', '服薬・インスリン記録'],
       atopy: ['かゆみ(NRS 0-10)', '皮疹の部位・範囲', 'ステロイド塗布量', '悪化要因'],
+      asthma: ['ピークフロー(PEF)', '喘鳴・息苦しさの有無', '発作止め吸入回数', '悪化要因'],
+      ckd: ['血圧(朝・夕)', '体重・むくみ', '食事の塩分量', '倦怠感・息苦しさ'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
