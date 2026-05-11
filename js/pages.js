@@ -1952,6 +1952,11 @@ App.prototype.render_research = function() {
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
       : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとあなたの疾患の最新論文が表示されます。'));
   const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
+  const primaryDiseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+  const allPrompts = { ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) };
+  const researchKey = (primaryDiseaseId + '_research') in allPrompts
+    ? primaryDiseaseId + '_research'
+    : 'mecfs_research';
 
   return `
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
@@ -1961,7 +1966,7 @@ App.prototype.render_research = function() {
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">論文を検索</button>
-      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('${researchKey}')">研究スキャン</button>
     </div>
   </div>
 

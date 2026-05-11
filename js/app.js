@@ -1524,7 +1524,7 @@ ${titles}`;
   }
 
   async searchPubMedLive() {
-    const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
+    const query = document.getElementById('pubmed-search-query')?.value || 'chronic disease management';
     const days = parseInt(document.getElementById('pubmed-search-days')?.value || '90');
     const resultsArea = document.getElementById('pubmed-results');
     const lang = (store.get('userProfile') || {}).language || 'ja';
