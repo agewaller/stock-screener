@@ -710,6 +710,8 @@ App.prototype.render_dashboard = function() {
       sle: ['皮膚症状', '関節痛', '倦怠感(1-10)', '日光曝露'],
       asd: ['感覚過敏度(1-10)', '社会的消耗', 'バーンアウト兆候'],
       crohns: ['排便回数', '腹痛(1-10)', '食事内容', '体重'],
+      gad: ['不安レベル(1-10)', '心配の対象', '身体症状', '対処法'],
+      sjogrens: ['ドライアイ(1-10)', 'ドライマウス(1-10)', '疲労感', '点眼回数'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

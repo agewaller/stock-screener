@@ -1298,6 +1298,8 @@ ${recentText || '記録なし'}
       sle: { ja: '全身性エリテマトーデス SLE ループス', en: 'lupus SLE' },
       asd: { ja: '自閉スペクトラム症 ASD 発達障害', en: 'autism spectrum disorder' },
       crohns: { ja: 'クローン病 炎症性腸疾患 IBD', en: "Crohn's disease" },
+      gad: { ja: '全般性不安障害 GAD 不安症', en: 'generalized anxiety disorder' },
+      sjogrens: { ja: 'シェーグレン症候群 ドライアイ ドライマウス', en: "Sjogren's syndrome" },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1407,6 +1409,8 @@ ${recentText || '記録なし'}
       ra: 'rheumatoid arthritis treatment',
       asd: 'autism spectrum disorder',
       crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome",
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1546,6 +1550,8 @@ ${titles}`;
       sle: 'systemic lupus erythematosus treatment',
       asd: 'autism spectrum disorder',
       crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome treatment",
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2931,7 +2937,8 @@ ${responseText.substring(0, 3000)}`;
       pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
       insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
       migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ',
-      sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病'
+      sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
+      gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

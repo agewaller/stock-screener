@@ -121,6 +121,8 @@ function extractDiseaseIds(text) {
     sle: /SLE\b|全身性エリテマトーデス|ループス|lupus|蝶形紅斑|ループス腎炎|プラケニル|ベンリスタ|抗dsDNA/i,
     asd: /ASD\b|自閉スペクトラム|自閉症|アスペルガー|autism|感覚過敏|マスキング|発達障害|バーンアウト|ステレオタイプ行動/i,
     crohns: /クローン病|Crohn|クローン|IBD|炎症性腸疾患|エンタイビオ|ステラーラ|エレンタール|痔瘻|カルプロテクチン/i,
+    gad: /全般性不安障害|GAD\b|不安障害|不安症|anxiety disorder|CBT 不安|心配が止まらない|漠然とした不安/i,
+    sjogrens: /シェーグレン|Sjogren|Sjögren|ドライアイ.*乾燥|ドライマウス.*乾燥|抗SS-A|抗SS-B|唾液腺|涙腺/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
