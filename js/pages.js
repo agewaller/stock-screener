@@ -739,6 +739,8 @@ App.prototype.render_dashboard = function() {
       cancer_fatigue: ['倦怠感スコア(0-10)', '悪心・嘔吐の回数', 'CIPN(しびれ・冷感)の強さ', '活動量・食欲'],
       hypertension: ['血圧(朝・夕)', '服薬確認・副作用', '塩分摂取量', '体重・歩数'],
       hyperlipidemia: ['LDL・TG値(受診時)', 'スタチン服薬確認・筋肉痛', '食事の脂質評価', '体重・運動量'],
+      anemia: ['Hb・フェリチン値(受診時)', '鉄剤服薬確認・副作用', '倦怠感・息切れ(1-10)', '月経量・食事の鉄摂取'],
+      allergic_rhinitis: ['くしゃみ・鼻水・鼻閉スコア(0-3)', '目かゆみ・充血スコア', '服薬確認・副作用', '花粉飛散量・外出状況'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

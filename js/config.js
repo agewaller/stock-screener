@@ -92,7 +92,8 @@ var CONFIG = {
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
         { id: 'psoriasis', name: '乾癬', icd: 'EA90' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
-        { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' }
+        { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
+        { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' }
       ]
     },
     {
@@ -110,7 +111,8 @@ var CONFIG = {
         { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
-        { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' }
+        { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' },
+        { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' }
       ]
     },
     {
@@ -217,6 +219,10 @@ var CONFIG = {
                           japan: 43_000_000, japanLabel: '約 4,300 万人',      japanSource: '日本高血圧学会' },
     hyperlipidemia:     { world:   500_000_000, label: '約 5 億人（推計）', tier: 1, density: 'medium', source: '成人推計',
                           japan: 22_000_000, japanLabel: '約 2,200 万人',      japanSource: '国民健康栄養調査' },
+    anemia:             { world: 2_000_000_000, label: '約 20 億人',      tier: 1, density: 'high',   source: 'WHO 全年齢',
+                          japan: 15_000_000, japanLabel: '約 1,500 万人（推計）', japanSource: 'WHO・国内推計' },
+    allergic_rhinitis:  { world: 1_000_000_000, label: '約 10 億人',      tier: 1, density: 'medium', source: 'WHO成人・小児',
+                          japan: 42_000_000, japanLabel: '約 4,200 万人（花粉症含む）', japanSource: '環境省・日本アレルギー学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2026,6 +2032,61 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-04-19T08:00:00Z', name: 'ロスバスタチン（クレストール）2.5mg', notes: '朝食後 1錠（スタチン・HMG-CoA還元酵素阻害薬・筋肉痛に注意）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    anemia: {
+      diseases: ['鉄欠乏性貧血'],
+      profile: { age: 31, gender: 'female', height: 162, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'symptoms', title: '健診でHb低値', content: '会社健診の結果：Hb 9.8 g/dL（基準値 12.0以上）、フェリチン 4.2 ng/mL（基準値 12以上）。「貧血・要精検」の紙が来た。最近ずっとだるくて、ちょっとした坂道で息が切れると思っていた。月経多い（7〜8日続く・血塊あり）のが原因かもしれない。' },
+        { timestamp: '2026-03-12T10:00:00Z', category: 'consultation', title: '内科受診', content: '詳しい採血：Hb 9.6, フェリチン 3.8, MCV 72（小球性）, TIBC 452（高い）。「重度の鉄欠乏性貧血。フェロミア（硫酸第一鉄）1日3回、食前か食後2時間に服用」と処方された。月経過多の原因を調べるため婦人科受診も勧められた。' },
+        { timestamp: '2026-03-19T09:00:00Z', category: 'medication', title: '鉄剤1週間目', content: 'フェロミア開始1週間。便が黒くなった（先生に聞いたら「鉄剤の正常反応」とのこと）。少し便秘。胃がちょっと重い感じ。倦怠感は 8/10 → 7/10 に少し改善か。夕方になると特に疲れやすい。' },
+        { timestamp: '2026-03-26T08:00:00Z', category: 'activity', title: '食事改善', content: '栄養士に相談。ヘム鉄が多いレバー・牛赤身肉・マグロを意識して食べるように。朝食にほうれん草+オレンジジュースの組み合わせ（非ヘム鉄+ビタミンC）。お茶・コーヒーは鉄剤服用の前後1時間は避けている。' },
+        { timestamp: '2026-04-09T09:00:00Z', category: 'vitals', title: '1ヶ月後採血', content: 'Hb 11.2（9.6→11.2）、フェリチン 12.1（3.8→12.1）。1ヶ月でかなり改善！息切れが減った。倦怠感 5/10。階段がだいぶ楽になった。先生に「まだフェリチンが低いので鉄剤は6ヶ月続けましょう」と言われた。' },
+        { timestamp: '2026-04-16T10:00:00Z', category: 'consultation', title: '婦人科受診', content: '婦人科では「子宮筋腫（2cm・多発）が月経過多の原因」と診断。今すぐ手術は不要で、経過観察とジエノゲスト（低用量ピル）で月経量を減らす提案。「鉄剤治療と合わせることで貧血が改善しやすくなる」と説明された。' },
+        { timestamp: '2026-04-23T09:00:00Z', category: 'vitals', title: '2ヶ月目経過', content: 'ジエノゲスト開始2週間。月経量が格段に減った（ナプキン5枚/日→2枚/日）。Hb 12.1（ほぼ正常範囲！）、フェリチン 22。倦怠感 3/10 に改善。朝の通勤も苦じゃなくなった。フェロミアはあと4ヶ月続ける予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-09T10:00:00Z', name: '鉄欠乏性貧血 採血（1ヶ月後）', findings: 'Hb 11.2（改善中）, MCV 78, フェリチン 12.1, TIBC 380（改善）, 血清鉄 48, CRP 0.2（正常）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-12T08:00:00Z', name: 'フェロミア（硫酸第一鉄）50mg', notes: '1日3回 食前（空腹時吸収が良い・胃腸症状がある場合は食後可）' },
+        { timestamp: '2026-04-16T08:00:00Z', name: 'ジエノゲスト（ビジュアル）1mg', notes: '1日2回（子宮筋腫による月経過多の治療・月経量減少で鉄喪失を抑制）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    allergic_rhinitis: {
+      diseases: ['アレルギー性鼻炎（花粉症）'],
+      profile: { age: 35, gender: 'male', height: 174, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-02-15T08:00:00Z', category: 'symptoms', title: '花粉シーズン開始', content: '今年もスギ花粉の季節が来た。今朝起きたらくしゃみ連発（15回以上）、水のような鼻水が止まらない。目のかゆみ 3/3。鼻閉は今のところ2/3。TNSS 8/12。アレグラを飲んだが午後まで効きが弱い感じ。昨年より花粉が多いらしい。' },
+        { timestamp: '2026-02-22T08:00:00Z', category: 'medication', title: '点鼻ステロイド追加', content: '耳鼻科受診。「アレグラに加えてフルナーゼ点鼻薬を追加しましょう。点鼻は毎日続けることが大事」と言われた。鼻の中を見て「炎症が強い」と。ナゾネックスに変更（薬局在庫の関係）。使い方を教えてもらった（中央の鼻中隔を避けて外側に向けて噴霧）。' },
+        { timestamp: '2026-03-01T07:00:00Z', category: 'vitals', title: '点鼻薬開始1週間', content: 'ナゾネックス+アレグラ継続。TNSS 8→5 に改善！特に鼻閉（詰まり）が明らかに楽になった。くしゃみ・鼻水はまだ続くが回数が減った。目のかゆみ 2/3（点眼薬も追加）。仕事中の集中力が戻ってきた。' },
+        { timestamp: '2026-03-08T09:00:00Z', category: 'activity', title: 'マスク・外出対策', content: '花粉飛散量多い日（環境省サイトで「非常に多い」）は不織布マスク2枚重ね。外から帰ったら玄関で服を払い、すぐ洗顔・うがい。これだけで室内での鼻水がかなり減った。空気清浄機をフル稼働（フィルター清掃した）。' },
+        { timestamp: '2026-03-15T08:00:00Z', category: 'consultation', title: '舌下免疫療法の相談', content: '「来シーズンに向けて舌下免疫療法（シダキュア）を始めませんか」と勧められた。「3〜5年続けると根本的な改善が期待できる。ただし毎日服用が必須」と説明された。来月5月から開始予定（スギ花粉シーズン外から開始するルール）。' },
+        { timestamp: '2026-03-22T07:00:00Z', category: 'vitals', title: '3月下旬ピーク', content: 'ヒノキ花粉も飛散開始で症状が再度悪化。TNSS 7/12。目のかゆみが特に強い（3/3）。ビラノアに変更（眠気が出にくいとのこと）。点鼻薬は継続。睡眠 5時間（鼻閉で途中覚醒2回）。在宅勤務の日は症状が楽だった。' },
+        { timestamp: '2026-04-12T07:00:00Z', category: 'symptoms', title: '花粉シーズン収束', content: '4月に入りスギ・ヒノキ花粉が収束してきた。TNSS 2/12（ほぼ正常）。点鼻薬・点眼薬は5月初旬まで続けて徐々に中止予定。5月から舌下免疫療法（シダキュア）開始の予約を取った。来年に向けて根治を目指す！' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T08:00:00Z', fatigue_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-03-08T08:00:00Z', fatigue_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-03-22T08:00:00Z', fatigue_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-04-12T08:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T09:00:00Z', name: 'アレルギー検査', findings: 'スギ特異的IgE: クラス5（強陽性）, ヒノキ特異的IgE: クラス4, ハウスダスト/ダニ: クラス3, 総IgE 480 IU/mL' }
+      ],
+      medications: [
+        { timestamp: '2026-02-15T07:00:00Z', name: 'ビラスチン（ビラノア）20mg', notes: '起床後すぐ空腹時に1錠（第2世代抗ヒスタミン薬・眠気少ない）' },
+        { timestamp: '2026-02-22T07:00:00Z', name: 'モメタゾン点鼻薬（ナゾネックス）', notes: '1日2回 各鼻孔2プッシュ（鼻噴霧ステロイド・毎日継続が重要）' },
+        { timestamp: '2026-02-22T07:00:00Z', name: 'ケトチフェン点眼液（ザジテン）', notes: '1日2回 目のかゆみ・充血（抗アレルギー点眼）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

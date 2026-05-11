@@ -1327,6 +1327,8 @@ ${recentText || '記録なし'}
       cancer_fatigue: { ja: 'がん治療 副作用 倦怠感 化学療法 免疫療法 腫瘍内科', en: 'cancer treatment side effects fatigue' },
       hypertension: { ja: '高血圧 血圧管理 降圧薬 循環器内科', en: 'hypertension' },
       hyperlipidemia: { ja: '脂質異常症 高コレステロール スタチン 循環器内科', en: 'hyperlipidemia dyslipidemia' },
+      anemia: { ja: '貧血 鉄欠乏性貧血 フェリチン 鉄剤 血液内科 婦人科', en: 'iron deficiency anemia' },
+      allergic_rhinitis: { ja: 'アレルギー性鼻炎 花粉症 鼻炎 耳鼻咽喉科 舌下免疫療法', en: 'allergic rhinitis hay fever' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1465,6 +1467,8 @@ ${recentText || '記録なし'}
       cancer_fatigue: 'cancer related fatigue chemotherapy side effects management',
       hypertension: 'hypertension blood pressure management antihypertensive treatment',
       hyperlipidemia: 'hyperlipidemia statin LDL cholesterol cardiovascular prevention',
+      anemia: 'iron deficiency anemia ferritin hemoglobin treatment',
+      allergic_rhinitis: 'allergic rhinitis pollen sublingual immunotherapy antihistamine',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1633,6 +1637,8 @@ ${titles}`;
       cancer_fatigue: 'cancer related fatigue exercise intervention CIPN',
       hypertension: 'hypertension blood pressure home measurement cardiovascular risk',
       hyperlipidemia: 'dyslipidemia statin PCSK9 inhibitor LDL lowering outcomes',
+      anemia: 'iron deficiency anemia IV iron oral iron hemoglobin recovery',
+      allergic_rhinitis: 'allergic rhinitis sublingual immunotherapy pollen season',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3037,7 +3043,9 @@ ${responseText.substring(0, 3000)}`;
       liver_disease: '#慢性肝疾患',
       cancer_fatigue: '#がん治療副作用',
       hypertension: '#高血圧',
-      hyperlipidemia: '#脂質異常症'
+      hyperlipidemia: '#脂質異常症',
+      anemia: '#貧血',
+      allergic_rhinitis: '#アレルギー性鼻炎'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
