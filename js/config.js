@@ -1360,6 +1360,127 @@ var CONFIG = {
         { timestamp: '2026-03-26T08:00:00Z', name: 'メチルフェニデート（コンサータ）', notes: '18mg→36mg 朝1回。効果時間約8時間。食欲低下に注意' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    sle: {
+      diseases: ['全身性エリテマトーデス（SLE）'],
+      profile: { age: 28, gender: 'female', height: 160, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-19T09:00:00Z', category: 'symptoms', title: 'フレア', content: '両頬に蝶形紅斑が出現。関節痛（手首・膝）7/10。疲労感強い。紫外線に当たったせいかも。' },
+        { timestamp: '2026-03-26T10:00:00Z', category: 'medication', title: 'プラケニル継続', content: 'プラケニル（ヒドロキシクロロキン）400mg/日継続。フレア対応でプレドニゾロン 20mg 追加処方。' },
+        { timestamp: '2026-04-02T08:00:00Z', category: 'symptoms', title: '皮膚', content: '紅斑が薄くなってきた。プレドニゾロン効いている。体重 1kg増（ステロイド副作用？）。' },
+        { timestamp: '2026-04-09T11:00:00Z', category: 'vitals', title: '検査結果', content: '抗dsDNA抗体 28（高値→前回46から低下）。補体 C3 83（改善傾向）。尿タンパク 1+。腎機能は注意継続。' },
+        { timestamp: '2026-04-16T09:00:00Z', category: 'symptoms', title: '日光対策', content: 'SPF50以上の日焼け止め毎日塗布。帽子とUVカット手袋で外出。関節痛 3/10 まで改善。' },
+        { timestamp: '2026-04-23T14:00:00Z', category: 'medication', title: 'ステロイド漸減', content: 'プレドニゾロン 10mg まで減量。フレア再発なし。次回受診でプラケニル継続確認予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, pain_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-09T10:00:00Z', name: 'SLE フォロー血液検査', findings: '抗dsDNA抗体 28（改善）, 補体C3 83, 補体C4 16, 尿タンパク 1+, Cr 0.7, CBC正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'プラケニル（ヒドロキシクロロキン）', notes: '400mg/日（抗マラリア薬・SLEの基本薬）' },
+        { timestamp: '2026-03-26T08:00:00Z', name: 'プレドニゾロン', notes: 'フレア時 20mg →漸減→10mg/日（ステロイド）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    crohns: {
+      diseases: ['クローン病'],
+      profile: { age: 24, gender: 'male', height: 172, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-03-20T07:30:00Z', category: 'symptoms', title: '腹痛', content: '右下腹部の痛み 6/10。下痢 4回/日。昨日の外食（脂肪分多め）が原因か。エレンタール追加。' },
+        { timestamp: '2026-03-27T08:00:00Z', category: 'medication', title: 'エンタイビオ注射', content: '4週目のエンタイビオ（ベドリズマブ）点滴。投与後の倦怠感は軽減してきた。' },
+        { timestamp: '2026-04-03T09:00:00Z', category: 'symptoms', title: '', content: '排便回数 2回/日まで改善。腹痛 3/10。体重 1.5kg増（58kg→59.5kg）。栄養状態改善。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'vitals', title: '便カルプロテクチン', content: '便カルプロテクチン 180 µg/g（前回 520）。炎症マーカー改善！エンタイビオ効果を確認。' },
+        { timestamp: '2026-04-17T09:00:00Z', category: 'nutrition', title: '食事管理', content: '脂肪分を控えた食事継続。エレンタール 1本/日（朝）。野菜は煮込んで軟らかく。外食時は和食中心。' },
+        { timestamp: '2026-04-24T21:00:00Z', category: 'symptoms', title: '', content: '今週は下痢ゼロ。腹痛もほぼなし。仕事にフルで復帰できた。次の内視鏡検査が楽しみ。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-10T10:00:00Z', name: '定期検査', findings: 'CRP 0.6（改善）, アルブミン 3.8（改善）, Hb 12.8, フェリチン 45, 便カルプロテクチン 180（正常化傾向）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T08:00:00Z', name: 'エンタイビオ（ベドリズマブ）', notes: '300mg 点滴 4週おき（生物学的製剤・腸管選択的）' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'エレンタール', notes: '1包（300kcal）朝・腸管栄養療法。寛解維持に有効。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gad: {
+      diseases: ['全般性不安障害（GAD）'],
+      profile: { age: 36, gender: 'female', height: 161, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-18T22:00:00Z', category: 'symptoms', title: '不安・睡眠', content: '仕事のことが頭から離れず眠れない。心拍が速い（夜 90bpm）。肩が凝って頭痛。不安 8/10。' },
+        { timestamp: '2026-03-25T11:00:00Z', category: 'medication', title: 'レクサプロ開始', content: 'エスシタロプラム 10mg 開始。最初の1週間は不安感が少し増す（と主治医に事前に説明された）。' },
+        { timestamp: '2026-04-01T13:00:00Z', category: 'symptoms', title: 'CBT 1回目', content: 'CBT 初回。「最悪の事態」を書き出して現実的な確率を検討。思ったより不安が和らいだ。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'symptoms', title: '睡眠改善', content: '不安 6/10。レクサプロ2週目。眠りにつく時間が 1.5時間→45分に短縮。' },
+        { timestamp: '2026-04-15T14:00:00Z', category: 'symptoms', title: 'CBT 3回目', content: 'CBT「心配タイム」を設定（毎日20分だけ心配する）。それ以外は「後で考える」と流せるようになった。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: '', content: '不安 4/10。先週は仕事でミスが判明したが、パニックにならずに対処できた。CBT の効果を実感。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-25T08:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '10mg 朝1錠（SSRI・GADへの第一選択）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ms: {
+      diseases: ['多発性硬化症（MS）'],
+      profile: { age: 31, gender: 'female', height: 163, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-20T09:00:00Z', category: 'symptoms', title: '視力低下（再発）', content: '右目の視力低下・色覚異常が昨日から。視神経炎の再発疑い。主治医に連絡→入院でステロイドパルス予定。' },
+        { timestamp: '2026-03-23T10:00:00Z', category: 'medication', title: 'ステロイドパルス', content: 'メチルプレドニゾロン 1g×3日 点滴完了。視力は 70%まで回復。MSファティーグ強い。' },
+        { timestamp: '2026-03-30T08:00:00Z', category: 'symptoms', title: 'MSファティーグ', content: '疲労 8/10。シャワーを浴びるだけで消耗。ウートホフ現象あり（入浴後に視力が一時的に悪化）。' },
+        { timestamp: '2026-04-06T11:00:00Z', category: 'medication', title: 'オクレバス開始', content: 'オクレリズマブ（オクレバス）初回点滴（300mg）。6ヶ月おきの高効果 DMT。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'symptoms', title: '', content: '疲労 5/10 まで改善。視力ほぼ回復。冷却ベストを使い始め、ウートホフ現象が軽減。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: '新規症状なし', content: '今週は新規神経症状なし。歩行も安定。MRI 予約済み（6月）。再発なく経過を見守りたい。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, pain_level: 3, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-04-06T10:00:00Z', name: 'オクレリズマブ（オクレバス）', notes: '300mg 点滴 初回（次回300mgを2週後）→以降600mg 6ヶ月おき' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chronic_pain: {
+      diseases: ['慢性疼痛症候群'],
+      profile: { age: 49, gender: 'female', height: 158, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-19T07:00:00Z', category: 'symptoms', title: '腰・下肢痛', content: 'NRS 7/10。右臀部から足先にかけての灼熱感。座って30分以上がつらい。低気圧接近前に悪化パターン。' },
+        { timestamp: '2026-03-26T10:00:00Z', category: 'medication', title: 'タリージェ開始', content: 'ミロガバリン（タリージェ）5mg ×2/日 開始。眠気あり。夜の痛みが少し楽になった。' },
+        { timestamp: '2026-04-02T09:00:00Z', category: 'symptoms', title: '神経ブロック', content: '硬膜外ブロック注射（2回目）。翌日から NRS 4/10 まで低下。1週間効果が持続。' },
+        { timestamp: '2026-04-09T11:00:00Z', category: 'medication', title: 'タリージェ増量', content: 'ミロガバリン 10mg×2/日 に増量。眠気は慣れてきた。下肢の灼熱感がさらに軽減。' },
+        { timestamp: '2026-04-16T14:00:00Z', category: 'symptoms', title: 'CBT 開始', content: '疼痛 CBT 初回。痛みへの注意の向け方を変える練習。活動を少しずつ増やす「グレード化活動」を開始。' },
+        { timestamp: '2026-04-23T21:00:00Z', category: 'symptoms', title: '', content: 'NRS 3〜4/10（朝）。散歩15分×2回/日。痛みで諦めていた外出が再開できた。CBT の効果を実感。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-26T08:00:00Z', name: 'ミロガバリン（タリージェ）', notes: '5mg→10mg ×2/日（神経障害性疼痛）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
