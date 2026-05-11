@@ -690,6 +690,10 @@ var App = class App {
       email: email,
       photoURL: null
     };
+    // Bind the store to this synthetic uid BEFORE persisting `user` so
+    // any subsequent writes land in the right namespace. Without this
+    // local-mode logins would still leak across accounts.
+    store.setActiveUser(user.uid);
     store.update({ user, isAuthenticated: true });
     this.finishLogin(email);
   }
@@ -742,7 +746,11 @@ var App = class App {
         await FirebaseBackend.signInWithEmail(email, pass);
       } catch (err) { /* error shown in signInWithEmail */ }
     } else {
-      const user = { uid: 'local_' + Date.now(), displayName: email.split('@')[0], email, photoURL: null };
+      const uid = 'local_' + email.replace(/[^a-z0-9]/gi, '_');
+      const user = { uid, displayName: email.split('@')[0], email, photoURL: null };
+      // Local-mode users get a deterministic uid (same email → same
+      // namespace) so a local-mode re-login restores the diary cache.
+      store.setActiveUser(uid);
       store.update({ user, isAuthenticated: true });
       Components.showToast('ログインしました（ローカルモード）', 'success');
       this.navigate('disease-select');
@@ -790,8 +798,11 @@ var App = class App {
     } catch(e) {
       console.warn('Logout error:', e);
     }
-    // Always clear auth state and go to login
-    store.update({ user: null, isAuthenticated: false });
+    // Drop the active-user binding so the UI no longer renders the
+    // previous account's cached data, even when Firebase isn't
+    // initialised (local-only path). Namespace isolation means the
+    // cache itself is retained for fast re-login as the same user.
+    store.clearActiveUser();
     this.navigate('login');
   }
 

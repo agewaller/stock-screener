@@ -1,70 +1,274 @@
 // === js/store.js ===
 /* ============================================================
    State Management Store
-   Simple reactive store for the application
+   Simple reactive store for the application.
+
+   User-data isolation (added 2026-05): every persisted entry is
+   classified as either DEVICE (one value per browser, e.g. theme,
+   the cached "who is logged in" pointer) or USER (everything that
+   belongs to a specific account — diary, vitals, settings, etc.).
+   USER keys are namespaced in localStorage as `cc_u_<uid>_<key>`
+   so multiple accounts sharing a browser never see each other's
+   data. The active-user identity is set explicitly by the auth
+   layer via `setActiveUser(uid)` / `clearActiveUser()`; the Store
+   never guesses identity from cached blobs.
    ============================================================ */
 var Store = class Store {
+  // Keys that follow user identity. Stored as cc_u_<uid>_<key>.
+  static USER_KEYS = [
+    'selectedDisease', 'selectedDiseases', 'customDiseaseName',
+    'selectedModel', 'customPrompts', 'dashboardLayout', 'affiliateConfig',
+    'symptoms', 'vitals', 'bloodTests', 'medications', 'supplements',
+    'meals', 'sleepData', 'activityData', 'geneticData', 'photos',
+    'wearableData', 'conversationHistory', 'textEntries',
+    'healthScore', 'analysisHistory', 'latestAnalysis',
+    'recommendations', 'actionItems', 'aiComments',
+    'userProfile', 'calendarEvents', 'latestFeedback', 'latestFeedbackError',
+    'cachedResearch', 'integrationSyncs', 'nutritionLog',
+    'plaudAnalyses', 'apiUsage', 'applicationLog',
+    'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports',
+    'researchQuery', 'researchDays', 'researchResults',
+    'cachedActions'
+  ];
+
+  // Keys that are per-device (one value regardless of which account is
+  // active). `user` and `isAuthenticated` identify which uid's data to
+  // hydrate next — they MUST be device-level for the boot flow to know
+  // which namespace to load.
+  static DEVICE_KEYS = [
+    'user', 'isAuthenticated', 'theme', 'globalProfessionals',
+    'mailerUrl', 'mailerSenderName'
+  ];
+
+  // Preserved for backward compatibility with anything that reflected
+  // on the previous flat PERSIST_KEYS contract.
+  static get PERSIST_KEYS() { return [...Store.USER_KEYS, ...Store.DEVICE_KEYS]; }
+
+  // Stable defaults so a uid switch can return USER keys to a clean
+  // baseline before hydrating the new uid's cache. Arrays/objects
+  // here are templates — they are deep-copied per switch so listeners
+  // never share mutable state across users.
+  static USER_DEFAULTS = {
+    selectedDisease: null,
+    selectedDiseases: [],
+    customDiseaseName: '',
+    selectedModel: 'claude-opus-4-6',
+    customPrompts: {},
+    dashboardLayout: 'default',
+    affiliateConfig: {},
+    symptoms: [], vitals: [], bloodTests: [], medications: [], supplements: [],
+    meals: [], sleepData: [], activityData: [], geneticData: null, photos: [],
+    wearableData: [], conversationHistory: [], textEntries: [],
+    healthScore: 0, analysisHistory: [], latestAnalysis: null,
+    recommendations: [], actionItems: [], aiComments: {},
+    userProfile: null, calendarEvents: [], latestFeedback: null, latestFeedbackError: null,
+    cachedResearch: null, integrationSyncs: {}, nutritionLog: [],
+    plaudAnalyses: [], apiUsage: [], applicationLog: [],
+    deepAnalyses: [], deepAnalysisLastRun: null, doctorReports: [],
+    researchQuery: '', researchDays: 30, researchResults: null,
+    cachedActions: null
+  };
+
+  // Namespace used before the first sign-in (and during signed-out
+  // windows). Per-user data written here is kept on the device until a
+  // real uid is bound; on first real login we promote any guest cache
+  // into that uid's namespace so pre-login disease selection / sample
+  // notes are not lost.
+  static GUEST_UID = '_guest';
+
+  // Schema version — bumped whenever USER_KEYS / DEVICE_KEYS split
+  // semantics change so we know to run a one-shot legacy migration.
+  static SCHEMA_VERSION = 3;
+
   constructor() {
-    this.state = {
-      // Auth
-      user: null,
-      isAuthenticated: false,
-
-      // App state
-      currentPage: 'login',
-      selectedDisease: null,
-      theme: 'light',
-      sidebarOpen: window.innerWidth > 768,
-
-      // Health data
-      healthScore: 0,
-      symptoms: [],
-      vitals: [],
-      bloodTests: [],
-      medications: [],
-      supplements: [],
-      meals: [],
-      sleepData: [],
-      activityData: [],
-      geneticData: null,
-      photos: [],
-      wearableData: [],
-      conversationHistory: [],
-
-      // AI Analysis
-      latestAnalysis: null,
-      analysisHistory: [],
-      isAnalyzing: false,
-
-      // Actions / Recommendations
-      recommendations: [],
-      actionItems: [],
-
-      // Nutrition / BMR / PFC dashboard
-      nutritionLog: [],
-
-      // API usage tracking (admin dashboard). Each entry:
-      //   { ts: ISO string, model: string, input: int, output: int,
-      //     costJpy: number, source: 'guest'|'auth'|'admin' }
-      // Capped at 5000 records (~3 months at 50 req/day).
-      apiUsage: [],
-
-      // Admin
-      adminMode: false,
-      selectedModel: 'claude-opus-4-6',
-      customPrompts: {},
-      dashboardLayout: 'default',
-      affiliateConfig: {},
-
-      // Notifications
-      notifications: [],
-      unreadCount: 0
-    };
-
+    this.state = this._defaultState();
     this.listeners = new Map();
-    this.loadFromStorage();
+    this._activeUid = null;
+    // Load device-scoped state first so we know which uid was active
+    // last (via the cached `user.uid`).
+    this._loadDeviceFromStorage();
+    this._runSchemaMigrations();
+    // Hydrate user-scoped state for whoever was active last on this
+    // device. If nobody, fall back to the guest namespace so any
+    // pre-login interactions are still persisted.
+    const cachedUser = this.state.user;
+    const bootUid = (cachedUser && cachedUser.uid) ? cachedUser.uid : Store.GUEST_UID;
+    this.setActiveUser(bootUid, { silent: true });
   }
 
+  _defaultState() {
+    // Start with USER defaults deep-copied so the in-memory state never
+    // shares references with the defaults table (avoids cross-user
+    // mutation bugs).
+    const state = {};
+    Object.entries(Store.USER_DEFAULTS).forEach(([k, v]) => {
+      state[k] = Store._cloneDefault(v);
+    });
+    // Device-level + ephemeral additions.
+    Object.assign(state, {
+      user: null,
+      isAuthenticated: false,
+      currentPage: 'login',
+      theme: 'light',
+      sidebarOpen: (typeof window !== 'undefined' && window.innerWidth > 768),
+      isAnalyzing: false,
+      adminMode: false,
+      notifications: [],
+      unreadCount: 0,
+      globalProfessionals: [],
+      mailerUrl: '',
+      mailerSenderName: ''
+    });
+    return state;
+  }
+
+  static _cloneDefault(v) {
+    if (Array.isArray(v)) return [];
+    if (v && typeof v === 'object') return {};
+    return v;
+  }
+
+  // ───────── localStorage key helpers ─────────
+  _userStorageKey(uid, key) {
+    return `cc_u_${uid || Store.GUEST_UID}_${key}`;
+  }
+  _deviceStorageKey(key) {
+    return `cc_${key}`;
+  }
+
+  get activeUid() { return this._activeUid; }
+
+  // ───────── boot-time loaders ─────────
+  _loadDeviceFromStorage() {
+    Store.DEVICE_KEYS.forEach(key => {
+      try {
+        const raw = localStorage.getItem(this._deviceStorageKey(key));
+        if (raw !== null) this.state[key] = JSON.parse(raw);
+      } catch (e) {
+        console.warn('[Store] corrupt device key', key, '- resetting');
+        localStorage.removeItem(this._deviceStorageKey(key));
+      }
+    });
+  }
+
+  _runSchemaMigrations() {
+    const saved = parseInt(localStorage.getItem('cc_schema_version') || '0', 10);
+    if (saved >= Store.SCHEMA_VERSION) return;
+    try {
+      // v2 → v3: legacy unscoped `cc_<userKey>` values move into the
+      // namespace of whoever was authenticated when the app last ran.
+      // If no user is recorded, they move into the guest namespace so
+      // we can still promote them on first real sign-in.
+      if (saved < 3) {
+        const cachedUser = this.state.user;
+        const bindTo = (cachedUser && cachedUser.uid) ? cachedUser.uid : Store.GUEST_UID;
+        let moved = 0;
+        Store.USER_KEYS.forEach(k => {
+          const legacy = this._deviceStorageKey(k);
+          const v = localStorage.getItem(legacy);
+          if (v === null) return;
+          const target = this._userStorageKey(bindTo, k);
+          if (localStorage.getItem(target) === null) {
+            localStorage.setItem(target, v);
+          }
+          localStorage.removeItem(legacy);
+          moved++;
+        });
+        if (moved > 0) console.log(`[Store] migrated ${moved} legacy keys → cc_u_${bindTo}_*`);
+      }
+      localStorage.setItem('cc_schema_version', String(Store.SCHEMA_VERSION));
+    } catch (e) {
+      console.warn('[Store] schema migration failed:', e);
+    }
+  }
+
+  // ───────── active-user lifecycle (called by auth layer) ─────────
+  /**
+   * Bind the store to a specific uid. Resets USER_KEYS to defaults,
+   * then hydrates from `cc_u_<uid>_<key>` cache. Listeners are
+   * notified so the UI re-renders with the new user's data.
+   *
+   * Special case: transitioning FROM the guest namespace TO a real uid
+   * promotes any guest-scoped cache into the user's namespace (the
+   * user expects pre-login disease selection / quick notes to survive
+   * sign-up).
+   *
+   * @param {string|null} uid - Firebase uid, or null/undefined for guest.
+   * @param {{silent?: boolean}} opts - When `silent`, skip listener
+   *   notifications (used by the constructor before listeners attach).
+   */
+  setActiveUser(uid, opts = {}) {
+    const newUid = uid || Store.GUEST_UID;
+    if (newUid === this._activeUid) return;
+    const prevUid = this._activeUid;
+
+    // Promote guest cache on first real sign-in.
+    if (prevUid === Store.GUEST_UID && newUid !== Store.GUEST_UID) {
+      this._promoteGuestCacheTo(newUid);
+    }
+
+    this._activeUid = newUid;
+
+    // Reset USER state to clean defaults, then hydrate from this uid's
+    // namespace. This is the critical step that prevents cross-user
+    // leakage — without it, prevUid's in-memory data would persist.
+    Store.USER_KEYS.forEach(k => {
+      this.state[k] = Store._cloneDefault(Store.USER_DEFAULTS[k]);
+      try {
+        const raw = localStorage.getItem(this._userStorageKey(newUid, k));
+        if (raw !== null) this.state[k] = JSON.parse(raw);
+      } catch (e) {
+        console.warn('[Store] corrupt user key', k, 'for', newUid);
+        localStorage.removeItem(this._userStorageKey(newUid, k));
+      }
+    });
+
+    if (!opts.silent) {
+      Store.USER_KEYS.forEach(k => this.notify(k, this.state[k]));
+      console.log(`[Store] active user: ${prevUid || '<none>'} → ${newUid}`);
+    }
+  }
+
+  /**
+   * Drop the active-user binding without deleting the persisted cache.
+   * Called on sign-out so the user's data is hidden from the UI but a
+   * future re-login under the same uid restores their dashboard
+   * instantly (and Firestore reconciles in the background).
+   *
+   * Implemented as a switch to the guest namespace, which also resets
+   * in-memory state to defaults via setActiveUser's reset path.
+   */
+  clearActiveUser() {
+    this.setActiveUser(Store.GUEST_UID);
+    this.state.user = null;
+    this.state.isAuthenticated = false;
+    try {
+      localStorage.removeItem(this._deviceStorageKey('user'));
+      localStorage.removeItem(this._deviceStorageKey('isAuthenticated'));
+    } catch (_) {}
+    this.notify('user', null);
+    this.notify('isAuthenticated', false);
+  }
+
+  _promoteGuestCacheTo(uid) {
+    let moved = 0;
+    Store.USER_KEYS.forEach(k => {
+      const src = this._userStorageKey(Store.GUEST_UID, k);
+      const dst = this._userStorageKey(uid, k);
+      const v = localStorage.getItem(src);
+      if (v === null) return;
+      // Only fill if the user has no value yet — never clobber existing
+      // user-scoped state with stale guest data.
+      if (localStorage.getItem(dst) === null) {
+        localStorage.setItem(dst, v);
+        moved++;
+      }
+      localStorage.removeItem(src);
+    });
+    if (moved > 0) console.log(`[Store] promoted ${moved} guest entries → cc_u_${uid}_*`);
+  }
+
+  // ───────── public state API (unchanged contract) ─────────
   get(key) {
     return this.state[key];
   }
@@ -128,93 +332,31 @@ var Store = class Store {
     }
   }
 
-  // Persistence
-  static PERSIST_KEYS = [
-    'user', 'isAuthenticated',
-    'theme', 'selectedDisease', 'selectedModel', 'customPrompts',
-    'dashboardLayout', 'affiliateConfig', 'symptoms', 'vitals',
-    'bloodTests', 'medications', 'supplements', 'meals', 'sleepData',
-    'activityData', 'healthScore', 'analysisHistory', 'recommendations',
-    'actionItems', 'conversationHistory', 'textEntries', 'selectedDiseases',
-    'customDiseaseName', 'userProfile', 'calendarEvents', 'latestFeedback',
-    'cachedResearch', 'aiComments', 'integrationSyncs', 'nutritionLog',
-    'plaudAnalyses', 'apiUsage', 'photos', 'applicationLog',
-    'globalProfessionals', 'latestFeedbackError',
-    // Deep-analysis feature additions: archive of past runs + today's
-    // JST date string so the 「本格的な分析」button grays out after use.
-    // doctorReports persists the 医師提出用レポート generator output.
-    'deepAnalyses', 'deepAnalysisLastRun', 'doctorReports',
-    // Research tab state — persisted so tab switches don't wipe the
-    // user's keyword / results (B-2 / B-3). researchResults caches the
-    // rendered HTML along with the language it was rendered in so we
-    // can invalidate on language change.
-    'researchQuery', 'researchDays', 'researchResults',
-    // Cached セルフケア panel — needs to survive reloads so the 1-per-day
-    // cap and 5-minute throttle (B-7) can be enforced across sessions.
-    'cachedActions'
-  ];
-
+  // ───────── persistence ─────────
   saveToStorage(key, value) {
-    if (Store.PERSIST_KEYS.includes(key)) {
-      try {
-        localStorage.setItem(`cc_${key}`, JSON.stringify(value));
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.code === 22) {
-          console.error('[Store] localStorage quota exceeded for key:', key);
-          if (typeof Components !== 'undefined' && Components.showToast) {
-            Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
-          }
-        } else {
-          console.warn('Storage save failed:', e);
+    try {
+      if (Store.DEVICE_KEYS.includes(key)) {
+        localStorage.setItem(this._deviceStorageKey(key), JSON.stringify(value));
+        // When the cached active-user pointer changes, mirror that into
+        // the runtime activeUid binding so writes that follow land in
+        // the right namespace even if the auth layer hasn't called
+        // setActiveUser yet.
+        if (key === 'user') {
+          const newUid = (value && value.uid) ? value.uid : Store.GUEST_UID;
+          if (newUid !== this._activeUid) this.setActiveUser(newUid);
         }
+      } else if (Store.USER_KEYS.includes(key)) {
+        const uid = this._activeUid || Store.GUEST_UID;
+        localStorage.setItem(this._userStorageKey(uid, key), JSON.stringify(value));
       }
-    }
-  }
-
-  // #20 Schema versioning + migration
-  static SCHEMA_VERSION = 2;
-
-  loadFromStorage() {
-    const savedVersion = parseInt(localStorage.getItem('cc_schema_version') || '0', 10);
-    const keys = Store.PERSIST_KEYS;
-    keys.forEach(key => {
-      try {
-        const val = localStorage.getItem(`cc_${key}`);
-        if (val !== null) {
-          this.state[key] = JSON.parse(val);
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.error('[Store] localStorage quota exceeded for key:', key);
+        if (typeof Components !== 'undefined' && Components.showToast) {
+          Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
         }
-      } catch (e) {
-        console.warn('[Store] corrupt data for', key, '- resetting to default');
-        localStorage.removeItem(`cc_${key}`);
-      }
-    });
-    if (savedVersion < Store.SCHEMA_VERSION) {
-      this._runMigrations(savedVersion);
-      localStorage.setItem('cc_schema_version', String(Store.SCHEMA_VERSION));
-    }
-  }
-
-  _runMigrations(fromVersion) {
-    console.log('[Store] migrating schema', fromVersion, '→', Store.SCHEMA_VERSION);
-    if (fromVersion < 1) {
-      // v0→v1: ensure arrays are arrays, not null/undefined
-      Store.PERSIST_KEYS.forEach(key => {
-        if (Array.isArray(this.state[key])) return;
-        const defaults = { symptoms:[], vitals:[], bloodTests:[], medications:[],
-          supplements:[], meals:[], sleepData:[], activityData:[], photos:[],
-          conversationHistory:[], analysisHistory:[], recommendations:[],
-          actionItems:[], nutritionLog:[], plaudAnalyses:[], apiUsage:[] };
-        if (key in defaults && !Array.isArray(this.state[key])) {
-          this.state[key] = defaults[key];
-          this.saveToStorage(key, this.state[key]);
-        }
-      });
-    }
-    if (fromVersion < 2) {
-      // v1→v2: photos key now persisted (was missing in v0/v1)
-      const photos = this.state.photos;
-      if (Array.isArray(photos) && photos.length > 0) {
-        this.saveToStorage('photos', photos);
+      } else {
+        console.warn('Storage save failed:', e);
       }
     }
   }
@@ -362,58 +504,37 @@ var Store = class Store {
     this.set('apiUsage', log);
   }
 
-  // Clear user data on logout, but PRESERVE device-level config and
-  // integration tokens so the user doesn't have to re-paste their
-  // ICS URL / re-OAuth Fitbit / re-enter Firebase config every time
-  // they log out and back in.
+  // Erase the active user's local cache and reset in-memory user state.
+  // Device-level config (firebase, integration tokens, theme) is
+  // preserved. The previous implementation wiped the entire localStorage
+  // (a CLAUDE.md禁則) — which also flattened every OTHER user's cached
+  // data on the same browser, so coming back to user A after a
+  // temporary user B session forced a full re-fetch from Firestore.
   clearAll() {
-    // Save device-level config that survives logout. These are not
-    // per-user data — they're per-device integration settings that
-    // a user explicitly configured and expects to persist.
-    const PRESERVE_KEYS = [
-      // System config
-      'firebase_config',
-      'anthropic_proxy_url',
-      'anthropic_mode',
-      'admin_emails',
-      'enable_shared_guest_ai',
-      // API keys (admin-managed, shared across users)
-      'apikey_anthropic',
-      'apikey_openai',
-      'apikey_google',
-      // Calendar integrations
-      'ics_calendar_url',
-      'google_calendar_oauth_connected',
-      // Fitbit integration
-      'fitbit_token',
-      'fitbit_client_id',
-      'fitbit_refresh_token',
-      // Apple Health / Plaud integrations
-      'apple_health_last_import',
-      'plaud_email',
-    ];
-    const preserved = {};
-    PRESERVE_KEYS.forEach(k => {
-      const v = localStorage.getItem(k);
-      if (v !== null) preserved[k] = v;
+    const uid = this._activeUid;
+    if (uid) {
+      Store.USER_KEYS.forEach(k => {
+        try { localStorage.removeItem(this._userStorageKey(uid, k)); } catch (_) {}
+      });
+    }
+    // Reset USER state to defaults.
+    Store.USER_KEYS.forEach(k => {
+      this.state[k] = Store._cloneDefault(Store.USER_DEFAULTS[k]);
     });
-
-    localStorage.clear();
-
-    // Restore preserved device-level config
-    Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
-
-    Object.keys(this.state).forEach(key => {
-      if (Array.isArray(this.state[key])) this.state[key] = [];
-      else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
-    });
-    this.state.isAuthenticated = false;
+    // Reset device-level auth pointers too — this is a full reset.
     this.state.user = null;
+    this.state.isAuthenticated = false;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    try {
+      localStorage.removeItem(this._deviceStorageKey('user'));
+      localStorage.removeItem(this._deviceStorageKey('isAuthenticated'));
+    } catch (_) {}
+    this._activeUid = Store.GUEST_UID;
+    // Notify everyone that user state has collapsed.
+    Store.USER_KEYS.forEach(k => this.notify(k, this.state[k]));
+    this.notify('user', null);
+    this.notify('isAuthenticated', false);
   }
 };
 
 var store = new Store();
-
-

@@ -49,7 +49,13 @@ var FirebaseBackend = {
         console.warn('Redirect result error:', err.message);
       });
 
-      // Listen for auth state changes
+      // Listen for auth state changes.
+      // Every transition MUST flow through store.setActiveUser / store
+      // .clearActiveUser so the per-user namespace switches in lockstep
+      // with the auth state. Without this, signing in as a different
+      // account leaves the previous user's localStorage cache visible
+      // until Firestore reconciles — and for the ~20 persisted keys
+      // that no Firestore listener re-syncs, leakage is permanent.
       this.auth.onAuthStateChanged(user => {
         if (user) {
           // Anonymous guest users: sign them in just to read admin/config
@@ -60,16 +66,43 @@ var FirebaseBackend = {
           if (user.isAnonymous) {
             console.log('[auth] anonymous guest session started');
             this.userId = null; // block all user-scoped writes
+            // Anonymous sessions stay in the guest namespace — no
+            // setActiveUser call here so any pre-existing real-user
+            // cache remains intact for when they sign in for real.
             this._loadGlobalConfigOnly().catch(e => console.warn('guest config load:', e));
             return;
           }
+          // If the uid changed since the last auth event, switch the
+          // store's active-user binding BEFORE any data loads. This is
+          // the single chokepoint that guarantees cross-user isolation.
+          if (this.userId && this.userId !== user.uid) {
+            console.log('[auth] uid change detected:', this.userId, '→', user.uid);
+            this.cleanupListeners();
+          }
+          store.setActiveUser(user.uid);
           this.handleSignedInUser(user);
         } else {
+          // Real sign-out (or token expiry). Tear down listeners + drop
+          // the active-user binding so the UI no longer renders the
+          // previous user's cache. We deliberately do NOT delete the
+          // localStorage cache — a re-login as the same uid restores
+          // the dashboard instantly and Firestore reconciles in the
+          // background.
+          const prevUid = this.userId;
           this.userId = null;
-          // Only force login if not already authenticated via localStorage
-          if (!store.get('isAuthenticated')) {
+          if (prevUid) {
+            this.cleanupListeners();
+            store.clearActiveUser();
+            if (typeof app !== 'undefined' && app && typeof app.navigate === 'function') {
+              app.navigate('login');
+            }
+          } else if (!store.get('isAuthenticated')) {
+            // First-ever boot with no session — just make sure the
+            // login screen is visible.
             store.update({ user: null, isAuthenticated: false });
-            app.navigate('login');
+            if (typeof app !== 'undefined' && app && typeof app.navigate === 'function') {
+              app.navigate('login');
+            }
           }
         }
       });
@@ -93,6 +126,12 @@ var FirebaseBackend = {
     if (!user) return;
     try {
       this.userId = user.uid;
+      // Bind the store to this uid BEFORE pushing any state. Without
+      // this guard, store.update() below could write `user` /
+      // `isAuthenticated` while activeUid still points at the previous
+      // user, so the auth-state itself would land in the wrong
+      // namespace. setActiveUser is idempotent for the same uid.
+      store.setActiveUser(user.uid);
       const userData = {
         uid: user.uid,
         displayName: user.displayName,
@@ -272,8 +311,13 @@ var FirebaseBackend = {
   async signOut() {
     try {
       this.cleanupListeners();
+      this.userId = null;
       await this.auth.signOut();
-      store.clearAll();
+      // Drop the in-memory user state but KEEP the localStorage cache
+      // (under cc_u_<uid>_*) so the next sign-in for this account
+      // restores the dashboard instantly. Cross-user isolation is now
+      // enforced by namespace, not by deletion.
+      store.clearActiveUser();
       Components.showToast('ログアウトしました', 'info');
     } catch (err) {
       Components.showToast('ログアウトエラー: ' + err.message, 'error');
