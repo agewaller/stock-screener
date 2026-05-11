@@ -1345,6 +1345,8 @@ ${recentText || '記録なし'}
       osteoarthritis: { ja: '変形性関節症 変形性膝関節症 変形性股関節症 OA WOMAC ヒアルロン酸 整形外科', en: 'osteoarthritis OA knee hip joint pain' },
       sjogrens: { ja: 'シェーグレン症候群 乾燥症候群 ドライアイ ドライマウス SSA抗体 SSB抗体 リウマチ科', en: 'Sjogrens syndrome dry eye dry mouth SSA antibody' },
       atrial_fibrillation: { ja: '心房細動 AFib 動悸 脈の乱れ DOAC 抗凝固薬 カテーテルアブレーション 循環器内科', en: 'atrial fibrillation AFib DOAC anticoagulation' },
+      myasthenia: { ja: '重症筋無力症 眼瞼下垂 複視 嚥下障害 AChR抗体 ピリドスチグミン 神経内科', en: 'myasthenia gravis MG ptosis dysphagia AChR antibody' },
+      pcos: { ja: '多嚢胞性卵巣症候群 PCOS 月経不順 多毛 インスリン抵抗性 メトホルミン 婦人科', en: 'polycystic ovary syndrome PCOS ovulation dysfunction' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1501,6 +1503,8 @@ ${recentText || '記録なし'}
       osteoarthritis: 'osteoarthritis knee pain hyaluronic acid duloxetine exercise weight loss',
       sjogrens: 'Sjogrens syndrome hydroxychloroquine pilocarpine fatigue lymphoma risk',
       atrial_fibrillation: 'atrial fibrillation DOAC apixaban catheter ablation stroke prevention',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod pyridostigmine thymectomy treatment',
+      pcos: 'polycystic ovary syndrome metformin letrozole insulin resistance treatment fertility',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1687,6 +1691,8 @@ ${titles}`;
       osteoarthritis: 'osteoarthritis intraarticular hyaluronic acid duloxetine WOMAC exercise therapy',
       sjogrens: 'primary Sjogrens syndrome hydroxychloroquine lymphoma sicca symptoms ESSDAI',
       atrial_fibrillation: 'atrial fibrillation pulmonary vein isolation ablation DOAC stroke recurrence',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod complement inhibitor FcRn thymectomy outcome',
+      pcos: 'polycystic ovary syndrome PCOS metformin letrozole clomiphene insulin resistance long-term outcome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3107,7 +3113,11 @@ ${responseText.substring(0, 3000)}`;
       ankylosing_spondylitis: '#強直性脊椎炎',
       hyperthyroidism: '#バセドウ病甲状腺機能亢進症',
       narcolepsy: '#ナルコレプシー過眠症',
-      osteoarthritis: '#変形性関節症'
+      osteoarthritis: '#変形性関節症',
+      sjogrens: '#シェーグレン症候群',
+      atrial_fibrillation: '#心房細動',
+      myasthenia: '#重症筋無力症',
+      pcos: '#多嚢胞性卵巣症候群PCOS'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

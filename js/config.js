@@ -188,7 +188,7 @@ var CONFIG = {
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
         { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
-        { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' }
+        { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
       ]
@@ -2559,6 +2559,59 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-06T15:00:00Z', name: 'アピキサバン（エリキュース）5mg', notes: '1日2回 朝夕食後（脳梗塞・全身性塞栓症予防。出血に注意）' },
         { timestamp: '2026-01-06T15:00:00Z', name: 'ビソプロロール2.5mg', notes: '朝食後1錠（レートコントロール→術後1.25mgに漸減）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    myasthenia: {
+      diseases: ['重症筋無力症'],
+      profile: { age: 34, gender: 'female', height: 162, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-01-12T08:00:00Z', category: 'symptoms', title: '右目が下がってきた・夕方に二重に見える', content: '2ヶ月前から夕方になると右まぶたが重くなる。「物が二重に見える（複視）」が1週間前から出始めた。朝起きたときは問題ないが夕方は目が開けにくい。神経内科に紹介された。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: '神経内科受診・重症筋無力症（眼筋型）診断', content: 'アイスパックテスト陽性（冷却で眼瞼下垂改善）。エドロホニウム試験陽性。AChR抗体 15.3 nmol/L（強陽性）。胸部CT：胸腺腫なし。「眼筋型重症筋無力症の確定診断です。ピリドスチグミン60mg 1日3回から開始します」。QMGスコア（眼筋項目）: 8/12。' },
+        { timestamp: '2026-02-05T08:00:00Z', category: 'vitals', title: '2週間後・ピリドスチグミン効果確認', content: '右眼瞼下垂: 朝なし・夕方軽度。複視: 激減（1日1〜2回、短時間）。「薬が効いています。服薬30分後が一番調子が良い」。服薬3回 → 4回に増量。QMGスコア: 8→4（改善）。プレドニゾロン隔日10mgを追加。' },
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '2ヶ月後の再診・全身型への移行懸念', content: '先週から「食事中に噛みにくい・飲み込みにくい」症状が出現。「眼筋型から全身型への移行の可能性があります。プレドニゾロンを20mg/日に増量し、タクロリムス（プログラフ）1mgを追加します」。嚥下スクリーニング：軽度の嚥下障害。入院での精密評価を勧められたが外来加療を選択。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'vitals', title: '3ヶ月後・嚥下障害改善・軽快', content: '嚥下障害: ほぼ消失（「普通に食事ができる」）。右眼瞼下垂: 朝なし・夕方ほぼなし。複視: 消失。QMGスコア: 4→2（著明改善）。AChR抗体: 15.3→8.1 nmol/L（低下）。プレドニゾロン15mgに漸減開始。「タクロリムスが効いてきました」。' },
+        { timestamp: '2026-04-25T09:00:00Z', category: 'vitals', title: '4ヶ月後・安定・就労継続中', content: 'QMGスコア: 2（最小限の症状）。眼瞼下垂・複視: 消失。嚥下: 正常。「フルタイム勤務に戻れた」。プレドニゾロン10mg/日（隔日投与に向けて漸減中）。タクロリムス継続。「クリーゼ誘発薬（フルオロキノロン系抗菌薬など）は絶対に避けてください」と繰り返し説明を受けた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 8 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: '初回血液検査', findings: 'AChR抗体 15.3 nmol/L (強陽性), MuSK抗体 陰性, 抗核抗体 1:40 (弱陽性), TSH 1.5 mIU/L (正常), CK 78 IU/L (正常), 胸部CT 胸腺腫なし' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'ピリドスチグミン（メスチノン）60mg', notes: '1日4回 食前（コリンエステラーゼ阻害・症状対症。服薬30〜60分後が効果のピーク）' },
+        { timestamp: '2026-02-05T10:00:00Z', name: 'プレドニゾロン10mg', notes: '隔日服用（免疫抑制）→20mg/日→15mg/日に増量後漸減' },
+        { timestamp: '2026-03-10T10:00:00Z', name: 'タクロリムス（プログラフ）1mg', notes: '夕食後（免疫抑制・ステロイド減量補助。血中濃度モニタリング必要）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    pcos: {
+      diseases: ['多嚢胞性卵巣症候群（PCOS）'],
+      profile: { age: 27, gender: 'female', height: 162, weight: 67 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '生理が3〜4ヶ月こない・体重増加', content: '高校生のころから生理不順。最近は3〜4ヶ月生理が来ないことも。顎や首筋に産毛が増え、にきびが治らない。体重がここ2年で8kg増加。婦人科を受診した。' },
+        { timestamp: '2026-01-15T10:00:00Z', category: 'consultation', title: '婦人科受診・PCOS確定診断', content: '経腟超音波: 両卵巣多嚢胞像（12個以上の小卵胞/卵巣）。血液検査: LH 12.3 mIU/mL（高値）、FSH 5.1 mIU/mL（正常）、LH/FSH比 2.4（>2でPCOS基準）、テストステロン 0.68 ng/mL（高値）、インスリン 18.5 μIU/mL（高値）、HOMA-IR 3.8（インスリン抵抗性）。「多嚢胞性卵巣症候群（PCOS）の確定診断です。メトホルミンと低用量ピルから始めましょう」。' },
+        { timestamp: '2026-02-10T08:00:00Z', category: 'vitals', title: '1ヶ月後・体重減少開始', content: '低GI食・週150分の有酸素運動を開始。体重: 67→65kg（2kg減）。メトホルミン500mg 1日2回（消化器症状軽度・食後服薬で改善）。低用量ピル（LEP）服薬開始。月経: まだ来ていないが腹部の不快感が減少。にきびが少し減ったと感じる。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: '2ヶ月後の再診・ホルモン改善', content: 'インスリン: 18.5→12.1 μIU/mL（改善）。HOMA-IR: 3.8→2.3（改善）。LH: 12.3→8.1（低下）。テストステロン: 0.68→0.45 ng/mL（低下）。体重: 64kg。「メトホルミンとピルの効果が出ています。6ヶ月後に排卵有無を評価します。不妊希望がある場合はその時点でピル中止・排卵誘発に移行します」。' },
+        { timestamp: '2026-04-10T08:00:00Z', category: 'vitals', title: '3ヶ月後・生活改善で体調向上', content: '体重: 63.5kg（当初から3.5kg減・約5%減達成）。にきび: 顎・額ともに著明改善。多毛: 顎のうぶ毛が減少してきた。エネルギー: 午後の眠気が減った。食事日記で精製炭水化物を減らした効果が実感できている。ピルの副作用（むくみ）は軽度で継続できている。' },
+        { timestamp: '2026-04-28T09:00:00Z', category: 'vitals', title: '4ヶ月後・安定・妊娠計画を相談', content: 'HOMA-IR: 1.9（正常域到達）。LH/FSH比: 1.5（正常化）。テストステロン: 0.38 ng/mL（正常範囲内）。「ホルモン値が大幅に改善しました。妊娠を希望するタイミングでピルを中止し、クロミフェン・レトロゾールによる排卵誘発に進みます」。現在は不妊希望まだなくピル継続中。2型糖尿病リスクの定期スクリーニング（年1回HbA1c）を開始した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-15T10:00:00Z', name: '初回ホルモン検査', findings: 'LH 12.3 mIU/mL (高値), FSH 5.1 mIU/mL, LH/FSH比 2.4 (高値), テストステロン 0.68 ng/mL (高値), インスリン 18.5 μIU/mL, HOMA-IR 3.8 (インスリン抵抗性), HbA1c 5.7%, LDL 118 mg/dL, 経腟超音波: 両卵巣多嚢胞像 (12個以上/卵巣)' }
+      ],
+      medications: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'メトホルミン塩酸塩500mg', notes: '1日2回 食直後（インスリン抵抗性改善・消化器症状軽減のため食後服用）' },
+        { timestamp: '2026-01-15T10:00:00Z', name: '低用量エストロゲン・プロゲスチン配合薬（LEP）', notes: '毎日1錠（月経調整・アンドロゲン抑制・子宮内膜保護）' }
       ],
       sleepData: [], activityData: [], meals: []
     }
