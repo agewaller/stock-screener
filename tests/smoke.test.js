@@ -194,7 +194,18 @@ section('2. on* ハンドラの配線');
 // index.html DOMContentLoaded scope from the "defined" set, because
 // those are runtime patches that can fail to apply (parse error, race,
 // SSR snapshot) — class methods are the only durable contract.
-const HANDLER_ATTRS = ['onclick','onchange','oninput','onsubmit','onkeydown','onkeyup','onfocus','onblur','onload','onerror'];
+const HANDLER_ATTRS = [
+  'onclick',
+  'onchange',
+  'oninput',
+  'onsubmit',
+  'onkeydown',
+  'onkeyup',
+  'onfocus',
+  'onblur',
+  'onload',
+  'onerror',
+];
 function collectAppRefs(source) {
   const out = new Set();
   const attrPattern = HANDLER_ATTRS.join('|');
@@ -210,7 +221,8 @@ function collectClassMethods(source) {
   // class App { ... } body — heuristic balanced-brace extraction
   const cm = source.match(/class\s+App\b[^{]*\{/);
   if (cm) {
-    let depth = 1, i = cm.index + cm[0].length;
+    let depth = 1,
+      i = cm.index + cm[0].length;
     const start = i;
     while (i < source.length && depth > 0) {
       const c = source[i];
@@ -222,7 +234,7 @@ function collectClassMethods(source) {
     // method declarations at one level of indentation
     for (const mm of body.matchAll(/(?:^|\n)\s{2,}(?:async\s+|static\s+|\*\s*)?([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/g)) {
       const name = mm[1];
-      if (!['if','for','while','switch','catch','return','do','try','else'].includes(name)) out.add(name);
+      if (!['if', 'for', 'while', 'switch', 'catch', 'return', 'do', 'try', 'else'].includes(name)) out.add(name);
     }
   }
   return out;
@@ -236,15 +248,15 @@ const TEMPLATE_SOURCES = {
   'js/firebase-backend.js': fs.readFileSync(path.join(ROOT, 'js/firebase-backend.js'), 'utf8'),
 };
 const definedMethods = new Set();
-MODULE_ORDER.forEach(f => {
+MODULE_ORDER.forEach((f) => {
   const src = fs.readFileSync(path.join(ROOT, 'js', f), 'utf8');
-  collectClassMethods(src).forEach(n => definedMethods.add(n));
+  collectClassMethods(src).forEach((n) => definedMethods.add(n));
 });
 
 Object.entries(TEMPLATE_SOURCES).forEach(([file, src]) => {
   test(`Every on* "app.X()" in ${file} resolves to a JS-module-defined method`, () => {
     const refs = collectAppRefs(src);
-    const missing = [...refs].filter(n => !definedMethods.has(n));
+    const missing = [...refs].filter((n) => !definedMethods.has(n));
     assert(missing.length === 0, `Missing methods referenced from ${file}: ${missing.join(', ')}`);
   });
 });
@@ -254,16 +266,21 @@ test('Boot canary _verifyHandlerBindings is defined and called from init', () =>
   // (matches setInterval, store.init etc.). Look for the literal
   // reference inside js/app.js instead.
   const appSrc = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
-  assert(/\b_verifyHandlerBindings\s*\(/.test(appSrc),
-    'App.init must call this._verifyHandlerBindings()');
-  assert(/_verifyHandlerBindings\s*\([^)]*\)\s*\{/.test(appSrc),
-    '_verifyHandlerBindings() must be defined as an App method');
+  assert(/\b_verifyHandlerBindings\s*\(/.test(appSrc), 'App.init must call this._verifyHandlerBindings()');
+  assert(
+    /_verifyHandlerBindings\s*\([^)]*\)\s*\{/.test(appSrc),
+    '_verifyHandlerBindings() must be defined as an App method'
+  );
 });
 
 test('Guest CTA methods exist as class methods (not just runtime patches)', () => {
-  ['guestSampleSubmit', 'guestSampleReport', 'generateDoctorReport', 'guestAnalyze', 'guestFileAnalyze']
-    .forEach(name => assert(definedMethods.has(name),
-      `${name} must be a class method on App (was previously regressed by a wholesale revert)`));
+  ['guestSampleSubmit', 'guestSampleReport', 'generateDoctorReport', 'guestAnalyze', 'guestFileAnalyze'].forEach(
+    (name) =>
+      assert(
+        definedMethods.has(name),
+        `${name} must be a class method on App (was previously regressed by a wholesale revert)`
+      )
+  );
 });
 
 test('Guest CTA methods tolerate missing DOM (no element / no CONFIG sample)', () => {
@@ -271,74 +288,168 @@ test('Guest CTA methods tolerate missing DOM (no element / no CONFIG sample)', (
   // guest entry points can be invoked safely. They must not throw
   // when guest-input / guest-result / .guest-disease-tag are absent.
   const makeEl = () => ({
-    style: {}, classList: { add(){},remove(){},toggle(){}, contains(){return false;} },
-    addEventListener(){}, removeEventListener(){}, setAttribute(){}, getAttribute(){return null;},
-    appendChild(){}, removeChild(){}, dataset: {}, innerHTML: '', textContent: '', value: '',
-    children: [], focus(){}, click(){}, scrollIntoView(){}, querySelector(){return null;}, querySelectorAll(){return [];}  });
+    style: {},
+    classList: {
+      add() {},
+      remove() {},
+      toggle() {},
+      contains() {
+        return false;
+      },
+    },
+    addEventListener() {},
+    removeEventListener() {},
+    setAttribute() {},
+    getAttribute() {
+      return null;
+    },
+    appendChild() {},
+    removeChild() {},
+    dataset: {},
+    innerHTML: '',
+    textContent: '',
+    value: '',
+    children: [],
+    focus() {},
+    click() {},
+    scrollIntoView() {},
+    querySelector() {
+      return null;
+    },
+    querySelectorAll() {
+      return [];
+    },
+  });
   const stubCtx = {};
   stubCtx.globalThis = stubCtx;
   stubCtx.self = stubCtx;
   stubCtx.global = stubCtx;
   stubCtx.window = stubCtx;
   Object.assign(stubCtx, {
-    console, setTimeout, clearTimeout, setInterval, clearInterval,
-    Promise, Date, JSON, Math, Object, Array, Number, String, RegExp, Error, Map, Set, Symbol,
-    URLSearchParams, TextEncoder, TextDecoder,
-    location: { hash: '', href: 'https://test.local/', search: '', reload(){}, replace(){}, origin: 'https://test.local' },
-    history: { pushState(){}, replaceState(){} },
+    console,
+    setTimeout,
+    clearTimeout,
+    setInterval,
+    clearInterval,
+    Promise,
+    Date,
+    JSON,
+    Math,
+    Object,
+    Array,
+    Number,
+    String,
+    RegExp,
+    Error,
+    Map,
+    Set,
+    Symbol,
+    URLSearchParams,
+    TextEncoder,
+    TextDecoder,
+    location: {
+      hash: '',
+      href: 'https://test.local/',
+      search: '',
+      reload() {},
+      replace() {},
+      origin: 'https://test.local',
+    },
+    history: { pushState() {}, replaceState() {} },
     document: {
       readyState: 'complete',
       documentElement: makeEl(),
       head: makeEl(),
       body: makeEl(),
-      addEventListener(){}, removeEventListener(){},
-      getElementById(){ return null; },
-      querySelector(){ return null; },
-      querySelectorAll(){ return []; },
-      createElement(){ return makeEl(); },
-      createTextNode(){ return makeEl(); }
+      addEventListener() {},
+      removeEventListener() {},
+      getElementById() {
+        return null;
+      },
+      querySelector() {
+        return null;
+      },
+      querySelectorAll() {
+        return [];
+      },
+      createElement() {
+        return makeEl();
+      },
+      createTextNode() {
+        return makeEl();
+      },
     },
     navigator: {
-      userAgent: 'node-test', language: 'ja',
+      userAgent: 'node-test',
+      language: 'ja',
       serviceWorker: { getRegistrations: () => Promise.resolve([]) },
-      clipboard: { writeText: () => Promise.resolve() }
+      clipboard: { writeText: () => Promise.resolve() },
     },
     localStorage: (() => {
       const m = new Map();
       return {
-        getItem(k){ return m.has(k) ? m.get(k) : null; },
-        setItem(k,v){ m.set(k, String(v)); },
-        removeItem(k){ m.delete(k); },
-        clear(){ m.clear(); },
-        key(i){ return [...m.keys()][i] || null; },
-        get length(){ return m.size; }
+        getItem(k) {
+          return m.has(k) ? m.get(k) : null;
+        },
+        setItem(k, v) {
+          m.set(k, String(v));
+        },
+        removeItem(k) {
+          m.delete(k);
+        },
+        clear() {
+          m.clear();
+        },
+        key(i) {
+          return [...m.keys()][i] || null;
+        },
+        get length() {
+          return m.size;
+        },
       };
     })(),
     sessionStorage: (() => {
       const m = new Map();
       return {
-        getItem(k){ return m.has(k) ? m.get(k) : null; },
-        setItem(k,v){ m.set(k, String(v)); },
-        removeItem(k){ m.delete(k); },
-        clear(){ m.clear(); }
+        getItem(k) {
+          return m.has(k) ? m.get(k) : null;
+        },
+        setItem(k, v) {
+          m.set(k, String(v));
+        },
+        removeItem(k) {
+          m.delete(k);
+        },
+        clear() {
+          m.clear();
+        },
       };
     })(),
     fetch: () => Promise.reject(new Error('network disabled in test')),
-    AbortController: function(){ this.signal = {}; this.abort = function(){}; },
+    AbortController: function () {
+      this.signal = {};
+      this.abort = function () {};
+    },
     requestAnimationFrame: (cb) => setTimeout(cb, 0),
     cancelAnimationFrame: (id) => clearTimeout(id),
-    addEventListener(){}, removeEventListener(){},
+    addEventListener() {},
+    removeEventListener() {},
     morphdom: () => {},
-    HTMLElement: function(){},
-    Image: function(){ return makeEl(); },
-    FileReader: function(){ this.readAsDataURL = function(){}; this.readAsText = function(){}; },
-    Blob: function(){},
+    HTMLElement: function () {},
+    Image: function () {
+      return makeEl();
+    },
+    FileReader: function () {
+      this.readAsDataURL = function () {};
+      this.readAsText = function () {};
+    },
+    Blob: function () {},
     URL: { createObjectURL: () => '', revokeObjectURL: () => {} },
     indexedDB: undefined,
     firebase: undefined,
     caches: undefined,
-    matchMedia: () => ({ matches: false, addEventListener(){}, removeEventListener(){} }),
-    crypto: { getRandomValues: (arr) => arr, randomUUID: () => Math.random().toString(36).slice(2) }
+    matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+    crypto: { getRandomValues: (arr) => arr, randomUUID: () => Math.random().toString(36).slice(2) },
   });
   // Re-bind globalThis after merge so circular ref is intact
   stubCtx.globalThis = stubCtx;
@@ -350,7 +461,8 @@ test('Guest CTA methods tolerate missing DOM (no element / no CONFIG sample)', (
     throw new Error('module load threw in stub context: ' + e.message);
   }
   // Construct an App and try the guest CTA entry points
-  const ok = vm.runInContext(`
+  const ok = vm.runInContext(
+    `
     const a = new App();
     let errs = [];
     try { a.guestSampleSubmit(); } catch (e) { errs.push('guestSampleSubmit:'+e.message); }
@@ -360,9 +472,11 @@ test('Guest CTA methods tolerate missing DOM (no element / no CONFIG sample)', (
     try { a.toggleBookmark('nonexistent','summary'); } catch (e) { errs.push('toggleBookmark:'+e.message); }
     try { const p = a.runDeepAnalysis(); if (p && p.then) p.catch(()=>{}); } catch (e) { errs.push('runDeepAnalysis:'+e.message); }
     errs;
-  `, stubCtx, { timeout: 5000 });
-  assert(Array.isArray(ok) && ok.length === 0,
-    `Guest CTA entry points threw: ${(ok || []).join(' | ')}`);
+  `,
+    stubCtx,
+    { timeout: 5000 }
+  );
+  assert(Array.isArray(ok) && ok.length === 0, `Guest CTA entry points threw: ${(ok || []).join(' | ')}`);
 });
 
 // ================================================================

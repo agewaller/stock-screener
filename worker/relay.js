@@ -19,9 +19,12 @@
 export default {
   async fetch(request, env) {
     if (!env.PROXY) {
-      return new Response(JSON.stringify({
-        error: 'service binding PROXY not configured',
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      return new Response(
+        JSON.stringify({
+          error: 'service binding PROXY not configured',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
     // Forward the original request through the service binding.
     // env.PROXY.fetch(request) calls stock-screener's fetch handler
