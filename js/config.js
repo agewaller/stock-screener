@@ -149,7 +149,8 @@ var CONFIG = {
         { id: 'arrhythmia', name: '不整脈', icd: 'BC6' },
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
         { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
-        { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' }
+        { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' },
+        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' }
       ]
     },
     {
@@ -276,6 +277,8 @@ var CONFIG = {
                           japan:    20_000, japanLabel: '約 2 万人（指定難病）',   japanSource: '厚生労働省' },
     osteoarthritis:     { world: 528_000_000,   label: '約 5 億 2,800 万人',     tier: 1, density: 'high',   source: 'GBD 2019',
                           japan:  25_300_000, japanLabel: '約 2,530 万人（変形性膝関節症）', japanSource: '日本整形外科学会' },
+    atrial_fibrillation: { world:  59_700_000,  label: '約 5,970 万人',          tier: 1, density: 'high',   source: 'GBD 2019',
+                          japan:   1_000_000, japanLabel: '約 100 万人',          japanSource: '日本循環器学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2504,6 +2507,58 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-15T10:00:00Z', name: 'ヒアルロン酸ナトリウム注射（サイビスク）', notes: '週1回 関節内注射×5回コース（潤滑・衝撃吸収・軟骨保護）' },
         { timestamp: '2026-03-10T10:00:00Z', name: 'デュロキセチン（サインバルタ）20mg', notes: '夕食後 1錠（中枢性疼痛感作・夜間痛に有効）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    sjogrens: {
+      diseases: ['シェーグレン症候群'],
+      profile: { age: 52, gender: 'female', height: 158, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '口と目が乾いて辛い', content: '2年前から口の乾きがひどく、食事中も水が必要。目も乾いて「砂が入ったような」感覚が一日中続く。疲れやすく、午後は仕事に集中できない。かかりつけ医から眼科・リウマチ科へ紹介。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'consultation', title: 'リウマチ科受診・シェーグレン症候群診断', content: 'シルマーテスト右5mm/左4mm（正常≥10mm）、抗SS-A抗体480U/mL（強陽性）、抗SS-B抗体120U/mL（陽性）、IgG 2,400mg/dL（高値）、C4 10mg/dL（低値）。「原発性シェーグレン症候群の確定診断です。ESSDAIスコア8（中等度活動性）。ヒドロキシクロロキン（プラケニル）とピロカルピン（サラジェン）から開始しましょう」。' },
+        { timestamp: '2026-02-20T10:00:00Z', category: 'vitals', title: '1ヶ月後・乾燥症状が少し改善', content: '口腔乾燥VAS: 8→6、眼乾燥VAS: 7→5。ピロカルピン5mg 1日3回で発汗・顔のほてりが出るが、乾燥には効果あり。人工涙液ヒアルロン酸点眼を1日6回使用。ヒドロキシクロロキンは効果発現まで2〜3ヶ月かかると説明を受けた。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: '3ヶ月後の再診・疲労改善', content: 'ESSDAIスコア: 8→5（低活動性）。口腔乾燥VAS: 6→4。眼乾燥VAS: 5→3。「ヒドロキシクロロキンの効果が出てきています。疲労感も改善傾向。IgG 2,400→1,980mg/dL（低下）。6ヶ月に1回の眼科検査（網膜症スクリーニング）を予定。リンパ節腫大・体重減少には注意を」。' },
+        { timestamp: '2026-04-10T08:00:00Z', category: 'vitals', title: '4ヶ月目・日常生活が戻ってきた', content: '午後の疲労NRS: 8→5。「午後も仕事に集中できる時間が増えた」。口腔乾燥VAS: 4。食事中の水が減り、普通に会話できる。唾液腺マッサージを毎日実施。う蝕予防フッ素うがい・キシリトールガムを継続。眼乾燥VAS: 3。コンタクトレンズは断念した。' },
+        { timestamp: '2026-04-28T09:00:00Z', category: 'vitals', title: '安定期・リンパ腫サーベイランス', content: 'ESSDAIスコア: 4（低活動性を維持）。口腔乾燥VAS: 3、眼乾燥VAS: 3。体重安定、リンパ節腫大なし。3ヶ月に1回の血液検査（IgG・C4・LDH）でリンパ腫サーベイランス継続。「ヒドロキシクロロキンを続ける限りはこの状態を維持できると思います」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-25T10:00:00Z', name: '初回血液検査', findings: '抗SS-A抗体 480 U/mL (強陽性), 抗SS-B抗体 120 U/mL (陽性), IgG 2400 mg/dL (高値), C4 10 mg/dL (低値), LDH 185 IU/L (正常), RF 64 IU/mL (弱陽性), シルマーテスト 右5mm 左4mm (低下)' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'ヒドロキシクロロキン（プラケニル）200mg', notes: '1日2回 朝夕食後（疲労・関節痛・腺外症状に有効。眼科検査必須）' },
+        { timestamp: '2026-01-25T10:00:00Z', name: 'ピロカルピン（サラジェン）5mg', notes: '1日3回 食前（唾液・涙液分泌促進。発汗・腹痛の副作用あり）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    atrial_fibrillation: {
+      diseases: ['心房細動'],
+      profile: { age: 67, gender: 'male', height: 170, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-01-06T07:00:00Z', category: 'symptoms', title: '急に脈がバラバラになった', content: '朝起きたら「心臓がドキドキして脈がバラバラ」。息切れと軽いめまいが1時間続いたため救急搬送。心電図で心房細動（持続性）と診断。安静時心拍数 125回/分（不規則）。「脳梗塞のリスクが高いため、すぐに抗凝固薬を開始します」と告げられた。' },
+        { timestamp: '2026-01-06T15:00:00Z', category: 'consultation', title: '救急・心房細動診断・DOAC開始', content: '12誘導心電図：絶対性不整脈・f波。心エコー：左房径 46mm（拡大）、弁膜症なし。CHA₂DS₂-VAScスコア: 4（高リスク）。「アピキサバン（エリキュース）5mg 1日2回を開始します。脳梗塞リスクが年5〜7%あります。レートコントロールのためビソプロロール2.5mgも追加」。カテーテルアブレーション（肺静脈隔離術）を2ヶ月後に予定。' },
+        { timestamp: '2026-01-25T08:00:00Z', category: 'vitals', title: '3週間後・心拍コントロール改善', content: '安静時心拍: 125→82回/分（コントロール良好）。動悸の自覚症状: NRS 7→4。「ビソプロロールで脈が落ち着いた。ただ時々バラバラ感がある」。血圧 132/78mmHg。アピキサバン継続中・出血症状なし。6分間歩行テスト: 420m（発症前より低下）。アブレーション前の準備として心臓CT予定。' },
+        { timestamp: '2026-03-05T10:00:00Z', category: 'consultation', title: 'カテーテルアブレーション施行', content: '肺静脈隔離術（PVI）+後壁隔離。手術時間3.5時間。術後：洞調律回復、心拍数68回/分（規則正し）。「肺静脈の4本すべてを隔離しました。成功です。アピキサバンは術後2ヶ月継続後に評価、ビソプロロールは漸減予定」。2日後に退院。' },
+        { timestamp: '2026-04-05T08:00:00Z', category: 'vitals', title: 'アブレーション1ヶ月後・洞調律維持', content: '1ヶ月後の外来で洞調律を確認（Holter心電図 24時間モニタリング：AF再発なし）。動悸: 消失。6分間歩行: 520m（改善）。体重: 78→75kg（3kg減）。アルコールを週3合→週1合に減量。「洞調律が維持できています。3ヶ月後にアピキサバン継続か中止かを評価します」。' },
+        { timestamp: '2026-04-28T08:00:00Z', category: 'vitals', title: '4ヶ月後・安定維持', content: 'Holter心電図（再検）：洞調律維持・PAC散見・AF再発なし。「術後4ヶ月での洞調律維持は良い経過です。アピキサバンをあと2ヶ月継続後、CHA₂DS₂-VAScスコアを再評価して中止を検討します」。ビソプロロール1.25mgに漸減。睡眠時無呼吸の精査（CPAP検討）の紹介状を受け取った。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-06T15:00:00Z', name: '救急時・初期評価', findings: '心電図 絶対性不整脈, 心拍125回/分, TSH 1.8 mIU/L (正常・甲状腺性除外), eGFR 72 mL/min/1.73m², HbA1c 6.4%, 血清K 4.1 mEq/L, CRP 0.3 mg/dL, BNP 185 pg/mL (中等度上昇), 心エコー 左房径46mm' }
+      ],
+      medications: [
+        { timestamp: '2026-01-06T15:00:00Z', name: 'アピキサバン（エリキュース）5mg', notes: '1日2回 朝夕食後（脳梗塞・全身性塞栓症予防。出血に注意）' },
+        { timestamp: '2026-01-06T15:00:00Z', name: 'ビソプロロール2.5mg', notes: '朝食後1錠（レートコントロール→術後1.25mgに漸減）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

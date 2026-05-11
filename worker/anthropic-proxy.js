@@ -166,6 +166,8 @@ function extractDiseaseIds(text) {
     hyperthyroidism: /甲状腺機能亢進症|バセドウ病|Graves病|Graves disease|hyperthyroidism|甲状腺クリーゼ|thyroid storm|TSH.*低下|FT4.*上昇|FT3.*上昇|チアマゾール|メルカゾール|MMI\b.*甲状腺|プロピルチオウラシル|PTU\b.*甲状腺|放射線.*ヨウ素.*甲状腺|無顆粒球症.*甲状腺|バセドウ眼症|眼球突出.*甲状腺|頻脈.*甲状腺|体重減少.*甲状腺/i,
     narcolepsy: /ナルコレプシー|特発性過眠症|narcolepsy|過度の眠気|EDS\b.*眠|情動脱力発作|カタプレキシー|cataplexy|睡眠麻痺.*ナルコ|入眠時幻覚|ESSスコア|エプワース眠気|MSLT\b|モダフィニル|モディオダール|ピトリサント|ウェイクリックス|オレキシン.*欠乏|ヒポクレチン|過眠症.*診断/i,
     osteoarthritis: /変形性関節症|変形性膝関節症|変形性股関節症|osteoarthritis|OA\b.*膝|OA\b.*股|WOMACスコア|KOOSスコア|ヒアルロン酸.*注射|関節内注射.*ヒアルロン|変形性.*膝.*痛み|膝.*軟骨.*摩耗|変形性.*股関節.*痛|セレコキシブ.*膝|デュロキセチン.*関節|人工膝関節|TKA\b|THA\b.*股|骨棘.*形成/i,
+    sjogrens: /シェーグレン症候群|sjögren|sjogren|乾燥症候群|ドライアイ.*ドライマウス|口腔乾燥.*眼乾燥|SSA抗体|SSB抗体|抗SS-A|抗SS-B|ピロカルピン.*乾燥|ヒドロキシクロロキン.*乾燥|サラジェン.*唾液|ESSDAIスコア|唾液腺生検|耳下腺腫脹.*自己免疫|リンパ腫.*シェーグレン/i,
+    atrial_fibrillation: /心房細動|AFib\b|AF\b.*心|Afib|atrial fibrillation|脈の乱れ.*心房|心房.*細動|動悸.*不整脈|DOAC.*心房|アピキサバン.*心房|エリキュース.*心房|リバーロキサバン.*心房|イグザレルト.*心房|カテーテルアブレーション.*心房|肺静脈隔離|CHA₂DS₂|CHADS2スコア|ワーファリン.*心房|洞調律.*心房細動/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

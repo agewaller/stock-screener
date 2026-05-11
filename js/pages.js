@@ -755,6 +755,8 @@ App.prototype.render_dashboard = function() {
       hyperthyroidism: ['脈拍数・体重の日次記録', 'チアマゾール服薬確認・用量記録', 'TSH・FT4値（受診時）の時系列記録', '副作用監視：発熱・咽頭痛の即時記録'],
       narcolepsy: ['ESSスコア（エプワース眠気尺度）の定期測定', '情動脱力発作の頻度・引き金・持続時間', 'モダフィニル服薬確認・副作用', '計画仮眠の実施記録と効果'],
       osteoarthritis: ['関節痛NRS(0-10)・朝のこわばり時間', 'WOMACスコア（疼痛・こわばり・機能）', 'ヒアルロン酸注射日と効果持続期間', '体重・歩数・運動量の日次記録'],
+      sjogrens: ['口腔乾燥・眼乾燥のVAS(0-10)記録', '人工唾液・点眼回数の日次記録', 'ESSDAIスコア（疾患活動性）の定期記録', '感染症（耳下腺炎・肺炎）発生記録'],
+      atrial_fibrillation: ['脈拍数・不整脈自覚症状の記録', 'DOAC服薬確認・用量・時刻記録', 'アブレーション後の洞調律維持記録', 'CHA₂DS₂-VAScスコアの定期確認'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

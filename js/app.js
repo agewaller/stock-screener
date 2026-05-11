@@ -1343,6 +1343,8 @@ ${recentText || '記録なし'}
       hyperthyroidism: { ja: '甲状腺機能亢進症 バセドウ病 Graves病 TSH FT4 チアマゾール 内分泌科', en: 'hyperthyroidism Graves disease thyroid' },
       narcolepsy: { ja: 'ナルコレプシー 特発性過眠症 過度の眠気 情動脱力発作 ESS モダフィニル 睡眠専門', en: 'narcolepsy excessive daytime sleepiness cataplexy' },
       osteoarthritis: { ja: '変形性関節症 変形性膝関節症 変形性股関節症 OA WOMAC ヒアルロン酸 整形外科', en: 'osteoarthritis OA knee hip joint pain' },
+      sjogrens: { ja: 'シェーグレン症候群 乾燥症候群 ドライアイ ドライマウス SSA抗体 SSB抗体 リウマチ科', en: 'Sjogrens syndrome dry eye dry mouth SSA antibody' },
+      atrial_fibrillation: { ja: '心房細動 AFib 動悸 脈の乱れ DOAC 抗凝固薬 カテーテルアブレーション 循環器内科', en: 'atrial fibrillation AFib DOAC anticoagulation' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1497,6 +1499,8 @@ ${recentText || '記録なし'}
       hyperthyroidism: 'hyperthyroidism Graves disease methimazole radioiodine thyrotoxicosis',
       narcolepsy: 'narcolepsy pitolisant modafinil orexin cataplexy treatment',
       osteoarthritis: 'osteoarthritis knee pain hyaluronic acid duloxetine exercise weight loss',
+      sjogrens: 'Sjogrens syndrome hydroxychloroquine pilocarpine fatigue lymphoma risk',
+      atrial_fibrillation: 'atrial fibrillation DOAC apixaban catheter ablation stroke prevention',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1681,6 +1685,8 @@ ${titles}`;
       hyperthyroidism: 'Graves disease methimazole relapse radioiodine thyroid ablation outcome',
       narcolepsy: 'narcolepsy orexin deficiency MSLT multiple sleep latency cataplexy treatment outcome',
       osteoarthritis: 'osteoarthritis intraarticular hyaluronic acid duloxetine WOMAC exercise therapy',
+      sjogrens: 'primary Sjogrens syndrome hydroxychloroquine lymphoma sicca symptoms ESSDAI',
+      atrial_fibrillation: 'atrial fibrillation pulmonary vein isolation ablation DOAC stroke recurrence',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
