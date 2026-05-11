@@ -705,6 +705,7 @@ App.prototype.render_dashboard = function() {
       bipolar: ['気分(1-10)', '睡眠時間', '活動量'],
       ptsd: ['気分', '睡眠', 'フラッシュバック'],
       adhd: ['集中力', '睡眠', 'タスク達成'],
+      migraine: ['頭痛強度(1-10)', 'トリガー', '服薬記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
