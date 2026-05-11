@@ -1019,7 +1019,13 @@ ME/CFSとの重複症状にも注意して分析してください。
   pots_research: { name: 'POTS 最新研究', disease: 'pots', schedule: 'daily', active: true, description: '体位性頻脈症候群の最新治療・研究',
     prompt: PROMPT_HEADER + `POTS（体位性頻脈症候群）の最新研究を報告してください。重点：自己抗体（α1/β1/β2アドレナリン受容体・ムスカリン受容体）、免疫吸着療法、IVIG、ミドドリン/フロリネフ比較、イバブラジン、運動リハビリプロトコル、COVID後POTS、EDS/MCAS合併管理。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   insomnia_research: { name: '不眠症 最新研究', disease: 'insomnia', schedule: 'daily', active: true, description: '不眠症の最新治療・研究',
-    prompt: PROMPT_HEADER + `不眠症の最新研究を報告してください。重点：CBT-I（デジタル版含む）、オレキシン受容体拮抗薬（レンボレキサント・スボレキサント）、メラトニン受容体作動薬、光療法、睡眠制限療法の新エビデンス、ベンゾジアゼピン減薬プロトコル、マインドフルネス、腸内細菌叢と睡眠。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` }
+    prompt: PROMPT_HEADER + `不眠症の最新研究を報告してください。重点：CBT-I（デジタル版含む）、オレキシン受容体拮抗薬（レンボレキサント・スボレキサント）、メラトニン受容体作動薬、光療法、睡眠制限療法の新エビデンス、ベンゾジアゼピン減薬プロトコル、マインドフルネス、腸内細菌叢と睡眠。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
+  migraine_research: { name: '片頭痛 最新研究', disease: 'migraine', schedule: 'daily', active: true, description: '片頭痛・偏頭痛の最新治療・研究',
+    prompt: PROMPT_HEADER + `片頭痛（偏頭痛）の最新研究を報告してください。重点：CGRP抗体薬（エレヌマブ・ガルカネズマブ・フレマネズマブ）の長期データ、CGRP受容体拮抗薬（ゲパント類）、ditans（ラスミジタン）、脳幹・三叉神経機構解明、薬物乱用頭痛（MOH）治療プロトコル、マグネシウム/リボフラビン/CoQ10予防効果、月経関連片頭痛、ネウロモジュレーション（tDCS・TMS・Cefaly）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
+  mcas_research: { name: 'MCAS 最新研究', disease: 'mcas', schedule: 'daily', active: true, description: 'MCAS・肥満細胞活性化症候群の最新治療・研究',
+    prompt: PROMPT_HEADER + `MCAS（肥満細胞活性化症候群）の最新研究を報告してください。重点：診断基準（Valent/Akin/Molderings）論争、トリプターゼ基準値、新規バイオマーカー、H1/H2拮抗薬の最適化、クロモリンナトリウム、オマリズマブ（抗IgE）、ケトチフェン、LDN（低用量ナルトレキソン）、POTSおよびEDS合併管理、腸内細菌叢介入。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
+  eds_research: { name: 'EDS 最新研究', disease: 'eds', schedule: 'daily', active: true, description: 'EDS・エーラスダンロス症候群の最新治療・研究',
+    prompt: PROMPT_HEADER + `EDS（エーラス・ダンロス症候群）および関節過可動性の最新研究を報告してください。重点：hEDS（過可動型）の遺伝的原因特定への進展、コラーゲン合成メカニズム、物理療法プロトコル（Kinesio/PNF）、サプリメント（コラーゲンペプチド・ビタミンC・マグネシウム）のRCT、自律神経（POTS）合併管理、脱臼予防テーピング、手術適応と成果、MCAS合併、歯科管理。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` }
 };
 
 // Build DEFAULT_PROMPTS by merging universal + disease-specific
