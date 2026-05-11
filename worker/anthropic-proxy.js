@@ -106,9 +106,15 @@ function extractDiseaseIds(text) {
     long_covid: /long.?covid|コロナ後遺症/i,
     fibromyalgia: /fibromyalgia|線維筋痛/i,
     depression: /うつ|depression|抑うつ/i,
+    bipolar: /双極性|躁うつ|bipolar/i,
+    adhd: /ADHD|注意欠如|多動/i,
     pots: /POTS|体位性頻脈/i,
     diabetes_t2: /糖尿病|diabetes/i,
     ibs: /IBS|過敏性腸/i,
+    hashimoto: /橋本病|甲状腺/i,
+    mcas: /MCAS|マスト細胞/i,
+    eds: /EDS|エーラス.ダンロス/i,
+    insomnia: /不眠症|불眠|insomnia/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);

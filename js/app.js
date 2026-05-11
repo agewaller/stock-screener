@@ -1519,6 +1519,8 @@ ${titles}`;
     const diseaseTerms = {
       mecfs: 'ME/CFS OR chronic fatigue syndrome',
       depression: 'major depressive disorder',
+      bipolar: 'bipolar disorder treatment',
+      adhd: 'ADHD attention deficit treatment',
       fibromyalgia: 'fibromyalgia',
       long_covid: 'long COVID OR post-COVID',
       pots: 'postural orthostatic tachycardia',
@@ -1526,6 +1528,8 @@ ${titles}`;
       hashimoto: 'Hashimoto thyroiditis',
       ibs: 'irritable bowel syndrome',
       insomnia: 'insomnia treatment',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
