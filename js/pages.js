@@ -751,6 +751,8 @@ App.prototype.render_dashboard = function() {
       chronic_prostatitis: ['骨盤痛・会陰部痛NRS(0-10)', 'NIH-CPSIスコア（疼痛・排尿・QOL）', '排尿回数・夜間頻尿・残尿感', '服薬確認・長時間座位との相関'],
       ulcerative_colitis: ['排便回数・血便スコア（Mayoスコア）', '腹痛・残便感・緊急排便(0-10)', 'メサラジン・生物学的製剤服薬確認', '食事・ストレスと再燃の相関記録'],
       panic: ['パニック発作の日時・場所・強度(0-10)', '予期不安・回避行動スコア', 'SSRI服薬確認・副作用記録', '呼吸法・曝露ステップの実施記録'],
+      ankylosing_spondylitis: ['BASDAIスコア（6項目）の定期記録', '朝のこわばり時間（分）・夜間痛強度', 'TNF阻害薬・IL-17阻害薬の投与日・副作用', '運動療法（水泳・ストレッチ）実施記録'],
+      hyperthyroidism: ['脈拍数・体重の日次記録', 'チアマゾール服薬確認・用量記録', 'TSH・FT4値（受診時）の時系列記録', '副作用監視：発熱・咽頭痛の即時記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

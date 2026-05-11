@@ -1339,6 +1339,8 @@ ${recentText || '記録なし'}
       chronic_prostatitis: { ja: '慢性前立腺炎 CP/CPPS 慢性骨盤痛 泌尿器科 NIH-CPSI α遮断薬', en: 'chronic prostatitis CPPS pelvic pain' },
       ulcerative_colitis: { ja: '潰瘍性大腸炎 炎症性腸疾患 IBD 血便 メサラジン 消化器内科', en: 'ulcerative colitis IBD mesalazine' },
       panic: { ja: 'パニック障害 パニック発作 広場恐怖 SSRI 認知行動療法 心療内科', en: 'panic disorder panic attack CBT' },
+      ankylosing_spondylitis: { ja: '強直性脊椎炎 体軸性脊椎関節炎 axSpA 炎症性腰痛 BASDAI リウマチ科', en: 'ankylosing spondylitis axSpA inflammatory back pain' },
+      hyperthyroidism: { ja: '甲状腺機能亢進症 バセドウ病 Graves病 TSH FT4 チアマゾール 内分泌科', en: 'hyperthyroidism Graves disease thyroid' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1489,6 +1491,8 @@ ${recentText || '記録なし'}
       chronic_prostatitis: 'chronic prostatitis CPPS alpha blocker pelvic pain treatment',
       ulcerative_colitis: 'ulcerative colitis mesalazine vedolizumab infliximab remission maintenance',
       panic: 'panic disorder SSRI CBT exposure therapy panic attack treatment',
+      ankylosing_spondylitis: 'ankylosing spondylitis TNF inhibitor IL-17 BASDAI exercise therapy',
+      hyperthyroidism: 'hyperthyroidism Graves disease methimazole radioiodine thyrotoxicosis',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1669,6 +1673,8 @@ ${titles}`;
       chronic_prostatitis: 'chronic pelvic pain syndrome NIH-CPSI alpha blocker pelvic floor therapy',
       ulcerative_colitis: 'ulcerative colitis biologics vedolizumab ustekinumab mucosal healing',
       panic: 'panic disorder cognitive behavioral therapy SSRI interoceptive exposure',
+      ankylosing_spondylitis: 'ankylosing spondylitis secukinumab upadacitinib ASDAS MRI sacroiliitis',
+      hyperthyroidism: 'Graves disease methimazole relapse radioiodine thyroid ablation outcome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3085,7 +3091,9 @@ ${responseText.substring(0, 3000)}`;
       dry_eye: '#ドライアイ',
       chronic_prostatitis: '#慢性前立腺炎',
       ulcerative_colitis: '#潰瘍性大腸炎',
-      panic: '#パニック障害'
+      panic: '#パニック障害',
+      ankylosing_spondylitis: '#強直性脊椎炎',
+      hyperthyroidism: '#バセドウ病甲状腺機能亢進症'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

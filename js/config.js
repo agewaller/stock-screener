@@ -126,6 +126,7 @@ var CONFIG = {
         { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
         { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
         { id: 'thyroid_hyper', name: '甲状腺機能亢進症（バセドウ病）', icd: '5A02' },
+        { id: 'hyperthyroidism', name: '甲状腺機能亢進症・バセドウ病', icd: 'E05' },
         { id: 'adrenal', name: '副腎機能不全', icd: '5A70' },
         { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
         { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
@@ -184,6 +185,7 @@ var CONFIG = {
       diseases: [
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
         { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
+        { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
       ]
@@ -264,6 +266,10 @@ var CONFIG = {
                           japan:    230_000, japanLabel: '約 23 万人（指定難病）', japanSource: '厚生労働省 2022年' },
     panic:              { world:   240_000_000, label: '約 2.4 億人',           tier: 1, density: 'high',   source: '生涯有病率 3〜4%',
                           japan:   2_400_000, japanLabel: '約 240 万人（推計）',  japanSource: '日本精神神経学会' },
+    ankylosing_spondylitis: { world: 23_800_000, label: '約 2,380 万人',         tier: 1, density: 'low',    source: 'GBD 2019 axSpA推計',
+                          japan:    50_000, japanLabel: '約 5 万人（推計）',       japanSource: '国内推計（指定難病）' },
+    hyperthyroidism:    { world:   200_000_000, label: '約 2 億人',              tier: 2, density: 'medium',  source: '甲状腺機能亢進症全体推計',
+                          japan:   1_000_000, japanLabel: '約 60〜100 万人',      japanSource: '日本甲状腺学会' },
     migraine:           { world: 1_200_000_000, label: '約 12 億人',       tier: 1, density: 'medium', source: 'GBD 2021',
                           japan:  8_400_000, japanLabel: '約 840 万人',        japanSource: '日本頭痛学会' },
     sleep_apnea:        { world:   936_000_000, label: '約 9.36 億人',     tier: 1, density: 'medium', source: 'OSA 30-69歳成人',
@@ -2388,6 +2394,58 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-01-22T10:00:00Z', name: 'パロキセチン（パキシル）20mg', notes: '朝食後 1錠（SSRI・パニック障害第一選択・最低12ヶ月継続）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ankylosing_spondylitis: {
+      diseases: ['強直性脊椎炎（体軸性脊椎関節炎）'],
+      profile: { age: 29, gender: 'male', height: 176, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-01-08T08:00:00Z', category: 'symptoms', title: '朝のこわばりと炎症性腰痛', content: '朝起きると腰が1〜2時間こわばって動けない。動くと少し楽になる。座っているとかえって痛みが増す。20代から徐々にひどくなった。整形外科でヘルニアと言われたが、治療しても改善しない。ネットで「炎症性腰痛」を知り、リウマチ科を受診することにした。' },
+        { timestamp: '2026-01-15T10:00:00Z', category: 'consultation', title: 'リウマチ科受診・axSpA診断', content: 'HLA-B27：陽性。骨盤MRI：両側仙腸関節に骨髄浮腫あり（STIR high signal）。CRP 1.8mg/dL（上昇）。BASDAIスコア: 7.2/10（高活動性）。「非X線性体軸性脊椎関節炎（nr-axSpA）の診断です。NSAIDsから始めましょう」。セレコキシブ200mg 朝夕が処方された。' },
+        { timestamp: '2026-02-05T08:00:00Z', category: 'vitals', title: 'NSAID4週間後・効果限定的', content: 'セレコキシブ4週間後。朝のこわばり：120分→80分（改善傾向だが不十分）。BASDAIスコア: 7.2→5.8（改善しているが5以上は高活動性）。夜間痛：NRS 7→5。先生「NSAIDsの効果は部分的です。2剤目のNSAIDsに変えて3ヶ月様子を見た後、生物学的製剤の適応を考えます」。インドメタシン徐放錠に変更。' },
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '生物学的製剤（IL-17阻害薬）開始', content: 'BASDAIスコア: 5.4（NSAIDsで高活動性が持続→生物学的製剤の適応）。「アダリムマブ（TNF阻害）またはセクキヌマブ（IL-17阻害）から選べます。乾癬はないがIBD症状もないため、どちらでも可。日本の承認が新しいセクキヌマブ150mgを選びました」。隔週注射を自己注射で開始。' },
+        { timestamp: '2026-04-07T10:00:00Z', category: 'consultation', title: '4週後の評価・著効確認', content: 'セクキヌマブ4週後。BASDAIスコア: 5.4→2.8（大幅改善・低活動性）。朝のこわばり：80分→15分！夜間痛: NRS 5→2（ほぼ消失）。CRP: 0.2mg/dL（正常）。「これほど改善するとは思わなかった。8週ごとの注射で維持療法に移行します」。水泳を週3回開始した。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '3ヶ月・QOL劇的改善', content: 'BASDAIスコア: 2.1（非活動性に近い）。朝のこわばり: 5分のみ。「電車で座って通勤できるようになった」「仕事のデスクワークが苦じゃなくなった」「週3回の水泳が習慣に」。次のMRIで仙腸関節の骨髄浮腫の消退を確認予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'axSpA初回評価', findings: 'HLA-B27 陽性, CRP 1.8mg/dL（高値）, ESR 42mm/hr, 白血球 正常, MRI両側仙腸関節 骨髄浮腫あり（grade 2）, BASDAIスコア 7.2/10' },
+        { timestamp: '2026-04-07T10:00:00Z', name: 'セクキヌマブ4週後評価', findings: 'CRP 0.2mg/dL（正常）, ESR 12mm/hr, BASDAIスコア 2.8/10（低活動性）, 副作用なし' }
+      ],
+      medications: [
+        { timestamp: '2026-03-10T10:00:00Z', name: 'セクキヌマブ（コセンティクス）150mg', notes: '初回〜4週まで毎週・以後8週ごと自己注射（IL-17A阻害・axSpA）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    hyperthyroidism: {
+      diseases: ['甲状腺機能亢進症（バセドウ病）'],
+      profile: { age: 26, gender: 'female', height: 163, weight: 48 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '動悸・体重減少・手の震え', content: '3ヶ月で5kg体重減少。食欲はあるのに痩せる。心拍数が常に100〜110拍/分で動悸がつらい。手が震えて文字が書きにくい。暑がりで汗が多い。首が太くなった感じ。不安感・イライラも増した。内科を受診したら甲状腺機能亢進症と言われ内分泌科を紹介された。' },
+        { timestamp: '2026-01-17T10:00:00Z', category: 'consultation', title: '内分泌科受診・バセドウ病確定診断', content: '甲状腺エコー：びまん性腫大（30mL）。TSH <0.01μIU/mL（測定限界以下）。FT4 4.2ng/dL（正常0.8-1.8）。TRAb（TSH受容体抗体）: 21IU/L（強陽性・バセドウ病確定）。「チアマゾール（メルカゾール）30mgを開始します。4週後に血液検査を行います。発熱・咽頭痛が出たら即日受診を」。プロプラノロール20mg 朝夕も追加。' },
+        { timestamp: '2026-01-24T08:00:00Z', category: 'vitals', title: 'チアマゾール1週間後', content: 'チアマゾール1週間後。心拍数: 108→92bpm。体重: 48→48.5kg（微増傾向）。「動悸が少し楽になった」。発熱・咽頭痛なし（副作用なし確認）。プロプラノロールで安静時心拍85前後に安定しつつある。' },
+        { timestamp: '2026-02-14T10:00:00Z', category: 'consultation', title: '4週後・甲状腺機能の正常化', content: 'TSH: 0.03μIU/mL（まだ低値だが改善）。FT4: 2.1ng/dL（高値だが改善）。「チアマゾールが効いています。20mgに減量し、4週後に再検査」。TRAb: 18IU/L（まだ高い）。心拍数: 78bpm（正常化）。プロプラノロールを中止。体重: 49.5kg（1.5kg増加）。' },
+        { timestamp: '2026-03-14T10:00:00Z', category: 'vitals', title: '2ヶ月後・ほぼ正常化', content: 'TSH: 0.4μIU/mL（正常低値）。FT4: 1.5ng/dL（正常範囲内！）。チアマゾール10mgに減量。「動悸・震え・暑さは消失」。体重: 51kg（発症前の体重に回復）。「再発率は30〜50%。寛解後18〜24ヶ月は服薬を続けましょう」。TRAb：12IU/L（低下中）。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '3ヶ月・安定化', content: 'TSH: 1.2μIU/mL（完全正常化）。FT4: 1.2ng/dL（正常）。チアマゾール5mgに減量（低用量維持）。TRAb: 6IU/L（正常化に近づく）。「発症前の状態に戻った感覚」。再発のリスクを下げるため、ストレス管理・禁煙（非喫煙）・定期的なチェックを継続。眼症状はなし。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T08:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-17T10:00:00Z', name: 'バセドウ病初診評価', findings: 'TSH <0.01μIU/mL（測定不能）, FT4 4.2ng/dL（高値）, FT3 9.8pg/mL（高値）, TRAb 21IU/L（強陽性・バセドウ病確定）, 白血球 正常（8,200）, 肝機能 正常, 甲状腺エコー びまん性腫大30mL' },
+        { timestamp: '2026-04-22T10:00:00Z', name: '3ヶ月後評価', findings: 'TSH 1.2μIU/mL（正常）, FT4 1.2ng/dL（正常）, TRAb 6IU/L（正常化傾向）, 白血球 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-17T10:00:00Z', name: 'チアマゾール（メルカゾール）5mg', notes: '1錠/日（30mg→5mg に減量・低用量維持療法）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

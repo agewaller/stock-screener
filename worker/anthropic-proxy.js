@@ -162,6 +162,8 @@ function extractDiseaseIds(text) {
     chronic_prostatitis: /慢性前立腺炎|CP\/CPPS|慢性骨盤痛|CPPS\b|NIH-CPSI|前立腺炎|prostatitis|会陰部痛|骨盤痛.*男性|前立腺.*痛み|排尿痛.*前立腺|ハルナール.*前立腺|タムスロシン.*前立腺|骨盤底.*男性|射精痛.*前立腺|慢性.*骨盤.*疼痛/i,
     ulcerative_colitis: /潰瘍性大腸炎|UC\b.*大腸|炎症性腸疾患|IBD\b|ulcerative colitis|血便.*腹痛|Mayoスコア|メサラジン|アサコール|ペンタサ|インフリキシマブ|レミケード.*UC|ベドリズマブ|エンタイビオ|ウステキヌマブ.*UC|ステラーラ.*UC|アザチオプリン.*大腸|大腸炎.*再燃|大腸粘膜.*炎症/i,
     panic: /パニック障害|パニック発作|panic disorder|panic attack|広場恐怖|動悸.*息苦しさ.*恐怖|死の恐怖.*発作|予期不安|パキシル.*パニック|パロキセチン.*パニック|CBT.*パニック|認知行動療法.*パニック|曝露療法.*恐怖|発作.*電車.*恐怖|パニック.*SSRI/i,
+    ankylosing_spondylitis: /強直性脊椎炎|体軸性脊椎関節炎|axSpA\b|AS\b.*脊椎|ankylosing spondylitis|炎症性腰痛|仙腸関節.*炎|BASDAIスコア|ASDAS\b|HLA-B27|竹節様脊椎|エタネルセプト.*脊椎|ヒュミラ.*脊椎|アダリムマブ.*脊椎|セクキヌマブ.*脊椎|コセンティクス.*脊椎|イキセキズマブ.*脊椎|ウパダシチニブ.*脊椎|朝のこわばり.*腰/i,
+    hyperthyroidism: /甲状腺機能亢進症|バセドウ病|Graves病|Graves disease|hyperthyroidism|甲状腺クリーゼ|thyroid storm|TSH.*低下|FT4.*上昇|FT3.*上昇|チアマゾール|メルカゾール|MMI\b.*甲状腺|プロピルチオウラシル|PTU\b.*甲状腺|放射線.*ヨウ素.*甲状腺|無顆粒球症.*甲状腺|バセドウ眼症|眼球突出.*甲状腺|頻脈.*甲状腺|体重減少.*甲状腺/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
