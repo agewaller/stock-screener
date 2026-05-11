@@ -94,9 +94,9 @@ App.prototype.render_login = function() {
         <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
           <div style="font-size:12px;font-weight:600;color:#1e293b">対象疾患を選択（任意・後から変更可）<span style="font-weight:400;color:#94a3b8;margin-left:4px">${selectedCount > 0 ? selectedCount + '件' : ''}</span></div>
-          <span class="arrow" style="font-size:16px;color:#94a3b8">+</span>
+          <span class="arrow" style="font-size:16px;color:#94a3b8">${selectedCount > 0 ? '−' : '+'}</span>
         </div>
-        <div id="disease-picker" style="display:none;margin-top:10px">
+        <div id="disease-picker" style="display:${selectedCount > 0 ? 'block' : 'none'};margin-top:10px">
           <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
             oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
           ${categoryHtml}
