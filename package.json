@@ -1,0 +1,27 @@
+{
+  "name": "health-diary",
+  "version": "1.0.0",
+  "description": "慢性疾患患者のための体調記録・情報整理ツール（健康日記）",
+  "private": true,
+  "scripts": {
+    "start": "http-server -p 8080 -c-1 --cors -o",
+    "test": "node tests/smoke.test.js",
+    "lint": "eslint worker/ tests/",
+    "lint:html": "html-validate index.html depression.html eds.html fibromyalgia.html insomnia.html long-covid.html mcas.html pots.html",
+    "format": "prettier --write worker/ tests/",
+    "format:check": "prettier --check worker/ tests/",
+    "worker:dev": "wrangler dev --config wrangler.toml",
+    "worker:plaud:dev": "wrangler dev --config wrangler.plaud-inbox.toml",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules --project care-14c31",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "html-validate": "^8",
+    "http-server": "^14",
+    "husky": "^9",
+    "prettier": "^3",
+    "wrangler": "^4",
+    "firebase-tools": "^13"
+  }
+}

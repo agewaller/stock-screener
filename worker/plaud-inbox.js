@@ -89,7 +89,12 @@ export default {
       const from = message.from || '';
 
       if (!text || text.length < 10) {
-        console.warn('[plaud-inbox] empty body, ignoring. extractor path:', extracted?.path || '(none)', 'raw length:', raw?.length || 0);
+        console.warn(
+          '[plaud-inbox] empty body, ignoring. extractor path:',
+          extracted?.path || '(none)',
+          'raw length:',
+          raw?.length || 0
+        );
         return;
       }
 
@@ -107,24 +112,24 @@ export default {
 
       const body = {
         fields: {
-          hash:       { stringValue: hash },
-          kind:       { stringValue: kind },
-          from:       { stringValue: from },
-          subject:    { stringValue: subject },
-          text:       { stringValue: text.substring(0, 100000) },
+          hash: { stringValue: hash },
+          kind: { stringValue: kind },
+          from: { stringValue: from },
+          subject: { stringValue: subject },
+          text: { stringValue: text.substring(0, 100000) },
           receivedAt: { timestampValue: new Date().toISOString() },
-          processed:  { booleanValue: false },
+          processed: { booleanValue: false },
           // Trail of which parser branch found the body. Written
           // into Firestore so the admin diagnostic panel can surface
           // "we received the email and parsed it as X" to the user.
-          parsePath:  { stringValue: extracted?.path || '' }
-        }
+          parsePath: { stringValue: extracted?.path || '' },
+        },
       };
 
       const fsRes = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
       if (!fsRes.ok) {
@@ -137,7 +142,7 @@ export default {
     } catch (err) {
       console.error('[plaud-inbox] handler error:', err);
     }
-  }
+  },
 };
 
 // Extract a usable text body from a raw RFC 822 message.
@@ -182,7 +187,7 @@ function parseMessagePart(raw) {
   // multiple lines if the continuation starts with whitespace.
   const unfolded = rawHeaders.replace(/\r?\n[ \t]+/g, ' ');
   const headers = {};
-  unfolded.split(/\r?\n/).forEach(line => {
+  unfolded.split(/\r?\n/).forEach((line) => {
     const idx = line.indexOf(':');
     if (idx === -1) return;
     const name = line.substring(0, idx).trim().toLowerCase();
@@ -207,11 +212,12 @@ function walkPart(part, trail) {
       return { text: part.body, path: trail.concat('multipart-no-boundary').join('->') };
     }
     const boundary = '--' + boundaryMatch[1];
-    const subparts = part.body.split(boundary)
-      .map(s => s.replace(/^\r?\n/, '').replace(/\r?\n$/, ''))
+    const subparts = part.body
+      .split(boundary)
+      .map((s) => s.replace(/^\r?\n/, '').replace(/\r?\n$/, ''))
       // The first chunk is preamble (before the first boundary),
       // and the last is the closing boundary marker "--" + epilogue.
-      .filter(s => s && !/^--\s*/.test(s));
+      .filter((s) => s && !/^--\s*/.test(s));
 
     // Recurse into each subpart. Prefer text/plain over text/html.
     let htmlFallback = null;

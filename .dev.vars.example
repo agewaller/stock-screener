@@ -1,0 +1,15 @@
+# Cloudflare Worker ローカル開発用の環境変数
+# 使い方: cp .dev.vars.example .dev.vars して値を設定
+#
+# .dev.vars は .gitignore 済みのため、リポジトリにコミットされません。
+
+# ──────────────────────────────────
+# anthropic-proxy (worker/anthropic-proxy.js)
+# ──────────────────────────────────
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+
+# ──────────────────────────────────
+# plaud-inbox (worker/plaud-inbox.js)
+# ──────────────────────────────────
+FIREBASE_PROJECT_ID=care-14c31
+FIREBASE_API_KEY=your-firebase-web-api-key

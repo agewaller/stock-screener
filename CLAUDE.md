@@ -1,4 +1,4 @@
-# 健康日記（Health Diary, 旧名: 未病ダイアリー）
+# 健康日記（Health Diary）
 
 慢性疾患患者のための体調記録・情報整理ツール（SPA, vanilla JS）。
 サイト: https://cares.advisers.jp
@@ -67,6 +67,14 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - `callAnthropic` は MODEL_MAP で CONFIG id → API id を動的マッピング（ハードコード禁止、Anthropic は model id を定期的に rotate する）
 - Vision: `options.imageBase64` で自動的に image block 付きに切り替わる
 
+## 疾患カテゴリ（8グループ, 80+疾患）
+
+- **Neuro**: ME/CFS, 線維筋痛症, 片頭痛, てんかん, MS, パーキンソン, ALS, 神経障害, 自律神経障害, POTS, TBI, 慢性疼痛
+- **Mental**: うつ病, 双極性障害, GAD, PTSD, cPTSD, OCD, ADHD, ASD, 摂食障害, 不眠症, バーンアウト, 解離
+- **Immune**: Long COVID, MCAS, SLE, RA, シェーグレン, 橋本病, クローン, UC, セリアック, 乾癬, 免疫不全, アレルギー
+- **Endocrine**: 糖尿病T1/T2, 甲状腺機能低下/亢進, 副腎, PCOS, メタボ, 肥満, 痛風, 骨粗鬆症
+- **Cardiovascular / Respiratory / Digestive / その他**
+
 ## 絶対にやってはいけないこと
 
 - ダークテーマの CSS を追加しない（`:root` はライトテーマ固定）
@@ -75,7 +83,7 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - `signInWithPopup` をモバイルで使わない（`signInWithRedirect` を使う）
 - API キー・Firebase 設定をコードにハードコードしない（管理パネル経由で設定）
 - 管理者メール `agewaller@gmail.com` を削除しない
-- Google 翻訳リンクは必ず `translate.goog` サブドメイン形式（`<host-with-dashes>.translate.goog/...?_x_tr_sl=...&_x_tr_tl=ja&_x_tr_hl=ja`）を使う。旧 `translate.google.com/translate?u=` 形式は 2019 年に廃止されていてクリックすると無限リダイレクトする
+- Google 翻訳リンクは必ず `translate.goog` サブドメイン形式を使う（旧 `translate.google.com/translate?u=` 形式は 2019 年に廃止済み）
 - Claude モデル id（`claude-3-5-sonnet-20241022` 等の datestamped 名）をハードコードしない。必ず `MODEL_MAP` 経由で解決する
 
 ## コーディング規約
@@ -88,10 +96,47 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - ユーザー入力を DOM に挿入する前に `Components.escapeHtml()` で escape する
 - URL の正規表現は ASCII のみ（日本語文字を巻き込まない）
 - 関数名: camelCase。CSS クラス: kebab-case
+- プロンプト変数は `{{TEMPLATE_VARS}}` 形式で `AIEngine.interpolatePrompt()` が展開
+
+## セキュリティ
+
+- XSS: `Components.escapeHtml()` で全ユーザー入力をエスケープ
+- PII: `Privacy.anonymizeText()` でAI送信前に個人情報を匿名化（メール, 電話, 住所, 名前）
+- Firebase: コレクションレベル ACL（firestore.rules）
+- API キー: localStorage保存（ブラウザ暗号化）、Anthropic はプロキシ経由
+- Admin: メールホワイトリストでガード
+
+## ローカル開発環境
+
+```bash
+npm install              # devDependencies インストール + husky 初期化
+npm start                # ローカルサーバー起動（localhost:8080）
+npm test                 # スモークテスト（70件）
+npm run lint             # ESLint（worker/ tests/）
+npm run format           # Prettier 自動修正
+npm run format:check     # Prettier チェック
+npm run lint:html        # HTML バリデーション
+npm run worker:dev       # Cloudflare Worker ローカル起動
+```
+
+- `package.json` に全スクリプト定義。devDependencies のみ（プロダクションに影響なし）
+- ESLint v9 flat config（`eslint.config.mjs`）、Prettier（`.prettierrc`）
+- husky pre-commit フック: lint → format:check → test（コミット前に自動実行）
+- Worker ローカル開発: `.dev.vars.example` をコピーして `.dev.vars` に API キーを設定
+- 詳細は [docs/開発環境ガイド.md](docs/開発環境ガイド.md) を参照
+
+## テスト
+
+```bash
+npm test                 # または: node tests/smoke.test.js
+```
+
+20カテゴリ・70件を検証: JS構文, onclick, レンダラー, 認証, AIエンジン, プロンプト, Google翻訳リンク, 写真アップロード, カレンダー, Plaud, 栄養, データエクスポート, Worker CORS, Firestoreルール, アクション推奨, モバイル安全性, 多言語, デプロイ設定, セキュリティ
 
 ## 管理者
 
 - メール: `agewaller@gmail.com`
+- 連絡先: `info@bluemarl.in`（CONFIG.CONTACT_EMAIL）
 - 管理パネル（`/admin`）: プロンプト管理、API キー、Firebase 設定、データ管理
 - `saveApiKeys` / `clearApiKeys` は `isAdmin()` ガードが必須
 

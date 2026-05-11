@@ -70,11 +70,12 @@ export default {
     }
 
     const senderEmail = env.MAILER_FROM || 'noreply@cares.advisers.jp';
-    const senderName  = (typeof fromName === 'string' && fromName) || env.MAILER_FROM_NAME || '健康日記 申請サポート';
+    const senderName = (typeof fromName === 'string' && fromName) || env.MAILER_FROM_NAME || '健康日記 申請サポート';
 
     // Append a small tracking footer so the recipient can reference the
     // application ID and the user's identity remains transparent.
-    const footer = '\n\n---\n' +
+    const footer =
+      '\n\n---\n' +
       'このメールは「健康日記 (cares.advisers.jp)」の申請サポート機能から送信されています。\n' +
       (meta?.programName ? `制度: ${meta.programName}\n` : '') +
       (meta?.applicationId ? `申請ID: ${meta.applicationId}\n` : '') +
@@ -87,16 +88,16 @@ export default {
         const resendRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             from: `${senderName} <${senderEmail}>`,
             to: [toName ? `${toName} <${to}>` : to],
             reply_to: replyToName ? `${replyToName} <${replyTo}>` : replyTo,
             subject,
-            text: fullText
-          })
+            text: fullText,
+          }),
         });
         if (resendRes.ok) {
           return cors({ ok: true, provider: 'resend' }, 200);
@@ -115,14 +116,16 @@ export default {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          personalizations: [{
-            to: [{ email: to, name: toName || '' }]
-          }],
+          personalizations: [
+            {
+              to: [{ email: to, name: toName || '' }],
+            },
+          ],
           from: { email: senderEmail, name: senderName },
           reply_to: { email: replyTo, name: replyToName || '' },
           subject,
-          content: [{ type: 'text/plain', value: fullText }]
-        })
+          content: [{ type: 'text/plain', value: fullText }],
+        }),
       });
       if (mcRes.ok || mcRes.status === 202) {
         return cors({ ok: true, provider: 'mailchannels' }, 200);
@@ -132,7 +135,7 @@ export default {
     } catch (e) {
       return cors({ error: 'all mail providers failed: ' + e.message }, 502);
     }
-  }
+  },
 };
 
 function isEmail(s) {
@@ -144,7 +147,7 @@ function cors(data, status = 200) {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '86400'
+    'Access-Control-Max-Age': '86400',
   };
   if (data === null) return new Response(null, { status, headers });
   headers['Content-Type'] = 'application/json';

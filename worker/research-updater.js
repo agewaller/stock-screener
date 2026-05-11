@@ -41,24 +41,29 @@ async function searchPubMed(query, days = 30, max = 10) {
   if (!summaryRes.ok) return [];
   const summaryData = await summaryRes.json();
 
-  return ids.map(id => {
-    const a = summaryData?.result?.[id];
-    if (!a) return null;
-    return {
-      pmid: id,
-      title: a.title || '',
-      authors: (a.authors || []).slice(0, 3).map(au => au.name).join(', '),
-      journal: a.source || '',
-      date: a.pubdate || '',
-    };
-  }).filter(Boolean);
+  return ids
+    .map((id) => {
+      const a = summaryData?.result?.[id];
+      if (!a) return null;
+      return {
+        pmid: id,
+        title: a.title || '',
+        authors: (a.authors || [])
+          .slice(0, 3)
+          .map((au) => au.name)
+          .join(', '),
+        journal: a.source || '',
+        date: a.pubdate || '',
+      };
+    })
+    .filter(Boolean);
 }
 
 async function synthesizeResearch(articles, diseaseId, apiKey) {
   if (!articles.length) return null;
-  const articlesText = articles.map((a, i) =>
-    `${i + 1}. ${a.title} (${a.authors}, ${a.journal}, ${a.date}) PMID:${a.pmid}`
-  ).join('\n');
+  const articlesText = articles
+    .map((a, i) => `${i + 1}. ${a.title} (${a.authors}, ${a.journal}, ${a.date}) PMID:${a.pmid}`)
+    .join('\n');
 
   const prompt = `以下は ${diseaseId} に関する最新の PubMed 論文リストです。
 これらを日本語で簡潔に要約し、臨床的に重要な発見を箇条書きで整理してください。
@@ -91,7 +96,9 @@ JSON形式で出力（前後の説明なし）:
   try {
     const m = text.match(/\{[\s\S]*\}/);
     return m ? JSON.parse(m[0]) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export default {
@@ -119,18 +126,21 @@ export default {
         }
 
         // Rate limit: 1 request per 2 seconds
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 2000));
       } catch (e) {
         console.warn(`[research-updater] ${diseaseId} failed:`, e.message);
       }
     }
 
     // Store metadata
-    await env.RESEARCH_KV.put('research:_meta', JSON.stringify({
-      lastRun: new Date().toISOString(),
-      diseasesUpdated: Object.keys(results).length,
-      totalArticles: Object.values(results).reduce((s, r) => s + (r.articleCount || 0), 0),
-    }));
+    await env.RESEARCH_KV.put(
+      'research:_meta',
+      JSON.stringify({
+        lastRun: new Date().toISOString(),
+        diseasesUpdated: Object.keys(results).length,
+        totalArticles: Object.values(results).reduce((s, r) => s + (r.articleCount || 0), 0),
+      })
+    );
 
     console.log('[research-updater] completed:', Object.keys(results).length, 'diseases updated');
   },
