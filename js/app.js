@@ -727,10 +727,7 @@ var App = class App {
       }
     }
 
-    // Default to ME/CFS if nothing selected
-    if (!store.get('selectedDisease')) {
-      store.set('selectedDisease', { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎/慢性疲労症候群', icon: '🧠', color: '#6C63FF' });
-    }
+
 
     // Load default prompts
     if (!store.get('customPrompts') || Object.keys(store.get('customPrompts')).length === 0) {
@@ -3282,7 +3279,7 @@ ${responseText.substring(0, 3000)}`;
   }
 
   guestSampleReport() {
-    let diseaseId = 'mecfs';
+    let diseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
     try {
       const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
       if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
