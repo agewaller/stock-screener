@@ -1,0 +1,74 @@
+name: Deploy cares-relay Worker
+
+# Service-binding relay that forwards requests to stock-screener,
+# bypassing the Cloudflare Access protection on stock-screener's
+# public URL. Auto-deploys on push when relay files change, also
+# triggerable manually.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "worker/relay.js"
+      - "wrangler.relay.jsonc"
+      - ".github/workflows/deploy-relay.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify CLOUDFLARE_API_TOKEN
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret missing."
+            exit 1
+          fi
+          echo "✓ token present"
+
+      - name: Discover account ID
+        id: acct
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ACC=$(curl -fsS -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/accounts)
+          ACCOUNT_ID=$(echo "$ACC" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('result',[{}])[0].get('id',''))")
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "✓ account=$ACCOUNT_ID"
+
+      - name: Deploy cares-relay
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
+        run: |
+          npx -y wrangler@4 deploy --config wrangler.relay.jsonc 2>&1 | tee /tmp/deploy.txt
+
+      - name: Probe cares-relay
+        run: |
+          echo "Waiting 10s for propagation..."; sleep 10
+          echo "--- HEAD/GET cares-relay.agewaller.workers.dev ---"
+          curl -is -o /tmp/probe.txt -w "HTTP %{http_code} in %{time_total}s\n" \
+            https://cares-relay.agewaller.workers.dev/ || true
+          head -c 1500 /tmp/probe.txt
+          echo ""
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Deploy result" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -30 /tmp/deploy.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "(no deploy log)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '## Probe' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -c 1000 /tmp/probe.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "(no probe)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

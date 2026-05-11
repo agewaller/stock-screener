@@ -271,6 +271,7 @@ var FirebaseBackend = {
 
   async signOut() {
     try {
+      this.cleanupListeners();
       await this.auth.signOut();
       store.clearAll();
       Components.showToast('ログアウトしました', 'info');
@@ -691,40 +692,12 @@ var FirebaseBackend = {
         }
       }
 
-      // Load collections in parallel
-      const collections = {
-        textEntries: 'textEntries',
-        symptoms: 'symptoms',
-        vitals: 'vitals',
-        sleepData: 'sleep',
-        activityData: 'activity',
-        bloodTests: 'bloodTests',
-        medications: 'medications',
-        conversations: 'conversationHistory'
-      };
-
-      const loadPromises = Object.entries(collections).map(async ([storeKey, fbCollection]) => {
-        try {
-          const snapshot = await this.userCollection(fbCollection)
-            .orderBy('createdAt', 'desc')
-            .limit(200)
-            .get();
-          const data = [];
-          snapshot.forEach(doc => {
-            // Mark loaded entries as already-synced so that any subsequent
-            // store.set() that includes them (e.g. appending a new entry)
-            // doesn't try to re-upload the existing ones as duplicates.
-            data.push({ id: doc.id, _synced: true, ...doc.data() });
-          });
-          data.reverse(); // chronological order
-          store.set(storeKey, data);
-        } catch (err) {
-          // Collection might not exist yet
-          console.warn(`Load ${fbCollection}:`, err.message);
-        }
-      });
-
-      await Promise.all(loadPromises);
+      // Start real-time listeners for all health data collections.
+      // The onSnapshot callback fires immediately with cached/server data
+      // (replaces the old one-shot .get() reads), then stays active to
+      // push changes from other devices in real time.
+      this.subscribeToCollections();
+      this.subscribeToSettings();
 
       // Legacy per-user keys (backward compatibility). Global config
       // already ran at the top of this function, so re-fetch just for
@@ -893,6 +866,11 @@ var FirebaseBackend = {
     store.on('textEntries', syncLatest('textEntries'));
     store.on('symptoms', syncLatest('symptoms'));
     store.on('vitals', syncLatest('vitals'));
+    store.on('sleepData', syncLatest('sleep'));
+    store.on('activityData', syncLatest('activity'));
+    store.on('bloodTests', syncLatest('bloodTests'));
+    store.on('medications', syncLatest('medications'));
+    store.on('conversationHistory', syncLatest('conversations'));
 
     // Watch for settings changes (idempotent; merge:true)
     ['selectedDisease', 'selectedDiseases', 'selectedModel', 'customPrompts', 'affiliateConfig', 'dashboardLayout'].forEach(key => {
@@ -910,6 +888,13 @@ var FirebaseBackend = {
       this.saveProfile({ userProfile: value });
     });
 
+    // Watch for AI feedback (dashboard response card)
+    store.on('latestFeedback', (feedback) => {
+      if (this._loading) return;
+      if (!this.userId || !feedback) return;
+      this.saveProfile({ latestFeedback: feedback });
+    });
+
     // Watch for analysis history
     store.on('latestAnalysis', (analysis) => {
       if (this._loading) return;
@@ -921,6 +906,117 @@ var FirebaseBackend = {
         summary: analysis.parsed?.summary || '',
       });
     });
+  },
+
+  // ── Real-time cross-device sync via onSnapshot ──
+  // Keeps health data synchronized across all devices in real time.
+  // Any write on Device A propagates to Device B within seconds via
+  // Firestore's onSnapshot listeners. Replaces the one-shot .get()
+  // reads that only ran at login (causing the "data not visible on
+  // other devices" bug).
+  subscribeToCollections() {
+    if (!this.userId) return;
+    if (this._collectionUnsubs) {
+      this._collectionUnsubs.forEach(function(fn) { try { fn(); } catch(e) {} });
+    }
+    this._collectionUnsubs = [];
+
+    var self = this;
+    var collections = {
+      textEntries: 'textEntries',
+      symptoms: 'symptoms',
+      vitals: 'vitals',
+      sleepData: 'sleep',
+      activityData: 'activity',
+      bloodTests: 'bloodTests',
+      medications: 'medications',
+      conversationHistory: 'conversations'
+    };
+
+    Object.keys(collections).forEach(function(storeKey) {
+      var fbColl = collections[storeKey];
+      // NOTE: We deliberately do NOT use .orderBy('createdAt', 'desc')
+      // here. Firestore silently EXCLUDES documents missing the field
+      // used in orderBy. Some older entries (written before
+      // saveHealthEntry stamped serverTimestamp() on every doc, or
+      // hand-imported via Plaud / CSV) lack createdAt — they would
+      // disappear from the user's history even though they exist in
+      // Firestore. We fetch up to 500 docs and sort client-side using
+      // any available timestamp field (timestamp / createdAt / date).
+      var unsub = self.userCollection(fbColl)
+        .limit(500)
+        .onSnapshot(function(snap) {
+          var prev = self._loading;
+          self._loading = true;
+          try {
+            var data = [];
+            snap.forEach(function(d) {
+              data.push(Object.assign({ id: d.id, _synced: true }, d.data()));
+            });
+            // Sort ascending by best-available timestamp so newest is last
+            // (matches the addHealthData order convention used by store.js).
+            var tsOf = function(e) {
+              var t = e.timestamp || e.createdAt || e.date || e.recordedAt;
+              if (!t) return 0;
+              if (typeof t === 'object' && typeof t.toMillis === 'function') return t.toMillis();
+              if (t instanceof Date) return t.getTime();
+              if (typeof t === 'string') { var p = Date.parse(t); return isNaN(p) ? 0 : p; }
+              return Number(t) || 0;
+            };
+            data.sort(function(a, b) { return tsOf(a) - tsOf(b); });
+            store.set(storeKey, data);
+          } finally {
+            self._loading = prev;
+          }
+        }, function(err) {
+          console.warn('[onSnapshot]', fbColl, err.code || '', err.message);
+        });
+      self._collectionUnsubs.push(unsub);
+    });
+    console.log('[Firebase] Real-time collection listeners active (8 collections, no orderBy)');
+  },
+
+  subscribeToSettings() {
+    if (!this.userId) return;
+    if (this._settingsUnsub) {
+      try { this._settingsUnsub(); } catch(e) {}
+    }
+    var self = this;
+    this._settingsUnsub = this.userDoc().onSnapshot(function(doc) {
+      if (!doc.exists) return;
+      var prev = self._loading;
+      self._loading = true;
+      try {
+        var p = doc.data();
+        if (p.settings && p.settings.selectedDisease) store.set('selectedDisease', p.settings.selectedDisease);
+        if (p.settings && p.settings.selectedDiseases) store.set('selectedDiseases', p.settings.selectedDiseases);
+        if (p.settings && p.settings.selectedModel) store.set('selectedModel', p.settings.selectedModel);
+        if (p.settings && p.settings.customPrompts) store.set('customPrompts', p.settings.customPrompts);
+        if (p.settings && p.settings.affiliateConfig) store.set('affiliateConfig', p.settings.affiliateConfig);
+        if (p.settings && p.settings.dashboardLayout) store.set('dashboardLayout', p.settings.dashboardLayout);
+        if (p.userProfile) store.set('userProfile', p.userProfile);
+        if (p.latestFeedback) store.set('latestFeedback', p.latestFeedback);
+        if (p.adminEmails) {
+          try { app.ADMIN_EMAILS = ['agewaller@gmail.com'].concat(p.adminEmails); } catch(e) {}
+        }
+      } finally {
+        self._loading = prev;
+      }
+    }, function(err) {
+      console.warn('[onSnapshot] userDoc:', err.message);
+    });
+    console.log('[Firebase] Real-time settings listener active');
+  },
+
+  cleanupListeners() {
+    if (this._collectionUnsubs) {
+      this._collectionUnsubs.forEach(function(fn) { try { fn(); } catch(e) {} });
+      this._collectionUnsubs = [];
+    }
+    if (this._settingsUnsub) {
+      try { this._settingsUnsub(); } catch(e) {}
+      this._settingsUnsub = null;
+    }
   },
 
   // Check if Firebase is configured

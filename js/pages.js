@@ -86,28 +86,23 @@ App.prototype.render_login = function() {
         <p style="font-size:14px;color:#64748b;line-height:1.5">体調記録・情報整理ツール</p>
       </div>
 
-      <!-- Today's axis preview + public user count -->
-      <!-- The today's-axis widget gives repeat visitors a reason to
-           return daily ("今日は何の軸かな?") and builds trust by
-           demonstrating that the daily advice genuinely rotates.
-           The user-count widget is filled in lazily by JS because
-           we need to query Firestore — rendered at 0 on first
-           paint, then hydrated. -->
-      ${(() => {
-        const todayAxis = (typeof aiEngine !== 'undefined' && aiEngine._getTodayPrescriptionAxis)
-          ? aiEngine._getTodayPrescriptionAxis() : null;
-        if (!todayAxis) return '';
-        return `
-        <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1.5px solid #6366f1;border-radius:12px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-size:10px;color:#6366f1;font-weight:700;flex-shrink:0">📅 今日の新処方の指定軸</div>
-            <div id="public-user-count-inline" style="margin-left:auto;font-size:10px;color:#64748b">読込中…</div>
-          </div>
-          <div style="font-size:14px;font-weight:700;color:#3730a3;margin-top:4px;line-height:1.4">${todayAxis.icon} ${todayAxis.name}</div>
-          <div style="font-size:11px;color:#4338ca;line-height:1.6;margin-top:3px">${Components.escapeHtml((todayAxis.desc || '').substring(0, 100))}${(todayAxis.desc || '').length > 100 ? '…' : ''}</div>
-          <div style="font-size:10px;color:#6366f1;margin-top:6px">※ 毎日 14 軸から自動的に 1 つが選ばれます — 2 週間で全ての角度を体験</div>
-        </div>`;
-      })()}
+      <!-- User count (hydrated lazily by JS) -->
+      <div id="public-user-count-inline" style="font-size:10px;color:#64748b;text-align:right;margin-bottom:8px"></div>
+
+      <!-- Disease Selection (moved above guest input) -->
+      <div style="margin-bottom:14px;padding:14px;background:#f8fafc;border-radius:14px">
+        <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
+          onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
+          <div style="font-size:12px;font-weight:600;color:#1e293b">対象疾患を選択（任意・後から変更可）<span style="font-weight:400;color:#94a3b8;margin-left:4px">${selectedCount > 0 ? selectedCount + '件' : ''}</span></div>
+          <span class="arrow" style="font-size:16px;color:#94a3b8">+</span>
+        </div>
+        <div id="disease-picker" style="display:none;margin-top:10px">
+          <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
+            oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
+          ${categoryHtml}
+          <div id="selected-disease-scale" style="display:none;margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 8px 8px 0"></div>
+        </div>
+      </div>
 
       <!-- Guest Try Area (no registration required) -->
       <div style="margin-bottom:20px;padding:18px;background:#fff;border-radius:16px;border:2px solid #6366f1;box-shadow:0 2px 12px rgba(99,102,241,0.08)">
@@ -129,26 +124,8 @@ App.prototype.render_login = function() {
           </div>
         </div>
 
-        <!-- Disease hint (gentle) — now shows world patient count
-             as a tooltip + a subtle "あなただけじゃない" reassurance
-             below the tag row so the scale is visible even on mobile. -->
-        <div style="margin-top:10px;padding:8px 12px;background:#f8fafc;border-radius:10px;font-size:11px;color:#64748b;line-height:1.6">
-          お持ちの症状を選ぶと、より的確な情報をお伝えできます（任意）
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px" id="guest-disease-tag-row">
-            ${['mecfs:慢性疲労', 'depression:うつ', 'fibromyalgia:線維筋痛症', 'long_covid:コロナ後遺症', 'insomnia:不眠', 'pots:起立不耐', 'ibs:おなかの不調', 'hashimoto:甲状腺'].map(item => {
-              const [id, label] = item.split(':');
-              const epi = CONFIG.DISEASE_EPIDEMIOLOGY?.[id];
-              const tooltipLabel = epi ? `世界で ${epi.label}（${epi.source || '統計'}）` : '';
-              return `<span class="guest-disease-tag" data-id="${id}" data-world-label="${Components.escapeHtml(epi?.label || '')}" title="${Components.escapeHtml(tooltipLabel)}"
-                style="padding:3px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;cursor:pointer;font-size:11px;transition:all 0.15s"
-                onclick="this.classList.toggle('selected');if(this.classList.contains('selected')){this.style.background='#ede9fe';this.style.borderColor='#6366f1';this.style.color='#6366f1'}else{this.style.background='#fff';this.style.borderColor='#e2e8f0';this.style.color='#64748b'}app.updateGuestDiseaseScale();">${label}</span>`;
-            }).join('')}
-          </div>
-          <div id="guest-disease-scale" style="margin-top:8px;padding:8px 10px;background:#fafaff;border-left:3px solid #6366f1;border-radius:0 6px 6px 0;font-size:11px;color:#4338ca;line-height:1.6;display:none">
-            <strong>あなただけじゃない。</strong>
-            <span id="guest-disease-scale-text"></span>
-          </div>
-        </div>
+        <div id="guest-disease-tag-row" style="display:none"></div>
+        <div id="guest-disease-scale" style="display:none"></div>
 
         <!-- ✨ サンプルで体験 — 登録前の最大コンバージョンドライバー。
              何を書けばいいか迷うユーザーに現実的な記録例を 1 タップで
@@ -193,23 +170,6 @@ App.prototype.render_login = function() {
       <!-- Login Options -->
       <div id="login-section"></div>
       <div style="margin-bottom:24px">
-        <!-- Email Registration/Login (primary for older users) -->
-        <form onsubmit="app.loginWithEmail(event)" style="margin-bottom:14px">
-          <input type="email" name="email" class="form-input" placeholder="メールアドレス"
-            style="border-radius:14px;padding:14px 16px;margin-bottom:8px;border:1.5px solid #e2e8f0;font-size:15px">
-          <input type="password" name="password" class="form-input" placeholder="パスワード（6文字以上）"
-            style="border-radius:14px;padding:14px 16px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:15px">
-          <button type="submit" class="btn btn-primary" style="width:100%;border-radius:14px;padding:14px;font-size:15px">メールアドレスではじめる（無料）</button>
-          <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px">初回は自動で登録されます。2回目以降は同じメール・パスワードでログイン。</div>
-        </form>
-
-        <!-- Divider -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-          <div style="flex:1;height:1px;background:#e2e8f0"></div>
-          <span style="font-size:12px;color:#94a3b8">または</span>
-          <div style="flex:1;height:1px;background:#e2e8f0"></div>
-        </div>
-
         <!-- In-app browser warning (LINE / Instagram / Twitter / Facebook) -->
         ${(() => {
           const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
@@ -217,18 +177,14 @@ App.prototype.render_login = function() {
             /Instagram/i.test(ua) || /Twitter/i.test(ua) ||
             /MicroMessenger/i.test(ua) || /wv\)/i.test(ua);
           if (!isInApp) return '';
-          // Detect LINE specifically for its openExternalBrowser hint.
           const isLine = /Line\//i.test(ua);
           const currentUrl = typeof location !== 'undefined' ? location.href : 'https://cares.advisers.jp';
-          // LINE supports a query parameter that forces its in-app
-          // browser to open the URL in the system default browser.
-          // For other apps this param is just ignored.
           const lineBreakoutUrl = currentUrl + (currentUrl.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
           return `
             <div style="margin-bottom:14px;padding:14px 16px;background:#fff7ed;border:1.5px solid #f97316;border-radius:14px">
               <div style="font-size:13px;font-weight:700;color:#9a3412;margin-bottom:6px">⚠ アプリ内ブラウザでは Google ログインが使えません</div>
               <div style="font-size:12px;color:#7c2d12;line-height:1.7;margin-bottom:10px">
-                LINE・Instagram 等のアプリ内ブラウザでは、Google のセキュリティポリシーにより OAuth ログインがブロックされます。以下のいずれかをお試しください：
+                LINE・Instagram 等のアプリ内ブラウザでは Google ログインがブロックされます。
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
                 ${isLine ? `
@@ -240,30 +196,36 @@ App.prototype.render_login = function() {
                   style="padding:12px;background:#f97316;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
                   📤 共有メニューから Safari で開く
                 </button>
-                <button onclick="app.copyCurrentUrl()"
-                  style="padding:12px;background:#fff;color:#9a3412;border:1.5px solid #f97316;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
-                  📋 URLをコピーしてブラウザで開く
-                </button>
               </div>
-              <details style="font-size:11px;color:#7c2d12;line-height:1.6;margin-bottom:8px">
-                <summary style="cursor:pointer;font-weight:600">手動で Safari に切り替える方法</summary>
-                <ol style="margin:6px 0 0 20px;padding:0">
-                  <li>画面右上または下部の <strong>「⋯」（メニュー）</strong>ボタンをタップ</li>
-                  <li>「<strong>Safari で開く</strong>」または「<strong>ブラウザで開く</strong>」を選択</li>
-                  <li>開いた Safari でもう一度「Google でログイン」を押す</li>
-                </ol>
-              </details>
               <div style="font-size:11px;color:#9a3412;line-height:1.6">
                 または下の<strong>メールアドレス</strong>で登録すれば、このブラウザでもすぐ使えます ↓
               </div>
             </div>`;
         })()}
-        <!-- Google Login -->
+
+        <!-- Google Login (primary) -->
         <div id="login-error" style="display:none;margin-bottom:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#991b1b;font-size:12px;line-height:1.5;word-break:break-word"></div>
-        <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:14px;font-size:14px;border:1.5px solid #e2e8f0;background:#fff">
+        <button class="google-btn" onclick="app.loginWithGoogle()" style="width:100%;border-radius:14px;padding:14px;font-size:14px;border:1.5px solid #e2e8f0;background:#fff;margin-bottom:14px">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           Googleアカウントではじめる
         </button>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+          <span style="font-size:12px;color:#94a3b8">または</span>
+          <div style="flex:1;height:1px;background:#e2e8f0"></div>
+        </div>
+
+        <!-- Email Registration/Login -->
+        <form onsubmit="app.loginWithEmail(event)" style="margin-bottom:14px">
+          <input type="email" name="email" class="form-input" placeholder="メールアドレス"
+            style="border-radius:14px;padding:14px 16px;margin-bottom:8px;border:1.5px solid #e2e8f0;font-size:15px">
+          <input type="password" name="password" class="form-input" placeholder="パスワード（6文字以上）"
+            style="border-radius:14px;padding:14px 16px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:15px">
+          <button type="submit" class="btn btn-primary" style="width:100%;border-radius:14px;padding:14px;font-size:15px">メールアドレスではじめる（無料）</button>
+          <div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:6px">初回は自動で登録されます。2回目以降は同じメール・パスワードでログイン。</div>
+        </form>
       </div>
 
       <!-- How it works -->
@@ -283,25 +245,7 @@ App.prototype.render_login = function() {
         </div>
       </div>
 
-      <!-- Disease Selection -->
-      <div style="margin-bottom:20px;padding:14px;background:#f8fafc;border-radius:14px">
-        <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
-          onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
-          <div style="font-size:12px;font-weight:600;color:#1e293b">対象疾患を選択（任意・後から変更可）<span style="font-weight:400;color:#94a3b8;margin-left:4px">${selectedCount > 0 ? selectedCount + '件' : ''}</span></div>
-          <span class="arrow" style="font-size:16px;color:#94a3b8">+</span>
-        </div>
-        <div id="disease-picker" style="display:none;margin-top:10px">
-          <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
-            oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
-          ${categoryHtml}
-          <!-- Scale-of-community reassurance. Populated dynamically by
-               app.updateSelectedDiseaseScale() whenever the user ticks
-               a checkbox above. Shows the world + Japan patient counts
-               for the selected conditions so the visitor immediately
-               sees they are not alone. -->
-          <div id="selected-disease-scale" style="display:none;margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 8px 8px 0"></div>
-        </div>
-      </div>
+      <!-- Disease Selection was moved above guest input -->
 
       <!-- Testimonial + Developer's note articles -->
       <div style="margin-bottom:24px;padding:16px;border-left:3px solid #6366f1;background:#fafaff;border-radius:0 12px 12px 0">
@@ -394,7 +338,7 @@ App.prototype.render_login = function() {
       <div style="text-align:center;padding:0 0 32px;color:#94a3b8;font-size:10px;line-height:2">
         <div>運営: シェアーズ株式会社 &nbsp;·&nbsp; 🇯🇵 Made in Japan</div>
         <div>本サービスは医療機器ではありません &nbsp;·&nbsp; 無料</div>
-        <div style="margin-top:4px;color:#cbd5e1">&copy; 2025 Shares Inc. All rights reserved.</div>
+        <div style="margin-top:4px;color:#cbd5e1">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
       </div>
 
     </div>
@@ -665,12 +609,40 @@ App.prototype.render_dashboard = function() {
       }
       const err = store.get('latestFeedbackError');
       if (err) {
+        // Surface escape hatches when the failure is connection-class:
+        //   - サービスをリセット — strips stale SW + cached state
+        //   - 接続を診断する — OPTIONS/GET/POST probes against Worker URL
+        //   - 正しい Worker URL を直接入力 — manual override for when
+        //     workers.dev / custom domain isn't what we hardcoded
+        const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
+        let currentProxy = '';
+        try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+        if (!currentProxy) currentProxy = 'https://stock-screener.agewaller.workers.dev';
+        const safeProxy = Components.escapeHtml(currentProxy);
+        const escapeHatches = isConnFail
+          ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+              <button onclick="app.resetClientCacheAndReload()"
+                style="padding:8px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔄 サービスをリセット</button>
+              <button onclick="app.diagnoseAiConnection(document.getElementById('dash-ai-diag'))"
+                style="padding:8px 14px;background:#0891b2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">🔍 接続を診断する</button>
+             </div>
+             <details style="margin-top:10px;font-size:11px">
+               <summary style="cursor:pointer;color:var(--danger);font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>
+               <div style="margin-top:8px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px">
+                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → stock-screener で表示される実際の URL を貼り付けてください。</div>
+                 <input type="text" id="proxy-url-override-input" placeholder="https://stock-screener.xxx.workers.dev" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
+                 <button onclick="app.setProxyUrlFromInput()" style="margin-top:6px;padding:6px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">💾 保存して再読み込み</button>
+               </div>
+             </details>
+             <div id="dash-ai-diag"></div>`
+          : '';
         return `
           <div class="card" style="border-left:4px solid var(--danger);margin-bottom:12px">
             <div class="card-body" style="padding:12px 16px">
               <div style="font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px">分析中にエラーが発生しました</div>
               <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(err)}</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:6px">記録は保存済みです。もう一度送信するとリトライできます。</div>
+              ${escapeHatches}
             </div>
           </div>`;
       }
@@ -895,8 +867,20 @@ App.prototype.render_dashboard = function() {
         : '';
       // Border color: highlight integration imports so they pop on the feed
       const borderColor = src ? src.color : 'var(--accent)';
+      const safeEntryId = Components.escapeHtml(e.id || '');
+      const editedTag = e.editedAt ? `<span style="font-size:10px;color:var(--text-muted);font-style:italic">編集済</span>` : '';
+      // Inline ✏️ / 🗑 controls in the expanded view so the user can edit
+      // or delete anything they wrote. Delete uses the confirmAction
+      // double-tap pattern (the inline 2-step pattern used elsewhere).
+      const expandedActions = safeEntryId ? `
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <button onclick="event.stopPropagation();app.beginEditTextEntry('${safeEntryId}')"
+            style="padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px">✏️ 編集</button>
+          <button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteTextEntry('${safeEntryId}'))"
+            style="padding:5px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px">🗑 削除</button>
+        </div>` : '';
       return `
-      <div class="card" style="margin-bottom:8px;border-left:3px solid ${borderColor}">
+      <div class="card" data-entry-id="${safeEntryId}" style="margin-bottom:8px;border-left:3px solid ${borderColor}">
         <div style="padding:10px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var b=document.getElementById('${eid}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=b.style.display==='none'?'▸':'▾'">
           <div style="flex:1;min-width:0;display:flex;gap:10px;align-items:center">
@@ -906,6 +890,7 @@ App.prototype.render_dashboard = function() {
               <span style="font-size:12px;font-weight:600">${safeTitle}</span>
               ${sourceBadge}
               <span style="font-size:10px;color:var(--text-muted)">${new Date(e.timestamp).toLocaleDateString('ja-JP', {month:'short',day:'numeric',weekday:'short'})}</span>
+              ${editedTag}
             </div>
             <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}${isLong ? '...' : ''}</div>
             </div>
@@ -915,6 +900,7 @@ App.prototype.render_dashboard = function() {
         <div id="${eid}" style="display:none;padding:0 16px 12px">
           ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeTitle}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
           <div style="font-size:13px;color:var(--text-primary);line-height:1.7;white-space:pre-wrap">${content}</div>
+          ${expandedActions}
           ${(() => {
             const comment = app.getAIComment(e.id);
             if (!comment) return e._insight ? `<div style="padding:6px 10px;background:var(--accent-bg);border-radius:var(--radius-sm);font-size:11px;color:var(--accent);margin-top:8px"><strong>分析:</strong> ${e._insight}</div>` : '';
@@ -1211,11 +1197,27 @@ App.prototype.render_data_input = function() {
         const safeContent = Components.escapeHtml(rawContent.length > 300 ? rawContent.substring(0, 300) + '...' : rawContent);
         const safeTitle = e.title ? Components.escapeHtml(e.title) : '';
         const safeCategory = Components.escapeHtml(categoryLabels[e.category] || e.category || '');
+        const safeId = Components.escapeHtml(e.id || '');
+        const editedTag = e.editedAt ? `<span style="font-size:10px;color:var(--text-muted);font-style:italic;margin-left:4px">編集済</span>` : '';
+        // Inline ✏️ / 🗑 buttons let the user freely edit or delete what
+        // they wrote. Delete uses the confirmAction double-tap pattern
+        // (the inline 2-step confirm flow used elsewhere in the app).
+        const actionsHtml = safeId ? `
+          <div style="display:flex;gap:4px;margin-left:8px">
+            <button onclick="app.beginEditTextEntry('${safeId}')" title="編集"
+              style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;line-height:1">✏️</button>
+            <button onclick="app.confirmAction(this,'削除',()=>app.deleteTextEntry('${safeId}'))" title="削除"
+              style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;line-height:1">🗑</button>
+          </div>` : '';
         return `
-        <div style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
-            <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+        <div data-entry-id="${safeId}" style="padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid var(--accent)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1">
+              <span class="tag tag-accent" style="font-size:10px">${safeCategory}</span>
+              <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">${new Date(e.timestamp).toLocaleString('ja-JP')}</span>
+              ${editedTag}
+            </div>
+            ${actionsHtml}
           </div>
           ${safeTitle ? `<div style="font-size:13px;font-weight:600;margin-bottom:2px">${safeTitle}</div>` : ''}
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap">${safeContent}</div>
@@ -2277,6 +2279,7 @@ App.prototype.render_integrations = function() {
 
   // Connection status per integration
   const statuses = [
+    { key: 'google_fit',       icon: '💚', name: 'Google Fit',           color: '#4285F4', count: countSource('google_fit'),   lastSync: syncs.google_fit,   anchor: 'googlefit-section' },
     { key: 'apple_watch',      icon: '⌚', name: 'iPhone & Apple Watch', color: '#ef4444', count: countSource('apple_health'), lastSync: syncs.apple_health, anchor: 'apple-section' },
     { key: 'plaud',            icon: '🎙️', name: 'Plaud (会話録音)',     color: '#8b5cf6', count: countSource('plaud'),        lastSync: syncs.plaud,        anchor: 'plaud-section' },
     { key: 'fitbit',           icon: '🏃', name: 'Fitbit',              color: '#22c55e', count: countSource('fitbit'),       lastSync: syncs.fitbit,       anchor: 'fitbit-section' },
@@ -2334,6 +2337,38 @@ App.prototype.render_integrations = function() {
         </div>
       </a>`;
     }).join('')}
+  </div>
+
+  <!-- ═══ iPhone & Apple Watch ═══ -->
+  <!-- ═══ Google Fit (recommended) ═══ -->
+  <div class="card" style="margin-bottom:20px;border:2px solid #4285F4" id="googlefit-section">
+    <div class="card-header">
+      <span class="card-title">💚 Google Fit（おすすめ・ワンクリック接続）</span>
+      <span class="tag ${Integrations.googleFit.connected ? 'tag-success' : 'tag-warning'}" style="font-size:10px">
+        ${Integrations.googleFit.connected ? (countSource('google_fit') + '件取込済') : '未接続'}
+      </span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;line-height:1.7">
+        <strong>ボタン1つで接続。</strong>心拍数・歩数・睡眠・体重・血圧・SpO2・体温を自動取込。<br>
+        Apple Watch / Fitbit / Garmin / Oura / Withings のデータも Google Fit 経由で取り込めます。
+      </p>
+      <div style="padding:10px 14px;background:#eef2ff;border-radius:10px;margin-bottom:12px;font-size:11px;color:#3730a3;line-height:1.7">
+        💡 <strong>Apple Watch ユーザーの方:</strong> iPhone の「設定 → ヘルスケア → Health Connect」で Google Fit と連携すると、Apple Watch のデータも自動で取り込まれます。
+      </div>
+      ${Integrations.googleFit.connected ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="Integrations.googleFit.fetchAndImport(7).then(n=>Components.showToast('Google Fit: '+n+'件取込','success'))" style="font-size:12px">🔄 今すぐ同期（過去7日分）</button>
+          <button class="btn btn-sm btn-secondary" onclick="Integrations.googleFit.disconnect();app.navigate('integrations')" style="font-size:12px">切断</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:8px">30分ごとに自動同期されます</div>
+      ` : `
+        <button class="btn btn-primary" onclick="app.connectGoogleFit()" style="width:100%;padding:14px;font-size:15px;border-radius:14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:6px"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google Fit に接続する
+        </button>
+      `}
+    </div>
   </div>
 
   <!-- ═══ iPhone & Apple Watch ═══ -->
@@ -2965,6 +3000,32 @@ App.prototype.render_admin = function() {
         <button class="btn btn-primary" onclick="app.saveFirebaseConfig()">保存して接続</button>
         <button class="btn btn-danger btn-sm" onclick="app.clearFirebaseConfig()">削除</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Data Diagnostic: shows the actual document count in Firestore vs.
+       what's currently loaded into the store. Lets the admin verify
+       that no historical data has been lost (a frequent panic point
+       after sign-out / sign-in cycles). Also offers a re-fetch button
+       if the listener missed entries. -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-header">
+      <span class="card-title">📊 データ診断</span>
+    </div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        Firestore に実際に保存されている件数と、画面に読み込まれている件数を比較できます。<br>
+        画面に表示されないデータがある場合、ここで原因が分かります。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-primary btn-sm" style="font-size:13px" onclick="app.runDataDiagnosis()">
+          🔍 診断を実行
+        </button>
+        <button class="btn btn-outline btn-sm" style="font-size:13px" onclick="app.forceReloadFromCloud()">
+          ☁️ クラウドから強制再読込
+        </button>
+      </div>
+      <div id="data-diagnosis-result" style="font-size:12px;line-height:1.7;margin-top:8px"></div>
     </div>
   </div>
   </div>

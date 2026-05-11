@@ -1138,7 +1138,7 @@ var CONFIG = {
 
   // Affiliate networks
   AFFILIATE_NETWORKS: [
-    { id: 'amazon_jp', name: 'Amazon.co.jp', tag: 'chroniccare-22' },
+    { id: 'amazon_jp', name: 'Amazon.co.jp', tag: 'forestvoice-22' },
     { id: 'rakuten', name: '楽天市場', tag: 'chroniccare' },
     { id: 'iherb', name: 'iHerb', code: 'CHRONICCARE' },
     { id: 'a8', name: 'A8.net', publisherId: '' },

@@ -820,6 +820,175 @@ Integrations.urlImport = {
   }
 };
 
+// ======== GOOGLE FIT INTEGRATION ========
+Integrations.googleFit = {
+  SCOPES: [
+    'https://www.googleapis.com/auth/fitness.activity.read',
+    'https://www.googleapis.com/auth/fitness.body.read',
+    'https://www.googleapis.com/auth/fitness.heart_rate.read',
+    'https://www.googleapis.com/auth/fitness.sleep.read',
+    'https://www.googleapis.com/auth/fitness.blood_pressure.read',
+    'https://www.googleapis.com/auth/fitness.oxygen_saturation.read',
+    'https://www.googleapis.com/auth/fitness.body_temperature.read'
+  ].join(' '),
+
+  accessToken: localStorage.getItem('google_fit_token') || '',
+  connected: !!localStorage.getItem('google_fit_token'),
+
+  async connect() {
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      Components.showToast('Firebase が初期化されていません', 'error');
+      return null;
+    }
+    try {
+      var provider = new firebase.auth.GoogleAuthProvider();
+      this.SCOPES.split(' ').forEach(function(s) { provider.addScope(s); });
+      provider.setCustomParameters({ prompt: 'consent', access_type: 'offline' });
+      var result = await firebase.auth().signInWithPopup(provider);
+      var token = result.credential?.accessToken
+        || result._tokenResponse?.oauthAccessToken
+        || '';
+      if (!token) {
+        Components.showToast('Google Fit のアクセストークンを取得できませんでした', 'error');
+        return null;
+      }
+      localStorage.setItem('google_fit_token', token);
+      localStorage.setItem('google_fit_token_expiry', String(Date.now() + 3500000));
+      this.accessToken = token;
+      this.connected = true;
+      Components.showToast('Google Fit に接続しました', 'success');
+      this.fetchAndImport(7).catch(function(e) { console.warn('[GoogleFit] initial fetch:', e.message); });
+      return token;
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user') return null;
+      console.error('[GoogleFit] connect error:', err);
+      Components.showToast('Google Fit 接続に失敗: ' + (err.message || err), 'error');
+      return null;
+    }
+  },
+
+  disconnect() {
+    localStorage.removeItem('google_fit_token');
+    localStorage.removeItem('google_fit_token_expiry');
+    this.accessToken = '';
+    this.connected = false;
+    Components.showToast('Google Fit を切断しました', 'info');
+  },
+
+  isTokenValid() {
+    var expiry = parseInt(localStorage.getItem('google_fit_token_expiry') || '0', 10);
+    return this.accessToken && Date.now() < expiry;
+  },
+
+  async fetchAndImport(days) {
+    days = days || 1;
+    if (!this.accessToken) { console.warn('[GoogleFit] no token'); return 0; }
+    var endMs = Date.now();
+    var startMs = endMs - days * 86400000;
+    var dataTypes = [
+      { type: 'com.google.heart_rate.bpm', key: 'heart_rate', aggregate: false },
+      { type: 'com.google.step_count.delta', key: 'steps', aggregate: true },
+      { type: 'com.google.calories.expended', key: 'calories', aggregate: true },
+      { type: 'com.google.active_minutes', key: 'exercise_min', aggregate: true },
+      { type: 'com.google.weight', key: 'weight', aggregate: false },
+      { type: 'com.google.blood_pressure', key: 'blood_pressure', aggregate: false },
+      { type: 'com.google.oxygen_saturation', key: 'spo2', aggregate: false },
+      { type: 'com.google.body.temperature', key: 'temperature', aggregate: false },
+      { type: 'com.google.sleep.segment', key: 'sleep', aggregate: false }
+    ];
+    var total = 0;
+    var diagnostics = [];
+    for (var i = 0; i < dataTypes.length; i++) {
+      try {
+        var dt = dataTypes[i];
+        var body = {
+          aggregateBy: [{ dataTypeName: dt.type }],
+          bucketByTime: { durationMillis: dt.aggregate ? 86400000 : 3600000 },
+          startTimeMillis: startMs,
+          endTimeMillis: endMs
+        };
+        var resp = await fetch('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + this.accessToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (resp.status === 401) {
+          this.disconnect();
+          Components.showToast('Google Fit の認証が切れました。再接続してください。', 'error');
+          return total;
+        }
+        if (resp.status === 403) {
+          var errBody = await resp.text().catch(function() { return ''; });
+          console.error('[GoogleFit] 403 for', dt.key, errBody);
+          diagnostics.push(dt.key + ': 権限エラー (Fitness API が有効か確認)');
+          continue;
+        }
+        if (!resp.ok) {
+          var errText = await resp.text().catch(function() { return ''; });
+          console.warn('[GoogleFit]', dt.key, 'HTTP', resp.status, errText.substring(0, 200));
+          diagnostics.push(dt.key + ': HTTP ' + resp.status);
+          continue;
+        }
+        var data = await resp.json();
+        var bucketCount = (data.bucket || []).length;
+        var count = this._parseBuckets(data.bucket || [], dt);
+        diagnostics.push(dt.key + ': ' + count + '件 (buckets: ' + bucketCount + ')');
+        total += count;
+      } catch (e) {
+        console.warn('[GoogleFit]', dataTypes[i].key, e.message);
+        diagnostics.push(dataTypes[i].key + ': エラー ' + e.message);
+      }
+    }
+    console.log('[GoogleFit] 診断:', diagnostics.join(' | '));
+    if (total === 0 && diagnostics.length > 0) {
+      var hasPermError = diagnostics.some(function(d) { return d.includes('権限') || d.includes('403'); });
+      if (hasPermError) {
+        Components.showToast('Google Fit API の権限エラー。Google Cloud Console で Fitness API が有効か確認してください。', 'error');
+      } else {
+        Components.showToast('Google Fit にデータが見つかりません。デバイスが Google Fit と同期されているか確認してください。', 'info');
+      }
+    }
+    if (total > 0) {
+      var syncs = store.get('integrationSyncs') || {};
+      syncs.google_fit = new Date().toISOString();
+      store.set('integrationSyncs', syncs);
+      Integrations._addImportEntry({
+        icon: '💚', title: 'Google Fit: ' + total + '件取込',
+        source: 'google_fit',
+        content: 'Google Fit から ' + total + ' 件のヘルスデータを同期'
+      });
+      Components.showToast('Google Fit: ' + total + '件取り込みました', 'success');
+    }
+    return total;
+  },
+
+  _parseBuckets(buckets, dt) {
+    var count = 0;
+    for (var b = 0; b < buckets.length; b++) {
+      var points = [];
+      (buckets[b].dataset || []).forEach(function(ds) { points = points.concat(ds.point || []); });
+      for (var p = 0; p < points.length; p++) {
+        var pt = points[p];
+        var vals = pt.value || [];
+        if (!vals.length) continue;
+        var ts = new Date(parseInt(pt.startTimeNanos) / 1000000).toISOString();
+        var entry = { timestamp: ts, source: 'google_fit', device: 'google_fit' };
+        var v = vals[0].fpVal || vals[0].intVal || 0;
+        if (dt.key === 'heart_rate' && v > 0) { entry.heart_rate = Math.round(v); store.addHealthData('vitals', entry); count++; }
+        else if (dt.key === 'steps' && v > 0) { entry.steps = v; store.addHealthData('activity', entry); count++; }
+        else if (dt.key === 'calories' && v > 0) { entry.calories = Math.round(v); store.addHealthData('activity', entry); count++; }
+        else if (dt.key === 'exercise_min' && v > 0) { entry.exercise_min = v; store.addHealthData('activity', entry); count++; }
+        else if (dt.key === 'weight' && v > 0) { entry.weight = Math.round(v * 10) / 10; store.addHealthData('vitals', entry); count++; }
+        else if (dt.key === 'blood_pressure' && v > 0) { entry.bp_systolic = Math.round(v); entry.bp_diastolic = vals.length > 1 ? Math.round(vals[1].fpVal || 0) : 0; store.addHealthData('vitals', entry); count++; }
+        else if (dt.key === 'spo2' && v > 0) { entry.spo2 = Math.round(v * 100); store.addHealthData('vitals', entry); count++; }
+        else if (dt.key === 'temperature' && v > 0) { entry.temperature = Math.round(v * 10) / 10; store.addHealthData('vitals', entry); count++; }
+        else if (dt.key === 'sleep') { entry.sleep_stage = vals[0].intVal || 0; store.addHealthData('sleep', entry); count++; }
+      }
+    }
+    return count;
+  }
+};
+
 // ─── AUTO-SYNC SCHEDULER ───
 //
 // Connected integrations refresh automatically while the app is open,
@@ -895,7 +1064,12 @@ Integrations.autoSync = {
     try {
       const tasks = [];
 
-      // Fitbit: only if access token exists (i.e. user connected OAuth)
+      // Google Fit: auto-sync if connected
+      if (Integrations.googleFit.connected && Integrations.googleFit.isTokenValid()) {
+        tasks.push(this._syncGoogleFit());
+      }
+
+      // Fitbit: only if access token exists
       if (Integrations.fitbit.accessToken) {
         tasks.push(this._syncFitbit());
       }
@@ -937,6 +1111,15 @@ Integrations.autoSync = {
       await Integrations.fitbit.importToday({ silent: true });
     } catch (e) {
       console.warn('[autoSync] Fitbit failed:', e.message);
+      throw e;
+    }
+  },
+
+  async _syncGoogleFit() {
+    try {
+      await Integrations.googleFit.fetchAndImport(1);
+    } catch (e) {
+      console.warn('[autoSync] GoogleFit failed:', e.message);
       throw e;
     }
   },

@@ -538,31 +538,27 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Route guests (no API key) through the Cloudflare Worker proxy so
-    // the Worker's env.ANTHROPIC_API_KEY fallback handles the request.
-    // Direct calls to api.anthropic.com from a guest browser would 401,
-    // and in Facebook / Instagram / LINE in-app browsers the fetch to
-    // api.anthropic.com itself frequently fails with "Load failed"
-    // before any HTTP response. This mirrors the policy already in
-    // place for the inline text-only callClaude in index.html — photos
-    // previously bypassed it, so guest image analysis was unreachable
-    // from in-app browsers.
-    let url = 'https://api.anthropic.com/v1/messages';
-    if (!apiKey) {
+    // Same routing policy as the inline callClaude in index.html:
+    // direct to api.anthropic.com when caller has a key, Worker proxy
+    // otherwise. The proxy URL is read from localStorage (synced from
+    // admin/config.proxyUrl) so the admin can configure the correct
+    // workers.dev hostname for their Cloudflare account — the
+    // hardcoded fallback may be wrong if the account's workers_dev
+    // subdomain isn't `agewaller`.
+    let url;
+    if (apiKey) {
+      url = 'https://api.anthropic.com/v1/messages';
+    } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://stock-screener.agewaller.workers.dev';
+      if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
       url = proxy.replace(/\/+$/, '') + '/v1/messages';
     }
-
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
     };
     if (apiKey) {
-      // `anthropic-dangerous-direct-browser-access` only makes sense
-      // when we're hitting api.anthropic.com directly. The Worker
-      // proxies on our behalf so the header is unnecessary there.
       headers['x-api-key'] = apiKey;
       headers['anthropic-dangerous-direct-browser-access'] = 'true';
     }

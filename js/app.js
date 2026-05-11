@@ -43,11 +43,50 @@ var App = class App {
     return user && this.ADMIN_EMAILS.includes(user.email);
   }
 
+  // Boot-time canary: walk through every onclick / on* attribute in
+  // index.html and the rendered template files and verify each
+  // `app.X(...)` reference resolves to a real method. This catches the
+  // class of regression where a wholesale revert (e.g. cca607c) drops
+  // a method while leaving the onclick handlers behind, which would
+  // otherwise only surface as a TypeError when the user actually taps
+  // the button. The check runs once on init() and only logs — it does
+  // not throw, so a missing handler can never block the app from
+  // booting. Smoke tests perform the same check statically.
+  _verifyHandlerBindings() {
+    try {
+      const nodes = document.querySelectorAll('[onclick],[onchange],[oninput],[onsubmit],[onkeydown],[onkeyup],[onfocus],[onblur]');
+      const seen = new Set();
+      const missing = new Set();
+      const re = /\bapp\.([A-Za-z_]\w*)\s*\(/g;
+      nodes.forEach(node => {
+        ['onclick','onchange','oninput','onsubmit','onkeydown','onkeyup','onfocus','onblur'].forEach(attr => {
+          const v = node.getAttribute(attr);
+          if (!v) return;
+          let m;
+          while ((m = re.exec(v)) !== null) {
+            const name = m[1];
+            if (seen.has(name)) continue;
+            seen.add(name);
+            if (typeof this[name] !== 'function' && typeof window.app?.[name] !== 'function') {
+              missing.add(name);
+            }
+          }
+        });
+      });
+      if (missing.size > 0) {
+        console.warn('[App] Boot canary: missing handlers referenced from on* attributes →', [...missing]);
+      }
+    } catch (e) { console.warn('[App] handler canary failed:', e.message); }
+  }
+
   init() {
     document.documentElement.removeAttribute('data-theme');
     localStorage.removeItem('cc_theme');
     this._initHashRouter();
     store.on('currentPage', (p) => this.navigate(p));
+    // Defensive: log any onclick handler that resolves to undefined
+    // before the user has a chance to tap it.
+    setTimeout(() => this._verifyHandlerBindings(), 1500);
 
     // Auto-refresh the dashboard whenever new data lands in any of the
     // user-visible collections. This makes Plaud / Apple Health / Fitbit
@@ -230,6 +269,10 @@ var App = class App {
   }
 
   afterRender(page) {
+    // Translate UI to user's selected language
+    if (typeof i18n !== 'undefined' && i18n.translatePage) {
+      try { i18n.translatePage(); } catch (_) {}
+    }
     // Populate the "選択疾患の規模" banner on the login page when it
     // first mounts — otherwise a user returning with diseases already
     // cached in localStorage sees an empty box until they click a tag.
@@ -328,6 +371,120 @@ var App = class App {
     localStorage.removeItem('firebase_config');
     Components.showToast('Firebase設定を削除しました。リロード後はローカルモードになります。', 'info');
     setTimeout(() => location.reload(), 1500);
+  }
+
+  // ── Data diagnosis ──
+  // Counts the actual document count in each Firestore subcollection
+  // for the current user, and compares with what's currently loaded
+  // into the in-memory store. Reveals discrepancies that explain
+  // "my data disappeared!" panics — typically caused by:
+  //   - listener filtered by orderBy('createdAt') excluding old docs
+  //   - permission-denied silently failing
+  //   - listener never started because userId was null at sub time
+  // Reads are unfiltered (.get() with no orderBy / where) so even
+  // documents missing standard timestamp fields are counted.
+  async runDataDiagnosis() {
+    const out = document.getElementById('data-diagnosis-result');
+    if (!out) return;
+    out.innerHTML = '<div style="color:var(--text-muted)">⏳ 診断中…（Firestore に問い合わせ中）</div>';
+    if (!FirebaseBackend?.userId) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。ログインしてから実行してください。</div>';
+      return;
+    }
+    const subs = [
+      ['textEntries', 'textEntries', 'テキスト記録'],
+      ['symptoms', 'symptoms', '症状'],
+      ['vitals', 'vitals', 'バイタル'],
+      ['sleep', 'sleepData', '睡眠'],
+      ['activity', 'activityData', '活動'],
+      ['bloodTests', 'bloodTests', '血液検査'],
+      ['medications', 'medications', '薬'],
+      ['conversations', 'conversationHistory', 'AI チャット']
+    ];
+    const rows = [];
+    let totalFirestore = 0, totalStore = 0;
+    for (const [fbKey, storeKey, label] of subs) {
+      let cloudCount = 0, oldest = null, newest = null, errMsg = '';
+      try {
+        const snap = await FirebaseBackend.userCollection(fbKey).limit(1000).get();
+        cloudCount = snap.size;
+        snap.forEach(d => {
+          const data = d.data() || {};
+          const t = data.timestamp || data.createdAt || data.date || data.recordedAt;
+          let ms = 0;
+          if (t && typeof t === 'object' && typeof t.toMillis === 'function') ms = t.toMillis();
+          else if (t instanceof Date) ms = t.getTime();
+          else if (typeof t === 'string') { const p = Date.parse(t); ms = isNaN(p) ? 0 : p; }
+          else if (typeof t === 'number') ms = t;
+          if (ms) {
+            if (!oldest || ms < oldest) oldest = ms;
+            if (!newest || ms > newest) newest = ms;
+          }
+        });
+      } catch (err) {
+        errMsg = err.code || err.message || String(err);
+      }
+      const storeArr = store.get(storeKey) || [];
+      const storeCount = Array.isArray(storeArr) ? storeArr.length : 0;
+      totalFirestore += cloudCount;
+      totalStore += storeCount;
+      const fmt = (ms) => {
+        if (!ms) return '—';
+        const d = new Date(ms);
+        return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+      };
+      const mismatch = cloudCount !== storeCount;
+      rows.push(`
+        <tr style="${mismatch ? 'background:#fef3c7' : ''}">
+          <td style="padding:6px 8px;font-size:12px">${label}</td>
+          <td style="padding:6px 8px;font-size:12px;text-align:right;font-weight:${cloudCount > 0 ? '600' : 'normal'}">${errMsg ? '<span style="color:var(--danger,#dc2626)">' + errMsg + '</span>' : cloudCount.toLocaleString()}</td>
+          <td style="padding:6px 8px;font-size:12px;text-align:right">${storeCount.toLocaleString()}</td>
+          <td style="padding:6px 8px;font-size:11px;color:var(--text-muted)">${fmt(oldest)} → ${fmt(newest)}</td>
+        </tr>
+      `);
+    }
+    const verdict = totalFirestore > totalStore
+      ? `<div style="background:#fef3c7;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#92400e"><strong>⚠️ 不一致を検出</strong>: クラウドには ${totalFirestore} 件、画面には ${totalStore} 件のみ。<br>「☁️ クラウドから強制再読込」を押してください。</div>`
+      : totalFirestore === 0 && totalStore === 0
+        ? `<div style="background:#dbeafe;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#1e40af"><strong>ℹ️ データはまだありません。</strong></div>`
+        : `<div style="background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;font-size:13px;color:#166534"><strong>✓ クラウドと画面の件数が一致しています。</strong></div>`;
+    out.innerHTML = verdict + `
+      <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+        <thead><tr style="background:var(--bg-tertiary)">
+          <th style="padding:8px;text-align:left;font-weight:600;font-size:11px">データ種別</th>
+          <th style="padding:8px;text-align:right;font-weight:600;font-size:11px">クラウド件数</th>
+          <th style="padding:8px;text-align:right;font-weight:600;font-size:11px">画面件数</th>
+          <th style="padding:8px;text-align:left;font-weight:600;font-size:11px">期間</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    `;
+  }
+
+  // Force a fresh re-fetch from Firestore (bypasses the local cache).
+  // Useful when the realtime listener missed entries due to a stale
+  // index, an old orderBy filter, or a permission-denied that has
+  // since been fixed.
+  async forceReloadFromCloud() {
+    const out = document.getElementById('data-diagnosis-result');
+    if (!FirebaseBackend?.userId) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ クラウドから再取得中…</div>';
+    try {
+      // Tear down + recreate listeners so the new fetch returns fresh server data.
+      FirebaseBackend.cleanupListeners?.();
+      FirebaseBackend.subscribeToCollections();
+      FirebaseBackend.subscribeToSettings();
+      // Wait briefly for snapshots to arrive, then run diagnosis.
+      await new Promise(r => setTimeout(r, 1500));
+      await this.runDataDiagnosis();
+      Components.showToast?.('クラウドから再読込しました', 'success');
+    } catch (err) {
+      console.error('[forceReloadFromCloud]', err);
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">再読込に失敗しました: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
   }
 
   loadFirebaseConfigFields() {
@@ -1172,7 +1329,7 @@ ${recentText || '記録なし'}
     const shopLinks = [];
     shopLinks.push({ icon: '💊', label: isJapan ? 'iHerbでサプリ検索' : 'iHerb Supplements', url: `https://www.iherb.com/search?kw=${encodeURIComponent(dt.en + ' supplement')}&rcode=CHRONICCARE` });
     if (isJapan) {
-      shopLinks.push({ icon: '🛒', label: 'Amazonで検索', url: `https://www.amazon.co.jp/s?k=${encodeURIComponent(dt.ja + ' サプリメント')}&tag=chroniccare-22` });
+      shopLinks.push({ icon: '🛒', label: 'Amazonで検索', url: `https://www.amazon.co.jp/s?k=${encodeURIComponent(dt.ja + ' サプリメント')}&tag=forestvoice-22` });
     } else {
       shopLinks.push({ icon: '🛒', label: 'Amazon', url: `https://www.amazon.com/s?k=${encodeURIComponent(dt.en + ' supplement')}` });
     }
@@ -1597,6 +1754,11 @@ ${titles}`;
     }, 500);
   }
 
+  async connectGoogleFit() {
+    await Integrations.googleFit.connect();
+    this.navigate('integrations');
+  }
+
   connectFitbit() {
     const clientId = document.getElementById('fitbit-client-id')?.value?.trim();
     if (!clientId) { Components.showToast('Client IDを入力してください', 'error'); return; }
@@ -1982,13 +2144,13 @@ ${titles}`;
     const items = [
       { id: 'coq10', icon: '💊', name: 'CoQ10（ユビキノール）', desc: 'ミトコンドリアサポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=coq10+ubiquinol&rcode=CHRONICCARE',
         relevance: (allText.includes('倦怠') || allText.includes('疲') || diseases.includes('mecfs') ? 10 : 3) },
-      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=%E3%83%9E%E3%82%B0%E3%83%8D%E3%82%B7%E3%82%A6%E3%83%A0+%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%8D%E3%83%BC%E3%83%88&tag=chroniccare-22',
+      { id: 'magnesium', icon: '✨', name: 'マグネシウム', desc: '筋弛緩・睡眠改善', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=%E3%83%9E%E3%82%B0%E3%83%8D%E3%82%B7%E3%82%A6%E3%83%A0+%E3%82%B0%E3%83%AA%E3%82%B7%E3%83%8D%E3%83%BC%E3%83%88&tag=forestvoice-22',
         relevance: (allText.includes('痛') || allText.includes('眠') || allText.includes('筋肉') ? 10 : 4) },
       { id: 'vitd', icon: '☀️', name: 'ビタミンD3+K2', desc: '免疫・骨代謝', store: 'iherb', url: 'https://www.iherb.com/search?kw=vitamin+d3+k2&rcode=CHRONICCARE',
         relevance: (diseases.some(d => ['sle','ra','hashimoto','osteoporosis'].includes(d)) ? 10 : allText.includes('免疫') ? 8 : 3) },
-      { id: 'omega3', icon: '🐟', name: 'オメガ3（EPA/DHA）', desc: '抗炎症・脳機能', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=chroniccare-22',
+      { id: 'omega3', icon: '🐟', name: 'オメガ3（EPA/DHA）', desc: '抗炎症・脳機能', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オメガ3+EPA+DHA&tag=forestvoice-22',
         relevance: (allText.includes('炎症') || allText.includes('頭') || diseases.includes('depression') ? 9 : 4) },
-      { id: 'epsom', icon: '🛁', name: 'エプソムソルト', desc: '入浴療法・Mg吸収', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト&tag=chroniccare-22',
+      { id: 'epsom', icon: '🛁', name: 'エプソムソルト', desc: '入浴療法・Mg吸収', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト&tag=forestvoice-22',
         relevance: (allText.includes('エプソム') || allText.includes('風呂') || allText.includes('入浴') ? 10 : 3) },
       { id: 'nmn', icon: '🧬', name: 'NMN', desc: 'NAD+・細胞修復', store: 'iherb', url: 'https://www.iherb.com/search?kw=NMN+supplement&rcode=CHRONICCARE',
         relevance: (allText.includes('nmn') || allText.includes('老化') || diseases.includes('mecfs') ? 9 : 2) },
@@ -1996,58 +2158,58 @@ ${titles}`;
         relevance: (allText.includes('不眠') || allText.includes('眠れ') || diseases.includes('insomnia') ? 10 : 2) },
       { id: 'probiotics', icon: '🦠', name: 'プロバイオティクス', desc: '腸内環境改善', store: 'iherb', url: 'https://www.iherb.com/search?kw=probiotics+lactobacillus&rcode=CHRONICCARE',
         relevance: (allText.includes('腸') || allText.includes('お腹') || diseases.includes('ibs') || diseases.includes('crohns') ? 10 : 3) },
-      { id: 'bcomplex', icon: '⚡', name: 'ビタミンB群', desc: 'エネルギー代謝・神経', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=ビタミンB群+コンプレックス&tag=chroniccare-22',
+      { id: 'bcomplex', icon: '⚡', name: 'ビタミンB群', desc: 'エネルギー代謝・神経', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=ビタミンB群+コンプレックス&tag=forestvoice-22',
         relevance: (allText.includes('ビタミンb') || allText.includes('エネルギー') || diseases.includes('mecfs') ? 8 : 3) },
       { id: 'ltheanine', icon: '🍵', name: 'L-テアニン', desc: 'リラックス・集中', store: 'iherb', url: 'https://www.iherb.com/search?kw=l-theanine&rcode=CHRONICCARE',
         relevance: (allText.includes('不安') || allText.includes('ストレス') || diseases.includes('gad') || diseases.includes('adhd') ? 9 : 2) },
-      { id: 'creatine', icon: '💪', name: 'クレアチン', desc: '筋力・脳エネルギー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=クレアチン+モノハイドレート&tag=chroniccare-22',
+      { id: 'creatine', icon: '💪', name: 'クレアチン', desc: '筋力・脳エネルギー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=クレアチン+モノハイドレート&tag=forestvoice-22',
         relevance: (allText.includes('クレアチン') || allText.includes('筋') || diseases.includes('mecfs') ? 8 : 2) },
       { id: 'ashwagandha', icon: '🌿', name: 'アシュワガンダ', desc: '副腎サポート・ストレス', store: 'iherb', url: 'https://www.iherb.com/search?kw=ashwagandha+ksm66&rcode=CHRONICCARE',
         relevance: (allText.includes('アシュワガンダ') || allText.includes('副腎') || allText.includes('ストレス') ? 9 : 2) },
       { id: 'curcumin', icon: '🟡', name: 'クルクミン', desc: '抗炎症・関節サポート', store: 'iherb', url: 'https://www.iherb.com/search?kw=curcumin+bcm95&rcode=CHRONICCARE',
         relevance: (allText.includes('炎症') || allText.includes('関節') || diseases.includes('ra') || diseases.includes('fibromyalgia') ? 9 : 2) },
-      { id: 'zinc', icon: '🔩', name: '亜鉛', desc: '免疫・ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=亜鉛+サプリメント&tag=chroniccare-22',
+      { id: 'zinc', icon: '🔩', name: '亜鉛', desc: '免疫・ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=亜鉛+サプリメント&tag=forestvoice-22',
         relevance: (allText.includes('亜鉛') || allText.includes('免疫') || allText.includes('性欲') ? 8 : 3) },
       { id: 'pea', icon: '🧪', name: 'PEA（パルミトイルエタノールアミド）', desc: '神経障害性疼痛', store: 'iherb', url: 'https://www.iherb.com/search?kw=palmitoylethanolamide+PEA&rcode=CHRONICCARE',
         relevance: (allText.includes('疼痛') || allText.includes('神経痛') || diseases.includes('fibromyalgia') ? 10 : 1) },
-      { id: 'oura', icon: '⌚', name: 'Oura Ring（HRVモニター）', desc: '自律神経・睡眠トラッキング', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=oura+ring&tag=chroniccare-22',
+      { id: 'oura', icon: '⌚', name: 'Oura Ring（HRVモニター）', desc: '自律神経・睡眠トラッキング', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=oura+ring&tag=forestvoice-22',
         relevance: (allText.includes('hrv') || allText.includes('ペーシング') || diseases.includes('pots') || diseases.includes('mecfs') ? 8 : 2) },
-      { id: 'gut_test', icon: '🔬', name: '腸内フローラ検査キット', desc: '腸内細菌叢の分析', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=腸内フローラ+検査キット&tag=chroniccare-22',
+      { id: 'gut_test', icon: '🔬', name: '腸内フローラ検査キット', desc: '腸内細菌叢の分析', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=腸内フローラ+検査キット&tag=forestvoice-22',
         relevance: (allText.includes('腸') || diseases.includes('ibs') || diseases.includes('crohns') ? 9 : 2) },
-      { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=chroniccare-22',
+      { id: 'gene_test', icon: '🧬', name: '遺伝子検査キット', desc: '疾患リスク・薬剤代謝', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=遺伝子検査キット&tag=forestvoice-22',
         relevance: (allText.includes('遺伝') ? 8 : 1) },
       // Japanese products
-      { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=chroniccare-22',
+      { id: 'kampo_hochu', icon: '🌿', name: '補中益気湯（漢方）', desc: '疲労・免疫低下・食欲不振', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=補中益気湯+ツムラ&tag=forestvoice-22',
         relevance: (allText.match(/倦怠|疲|だるい|食欲/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
-      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=五苓散+ツムラ&tag=chroniccare-22',
+      { id: 'kampo_goreisan', icon: '🌿', name: '五苓散（漢方）', desc: '気象病・頭痛・むくみ', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=五苓散+ツムラ&tag=forestvoice-22',
         relevance: (allText.match(/気圧|天候|頭痛|むくみ/) ? 10 : 2) },
-      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味逍遙散+クラシエ&tag=chroniccare-22',
+      { id: 'kampo_kamishoyosan', icon: '🌿', name: '加味逍遙散（漢方）', desc: '更年期・イライラ・不眠', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=加味逍遙散+クラシエ&tag=forestvoice-22',
         relevance: (allText.match(/更年期|イライラ|のぼせ|不眠/) ? 9 : profile.gender === 'female' ? 4 : 1) },
-      { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=chroniccare-22',
+      { id: 'ala5', icon: '✨', name: '5-ALA（アミノレブリン酸）', desc: 'ミトコンドリア活性・日本発', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=5-ALA+サプリ&tag=forestvoice-22',
         relevance: (allText.match(/ミトコンドリア|5-ala|エネルギー/) ? 9 : diseases.includes('mecfs') ? 6 : 2) },
-      { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=chroniccare-22',
+      { id: 'hydrogen', icon: '💧', name: '水素水生成器', desc: '抗酸化・日本発テクノロジー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=水素水+生成器&tag=forestvoice-22',
         relevance: (allText.match(/水素|酸化|抗酸化/) ? 8 : 1) },
-      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オムロン+血圧計&tag=chroniccare-22',
+      { id: 'omron_bp', icon: '🩺', name: 'OMRON 血圧計', desc: '日本精密機器・家庭測定', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=オムロン+血圧計&tag=forestvoice-22',
         relevance: (allText.match(/血圧|高血圧/) ? 9 : diseases.includes('hypertension') ? 7 : 1) },
-      { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=chroniccare-22',
+      { id: 'tanita_scale', icon: '⚖️', name: 'TANITA 体組成計', desc: '日本精密機器・体脂肪率', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=タニタ+体組成計&tag=forestvoice-22',
         relevance: (allText.match(/体重|体脂肪|肥満|ダイエット/) ? 8 : diseases.includes('metabolic_syndrome') ? 6 : 1) },
-      { id: 'miso', icon: '🫘', name: '有機味噌（発酵食品）', desc: '腸内環境・免疫・日本の智慧', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=有機+味噌+無添加&tag=chroniccare-22',
+      { id: 'miso', icon: '🫘', name: '有機味噌（発酵食品）', desc: '腸内環境・免疫・日本の智慧', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=有機+味噌+無添加&tag=forestvoice-22',
         relevance: (allText.match(/腸|発酵|免疫|食事/) ? 7 : 2) },
-      { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=chroniccare-22',
+      { id: 'amazake', icon: '🍶', name: '甘酒（飲む点滴）', desc: '発酵・栄養補給・日本伝統', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=甘酒+米麹+無添加&tag=forestvoice-22',
         relevance: (allText.match(/栄養|疲労|発酵|甘酒/) ? 7 : 2) },
-      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト+国産&tag=chroniccare-22',
+      { id: 'epsom_jp', icon: '♨️', name: 'エプソムソルト（国産）', desc: '入浴・Mg吸収・日本品質', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エプソムソルト+国産&tag=forestvoice-22',
         relevance: (allText.match(/風呂|入浴|エプソム|マグネシウム/) ? 9 : 3) },
-      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森林浴+ガイド&tag=chroniccare-22',
+      { id: 'shinrinyoku', icon: '🌲', name: '森林浴ガイドブック', desc: 'Shinrin-yoku・日本発セラピー', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=森林浴+ガイド&tag=forestvoice-22',
         relevance: (allText.match(/自然|森|散歩|リラックス/) ? 6 : 1) },
       { id: 'evening_primrose', icon: '🌸', name: '月見草オイル', desc: 'PMS・ホルモンバランス', store: 'iherb', url: 'https://www.iherb.com/search?kw=evening+primrose+oil&rcode=CHRONICCARE',
         relevance: (allText.match(/生理|月経|pms|ホルモン|更年期/) ? 10 : profile.gender === 'female' ? 4 : 0) },
-      { id: 'equol', icon: '🫘', name: 'エクオール', desc: '更年期・女性ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エクオール+サプリ&tag=chroniccare-22',
+      { id: 'equol', icon: '🫘', name: 'エクオール', desc: '更年期・女性ホルモン', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=エクオール+サプリ&tag=forestvoice-22',
         relevance: (allText.match(/更年期|ホットフラッシュ|のぼせ/) ? 10 : profile.gender === 'female' && parseInt(profile.age) >= 40 ? 5 : 0) },
       { id: 'iron', icon: '🩸', name: '鉄分（ヘム鉄）', desc: '貧血・疲労対策', store: 'iherb', url: 'https://www.iherb.com/search?kw=heme+iron&rcode=CHRONICCARE',
         relevance: (allText.match(/貧血|鉄|フェリチン|めまい|立ちくらみ/) ? 10 : profile.gender === 'female' ? 4 : 1) },
       { id: 'ginger', icon: '🫚', name: 'ジンジャーサプリ', desc: '吐き気・消化・抗炎症', store: 'iherb', url: 'https://www.iherb.com/search?kw=ginger+extract&rcode=CHRONICCARE',
         relevance: (allText.match(/吐き気|嘔吐|気持ち悪|消化|胃/) ? 9 : 1) },
-      { id: 'psyllium', icon: '🌾', name: 'サイリウムハスク', desc: '食物繊維・腸内環境', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=サイリウムハスク&tag=chroniccare-22',
+      { id: 'psyllium', icon: '🌾', name: 'サイリウムハスク', desc: '食物繊維・腸内環境', store: 'amazon', url: 'https://www.amazon.co.jp/s?k=サイリウムハスク&tag=forestvoice-22',
         relevance: (allText.match(/便秘|腸|食物繊維/) ? 9 : diseases.includes('ibs') ? 6 : 1) },
       { id: 'headache_app', icon: '📱', name: '頭痛ーる（アプリ）', desc: '気圧予報・頭痛予防', store: 'amazon', url: 'https://zutool.jp/',
         relevance: (allText.match(/頭痛|偏頭痛|片頭痛|気圧/) ? 10 : 1) },
@@ -2964,6 +3126,599 @@ ${responseText.substring(0, 3000)}`;
   getAIComment(entryId) {
     const comments = store.get('aiComments') || {};
     return comments[entryId] || null;
+  }
+
+  // ---- Guest CTA + 医師レポート: module-level fallbacks --------------
+  // These are also re-bound to richer implementations from the
+  // index.html DOMContentLoaded inline script (which has access to
+  // closures like resolveKey / pickGuestDiseaseKey). The class
+  // versions below exist so that:
+  //   - onclick="app.guestSampleSubmit()" / app.guestSampleReport() /
+  //     app.generateDoctorReport() never resolves to undefined, even
+  //     before DOMContentLoaded fires or in environments where the
+  //     inline script never runs (e.g. unit tests, SSR snapshots).
+  //   - The smoke test (which loads JS modules without index.html)
+  //     can verify that every onclick reference in templates has a
+  //     real method — earlier builds regressed when a wholesale
+  //     revert dropped these definitions.
+  // -------------------------------------------------------------------
+  // Same fallback story as the guest CTA methods above: setReaction /
+  // toggleBookmark / runDeepAnalysis are also re-bound at runtime by
+  // an index.html inline script. Provide module-level fallbacks so the
+  // onclick="app.setReaction(...)" / "app.toggleBookmark(...)" /
+  // "app.runDeepAnalysis()" handlers in js/pages.js never resolve to
+  // undefined even before DOMContentLoaded fires or in test contexts.
+  setReaction(id, section, reaction) {
+    if (!id || !section) return;
+    const archive = (store.get('deepAnalyses') || []).slice();
+    const idx = archive.findIndex(a => a && a.id === id);
+    if (idx < 0) return;
+    const entry = Object.assign({}, archive[idx]);
+    entry.reactions = Object.assign({}, entry.reactions || {});
+    if (entry.reactions[section] === reaction) {
+      delete entry.reactions[section];
+    } else {
+      entry.reactions[section] = reaction;
+    }
+    archive[idx] = entry;
+    store.set('deepAnalyses', archive);
+  }
+
+  toggleBookmark(id, section) {
+    if (!id || !section) return;
+    const archive = (store.get('deepAnalyses') || []).slice();
+    const idx = archive.findIndex(a => a && a.id === id);
+    if (idx < 0) return;
+    const entry = Object.assign({}, archive[idx]);
+    entry.bookmarks = Object.assign({}, entry.bookmarks || {});
+    if (entry.bookmarks[section]) {
+      delete entry.bookmarks[section];
+    } else {
+      entry.bookmarks[section] = true;
+    }
+    archive[idx] = entry;
+    store.set('deepAnalyses', archive);
+  }
+
+  async runDeepAnalysis() {
+    // The richer streaming version lives in index.html (uses
+    // callClaudeStream + token-by-token paint). This module-level
+    // fallback runs the same prompt via the standard non-streaming
+    // aiEngine.callModel so the handler never throws even if the
+    // inline patch failed to apply. Stores the result into deepAnalyses
+    // so the archive UI picks it up.
+    const entries = store.get('textEntries') || [];
+    const last = entries.length ? entries[entries.length - 1] : null;
+    if (!last || !last.content) {
+      try { Components.showToast('分析対象の記録が見つかりません。先に記録を送信してください。', 'info'); } catch (_) {}
+      return;
+    }
+    store.set('isDeepAnalyzing', true);
+    store.set('latestFeedbackError', null);
+    try {
+      const recent = entries.slice(-5).map((e, i) =>
+        `${i + 1}. ${new Date(e.timestamp).toLocaleDateString('ja-JP')} [${e.category || ''}] ${String(e.content || '').substring(0, 300)}`
+      ).join('\n');
+      const userText = `[${last.category || 'symptoms'}] ${last.content}\n\n【直近の記録（最大5件）】\n${recent}`;
+      const sysPrompt = '慢性疾患患者の日記を分析して JSON で返してください。キー: summary (要約), findings (所見), actions (行動配列), new_approach (新しいアプローチ), trend (傾向), next_check (次に確認すること)。前置きなしで JSON のみ。';
+      const response = await aiEngine.callModel(store.get('selectedModel'), userText, {
+        maxTokens: 2500,
+        temperature: 0.3,
+        globalTimeoutMs: 90000,
+        systemPrompt: sysPrompt
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+      let parsed = null;
+      try { parsed = this.parseAIResponse(text); } catch (_) {}
+      const analysis = {
+        id: this.generateId ? this.generateId() : (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+        timestamp: new Date().toISOString(),
+        type: 'text_analysis',
+        parsed: parsed || { summary: '深い分析結果', findings: text },
+        _raw: text,
+        _fromAPI: true,
+        _deepAnalysis: true,
+        sourceContent: last.content
+      };
+      const archive = (store.get('deepAnalyses') || []).slice();
+      archive.push(analysis);
+      store.set('deepAnalyses', archive);
+      store.set('latestFeedback', Object.assign({}, parsed || { findings: text }, { _deepAnalysis: true }));
+      const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+      store.set('deepAnalysisLastRun', todayJst);
+    } catch (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err);
+      store.set('latestFeedbackError', '深い分析に失敗しました: ' + msg);
+    } finally {
+      store.set('isDeepAnalyzing', false);
+    }
+  }
+
+  guestSampleSubmit() {
+    let firstId = 'default';
+    try {
+      const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+      if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
+        firstId = selectedTags[0].dataset.id;
+      }
+    } catch (_) { /* DOM not ready — fall through to default pool */ }
+    const samples = (typeof CONFIG !== 'undefined' && CONFIG.GUEST_SAMPLES) || {};
+    const pool = samples[firstId] || samples['default'] || [];
+    if (!pool.length) {
+      try { Components.showToast('サンプルがまだ読み込まれていません。少し待ってからお試しください。', 'info'); } catch (_) {}
+      return;
+    }
+    const text = pool[Math.floor(Math.random() * pool.length)] || '';
+    const input = document.getElementById('guest-input');
+    if (input) {
+      input.value = text;
+      try { input.focus(); } catch (_) {}
+    }
+    if (typeof this.guestAnalyze === 'function') {
+      this.guestAnalyze();
+    }
+  }
+
+  guestSampleReport() {
+    let diseaseId = 'mecfs';
+    try {
+      const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+      if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
+        diseaseId = selectedTags[0].dataset.id;
+      }
+    } catch (_) {}
+    const reportData = (typeof CONFIG !== 'undefined' && CONFIG.GUEST_REPORT_DATA) || {};
+    const sample = reportData[diseaseId] || reportData.mecfs;
+    const resultEl = document.getElementById('guest-result');
+    if (!resultEl) return;
+    if (!sample) {
+      resultEl.innerHTML = '<div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#991b1b;font-size:12px">サンプルレポートデータがまだ読み込まれていません。ページを再読み込みしてからお試しください。</div>';
+      return;
+    }
+
+    const diseases = (sample.diseases || []).join('、');
+    const profile = sample.profile || {};
+    const entries = sample.textEntries || [];
+    const symptoms = sample.symptoms || [];
+    const meds = sample.medications || [];
+    const blood = sample.bloodTests || [];
+
+    const entryRows = entries.slice(-6).map(e => {
+      const d = new Date(e.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+      return `<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-size:11px;color:#64748b;white-space:nowrap">${d}</td><td style="padding:6px 8px;font-size:12px;color:#1e293b">${Components.escapeHtml(e.content || '')}</td></tr>`;
+    }).join('');
+
+    const latestSymptom = symptoms[symptoms.length - 1] || {};
+    const firstSymptom = symptoms[0] || {};
+    const fatigueDelta = latestSymptom.fatigue_level && firstSymptom.fatigue_level
+      ? firstSymptom.fatigue_level - latestSymptom.fatigue_level : 0;
+    const trendText = fatigueDelta > 0 ? `疲労度 ${fatigueDelta} ポイント改善`
+      : fatigueDelta < 0 ? `疲労度 ${-fatigueDelta} ポイント悪化` : '安定';
+
+    const medRows = meds.map(m =>
+      `<li style="font-size:11px;color:#1e293b;margin-bottom:2px">${Components.escapeHtml(m.name || '')}${m.notes ? ' — ' + Components.escapeHtml(m.notes) : ''}</li>`
+    ).join('');
+
+    const bloodRows = blood.map(b =>
+      `<div style="font-size:11px;color:#1e293b;margin-bottom:4px"><span style="font-weight:600">${Components.escapeHtml(b.name || '')}</span>: ${Components.escapeHtml(b.findings || '')}</div>`
+    ).join('');
+
+    resultEl.innerHTML = `
+      <div style="margin-top:12px;padding:16px;background:#fff;border:2px solid #0891b2;border-radius:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:#155e75">🏥 医師提出用レポート（サンプル）</div>
+          <span style="font-size:10px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:8px;padding:2px 8px">架空のサンプルデータ</span>
+        </div>
+        <div style="font-size:12px;color:#0e7490;margin-bottom:12px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          対象疾患: <strong>${Components.escapeHtml(diseases)}</strong> ／
+          ${profile.age ? Components.escapeHtml(String(profile.age)) + '歳 ' : ''}${profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : ''}
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📊 症状推移サマリー</div>
+        <div style="font-size:12px;color:#475569;margin-bottom:12px;padding:8px 12px;background:#f8fafc;border-radius:8px">
+          期間: ${symptoms.length > 0 ? new Date(symptoms[0].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) + ' 〜 ' + new Date(symptoms[symptoms.length-1].timestamp).toLocaleDateString('ja-JP', {month:'long',day:'numeric'}) : '記録なし'} ／
+          ${trendText}
+        </div>
+        ${meds.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">💊 服薬記録</div><ul style="margin:0 0 12px;padding-left:16px">${medRows}</ul>` : ''}
+        ${blood.length > 0 ? `<div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">🩸 検査結果</div><div style="margin-bottom:12px">${bloodRows}</div>` : ''}
+        <div style="font-size:13px;font-weight:600;color:#1e3a8a;margin-bottom:6px">📝 日記ハイライト（直近 6 件）</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+          <tbody>${entryRows}</tbody>
+        </table>
+        <div style="padding:12px;background:linear-gradient(135deg,#eef2ff,#fdf4ff);border-radius:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#3730a3;margin-bottom:4px">あなた自身のデータでこのレポートを作成できます</div>
+          <div style="font-size:11px;color:#4338ca;margin-bottom:10px">記録を続けると 90 日分の症状・服薬・検査結果を医師に説明しやすい形にまとめます</div>
+          <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})"
+            style="padding:10px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">
+            無料で登録して使ってみる
+          </button>
+        </div>
+      </div>`;
+  }
+
+  async generateDoctorReport() {
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const medications = store.get('medications') || [];
+    const bloodTests = store.get('bloodTests') || [];
+    const profile = store.get('userProfile') || {};
+    const selectedDiseases = store.get('selectedDiseases') || [];
+
+    if (textEntries.length + symptoms.length < 3) {
+      try { Components.showToast('レポートを作成するには 3 件以上の記録が必要です', 'info'); } catch (_) {}
+      return;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    if (!overlay || !body) {
+      try { Components.showToast('モーダルを表示できません。ページを再読み込みしてください。', 'error'); } catch (_) {}
+      return;
+    }
+
+    if (titleEl) titleEl.textContent = '🏥 医師提出用レポートを作成中…';
+    body.innerHTML = Components.loading('過去の記録を整理しています...', { subtext: '90 日分のデータから医師向けサマリーを生成します（30〜60 秒）' });
+    overlay.classList.add('active');
+
+    let diseases = '未設定';
+    try {
+      diseases = selectedDiseases.map(id => {
+        for (const cat of (CONFIG.DISEASE_CATEGORIES || [])) {
+          const d = (cat.diseases || []).find(x => x.id === id);
+          if (d) return d.name;
+        }
+        return id;
+      }).join('、') || '未設定';
+    } catch (_) {}
+
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString();
+    const recentEntries = textEntries.filter(e => e && e.timestamp >= cutoff).slice(-30);
+    const recentSymptoms = symptoms.filter(s => s && s.timestamp >= cutoff).slice(-30);
+    const recentMeds = medications.filter(m => m && m.timestamp >= cutoff).slice(-10);
+    const recentBlood = bloodTests.filter(b => b && b.timestamp >= cutoff).slice(-5);
+
+    const entryText = recentEntries.map(e =>
+      `${String(e.timestamp).substring(0,10)} [${e.category||'diary'}] ${e.content||''}`
+    ).join('\n');
+    const symptomText = recentSymptoms.map(s =>
+      `${String(s.timestamp).substring(0,10)} 疲労:${s.fatigue_level??'-'} 痛み:${s.pain_level??'-'} 脳霧:${s.brain_fog??'-'} 睡眠:${s.sleep_quality??'-'}`
+    ).join('\n');
+    const medText = recentMeds.map(m => `${m.name||''} ${m.dose||''} ${m.notes||''}`.trim()).join('、');
+    const bloodText = recentBlood.map(b => `${b.name||''}: ${b.findings||''}`).join('；');
+
+    const profileSummary = [
+      profile.age ? profile.age + '歳' : '',
+      profile.gender === 'female' ? '女性' : profile.gender === 'male' ? '男性' : '',
+      profile.height ? profile.height + 'cm' : '',
+      profile.weight ? profile.weight + 'kg' : ''
+    ].filter(Boolean).join('、');
+
+    const lang = profile.language || 'ja';
+    const langDir = (typeof aiEngine !== 'undefined' && aiEngine._languageDirectiveFor)
+      ? aiEngine._languageDirectiveFor(lang) : '';
+
+    const prompt = `${langDir}
+あなたは慢性疾患患者が医師に提出する診察レポートを作成するアシスタントです。
+以下のデータから、受診時に医師に手渡せる形式のレポートを生成してください。
+
+【患者基本情報】
+${profileSummary}
+対象疾患: ${diseases}
+
+【過去 90 日の日記（最大 30 件）】
+${entryText || '記録なし'}
+
+【症状スコア推移】
+${symptomText || '記録なし'}
+
+【服薬記録】
+${medText || '記録なし'}
+
+【検査結果】
+${bloodText || '記録なし'}
+
+【出力形式】
+以下の見出しを使った日本語の医師向けレポートを作成してください:
+1. 主訴・経過サマリー（200〜300文字）
+2. 症状の推移と傾向（箇条書き）
+3. 服薬・治療内容
+4. 検査結果ハイライト（あれば）
+5. 医師への質問・確認事項（患者が聞きたいこと 3〜5 点）
+6. 生活への影響度（就労・日常活動への影響）
+
+レポートは医師が 3 分で読める簡潔な形式にしてください。`;
+
+    try {
+      const response = await aiEngine.callModel(store.get('selectedModel'), prompt, {
+        maxTokens: 2000,
+        temperature: 0.3,
+        globalTimeoutMs: 60000
+      });
+      const text = typeof response === 'string' ? response : JSON.stringify(response);
+
+      body.innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:12px">🏥 医師提出用レポート</div>
+        <div style="font-size:11px;color:#0891b2;margin-bottom:14px;padding:8px 12px;background:#ecfeff;border-radius:8px">
+          期間: 過去 90 日 ／ 対象: ${Components.escapeHtml(diseases)} ／ ${profileSummary ? Components.escapeHtml(profileSummary) : ''}
+        </div>
+        <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1e293b;max-height:60vh;overflow-y:auto;padding:4px">${Components.escapeHtml(text)}</div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1" onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>Components.showToast('レポートをクリップボードにコピーしました','success'))">📋 コピーして印刷</button>
+          <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+        </div>`;
+    } catch (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err);
+      body.innerHTML = `
+        <div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">レポートの生成に失敗しました</div>
+          <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px;white-space:pre-wrap;word-break:break-word">${Components.escapeHtml(msg)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="app.generateDoctorReport()">🔄 再試行</button>
+            <button class="btn btn-outline" onclick="app.closeModal()">閉じる</button>
+          </div>
+        </div>`;
+    }
+  }
+
+  // ---- Manual proxy URL override -------------------------------------
+  // When the hardcoded Worker URL doesn't resolve (e.g. workers.dev
+  // trigger disabled, custom domain used, account subdomain differs)
+  // and admin/config sync hasn't reached the user yet, give them a
+  // way to type the correct URL directly. Stored in localStorage so
+  // it sticks across reloads.
+  // -------------------------------------------------------------------
+  setProxyUrlFromInput() {
+    const input = document.getElementById('proxy-url-override-input');
+    if (!input) return;
+    const raw = input.value.trim();
+    if (!raw) {
+      try { Components.showToast('URL を入力してください', 'error'); } catch (_) {}
+      return;
+    }
+    // Strip trailing /v1/messages if user pasted the full path
+    let url = raw.replace(/\/v1\/messages\/?$/, '');
+    // Basic URL sanity check
+    if (!/^https?:\/\//.test(url)) {
+      try { Components.showToast('URL は https:// で始まる必要があります', 'error'); } catch (_) {}
+      return;
+    }
+    try {
+      localStorage.setItem('anthropic_proxy_url', url);
+      try { Components.showToast('Proxy URL を保存しました。リロードします…', 'success'); } catch (_) {}
+      setTimeout(() => location.reload(), 800);
+    } catch (e) {
+      try { Components.showToast('保存に失敗しました: ' + e.message, 'error'); } catch (_) {}
+    }
+  }
+
+  // ---- AI connection diagnostic --------------------------------------
+  // When users see "接続できませんでした" from the AI proxy and we can't
+  // reproduce the failure ourselves (Worker reachable from our side,
+  // Cloudflare logs absent, etc.), we need an actionable way for the
+  // affected user to surface what their browser actually saw. This
+  // method runs three probes against the Worker URL — preflight,
+  // simple GET, real POST — and renders a copyable diagnostic block
+  // next to the error. Triggered from the "🔍 接続を診断する" button
+  // in the error UI.
+  // -------------------------------------------------------------------
+  async diagnoseAiConnection(targetEl) {
+    const url = (typeof getAnthropicEndpoint === 'function')
+      ? getAnthropicEndpoint(false)
+      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
+    const out = (targetEl && targetEl.tagName) ? targetEl : document.getElementById('ai-diag-output');
+    if (!out) return;
+    out.innerHTML = '<div style="font-size:11px;color:#475569">診断中…（数秒お待ちください）</div>';
+
+    const probe = async (label, init) => {
+      const start = Date.now();
+      try {
+        const r = await fetch(url, init);
+        const ms = Date.now() - start;
+        let bodyPreview = '';
+        try { bodyPreview = (await r.text()).substring(0, 160); } catch (_) {}
+        return {
+          label,
+          ok: r.ok,
+          status: r.status,
+          statusText: r.statusText,
+          ms,
+          cors: r.headers.get('Access-Control-Allow-Origin') || '(none)',
+          contentType: r.headers.get('Content-Type') || '(none)',
+          body: bodyPreview
+        };
+      } catch (err) {
+        return {
+          label,
+          fatal: true,
+          ms: Date.now() - start,
+          name: err && err.name,
+          message: (err && err.message) ? String(err.message) : String(err)
+        };
+      }
+    };
+
+    const results = [];
+    results.push(await probe('OPTIONS preflight', {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': location.origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,anthropic-version'
+      }
+    }));
+    results.push(await probe('GET (no body)', { method: 'GET' }));
+    results.push(await probe('POST minimal payload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 32, messages: [{ role: 'user', content: 'ping' }] })
+    }));
+
+    const summary = {
+      timestamp: new Date().toISOString(),
+      probedUrl: url,
+      origin: location.origin,
+      ua: navigator.userAgent || '',
+      results
+    };
+    const json = JSON.stringify(summary, null, 2);
+
+    const rows = results.map(r => {
+      if (r.fatal) {
+        return `<tr><td style="padding:4px 8px;font-weight:600;color:#991b1b">${Components.escapeHtml(r.label)}</td><td style="padding:4px 8px;color:#991b1b">FATAL: ${Components.escapeHtml(r.name || '?')} — ${Components.escapeHtml(r.message)}</td><td style="padding:4px 8px;color:#64748b">${r.ms}ms</td></tr>`;
+      }
+      const okColor = r.ok ? '#166534' : (r.status >= 400 && r.status < 500 ? '#9a3412' : '#991b1b');
+      return `<tr>
+        <td style="padding:4px 8px;font-weight:600">${Components.escapeHtml(r.label)}</td>
+        <td style="padding:4px 8px;color:${okColor}">${r.status} ${Components.escapeHtml(r.statusText || '')} ／ CORS: ${Components.escapeHtml(r.cors)}</td>
+        <td style="padding:4px 8px;color:#64748b">${r.ms}ms</td>
+      </tr>`;
+    }).join('');
+
+    out.innerHTML = `
+      <div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:11px">
+        <div style="font-weight:700;margin-bottom:6px;color:#1e293b">🔍 接続診断結果</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:6px;font-family:monospace;word-break:break-all">${Components.escapeHtml(url)}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:10px">${rows}</table>
+        <details style="margin-top:8px">
+          <summary style="cursor:pointer;font-weight:600;color:#475569">詳細（運営者に共有）</summary>
+          <pre style="margin-top:6px;padding:8px;background:#f8fafc;border-radius:6px;font-size:10px;white-space:pre-wrap;word-break:break-all;line-height:1.5">${Components.escapeHtml(json)}</pre>
+          <button onclick="(navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(json)}))?.then(()=>Components.showToast('診断情報をコピーしました','success'))"
+            style="margin-top:6px;padding:6px 12px;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
+        </details>
+      </div>`;
+  }
+
+  // ---- Client cache / SW reset ---------------------------------------
+  // Last-resort recovery for users stuck behind a stale Service Worker
+  // or corrupted localStorage proxy URL. Earlier app builds registered
+  // /sw.js with a cache-first strategy — even after we shipped fixes,
+  // those users kept getting cached pre-fix code on every visit, which
+  // is what produced the "永遠にエラー" feedback. This wipes everything
+  // that could be holding them back and hard-reloads.
+  // -------------------------------------------------------------------
+  async resetClientCacheAndReload() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => { try { return r.unregister(); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    try {
+      if ('caches' in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(n => { try { return caches.delete(n); } catch (_) { return null; } }));
+      }
+    } catch (_) {}
+    // Wipe ONLY the diagnostic / behavioral flags that might be
+    // stuck in a bad state. We deliberately KEEP:
+    //   - `apikey_anthropic` (admin's shared key from Firestore)
+    //   - `anthropic_proxy_url` (admin's Worker URL — wiping it would
+    //     fall through to the hardcoded `agewaller` URL which may be
+    //     wrong for the deployed Cloudflare account)
+    // Both come from admin/config sync; clearing them strands the
+    // user when re-sync also fails, which is exactly the "can't
+    // recover from reset" scenario reported.
+    try {
+      ['sw_purged_v1', 'dismissed_inapp_banner']
+        .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+    } catch (_) {}
+    // Hard reload, bypass HTTP cache.
+    try { location.reload(); } catch (_) { window.location.href = window.location.href; }
+  }
+
+  // ---- User content edit / delete -----------------------------------
+  // Lets the user freely modify or remove anything they wrote / uploaded
+  // (text entries, photos, file uploads). Each entry carries a stable
+  // id, so we look up by that and rewrite the whole textEntries array.
+  // Cleans up linked aiComments and photos so deleted records don't
+  // leave orphan references behind. Re-render is automatic via the
+  // store listener on textEntries (scheduleDashRefresh).
+  // -------------------------------------------------------------------
+  deleteTextEntry(id) {
+    if (!id) return;
+    const entries = store.get('textEntries') || [];
+    const target = entries.find(e => e && e.id === id);
+    const next = entries.filter(e => !e || e.id !== id);
+    store.set('textEntries', next);
+
+    // Remove linked AI comment so it doesn't appear without an entry
+    const comments = store.get('aiComments') || {};
+    if (comments[id]) {
+      delete comments[id];
+      store.set('aiComments', comments);
+    }
+
+    // If this was a photo / file upload, also remove the photo blob
+    if (target && target.photoId) {
+      const photos = store.get('photos') || [];
+      const remainingPhotos = photos.filter(p => p && p.id !== target.photoId);
+      if (remainingPhotos.length !== photos.length) {
+        store.set('photos', remainingPhotos);
+      }
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Switches the rendered entry card into an inline edit form.
+  // Avoids a full re-render so the user keeps their scroll position
+  // and any unrelated state. Save / cancel restore the normal view.
+  beginEditTextEntry(id) {
+    const card = document.querySelector(`[data-entry-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    const entries = store.get('textEntries') || [];
+    const entry = entries.find(e => e && e.id === id);
+    if (!entry) return;
+    const safeContent = (entry.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeTitle = (entry.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    card.dataset.editing = '1';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text-muted)">編集中</span>
+      </div>
+      <input type="text" id="edit-title-${id}" value="${safeTitle}" placeholder="タイトル（任意）"
+        style="width:100%;padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;box-sizing:border-box">
+      <textarea id="edit-content-${id}" rows="4"
+        style="width:100%;padding:8px;font-size:13px;line-height:1.6;border:1px solid var(--border);border-radius:6px;resize:vertical;box-sizing:border-box;font-family:inherit">${safeContent}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+        <button onclick="app.cancelEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;cursor:pointer">キャンセル</button>
+        <button onclick="app.saveEditTextEntry('${id}')"
+          style="padding:6px 12px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">保存</button>
+      </div>`;
+    const ta = document.getElementById(`edit-content-${id}`);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }
+
+  saveEditTextEntry(id) {
+    const titleEl = document.getElementById(`edit-title-${id}`);
+    const contentEl = document.getElementById(`edit-content-${id}`);
+    if (!contentEl) return;
+    const newContent = contentEl.value.trim();
+    if (!newContent) {
+      Components.showToast('内容を入力してください', 'error');
+      return;
+    }
+    const newTitle = titleEl ? titleEl.value.trim() : '';
+    const entries = store.get('textEntries') || [];
+    const next = entries.map(e => {
+      if (!e || e.id !== id) return e;
+      return Object.assign({}, e, {
+        content: newContent,
+        title: newTitle || e.title || '',
+        editedAt: new Date().toISOString()
+      });
+    });
+    store.set('textEntries', next);
+    Components.showToast('編集を保存しました', 'success');
+  }
+
+  cancelEditTextEntry(_id) {
+    // Easiest path back to the read-only view: trigger a re-render via
+    // the same store listener everything else uses. Setting textEntries
+    // to its current value still fires the listener.
+    const entries = store.get('textEntries') || [];
+    store.set('textEntries', entries.slice());
   }
 
   // One-shot purge of aiComments entries matching the old demo
@@ -4705,10 +5460,244 @@ ${axisHint}
       `;
     } catch (err) {
       console.error('[loadUsersDashboard]', err);
-      const msg = err?.code === 'permission-denied'
-        ? 'Firestore が拒否しました。firestore.rules を最新版にデプロイしてください。'
-        : `読み込みエラー: ${err.message || err}`;
-      container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;color:var(--danger,#dc2626);font-size:13px">${Components.escapeHtml(msg)}</div></div>`;
+      if (err?.code === 'permission-denied') {
+        container.innerHTML = this._renderFirestoreRulesHelp();
+        this._wireFirestoreRulesHelp();
+      } else {
+        const msg = `読み込みエラー: ${err.message || err}`;
+        container.innerHTML = `<div class="card"><div class="card-body" style="padding:20px;color:var(--danger,#dc2626);font-size:13px">${Components.escapeHtml(msg)}</div></div>`;
+      }
+    }
+  }
+
+  // Render an actionable error card when Firestore rules are out of
+  // date. Shows a copy-to-clipboard button + a direct link to the
+  // Firebase Console rules editor so the admin can paste-and-publish
+  // in ~30 seconds without leaving the phone.
+  _renderFirestoreRulesHelp() {
+    const consoleUrl = 'https://console.firebase.google.com/project/care-14c31/firestore/rules';
+    return `
+      <div class="card" style="border:1px solid var(--danger,#dc2626)">
+        <div class="card-header">
+          <span class="card-title" style="color:var(--danger,#dc2626)">⚠️ Firestore ルールの更新が必要です</span>
+        </div>
+        <div class="card-body" style="font-size:13px;line-height:1.7">
+          <p style="margin:0 0 12px">
+            ユーザー一覧を取得できません。<br>
+            最新の <code>firestore.rules</code> がまだ Firebase に反映されていないためです。
+          </p>
+
+          <!-- Auto deploy via OAuth (recommended) -->
+          <div style="background:linear-gradient(135deg,#ede9fe 0%,#dbeafe 100%);padding:14px;border-radius:8px;margin:12px 0;border:1px solid #c4b5fd">
+            <div style="font-weight:600;margin-bottom:6px;color:#5b21b6">🚀 自動デプロイ（推奨・1 タップ）</div>
+            <div style="font-size:12px;color:#4c1d95;margin-bottom:10px;line-height:1.6">
+              Google で再認証して、ブラウザから直接 Firebase にルールを反映します。<br>
+              （プロジェクト所有者の Google アカウントが必要です）
+            </div>
+            <button id="btn-auto-deploy-rules" class="btn btn-primary btn-sm" style="font-size:13px;background:#7c3aed;border-color:#7c3aed">
+              🚀 Google で認証してデプロイ
+            </button>
+          </div>
+
+          <!-- Manual fallback -->
+          <details style="margin:12px 0">
+            <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted)">📋 手動デプロイ（自動が使えない場合）</summary>
+            <div style="background:var(--bg-tertiary);padding:12px;border-radius:8px;margin:8px 0">
+              <ol style="margin:0;padding-left:20px;font-size:12px">
+                <li style="margin-bottom:6px">下の「<strong>ルールをコピー</strong>」を押す</li>
+                <li style="margin-bottom:6px">「<strong>Firebase Console を開く</strong>」を押す（新しいタブ）</li>
+                <li style="margin-bottom:6px">エディタの中身を全選択 → 削除 → 貼り付け</li>
+                <li>右上の「<strong>公開</strong>」ボタンを押す</li>
+              </ol>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+              <button id="btn-copy-fs-rules" class="btn btn-outline btn-sm" style="font-size:12px">
+                📋 ルールをコピー
+              </button>
+              <a href="${consoleUrl}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="font-size:12px;text-decoration:none">
+                🔗 Firebase Console を開く
+              </a>
+            </div>
+          </details>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+            <button class="btn btn-outline btn-sm" style="font-size:13px" onclick="app.loadUsersDashboard()">
+              🔄 再読込
+            </button>
+          </div>
+
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-size:12px;color:var(--text-muted)">ルールのプレビューを表示</summary>
+            <pre id="fs-rules-preview" style="margin:8px 0 0;padding:12px;background:var(--bg-tertiary);border-radius:6px;font-size:11px;overflow-x:auto;white-space:pre-wrap;max-height:300px;overflow-y:auto">読み込み中…</pre>
+          </details>
+          <div id="fs-rules-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);min-height:18px"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  async _wireFirestoreRulesHelp() {
+    const status = document.getElementById('fs-rules-status');
+    const preview = document.getElementById('fs-rules-preview');
+    const copyBtn = document.getElementById('btn-copy-fs-rules');
+    const autoBtn = document.getElementById('btn-auto-deploy-rules');
+    let rulesText = '';
+    try {
+      const res = await fetch('firestore.rules?v=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      rulesText = await res.text();
+      if (preview) preview.textContent = rulesText;
+    } catch (e) {
+      const rawUrl = 'https://raw.githubusercontent.com/agewaller/stock-screener/main/firestore.rules';
+      if (preview) {
+        preview.innerHTML = '取得失敗: ' + Components.escapeHtml(e.message || String(e))
+          + '<br><br>こちらから手動でコピーしてください: <a href="' + rawUrl + '" target="_blank" rel="noopener">' + rawUrl + '</a>';
+      }
+      if (status) status.textContent = 'ルールファイルの取得に失敗しました。上のリンクから手動でコピーしてください。';
+      if (copyBtn) copyBtn.disabled = true;
+      if (autoBtn) autoBtn.disabled = true;
+      return;
+    }
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(rulesText);
+          if (status) {
+            status.style.color = 'var(--success,#16a34a)';
+            status.textContent = '✓ コピー完了。Firebase Console を開いて貼り付けてください。';
+          }
+        } catch (e) {
+          if (status) {
+            status.style.color = 'var(--danger,#dc2626)';
+            status.textContent = 'コピーに失敗しました: ' + (e.message || e) + '（プレビューから手動でコピーしてください）';
+          }
+        }
+      };
+    }
+    if (autoBtn) {
+      autoBtn.onclick = () => this._autoDeployFirestoreRules(rulesText);
+    }
+  }
+
+  // OAuth-flow deploy: re-authenticate the admin with an extra Google
+  // scope (https://www.googleapis.com/auth/firebase) to get an access
+  // token that can call the Firebase Rules REST API directly from the
+  // browser. No service account, no GitHub secret, no firebase-tools
+  // — works entirely from the phone.
+  async _autoDeployFirestoreRules(rulesText) {
+    const status = document.getElementById('fs-rules-status');
+    const btn = document.getElementById('btn-auto-deploy-rules');
+    const setStatus = (color, msg) => {
+      if (status) {
+        status.style.color = color;
+        status.innerHTML = msg;
+      }
+    };
+    if (!rulesText) {
+      setStatus('var(--danger,#dc2626)', 'ルールが取得できていません。ページを再読込してください。');
+      return;
+    }
+    if (!window.firebase || !FirebaseBackend?.auth) {
+      setStatus('var(--danger,#dc2626)', 'Firebase が初期化されていません。');
+      return;
+    }
+    const origLabel = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ 認証中…'; }
+    try {
+      // Step 1: get OAuth access token with firebase scope
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/firebase');
+      provider.setCustomParameters({ prompt: 'consent', include_granted_scopes: 'true' });
+      const extractToken = (res) => {
+        try {
+          const cred = firebase.auth.GoogleAuthProvider.credentialFromResult(res);
+          if (cred?.accessToken) return cred.accessToken;
+        } catch (_) {}
+        return res?._tokenResponse?.oauthAccessToken || res?.credential?.accessToken || null;
+      };
+      const currentUser = FirebaseBackend.auth.currentUser;
+      if (!currentUser) {
+        throw new Error('ログイン情報が取得できません。一度ログアウトして Google で再ログインしてください。');
+      }
+      const hasGoogle = Array.isArray(currentUser.providerData)
+        && currentUser.providerData.some(p => p.providerId === 'google.com');
+      let accessToken = null;
+      try {
+        const r = hasGoogle
+          ? await currentUser.reauthenticateWithPopup(provider)
+          : await currentUser.linkWithPopup(provider);
+        accessToken = extractToken(r);
+      } catch (e) {
+        if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-blocked') throw e;
+        throw new Error('Google 認証に失敗しました: ' + (e?.message || e?.code || String(e)));
+      }
+      if (!accessToken) throw new Error('Google からアクセストークンを取得できませんでした。Google アカウントで再ログインしてからお試しください。');
+
+      // Step 2: create a new ruleset
+      if (btn) btn.innerHTML = '⏳ ルールをアップロード中…';
+      const projectId = firebase.app?.()?.options?.projectId || 'care-14c31';
+      const rulesetRes = await fetch(
+        `https://firebaserules.googleapis.com/v1/projects/${projectId}/rulesets`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            source: { files: [{ name: 'firestore.rules', content: rulesText }] }
+          })
+        }
+      );
+      if (!rulesetRes.ok) {
+        const txt = await rulesetRes.text();
+        throw new Error('ルール作成失敗 (HTTP ' + rulesetRes.status + '): ' + txt.slice(0, 500));
+      }
+      const ruleset = await rulesetRes.json();
+      if (!ruleset?.name) throw new Error('ルール作成のレスポンスが不正: ' + JSON.stringify(ruleset).slice(0, 300));
+
+      // Step 3: point the cloud.firestore release at the new ruleset
+      if (btn) btn.innerHTML = '⏳ 公開中…';
+      const releaseRes = await fetch(
+        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=release.rulesetName`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            release: {
+              name: `projects/${projectId}/releases/cloud.firestore`,
+              rulesetName: ruleset.name
+            }
+          })
+        }
+      );
+      if (!releaseRes.ok) {
+        const txt = await releaseRes.text();
+        throw new Error('公開失敗 (HTTP ' + releaseRes.status + '): ' + txt.slice(0, 500));
+      }
+      setStatus('var(--success,#16a34a)', '✓ デプロイ成功。3 秒後に再読込します…');
+      Components.showToast?.('Firestore ルールを公開しました', 'success');
+      setTimeout(() => this.loadUsersDashboard(), 3000);
+    } catch (err) {
+      console.error('[autoDeployRules]', err);
+      let msg = err?.message || String(err);
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        msg = 'キャンセルされました';
+      } else if (err?.code === 'auth/popup-blocked') {
+        msg = 'ポップアップがブロックされました。ブラウザ設定でこのサイトのポップアップを許可してください。';
+      } else if (msg.includes('PERMISSION_DENIED') || msg.includes('403')) {
+        msg = '権限不足: このアカウントは Firebase プロジェクトのオーナー / 編集者ではありません。<br>'
+            + '<code>care-14c31</code> プロジェクトの所有者アカウントで再ログインしてください。';
+      } else if (msg.includes('SERVICE_DISABLED') || msg.includes('has not been used')) {
+        msg = 'Firebase Rules API が有効化されていません。<br>'
+            + '<a href="https://console.developers.google.com/apis/api/firebaserules.googleapis.com/overview?project=care-14c31" target="_blank" rel="noopener">こちらから API を有効化</a>してから再度お試しください。';
+      }
+      setStatus('var(--danger,#dc2626)', '✗ ' + msg);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = origLabel; }
     }
   }
 

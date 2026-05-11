@@ -1,0 +1,193 @@
+name: Fix Cloudflare Access (delete protective app on stock-screener)
+
+# 緊急復旧用 workflow:
+# Cloudflare Access (Zero Trust) が `stock-screener.agewaller.workers.dev` を
+# 保護している → ブラウザの fetch が認証画面にリダイレクトされて全ユーザー
+# で AI が動かない状態。この workflow が:
+#   1. Cloudflare API で account 配下の Access Application 一覧を取得
+#   2. `stock-screener` を保護しているものを特定
+#   3. (delete=true なら) 削除する
+#   4. ついでに新 Worker `cares-ai-proxy` の状態も確認
+#
+# トリガー: 手動 (workflow_dispatch) のみ。push では走らない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete:
+        description: '一致する Access Application を削除する? (false=dry-run, true=delete)'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  fix-access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CLOUDFLARE_API_TOKEN is set
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret is not configured."
+            exit 1
+          fi
+          echo "✓ token present (length=${#T})"
+
+      - name: Verify token + discover account
+        id: verify
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+          # /user/tokens/verify works for any valid token
+          echo "--- token verify ---"
+          curl -fsS -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify || true
+          echo ""
+          echo "--- list accessible accounts ---"
+          ACC=$(curl -fsS -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/accounts)
+          echo "$ACC" | head -c 500
+          echo ""
+          ACCOUNT_ID=$(echo "$ACC" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('result',[{}])[0].get('id',''))")
+          if [ -z "$ACCOUNT_ID" ]; then
+            echo "::error::Could not discover an accessible account ID. Token may need 'Account → Account Settings → Read' permission."
+            exit 1
+          fi
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "✓ ACCOUNT_ID=$ACCOUNT_ID"
+
+      - name: List Access Applications
+        id: list
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ steps.verify.outputs.ACCOUNT_ID }}
+        run: |
+          set -e
+          echo "--- listing Access Applications under account $ACCOUNT_ID ---"
+          RAW=$(curl -fsS -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/access/apps?per_page=200" || echo '{"result":[],"success":false}')
+          echo "$RAW" > /tmp/access-apps.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/access-apps.json') as f:
+            d = json.load(f)
+          if not d.get('success'):
+            print('::error::Could not list Access Applications. Token may need "Cloudflare One / Zero Trust → Access: Apps and Policies → Read" or "Edit" permission.')
+            print(json.dumps(d.get('errors', []), ensure_ascii=False))
+            raise SystemExit(1)
+          apps = d.get('result', [])
+          print(f'Total Access Applications: {len(apps)}')
+          for a in apps:
+            print(f'  - id={a.get("id")} name={a.get("name")!r} domain={a.get("domain")!r} type={a.get("type")!r}')
+          PY
+
+      - name: Find matching app(s)
+        id: find
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PY' > /tmp/match-ids.txt
+          import json
+          with open('/tmp/access-apps.json') as f:
+            d = json.load(f)
+          apps = d.get('result', [])
+          # Match anything that mentions stock-screener (case-insensitive)
+          # in domain, name, or self_hosted_domains list.
+          matches = []
+          for a in apps:
+            blobs = [
+              str(a.get('domain', '')),
+              str(a.get('name', '')),
+            ]
+            sh = a.get('self_hosted_domains') or []
+            if isinstance(sh, list):
+              blobs.extend(str(x) for x in sh)
+            blob = ' '.join(blobs).lower()
+            if 'stock-screener' in blob:
+              matches.append(a)
+          print(f'Matched {len(matches)} app(s):')
+          for a in matches:
+            print(f'  → id={a.get("id")} name={a.get("name")!r} domain={a.get("domain")!r}')
+          import sys
+          for a in matches:
+            print(a.get('id'), file=sys.stderr)
+          PY
+          # Capture matched ids on stderr → file
+          python3 - <<'PY'
+          import json
+          with open('/tmp/access-apps.json') as f:
+            d = json.load(f)
+          apps = d.get('result', [])
+          matches = []
+          for a in apps:
+            blobs = [str(a.get('domain', '')), str(a.get('name', ''))]
+            sh = a.get('self_hosted_domains') or []
+            if isinstance(sh, list):
+              blobs.extend(str(x) for x in sh)
+            blob = ' '.join(blobs).lower()
+            if 'stock-screener' in blob:
+              matches.append(a.get('id'))
+          with open('/tmp/match-ids.txt','w') as f:
+            for mid in matches:
+              f.write(mid + '\n')
+          PY
+          echo "matched ids:"
+          cat /tmp/match-ids.txt || true
+
+      - name: Delete matched apps (only if delete=true)
+        if: ${{ github.event.inputs.delete == 'true' }}
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ steps.verify.outputs.ACCOUNT_ID }}
+        run: |
+          set -e
+          if [ ! -s /tmp/match-ids.txt ]; then
+            echo "::warning::No matching apps to delete."
+            exit 0
+          fi
+          while IFS= read -r APP_ID; do
+            [ -z "$APP_ID" ] && continue
+            echo "Deleting Access Application $APP_ID ..."
+            curl -fsS -X DELETE -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/access/apps/$APP_ID" \
+              | python3 -m json.tool
+            echo "✓ deleted $APP_ID"
+          done < /tmp/match-ids.txt
+
+      - name: Probe stock-screener after fix
+        if: ${{ github.event.inputs.delete == 'true' }}
+        run: |
+          echo "Waiting 8s for propagation..."
+          sleep 8
+          echo "--- probe stock-screener.agewaller.workers.dev ---"
+          curl -is -o /tmp/probe.txt -w "HTTP %{http_code} in %{time_total}s\n" \
+            https://stock-screener.agewaller.workers.dev/ || true
+          head -c 800 /tmp/probe.txt
+          echo ""
+
+      - name: Probe cares-ai-proxy (new Worker)
+        run: |
+          echo "--- probe cares-ai-proxy.agewaller.workers.dev ---"
+          curl -is -o /tmp/probe2.txt -w "HTTP %{http_code} in %{time_total}s\n" \
+            https://cares-ai-proxy.agewaller.workers.dev/ || true
+          head -c 800 /tmp/probe2.txt
+          echo ""
+
+      - name: Summary
+        run: |
+          echo "## 結果 (delete=${{ github.event.inputs.delete }})" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '### Access Applications' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ -s /tmp/match-ids.txt ]; then
+            echo "Matched IDs:" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/match-ids.txt >> $GITHUB_STEP_SUMMARY
+          else
+            echo 'No app matched "stock-screener".' >> $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,143 @@
+name: Cloudflare Access アプリ一覧 / 削除
+
+# Cloudflare API 経由で Access (Zero Trust) アプリケーションを
+# 一覧表示し、必要なら全削除する。
+#
+# Worker URL に Access ポリシーが当たっていて 403 host_not_allowed
+# になっている場合、ここから一気に消せる (要 API トークンに
+# Access: Apps and Policies: Edit 権限)。
+#
+# 使い方:
+#   1. list-only モード (デフォルト): Actions タブ → Run workflow
+#      → 一覧だけ表示して何もしない
+#   2. 削除モード: Run workflow → "delete_all_workers" に "yes"
+#      → すべての *.workers.dev を destination に持つアプリを削除
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete_all_workers:
+        description: '"yes" にすると workers.dev 関連の全 Access アプリを削除します'
+        required: false
+        default: 'no'
+
+jobs:
+  manage-access:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+    steps:
+      - name: Verify token
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret missing."
+            exit 1
+          fi
+          echo "✓ token present (length=${#T})"
+
+      - name: List all Access applications
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        id: list
+        run: |
+          echo "## Access アプリケーション一覧" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps?per_page=200" \
+            > /tmp/apps.json
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+          d = json.load(open('/tmp/apps.json'))
+          if not d.get('success'):
+              print("```json")
+              print(json.dumps(d.get('errors', d), indent=2, ensure_ascii=False))
+              print("```")
+              raise SystemExit(0)
+          apps = d.get('result', [])
+          print(f"\n**合計**: {len(apps)} 個\n")
+          if not apps:
+              print("(Access アプリは 0 個です — Access が原因ではない可能性)")
+              raise SystemExit(0)
+          print("| # | 名前 | ID | ドメイン | type |")
+          print("|---|---|---|---|---|")
+          worker_apps = []
+          for i, a in enumerate(apps, 1):
+              name = a.get('name', '?')
+              aid = a.get('id', '?')
+              domain = a.get('domain', '')
+              app_type = a.get('type', '')
+              # destinations may live in self_hosted_domains or destinations
+              dests = a.get('self_hosted_domains', []) or [domain] or []
+              raw_dests = a.get('destinations', [])
+              for r in raw_dests:
+                  if isinstance(r, dict):
+                      dests.append(r.get('uri', '') or r.get('hostname', '') or str(r))
+              dest_str = '<br>'.join(d for d in dests if d) or '-'
+              is_worker = any('.workers.dev' in d for d in dests if d)
+              flag = ' 🎯' if is_worker else ''
+              print(f"| {i}{flag} | `{name}` | `{aid[:8]}...` | {dest_str} | {app_type} |")
+              if is_worker:
+                  worker_apps.append((aid, name, dests))
+          print()
+          print(f"**🎯 workers.dev を含むアプリ**: {len(worker_apps)} 個")
+          # Save for delete step
+          import os
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              fh.write(f"worker_app_ids={','.join(a[0] for a in worker_apps)}\n")
+              fh.write(f"worker_app_count={len(worker_apps)}\n")
+          PY
+
+      - name: Show raw JSON dump (debug)
+        run: |
+          echo "## 生 JSON (詳細確認用)" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          python3 -c "import json; d=json.load(open('/tmp/apps.json')); print(json.dumps(d.get('result', []), indent=2, ensure_ascii=False)[:5000])" >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(dump failed)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: DELETE workers.dev apps (only if delete_all_workers=yes)
+        if: ${{ inputs.delete_all_workers == 'yes' }}
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          IDS: ${{ steps.list.outputs.worker_app_ids }}
+        run: |
+          echo "## ⚠️ 削除実行" >> $GITHUB_STEP_SUMMARY
+          if [ -z "$IDS" ]; then
+            echo "対象なし。" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          IFS=',' read -ra ARR <<< "$IDS"
+          for aid in "${ARR[@]}"; do
+            echo "削除: $aid"
+            resp=$(curl -s -X DELETE \
+              -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$aid")
+            success=$(echo "$resp" | python3 -c "import sys,json;print(json.load(sys.stdin).get('success', False))" 2>/dev/null || echo false)
+            echo "  → success=$success"
+          done >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Re-probe workers
+        if: always()
+        run: |
+          echo "## Worker 到達性 (削除後)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.delete_all_workers }}" = "yes" ]; then
+            echo "10 秒待機 (Access 削除の伝播)..."
+            sleep 10
+          fi
+          {
+            echo ""
+            echo "| Worker | 結果 |"
+            echo "|---|---|"
+            for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+              code=$(curl -s -o /tmp/b.txt -w "%{http_code}" -m 5 "https://$w.agewaller.workers.dev/" 2>/dev/null || echo "000")
+              reason=$(grep -i "x-deny-reason" /tmp/b.txt 2>/dev/null | sed 's/.*: //;s/[\r\n]//g' || true)
+              if [ "$code" = "200" ] || [ "$code" = "404" ] || [ "$code" = "405" ]; then
+                echo "| $w | ✅ HTTP $code |"
+              else
+                echo "| $w | ❌ HTTP $code ${reason:+($reason)} |"
+              fi
+            done
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
