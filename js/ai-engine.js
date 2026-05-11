@@ -631,6 +631,19 @@ ${avoidBlock}
       // opaque Safari message "Load failed"; surface an actionable
       // hint instead of the raw string so users know what to try.
       const em = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
+      // Try Gemini fallback before throwing (same pattern as the inline
+      // callAI in index.html). If admin has saved a Gemini key in
+      // admin/config, Cloudflare Worker outages no longer break AI for
+      // logged-in users either.
+      const gemKey = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
+      if (gemKey && /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed/i.test(em)) {
+        console.warn('[Anthropic] network failure, falling back to Gemini:', em.slice(0, 80));
+        try {
+          return await this.callGoogle('gemini-2.5-flash', prompt, gemKey, options || {});
+        } catch (gErr) {
+          console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
+        }
+      }
       if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
         throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
       }
@@ -643,6 +656,18 @@ ${avoidBlock}
       const errBody = await response.text().catch(() => '');
       let errMsg = response.statusText;
       try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
+      // 5xx / 403 host_not_allowed → try Gemini fallback before giving up.
+      const gemKey2 = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
+      const denyReason = response.headers.get('x-deny-reason') || '';
+      const isInfra = response.status >= 500 || denyReason === 'host_not_allowed' || /Host not in allowlist/.test(errBody);
+      if (gemKey2 && isInfra) {
+        console.warn('[Anthropic] HTTP', response.status, 'falling back to Gemini');
+        try {
+          return await this.callGoogle('gemini-2.5-flash', prompt, gemKey2, options || {});
+        } catch (gErr) {
+          console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
+        }
+      }
       throw new Error(`Anthropic ${response.status}: ${errMsg}`);
     }
 
