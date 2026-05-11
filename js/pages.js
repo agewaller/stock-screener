@@ -730,6 +730,8 @@ App.prototype.render_dashboard = function() {
       menopause: ['ほてり回数・強さ(1-10)', '睡眠時間・夜間覚醒', '気分・イライラ(1-10)', 'HRT/漢方服薬記録'],
       schizophrenia: ['陽性症状(幻聴・妄想)の強さ(1-10)', '陰性症状(意欲・感情)の変化', '服薬確認・副作用', 'デイケア参加・睡眠リズム'],
       alzheimers: ['物忘れエピソード(内容・頻度)', 'BPSD(徘徊・興奮・幻覚)', '服薬確認', 'ADL介助量の変化'],
+      sad: ['不安強度(1-10)と場面', '回避した状況', 'SSRI服薬確認', 'CBT曝露課題の結果'],
+      anorexia: ['食事内容・食後の気分', '体重(任意)', '過食衝動の強さ・引き金', '回復の小さな進歩'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));

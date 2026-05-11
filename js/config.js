@@ -1789,6 +1789,57 @@ var CONFIG = {
         { timestamp: '2026-03-24T08:00:00Z', name: 'ドネペジル（アリセプト）', notes: '3→5mg 就寝後（コリンエステラーゼ阻害薬・認知機能維持）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    sad: {
+      diseases: ['社会不安障害'],
+      profile: { age: 24, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-09T20:00:00Z', category: 'symptoms', title: 'プレゼン前夜', content: '明日のゼミ発表がとても怖い。夜中まで準備したが「絶対に変な声が出る」「みんなに笑われる」という考えが止まらない。動悸がひどく眠れない。睡眠 2時間。' },
+        { timestamp: '2026-03-10T15:00:00Z', category: 'symptoms', title: 'プレゼン後', content: 'なんとか発表できた。声が少し震えたが最後まで話せた。不安レベル 8/10。終わったらすぐ席に戻って話しかけられないようにした。やはり「変に思われたかも」という考えが消えない。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '心療内科 初診', content: '社会不安障害と診断。エスシタロプラム（レクサプロ）5mgを処方された。4週間後に再診。カウンセリングも紹介された。「脳の誤警報」という説明でやや安心した。' },
+        { timestamp: '2026-03-24T09:00:00Z', category: 'medication', title: 'レクサプロ1週間', content: 'レクサプロ1週間。吐き気が少しあったが夕食後に飲むことで改善。不安の強さはまだ変わらないが、医師から「2〜4週間かかる」と聞いていたので継続する。電話をかけることを週1回の目標にした。' },
+        { timestamp: '2026-03-31T19:00:00Z', category: 'activity', title: '初めての段階的曝露', content: 'カウンセラーの指示で、今週のCBT課題：「コンビニで店員に一言話しかける」。不安レベル 6/10 だったがやってみた。最悪の事態（変な顔をされる）は起きなかった。少し達成感。' },
+        { timestamp: '2026-04-07T10:00:00Z', category: 'symptoms', title: 'レクサプロ3週間', content: '不安の強さが少し下がった感じ（7/10→5/10）。電話を自分からかけることができた（友人あて）。まだ人前で話すのは怖いが、「絶対失敗する」という確信が少し薄れてきた。' },
+        { timestamp: '2026-04-14T21:00:00Z', category: 'activity', title: 'CBT課題 達成', content: 'ゼミでの小グループ発表（3人向け）を回避せずに行った！不安 6/10→終わったら2/10。「思ったより大丈夫だった」という体験を記録。カウンセラーに報告予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-17T08:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '5→10mg 夕食後（SSRI・社会不安障害の第一選択薬）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    anorexia: {
+      diseases: ['摂食障害'],
+      profile: { age: 19, gender: 'female', height: 163, weight: 47 },
+      textEntries: [
+        { timestamp: '2026-03-08T08:00:00Z', category: 'symptoms', title: '食事記録', content: '今日食べたもの：朝：なし。昼：サラダ（ドレッシングなし）。夜：白米100g・みそ汁。体重 47kg（1ヶ月前 49kgから減少）。「太るのが怖い」という気持ちが強い。でも体がだるい。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: '心療内科 受診', content: 'BMI 17.7（低体重）。拒食症の診断。亜鉛欠乏・ビタミンD不足・低血糖を指摘された。入院は本人が拒否。週1回の栄養士・心理士の外来で様子を見ることになった。' },
+        { timestamp: '2026-03-22T09:00:00Z', category: 'nutrition', title: '食事再導入開始', content: '栄養士と一緒に「怖くない食品リスト」を作った。今週の目標：朝食を必ず食べること。ヨーグルト（100g）から始めることにした。食べた後30分はドキドキしたが嘔吐衝動はなかった。' },
+        { timestamp: '2026-03-29T08:00:00Z', category: 'nutrition', title: '朝食継続', content: '朝食を1週間毎日食べた！ヨーグルト→バナナ半分も追加できた。体重 47.5kg（少し増えたが怖い気持ちと戦っている）。心理士から「これは回復の証拠」と言われた。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'symptoms', title: 'めまい改善', content: '以前あっためまい・立ちくらみが減ってきた。亜鉛サプリ開始2週間。食欲が少し出てきた気がする。まだ体重を見るのが怖いが、体調は明らかに改善している。' },
+        { timestamp: '2026-04-12T10:00:00Z', category: 'nutrition', title: '初めてランチ外食', content: '友人とランチに行けた。自分でカフェのサラダプレートを選んで食べた。「みんなに見られている」という恐怖はあったが最後まで食べられた。1年ぶりの外食。達成感。' },
+        { timestamp: '2026-04-19T09:00:00Z', category: 'vitals', title: '受診・体重確認', content: '体重 48.2kg（1ヶ月で+1.2kg）。BMI 18.1（低体重境界）。医師から「回復の軌道に乗っている」と言われた。亜鉛値も正常範囲に戻ってきた。次の目標BMI 20を目指す。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T10:00:00Z', name: '摂食障害スクリーニング', findings: 'BMI 17.7（低体重）, 亜鉛 58（低値 基準75以上）, 25(OH)D 14（不足）, 血糖 62（低血糖）, K 3.3（低め）, Hb 10.8（軽度貧血）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-15T08:00:00Z', name: '亜鉛サプリメント', notes: '25mg 朝食後（味覚・食欲改善・回復期補充）' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'ビタミンD3', notes: '1000IU 朝食後（欠乏補正）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
