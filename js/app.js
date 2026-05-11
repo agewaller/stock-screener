@@ -1300,6 +1300,10 @@ ${recentText || '記録なし'}
       crohns: { ja: 'クローン病 炎症性腸疾患 IBD', en: "Crohn's disease" },
       gad: { ja: '全般性不安障害 GAD 不安症', en: 'generalized anxiety disorder' },
       sjogrens: { ja: 'シェーグレン症候群 ドライアイ ドライマウス', en: "Sjogren's syndrome" },
+      ocd: { ja: '強迫性障害 OCD 強迫症', en: 'OCD obsessive compulsive disorder' },
+      epilepsy: { ja: 'てんかん 発作日誌', en: 'epilepsy seizure' },
+      burnout: { ja: 'バーンアウト症候群 燃え尽き症候群', en: 'burnout syndrome' },
+      parkinsons: { ja: 'パーキンソン病 振戦', en: "Parkinson's disease" },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1411,6 +1415,10 @@ ${recentText || '記録なし'}
       crohns: "Crohn's disease treatment",
       gad: 'generalized anxiety disorder treatment',
       sjogrens: "Sjogren's syndrome",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome occupational',
+      parkinsons: "Parkinson's disease treatment",
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1552,6 +1560,10 @@ ${titles}`;
       crohns: "Crohn's disease treatment",
       gad: 'generalized anxiety disorder treatment',
       sjogrens: "Sjogren's syndrome treatment",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome work stress',
+      parkinsons: "Parkinson's disease treatment",
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -2938,7 +2950,8 @@ ${responseText.substring(0, 3000)}`;
       insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
       migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ',
       sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
-      gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群'
+      gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
+      ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }

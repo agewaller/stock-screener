@@ -123,6 +123,10 @@ function extractDiseaseIds(text) {
     crohns: /クローン病|Crohn|クローン|IBD|炎症性腸疾患|エンタイビオ|ステラーラ|エレンタール|痔瘻|カルプロテクチン/i,
     gad: /全般性不安障害|GAD\b|不安障害|不安症|anxiety disorder|CBT 不安|心配が止まらない|漠然とした不安/i,
     sjogrens: /シェーグレン|Sjogren|Sjögren|ドライアイ.*乾燥|ドライマウス.*乾燥|抗SS-A|抗SS-B|唾液腺|涙腺/i,
+    ocd: /強迫性障害|強迫症|OCD\b|強迫観念|強迫行為|ERP 曝露|フルボキサミン|ルボックス|アナフラニール|Y-BOCS/i,
+    epilepsy: /てんかん|epilepsy|発作日誌|抗てんかん薬|デパケン|バルプロ酸|ラミクタール|イーケプラ|発作.*日誌|てんかん.*発作/i,
+    burnout: /バーンアウト|燃え尽き症候群|burnout|情緒的消耗|脱人格化|リワーク|職場復帰プログラム|休職.*回復/i,
+    parkinsons: /パーキンソン病|パーキンソン|Parkinson|振戦|固縮|寡動|レボドパ|メネシット|ミラペックス|ウェアリングオフ|DBS.*パーキンソン/i,
   };
   for (const [id, re] of Object.entries(patterns)) {
     if (re.test(text)) ids.push(id);
