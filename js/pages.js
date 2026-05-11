@@ -1950,7 +1950,7 @@ App.prototype.render_research = function() {
     ? savedResults.html
     : (updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとあなたの疾患の最新論文が表示されます。'));
+      : Components.emptyState('🔬', '論文を検索してください', '上の「論文を検索」ボタンをクリックするとあなたの疾患の最新論文が表示されます。'));
   const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
   const primaryDiseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
   const allPrompts = { ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) };
