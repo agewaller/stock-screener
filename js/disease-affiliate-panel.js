@@ -112,6 +112,24 @@
         { kind: 'book', label: '『眠れなくなるほど面白い 図解 睡眠の話』', q: '眠れなくなるほど 図解 睡眠' },
         { kind: 'device', label: 'ホワイトノイズマシン', q: 'ホワイトノイズマシン 寝室' }
       ]
+    },
+    bipolar: {
+      title: '📚 双極性障害と向き合うためのリソース',
+      items: [
+        { kind: 'book', label: '『双極性障害（躁うつ病）と向き合う』岡田尊司', q: '双極性障害 躁うつ病 向き合う' },
+        { kind: 'book', label: '『CALM（気分チャート記録ガイド）』', q: '双極性障害 気分チャート 記録' },
+        { kind: 'supplement', label: 'オメガ 3（EPA+DHA 2g）双極うつ補助に', q: 'オメガ3 EPA DHA 2000mg' },
+        { kind: 'device', label: '光療法ランプ（季節性うつ・概日リズム調整）', q: '光療法ランプ 10000ルクス' }
+      ]
+    },
+    adhd: {
+      title: '📚 ADHD の理解と対策に役立つリソース',
+      items: [
+        { kind: 'book', label: '『ADHDの正体』岡田尊司', q: 'ADHDの正体 岡田尊司' },
+        { kind: 'book', label: '『先延ばし解決の心理学』', q: '先延ばし ADHD 解決 生産性' },
+        { kind: 'device', label: 'ノイズキャンセリングヘッドフォン（集中支援）', q: 'ノイズキャンセリング ヘッドフォン 集中' },
+        { kind: 'supplement', label: 'オメガ 3（ADHD 小児〜成人の補助エビデンスあり）', q: 'オメガ3 EPA DHA ADHD' }
+      ]
     }
   };
 
