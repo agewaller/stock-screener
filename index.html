@@ -1614,17 +1614,23 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 </head>
 <body>
 <script>
-// One-time migration: stock-screener.agewaller.workers.dev got placed
-// behind Cloudflare Access (Zero Trust). All browser fetches to it
-// redirect to an auth page → CORS fails → "Load failed". The fix is a
-// new "cares-relay" Worker that uses a service binding to call into
-// stock-screener internally (bypassing Access). Existing users have
-// the old URL cached in localStorage from previous admin/config sync.
-// Clear it so the new hardcoded relay URL kicks in.
+// One-time migration of any stale Worker URL cached in localStorage to
+// the current default. Two migrations apply here:
+//   1. stock-screener.agewaller.workers.dev — protected by Cloudflare
+//      Access, returns auth redirects → CORS fails (legacy).
+//   2. cares-relay.agewaller.workers.dev — workers.dev account-level
+//      subdomain toggle disabled every *.agewaller.workers.dev URL,
+//      returning 403 host_not_allowed without CORS headers → "Failed
+//      to fetch" for everyone. We moved to the custom-domain
+//      ai.cares.advisers.jp which is pinned to our own zone and not
+//      affected by the workers.dev toggle.
+// In both cases the fix is to drop the cached value so the new
+// hardcoded default in getAnthropicEndpoint kicks in.
 (function () {
   try {
     var stale = (localStorage.getItem('anthropic_proxy_url') || '').trim();
-    if (/stock-screener\.agewaller\.workers\.dev/.test(stale)) {
+    if (/stock-screener\.agewaller\.workers\.dev/.test(stale) ||
+        /cares-relay\.agewaller\.workers\.dev/.test(stale)) {
       localStorage.removeItem('anthropic_proxy_url');
     }
   } catch (_) {}
@@ -2191,7 +2197,11 @@ function getAnthropicEndpoint(hasKey) {
   if (hasKey) return ANTHROPIC_DIRECT_URL;
   var proxy = '';
   try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-  if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
+  // Default to the Cloudflare custom-domain hostname (ai.cares.advisers.jp).
+  // This is pinned to our own zone, so it survives the workers.dev
+  // account-level subdomain toggle that previously took down every
+  // *.agewaller.workers.dev URL at once.
+  if (!proxy) proxy = 'https://ai.cares.advisers.jp';
   return proxy.replace(/\/+$/, '') + '/v1/messages';
 }
 // Top-level entry point used by every guest / inline AI call. Tries
@@ -3196,7 +3206,7 @@ window.addEventListener('load', function() {
         // correct URL right here. Saved to localStorage.
         var currentProxy = '';
         try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = 'https://stock-screener.agewaller.workers.dev';
+        if (!currentProxy) currentProxy = 'https://ai.cares.advisers.jp';
         var proxyForm = isConnFail
           ? '<details style="margin-top:10px;font-size:11px"><summary style="cursor:pointer;color:#7f1d1d;font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>'
             + '<div style="margin-top:8px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px">'

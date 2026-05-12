@@ -551,7 +551,11 @@ ${avoidBlock}
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
+      // Custom-domain hostname on our own Cloudflare zone — survives the
+      // account-level workers.dev disable that previously killed every
+      // *.agewaller.workers.dev URL at once. See wrangler.relay.jsonc
+      // "routes" for the custom_domain registration.
+      if (!proxy) proxy = 'https://ai.cares.advisers.jp';
       url = proxy.replace(/\/+$/, '') + '/v1/messages';
     }
     const headers = {
