@@ -543,7 +543,7 @@ var App = class App {
     const proxyEl = document.getElementById('input-proxy-url');
     if (proxyEl) {
       const proxyStored = localStorage.getItem('anthropic_proxy_url');
-      proxyEl.value = proxyStored || 'https://stock-screener.agewaller.workers.dev';
+      proxyEl.value = proxyStored || 'https://cares-relay.agewaller.workers.dev';
     }
 
     const keys = ['anthropic', 'openai', 'google'];
@@ -3543,7 +3543,7 @@ ${bloodText || '記録なし'}
   async diagnoseAiConnection(targetEl) {
     const url = (typeof getAnthropicEndpoint === 'function')
       ? getAnthropicEndpoint(false)
-      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
+      : 'https://cares-relay.agewaller.workers.dev/v1/messages';
     const out = (targetEl && targetEl.tagName) ? targetEl : document.getElementById('ai-diag-output');
     if (!out) return;
     out.innerHTML = '<div style="font-size:11px;color:#475569">診断中…（数秒お待ちください）</div>';

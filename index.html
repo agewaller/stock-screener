@@ -3152,7 +3152,7 @@ window.addEventListener('load', function() {
         // correct URL right here. Saved to localStorage.
         var currentProxy = '';
         try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = 'https://stock-screener.agewaller.workers.dev';
+        if (!currentProxy) currentProxy = 'https://cares-relay.agewaller.workers.dev';
         var proxyForm = isConnFail
           ? '<details style="margin-top:10px;font-size:11px"><summary style="cursor:pointer;color:#7f1d1d;font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>'
             + '<div style="margin-top:8px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px">'
