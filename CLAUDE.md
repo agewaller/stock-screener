@@ -37,14 +37,29 @@ wrangler.staging.jsonc        ← ステージング Worker (stock-screener-stag
 
 ## デプロイ
 
+通常の変更は **feature → staging → main** の順で流す:
+
 ```bash
-git add js/config.js  # 変更したファイルを add
-git commit -m "変更内容"
-git push origin main             # → GitHub Pages 自動デプロイ（pages.yml）
+git checkout staging && git pull origin staging
+git checkout -b feature/my-change
+# 編集...
+git commit -m "変更内容" && git push -u origin feature/my-change
 ```
 
+GitHub UI で `feature/my-change` → `staging` の PR を merge →
+`staging.cares.advisers.jp` で動作確認 → `staging` → `main` の PR を
+merge すると本番 (`cares.advisers.jp`) にデプロイされる。
+
+詳細フロー・初回セットアップ・ロールバック・トラブルシューティングは
+**`DEPLOY.md`** を参照。
+
+`main` 直 push は緊急ホットフィックスのみ。事後に必ず `main` を
+`staging` に back-merge すること（さもないと次の promote で hotfix が
+巻き戻る）。
+
 Worker を変更した場合は `worker/*.js` を編集→push で
-`deploy-worker.yml` が Cloudflare に自動配布する。
+`deploy-worker.yml` が Cloudflare に自動配布する（`main` push は
+本番 Worker 全部、`staging` push は `stock-screener-staging` のみ）。
 
 ### 環境（本番 / ステージング）
 
