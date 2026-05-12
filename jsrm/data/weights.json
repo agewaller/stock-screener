@@ -1,0 +1,10 @@
+{
+  "taiwan_strait": 0.25,
+  "senkaku_east_china_sea": 0.15,
+  "china_russia_military": 0.1,
+  "north_korea": 0.1,
+  "us_japan_operational_integration": 0.15,
+  "legal_political_activation": 0.1,
+  "market_supply_chain": 0.075,
+  "cyber_information_warfare": 0.075
+}

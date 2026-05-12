@@ -1,0 +1,8 @@
+id,date,category,title,summary,sourceName,sourceUrl,severity,confidence,status,tags
+mnl_2026-05-08_01,2026-05-08,taiwan_strait,台湾周辺で中国軍機の活動が増加,公開発表に基づく台湾防空識別圏進入機数の増加,Taiwan MND,https://www.mnd.gov.tw/,2.5,0.9,reviewed,
+mnl_2026-05-08_02,2026-05-08,senkaku_east_china_sea,尖閣周辺で中国公船の接続水域内活動,外務省発表に基づく接続水域内航行,外務省,https://www.mofa.go.jp/mofaj/area/senkaku/,2.0,0.9,reviewed,
+mnl_2026-05-09_01,2026-05-09,taiwan_strait,台湾周辺でPLA活動が一段と増加,複数公開ソースで報じられた周辺活動の継続,Taiwan MND,https://www.mnd.gov.tw/,3.0,0.9,reviewed,
+mnl_2026-05-09_02,2026-05-09,senkaku_east_china_sea,尖閣周辺で中国海警船の活動,外務省発表に基づく接続水域内活動,外務省,https://www.mofa.go.jp/mofaj/area/senkaku/,2.5,0.9,reviewed,
+mnl_2026-05-09_03,2026-05-09,us_japan_operational_integration,日米共同演習関連報道,防衛省発表に基づく共同訓練,防衛省 統合幕僚監部,https://www.mod.go.jp/js/,2.0,0.85,reviewed,
+mnl_2026-05-09_04,2026-05-09,north_korea,北朝鮮によるミサイル関連発表,首相官邸の公的発表,首相官邸,https://www.kantei.go.jp/,2.5,0.9,reviewed,
+mnl_2026-05-09_05,2026-05-09,legal_political_activation,存立危機事態関連発言の増加,公開報道に基づく国会答弁・発言,Manual review,,2.0,0.7,reviewed,
