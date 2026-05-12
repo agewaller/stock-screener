@@ -183,6 +183,17 @@ var App = class App {
         localStorage.setItem('referrer_id', ref);
         console.log('[Referral] captured ref=' + ref);
       }
+      // ?d= pre-selects a disease from LP CTAs (e.g. /bipolar.html → ?d=bipolar).
+      // Only apply if the user hasn't already chosen diseases, so we don't
+      // clobber an existing selection on return visits.
+      const dParam = params.get('d');
+      if (dParam && !(store.get('selectedDiseases') || []).length) {
+        const allIds = (CONFIG.DISEASE_CATEGORIES || []).flatMap(c => c.diseases.map(d => d.id));
+        if (allIds.includes(dParam)) {
+          store.set('selectedDiseases', [dParam]);
+          console.log('[d-param] pre-selected disease:', dParam);
+        }
+      }
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
@@ -755,10 +766,7 @@ var App = class App {
       }
     }
 
-    // Default to ME/CFS if nothing selected
-    if (!store.get('selectedDisease')) {
-      store.set('selectedDisease', { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎/慢性疲労症候群', icon: '🧠', color: '#6C63FF' });
-    }
+
 
     // Load default prompts
     if (!store.get('customPrompts') || Object.keys(store.get('customPrompts')).length === 0) {
@@ -1322,6 +1330,62 @@ ${recentText || '記録なし'}
       bipolar: { ja: '双極性障害', en: 'bipolar disorder' },
       ptsd: { ja: 'PTSD トラウマ', en: 'PTSD trauma' },
       adhd: { ja: 'ADHD 発達障害', en: 'ADHD' },
+      migraine: { ja: '片頭痛 偏頭痛', en: 'migraine' },
+      mcas: { ja: 'MCAS マスト細胞', en: 'MCAS mast cell' },
+      eds: { ja: 'EDS エーラスダンロス', en: 'Ehlers-Danlos syndrome' },
+      ra: { ja: '関節リウマチ RA', en: 'rheumatoid arthritis' },
+      sle: { ja: '全身性エリテマトーデス SLE ループス', en: 'lupus SLE' },
+      asd: { ja: '自閉スペクトラム症 ASD 発達障害', en: 'autism spectrum disorder' },
+      crohns: { ja: 'クローン病 炎症性腸疾患 IBD', en: "Crohn's disease" },
+      gad: { ja: '全般性不安障害 GAD 不安症', en: 'generalized anxiety disorder' },
+      sjogrens: { ja: 'シェーグレン症候群 ドライアイ ドライマウス', en: "Sjogren's syndrome" },
+      ocd: { ja: '強迫性障害 OCD 強迫症', en: 'OCD obsessive compulsive disorder' },
+      epilepsy: { ja: 'てんかん 発作日誌', en: 'epilepsy seizure' },
+      burnout: { ja: 'バーンアウト症候群 燃え尽き症候群', en: 'burnout syndrome' },
+      parkinsons: { ja: 'パーキンソン病 振戦', en: "Parkinson's disease" },
+      ms: { ja: '多発性硬化症 MS 神経内科', en: 'multiple sclerosis' },
+      chronic_pain: { ja: '慢性疼痛 ペインクリニック 神経障害性疼痛', en: 'chronic pain' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖症', en: 'panic disorder' },
+      endometriosis: { ja: '子宮内膜症 月経痛 ジエノゲスト 婦人科', en: 'endometriosis' },
+      diabetes: { ja: '糖尿病 血糖値 HbA1c 糖尿病内科', en: 'type 2 diabetes' },
+      atopy: { ja: 'アトピー性皮膚炎 かゆみ デュピクセント 皮膚科', en: 'atopic dermatitis' },
+      asthma: { ja: '気管支喘息 発作 吸入ステロイド 呼吸器内科', en: 'asthma' },
+      ckd: { ja: '慢性腎臓病 CKD eGFR 腎臓内科 透析', en: 'chronic kidney disease' },
+      heart_failure: { ja: '心不全 体重管理 息切れ 循環器内科', en: 'heart failure' },
+      gout: { ja: '痛風 高尿酸血症 発作記録 尿酸値', en: 'gout hyperuricemia' },
+      osteoporosis: { ja: '骨粗鬆症 骨密度 整形外科 骨折予防', en: 'osteoporosis' },
+      menopause: { ja: '更年期障害 ホットフラッシュ HRT 婦人科', en: 'menopause syndrome' },
+      schizophrenia: { ja: '統合失調症 幻聴 妄想 精神科 デイケア', en: 'schizophrenia' },
+      alzheimers: { ja: 'アルツハイマー病 認知症 物忘れ 神経内科', en: 'Alzheimer disease' },
+      sad: { ja: '社会不安障害 社交不安症 対人恐怖 精神科 心療内科', en: 'social anxiety disorder' },
+      anorexia: { ja: '摂食障害 拒食症 過食症 心療内科 精神科', en: 'eating disorder anorexia bulimia' },
+      thyroid_cancer: { ja: '甲状腺がん 乳頭がん 術後管理 内分泌外科 チラーヂン', en: 'thyroid cancer' },
+      sleep_apnea: { ja: '睡眠時無呼吸症候群 SAS CPAP いびき 睡眠外来', en: 'sleep apnea syndrome' },
+      copd: { ja: 'COPD 慢性閉塞性肺疾患 息切れ 吸入薬 呼吸器内科', en: 'COPD chronic obstructive pulmonary disease' },
+      liver_disease: { ja: '慢性肝疾患 肝硬変 肝炎 MASH 消化器内科', en: 'chronic liver disease cirrhosis' },
+      cancer_fatigue: { ja: 'がん治療 副作用 倦怠感 化学療法 免疫療法 腫瘍内科', en: 'cancer treatment side effects fatigue' },
+      hypertension: { ja: '高血圧 血圧管理 降圧薬 循環器内科', en: 'hypertension' },
+      hyperlipidemia: { ja: '脂質異常症 高コレステロール スタチン 循環器内科', en: 'hyperlipidemia dyslipidemia' },
+      anemia: { ja: '貧血 鉄欠乏性貧血 フェリチン 鉄剤 血液内科 婦人科', en: 'iron deficiency anemia' },
+      allergic_rhinitis: { ja: 'アレルギー性鼻炎 花粉症 鼻炎 耳鼻咽喉科 舌下免疫療法', en: 'allergic rhinitis hay fever' },
+      psoriasis: { ja: '乾癬 尋常性乾癬 関節症性乾癬 生物学的製剤 皮膚科 リウマチ科', en: 'psoriasis psoriatic arthritis' },
+      chronic_urticaria: { ja: '慢性蕁麻疹 蕁麻疹 皮膚科 アレルギー科 オマリズマブ', en: 'chronic urticaria CSU' },
+      pms_pmdd: { ja: 'PMS 月経前症候群 PMDD 月経前不快気分障害 婦人科 心療内科', en: 'premenstrual syndrome PMDD' },
+      overactive_bladder: { ja: '過活動膀胱 OAB 頻尿 尿失禁 夜間頻尿 泌尿器科', en: 'overactive bladder OAB' },
+      tinnitus: { ja: '耳鳴り 慢性耳鳴 感音性難聴 難聴 耳鼻咽喉科 TRT', en: 'tinnitus hearing loss' },
+      vertigo: { ja: 'めまい BPPV 良性発作性頭位めまい症 メニエール病 耳鼻咽喉科', en: 'vertigo BPPV Menieres disease' },
+      dry_eye: { ja: 'ドライアイ 乾性角結膜炎 眼精疲労 眼科 マイボーム腺 人工涙液', en: 'dry eye disease DED' },
+      chronic_prostatitis: { ja: '慢性前立腺炎 CP/CPPS 慢性骨盤痛 泌尿器科 NIH-CPSI α遮断薬', en: 'chronic prostatitis CPPS pelvic pain' },
+      ulcerative_colitis: { ja: '潰瘍性大腸炎 炎症性腸疾患 IBD 血便 メサラジン 消化器内科', en: 'ulcerative colitis IBD mesalazine' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖 SSRI 認知行動療法 心療内科', en: 'panic disorder panic attack CBT' },
+      ankylosing_spondylitis: { ja: '強直性脊椎炎 体軸性脊椎関節炎 axSpA 炎症性腰痛 BASDAI リウマチ科', en: 'ankylosing spondylitis axSpA inflammatory back pain' },
+      hyperthyroidism: { ja: '甲状腺機能亢進症 バセドウ病 Graves病 TSH FT4 チアマゾール 内分泌科', en: 'hyperthyroidism Graves disease thyroid' },
+      narcolepsy: { ja: 'ナルコレプシー 特発性過眠症 過度の眠気 情動脱力発作 ESS モダフィニル 睡眠専門', en: 'narcolepsy excessive daytime sleepiness cataplexy' },
+      osteoarthritis: { ja: '変形性関節症 変形性膝関節症 変形性股関節症 OA WOMAC ヒアルロン酸 整形外科', en: 'osteoarthritis OA knee hip joint pain' },
+      sjogrens: { ja: 'シェーグレン症候群 乾燥症候群 ドライアイ ドライマウス SSA抗体 SSB抗体 リウマチ科', en: 'Sjogrens syndrome dry eye dry mouth SSA antibody' },
+      atrial_fibrillation: { ja: '心房細動 AFib 動悸 脈の乱れ DOAC 抗凝固薬 カテーテルアブレーション 循環器内科', en: 'atrial fibrillation AFib DOAC anticoagulation' },
+      myasthenia: { ja: '重症筋無力症 眼瞼下垂 複視 嚥下障害 AChR抗体 ピリドスチグミン 神経内科', en: 'myasthenia gravis MG ptosis dysphagia AChR antibody' },
+      pcos: { ja: '多嚢胞性卵巣症候群 PCOS 月経不順 多毛 インスリン抵抗性 メトホルミン 婦人科', en: 'polycystic ovary syndrome PCOS ovulation dysfunction' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1425,6 +1489,61 @@ ${recentText || '記録なし'}
       ibs: 'irritable bowel syndrome treatment',
       pots: 'postural orthostatic tachycardia',
       insomnia: 'insomnia treatment',
+      migraine: 'migraine treatment prevention',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
+      ra: 'rheumatoid arthritis treatment',
+      asd: 'autism spectrum disorder',
+      crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome occupational',
+      parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder treatment anxiety',
+      endometriosis: 'endometriosis treatment pain management',
+      diabetes: 'type 2 diabetes management glycemic control',
+      atopy: 'atopic dermatitis treatment dupilumab',
+      asthma: 'asthma control inhaled corticosteroids treatment',
+      ckd: 'chronic kidney disease progression SGLT2',
+      heart_failure: 'heart failure treatment SGLT2 ARNi mortality',
+      gout: 'gout uric acid management febuxostat',
+      osteoporosis: 'osteoporosis bisphosphonate bone density treatment',
+      menopause: 'menopause hormone replacement therapy HRT',
+      schizophrenia: 'schizophrenia antipsychotic treatment relapse prevention',
+      alzheimers: 'Alzheimer disease lecanemab cholinesterase inhibitor treatment',
+      sad: 'social anxiety disorder CBT SSRI treatment',
+      anorexia: 'eating disorder anorexia nervosa bulimia CBT-E treatment',
+      thyroid_cancer: 'thyroid cancer papillary follicular treatment lenvatinib',
+      sleep_apnea: 'obstructive sleep apnea CPAP cardiovascular outcomes',
+      copd: 'COPD exacerbation LAMA LABA pulmonary rehabilitation',
+      liver_disease: 'liver cirrhosis MASH fibrosis hepatocellular carcinoma',
+      cancer_fatigue: 'cancer related fatigue chemotherapy side effects management',
+      hypertension: 'hypertension blood pressure management antihypertensive treatment',
+      hyperlipidemia: 'hyperlipidemia statin LDL cholesterol cardiovascular prevention',
+      anemia: 'iron deficiency anemia ferritin hemoglobin treatment',
+      allergic_rhinitis: 'allergic rhinitis pollen sublingual immunotherapy antihistamine',
+      psoriasis: 'psoriasis biologics IL-17 IL-23 TNF inhibitor treatment',
+      chronic_urticaria: 'chronic spontaneous urticaria omalizumab antihistamine UAS7',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI hormonal treatment',
+      overactive_bladder: 'overactive bladder pelvic floor training beta-3 agonist',
+      tinnitus: 'tinnitus TRT cognitive behavioral therapy sound therapy',
+      vertigo: 'vertigo BPPV Epley maneuver Meniere disease treatment',
+      dry_eye: 'dry eye disease DED diquafosol artificial tears meibomian gland',
+      chronic_prostatitis: 'chronic prostatitis CPPS alpha blocker pelvic pain treatment',
+      ulcerative_colitis: 'ulcerative colitis mesalazine vedolizumab infliximab remission maintenance',
+      panic: 'panic disorder SSRI CBT exposure therapy panic attack treatment',
+      ankylosing_spondylitis: 'ankylosing spondylitis TNF inhibitor IL-17 BASDAI exercise therapy',
+      hyperthyroidism: 'hyperthyroidism Graves disease methimazole radioiodine thyrotoxicosis',
+      narcolepsy: 'narcolepsy pitolisant modafinil orexin cataplexy treatment',
+      osteoarthritis: 'osteoarthritis knee pain hyaluronic acid duloxetine exercise weight loss',
+      sjogrens: 'Sjogrens syndrome hydroxychloroquine pilocarpine fatigue lymphoma risk',
+      atrial_fibrillation: 'atrial fibrillation DOAC apixaban catheter ablation stroke prevention',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod pyridostigmine thymectomy treatment',
+      pcos: 'polycystic ovary syndrome metformin letrozole insulin resistance treatment fertility',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1547,6 +1666,8 @@ ${titles}`;
     const diseaseTerms = {
       mecfs: 'ME/CFS OR chronic fatigue syndrome',
       depression: 'major depressive disorder',
+      bipolar: 'bipolar disorder treatment',
+      adhd: 'ADHD attention deficit treatment',
       fibromyalgia: 'fibromyalgia',
       long_covid: 'long COVID OR post-COVID',
       pots: 'postural orthostatic tachycardia',
@@ -1554,6 +1675,63 @@ ${titles}`;
       hashimoto: 'Hashimoto thyroiditis',
       ibs: 'irritable bowel syndrome',
       insomnia: 'insomnia treatment',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
+      migraine: 'migraine treatment prevention',
+      ptsd: 'post-traumatic stress disorder treatment',
+      ra: 'rheumatoid arthritis treatment',
+      sle: 'systemic lupus erythematosus treatment',
+      asd: 'autism spectrum disorder',
+      crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome treatment",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome work stress',
+      parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder cognitive behavioral therapy',
+      endometriosis: 'endometriosis treatment hormonal',
+      diabetes: 'type 2 diabetes SGLT2 GLP-1 treatment',
+      atopy: 'atopic dermatitis dupilumab JAK inhibitor',
+      asthma: 'asthma biologics inhaled corticosteroids',
+      ckd: 'chronic kidney disease SGLT2 inhibitor renal protection',
+      heart_failure: 'heart failure quadruple therapy SGLT2 ARNi',
+      gout: 'gout urate lowering therapy prevention',
+      osteoporosis: 'osteoporosis fracture prevention bone mineral density',
+      menopause: 'menopause hormone therapy symptom management',
+      schizophrenia: 'schizophrenia cognitive behavioral therapy psychosis relapse',
+      alzheimers: "Alzheimer disease biomarker amyloid progression",
+      sad: 'social anxiety disorder exposure therapy cognitive behavioral',
+      anorexia: 'anorexia nervosa bulimia nervosa recovery CBT-E',
+      thyroid_cancer: 'thyroid cancer recurrence surveillance Tg monitoring',
+      sleep_apnea: 'sleep apnea CPAP adherence weight loss treatment',
+      copd: 'COPD inhaler therapy smoking cessation lung function',
+      liver_disease: 'liver fibrosis MASH treatment resmetirom cirrhosis',
+      cancer_fatigue: 'cancer related fatigue exercise intervention CIPN',
+      hypertension: 'hypertension blood pressure home measurement cardiovascular risk',
+      hyperlipidemia: 'dyslipidemia statin PCSK9 inhibitor LDL lowering outcomes',
+      anemia: 'iron deficiency anemia IV iron oral iron hemoglobin recovery',
+      allergic_rhinitis: 'allergic rhinitis sublingual immunotherapy pollen season',
+      psoriasis: 'psoriasis biologic therapy PASI skin clearance real world',
+      chronic_urticaria: 'chronic urticaria omalizumab treatment response biomarker',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI luteal phase treatment',
+      overactive_bladder: 'overactive bladder OAB anticholinergic pelvic floor',
+      tinnitus: 'tinnitus sound therapy habituation THI treatment outcome',
+      vertigo: 'BPPV canalith repositioning Meniere endolymphatic hydrops',
+      dry_eye: 'dry eye disease diquafosol rebamipide meibomian gland dysfunction tear film',
+      chronic_prostatitis: 'chronic pelvic pain syndrome NIH-CPSI alpha blocker pelvic floor therapy',
+      ulcerative_colitis: 'ulcerative colitis biologics vedolizumab ustekinumab mucosal healing',
+      panic: 'panic disorder cognitive behavioral therapy SSRI interoceptive exposure',
+      ankylosing_spondylitis: 'ankylosing spondylitis secukinumab upadacitinib ASDAS MRI sacroiliitis',
+      hyperthyroidism: 'Graves disease methimazole relapse radioiodine thyroid ablation outcome',
+      narcolepsy: 'narcolepsy orexin deficiency MSLT multiple sleep latency cataplexy treatment outcome',
+      osteoarthritis: 'osteoarthritis intraarticular hyaluronic acid duloxetine WOMAC exercise therapy',
+      sjogrens: 'primary Sjogrens syndrome hydroxychloroquine lymphoma sicca symptoms ESSDAI',
+      atrial_fibrillation: 'atrial fibrillation pulmonary vein isolation ablation DOAC stroke recurrence',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod complement inhibitor FcRn thymectomy outcome',
+      pcos: 'polycystic ovary syndrome PCOS metformin letrozole clomiphene insulin resistance long-term outcome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1563,7 +1741,7 @@ ${titles}`;
   }
 
   async searchPubMedLive() {
-    const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
+    const query = document.getElementById('pubmed-search-query')?.value || 'chronic disease management';
     const days = parseInt(document.getElementById('pubmed-search-days')?.value || '90');
     const resultsArea = document.getElementById('pubmed-results');
     const lang = (store.get('userProfile') || {}).language || 'ja';
@@ -2932,7 +3110,55 @@ ${responseText.substring(0, 3000)}`;
       .replace(/\s+/g, ' ')
       .trim()
       .substring(0, 100);
-    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 #ME_CFS #慢性疾患 #健康日記`;
+    const primaryId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+    const diseaseHashtag = {
+      mecfs: '#ME_CFS', depression: '#うつ病', bipolar: '#双極性障害',
+      adhd: '#ADHD', long_covid: '#LongCOVID', fibromyalgia: '#線維筋痛症',
+      pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
+      insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
+      migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ',
+      sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
+      gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
+      ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
+      ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
+      panic: '#パニック障害', endometriosis: '#子宮内膜症',
+      diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎',
+      asthma: '#気管支喘息', ckd: '#慢性腎臓病',
+      heart_failure: '#心不全', gout: '#痛風',
+      osteoporosis: '#骨粗鬆症', menopause: '#更年期障害',
+      schizophrenia: '#統合失調症',
+      alzheimers: '#アルツハイマー病',
+      sad: '#社会不安障害',
+      anorexia: '#摂食障害',
+      thyroid_cancer: '#甲状腺がん',
+      sleep_apnea: '#睡眠時無呼吸症候群',
+      copd: '#COPD',
+      liver_disease: '#慢性肝疾患',
+      cancer_fatigue: '#がん治療副作用',
+      hypertension: '#高血圧',
+      hyperlipidemia: '#脂質異常症',
+      anemia: '#貧血',
+      allergic_rhinitis: '#アレルギー性鼻炎',
+      psoriasis: '#乾癬',
+      chronic_urticaria: '#慢性蕁麻疹',
+      pms_pmdd: '#PMS月経前症候群',
+      overactive_bladder: '#過活動膀胱',
+      tinnitus: '#耳鳴り',
+      vertigo: '#めまい',
+      dry_eye: '#ドライアイ',
+      chronic_prostatitis: '#慢性前立腺炎',
+      ulcerative_colitis: '#潰瘍性大腸炎',
+      panic: '#パニック障害',
+      ankylosing_spondylitis: '#強直性脊椎炎',
+      hyperthyroidism: '#バセドウ病甲状腺機能亢進症',
+      narcolepsy: '#ナルコレプシー過眠症',
+      osteoarthritis: '#変形性関節症',
+      sjogrens: '#シェーグレン症候群',
+      atrial_fibrillation: '#心房細動',
+      myasthenia: '#重症筋無力症',
+      pcos: '#多嚢胞性卵巣症候群PCOS'
+    }[primaryId] || '#慢性疾患';
+    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
 
   // Copy share text to clipboard + toast feedback. Used by the 📋
@@ -3299,7 +3525,7 @@ ${responseText.substring(0, 3000)}`;
   }
 
   guestSampleReport() {
-    let diseaseId = 'mecfs';
+    let diseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
     try {
       const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
       if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
@@ -5049,7 +5275,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.confirmAction(this,'ログをクリア',()=>{store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)})">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">

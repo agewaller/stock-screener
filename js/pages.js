@@ -94,9 +94,9 @@ App.prototype.render_login = function() {
         <div style="cursor:pointer;display:flex;justify-content:space-between;align-items:center"
           onclick="var c=document.getElementById('disease-picker');c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.arrow').textContent=c.style.display==='none'?'+':'−'">
           <div style="font-size:12px;font-weight:600;color:#1e293b">対象疾患を選択（任意・後から変更可）<span style="font-weight:400;color:#94a3b8;margin-left:4px">${selectedCount > 0 ? selectedCount + '件' : ''}</span></div>
-          <span class="arrow" style="font-size:16px;color:#94a3b8">+</span>
+          <span class="arrow" style="font-size:16px;color:#94a3b8">${selectedCount > 0 ? '−' : '+'}</span>
         </div>
-        <div id="disease-picker" style="display:none;margin-top:10px">
+        <div id="disease-picker" style="display:${selectedCount > 0 ? 'block' : 'none'};margin-top:10px">
           <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
             oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
           ${categoryHtml}
@@ -434,7 +434,7 @@ App.prototype._getEarnedBadges = function(stats) {
 
 App.prototype.render_dashboard = function() {
   try {
-  const disease = store.get('selectedDisease') || { name: 'ME/CFS', icon: '🧠' };
+  const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
   const score = store.get('healthScore') || 50;
   const symptoms = store.get('symptoms') || [];
   const latest = symptoms[symptoms.length - 1] || {};
@@ -705,6 +705,60 @@ App.prototype.render_dashboard = function() {
       bipolar: ['気分(1-10)', '睡眠時間', '活動量'],
       ptsd: ['気分', '睡眠', 'フラッシュバック'],
       adhd: ['集中力', '睡眠', 'タスク達成'],
+      migraine: ['頭痛強度(1-10)', 'トリガー', '服薬記録'],
+      ra: ['朝のこわばり(分)', '腫れ関節の部位', '服薬記録(MTX)'],
+      sle: ['皮膚症状', '関節痛', '倦怠感(1-10)', '日光曝露'],
+      asd: ['感覚過敏度(1-10)', '社会的消耗', 'バーンアウト兆候'],
+      crohns: ['排便回数', '腹痛(1-10)', '食事内容', '体重'],
+      gad: ['不安レベル(1-10)', '心配の対象', '身体症状', '対処法'],
+      sjogrens: ['ドライアイ(1-10)', 'ドライマウス(1-10)', '疲労感', '点眼回数'],
+      ocd: ['強迫観念の強さ(1-10)', '強迫行為の時間(分)', 'ERP実施', '回避行動'],
+      epilepsy: ['発作の有無', '発作の種類', '服薬（飲み忘れ）', '誘因'],
+      burnout: ['消耗感(1-10)', '達成感(1-10)', '活動量', '睡眠時間'],
+      parkinsons: ['振戦の強さ(1-10)', 'ウェアリングオフ', '服薬タイミング', '転倒'],
+      ms: ['再発疑い症状', 'MSファティーグ(1-10)', 'DMT注射・副作用', 'ウートホフ現象'],
+      chronic_pain: ['痛みの強さNRS(0-10)', '痛みの部位・性質', '誘因', '服薬効果時間'],
+      panic: ['発作の有無・強さ(1-10)', '発作の場所・状況', '回避した場所', '予期不安(1-10)'],
+      endometriosis: ['月経痛NRS(0-10)', '骨盤痛の有無', '鎮痛薬使用', '不正出血（ジエノゲスト副作用）'],
+      diabetes: ['空腹時血糖(mg/dL)', '食後2時間血糖', '体重', '服薬・インスリン記録'],
+      atopy: ['かゆみ(NRS 0-10)', '皮疹の部位・範囲', 'ステロイド塗布量', '悪化要因'],
+      asthma: ['ピークフロー(PEF)', '喘鳴・息苦しさの有無', '発作止め吸入回数', '悪化要因'],
+      ckd: ['血圧(朝・夕)', '体重・むくみ', '食事の塩分量', '倦怠感・息苦しさ'],
+      heart_failure: ['体重(毎朝)', '血圧・心拍数', '足のむくみ(1-5)', '息切れ・倦怠感(1-10)'],
+      gout: ['発作の有無・関節', '尿酸値(受診時)', '食事(プリン体・アルコール)', '水分摂取量'],
+      osteoporosis: ['骨密度(YAM%)', '転倒・ヒヤリハット', '服薬記録', 'カルシウム/ビタミンD摂取'],
+      menopause: ['ほてり回数・強さ(1-10)', '睡眠時間・夜間覚醒', '気分・イライラ(1-10)', 'HRT/漢方服薬記録'],
+      schizophrenia: ['陽性症状(幻聴・妄想)の強さ(1-10)', '陰性症状(意欲・感情)の変化', '服薬確認・副作用', 'デイケア参加・睡眠リズム'],
+      alzheimers: ['物忘れエピソード(内容・頻度)', 'BPSD(徘徊・興奮・幻覚)', '服薬確認', 'ADL介助量の変化'],
+      sad: ['不安強度(1-10)と場面', '回避した状況', 'SSRI服薬確認', 'CBT曝露課題の結果'],
+      anorexia: ['食事内容・食後の気分', '体重(任意)', '過食衝動の強さ・引き金', '回復の小さな進歩'],
+      thyroid_cancer: ['チラーヂン服薬確認', 'TSH副作用(動悸・不眠)', 'Tg値(受診時)', '再発症状(頸部腫れ・嗄声)'],
+      sleep_apnea: ['CPAP使用時間', '日中眠気(ESS)', '体重・血圧', 'いびき・無呼吸の目撃'],
+      copd: ['息切れ(mMRC/CAT)', 'SpO2・心拍数', '喀痰の色・量', '吸入薬確認・SABA使用回数'],
+      liver_disease: ['倦怠感・腹部膨満(1-10)', '体重・腹囲(毎日)', '検査値(AST/ALT/Alb)', 'アルコール量・服薬確認'],
+      cancer_fatigue: ['倦怠感スコア(0-10)', '悪心・嘔吐の回数', 'CIPN(しびれ・冷感)の強さ', '活動量・食欲'],
+      hypertension: ['血圧(朝・夕)', '服薬確認・副作用', '塩分摂取量', '体重・歩数'],
+      hyperlipidemia: ['LDL・TG値(受診時)', 'スタチン服薬確認・筋肉痛', '食事の脂質評価', '体重・運動量'],
+      anemia: ['Hb・フェリチン値(受診時)', '鉄剤服薬確認・副作用', '倦怠感・息切れ(1-10)', '月経量・食事の鉄摂取'],
+      allergic_rhinitis: ['くしゃみ・鼻水・鼻閉スコア(0-3)', '目かゆみ・充血スコア', '服薬確認・副作用', '花粉飛散量・外出状況'],
+      psoriasis: ['PASIスコア・皮疹面積', '生物学的製剤注射確認・副作用', '関節痛・朝のこわばり', 'フレアの引き金（ストレス・飲酒）'],
+      chronic_urticaria: ['UAS7スコア（膨疹×かゆみ）', '抗ヒスタミン薬服薬確認', 'オマリズマブ投与確認', 'フレアのトリガー記録'],
+      pms_pmdd: ['月経周期（開始日・排卵日）', '気分症状スコア（抑うつ・過敏）', '身体症状（むくみ・乳房痛）', '服薬確認・睡眠記録'],
+      overactive_bladder: ['1日の排尿回数・夜間頻尿回数', '尿意切迫感強さ(1-10)', '服薬確認・副作用（口渇）', '骨盤底筋訓練の実施記録'],
+      tinnitus: ['耳鳴り強度(0-10)・音質', 'THIスコア（生活影響）', '睡眠への影響・夜間覚醒', 'ストレス・騒音曝露との相関'],
+      vertigo: ['めまい発作の日時・持続時間・強さ', '誘発姿勢・発作のパターン', '難聴・耳鳴り・耳閉感の変化', '服薬確認・塩分摂取量'],
+      dry_eye: ['目の乾き・異物感VAS(0-10)', '点眼薬の種類・回数', 'VDT作業時間・コンタクト装用時間', 'ホットアイマスク実施記録'],
+      chronic_prostatitis: ['骨盤痛・会陰部痛NRS(0-10)', 'NIH-CPSIスコア（疼痛・排尿・QOL）', '排尿回数・夜間頻尿・残尿感', '服薬確認・長時間座位との相関'],
+      ulcerative_colitis: ['排便回数・血便スコア（Mayoスコア）', '腹痛・残便感・緊急排便(0-10)', 'メサラジン・生物学的製剤服薬確認', '食事・ストレスと再燃の相関記録'],
+      panic: ['パニック発作の日時・場所・強度(0-10)', '予期不安・回避行動スコア', 'SSRI服薬確認・副作用記録', '呼吸法・曝露ステップの実施記録'],
+      ankylosing_spondylitis: ['BASDAIスコア（6項目）の定期記録', '朝のこわばり時間（分）・夜間痛強度', 'TNF阻害薬・IL-17阻害薬の投与日・副作用', '運動療法（水泳・ストレッチ）実施記録'],
+      hyperthyroidism: ['脈拍数・体重の日次記録', 'チアマゾール服薬確認・用量記録', 'TSH・FT4値（受診時）の時系列記録', '副作用監視：発熱・咽頭痛の即時記録'],
+      narcolepsy: ['ESSスコア（エプワース眠気尺度）の定期測定', '情動脱力発作の頻度・引き金・持続時間', 'モダフィニル服薬確認・副作用', '計画仮眠の実施記録と効果'],
+      osteoarthritis: ['関節痛NRS(0-10)・朝のこわばり時間', 'WOMACスコア（疼痛・こわばり・機能）', 'ヒアルロン酸注射日と効果持続期間', '体重・歩数・運動量の日次記録'],
+      sjogrens: ['口腔乾燥・眼乾燥のVAS(0-10)記録', '人工唾液・点眼回数の日次記録', 'ESSDAIスコア（疾患活動性）の定期記録', '感染症（耳下腺炎・肺炎）発生記録'],
+      atrial_fibrillation: ['脈拍数・不整脈自覚症状の記録', 'DOAC服薬確認・用量・時刻記録', 'アブレーション後の洞調律維持記録', 'CHA₂DS₂-VAScスコアの定期確認'],
+      myasthenia: ['眼瞼下垂・複視の日内変動記録（朝軽・夕悪化）', 'ピリドスチグミン服薬タイミングと症状の相関', '嚥下障害・構音障害の重症度NRS記録', 'QMGスコア・呼吸機能の定期評価'],
+      pcos: ['生理周期・基礎体温・排卵検査薬の記録', '体重・BMI・腹囲の日次記録', 'メトホルミン・ピル服薬確認と副作用', '多毛・にきびの改善度記録'],
     };
     const items = new Set();
     diseases.forEach(d => (hints[d] || []).forEach(h => items.add(h)));
@@ -1950,8 +2004,13 @@ App.prototype.render_research = function() {
     ? savedResults.html
     : (updates.length > 0
       ? '<h3 style="font-size:15px;font-weight:600;margin-bottom:12px">研究レポート</h3>' + updates.map(r => Components.researchCard(r)).join('')
-      : Components.emptyState('🔬', '論文を検索を実行してください', '上の「論文を検索」ボタンをクリックするとME/CFSの最新論文が表示されます。'));
+      : Components.emptyState('🔬', '論文を検索してください', '上の「論文を検索」ボタンをクリックするとあなたの疾患の最新論文が表示されます。'));
   const dayOpt = (v, label) => `<option value="${v}"${savedDays === v ? ' selected' : ''}>${label}</option>`;
+  const primaryDiseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+  const allPrompts = { ...DEFAULT_PROMPTS, ...(store.get('customPrompts') || {}) };
+  const researchKey = (primaryDiseaseId + '_research') in allPrompts
+    ? primaryDiseaseId + '_research'
+    : 'mecfs_research';
 
   return `
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:12px">
@@ -1961,7 +2020,7 @@ App.prototype.render_research = function() {
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary btn-sm" onclick="app.searchPubMedLive()">論文を検索</button>
-      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('mecfs_research')">研究スキャン</button>
+      <button class="btn btn-outline btn-sm" onclick="app.runAnalysis('${researchKey}')">研究スキャン</button>
     </div>
   </div>
 
@@ -1994,6 +2053,19 @@ App.prototype.render_chat = function() {
   const history = store.get('conversationHistory') || [];
   const messages = history.map(m => Components.chatMessage(m)).join('');
 
+  const selectedDiseases = store.get('selectedDiseases') || [];
+  const diseaseNames = [];
+  selectedDiseases.forEach(id => {
+    if (id === 'custom') { diseaseNames.push(store.get('customDiseaseName') || 'その他'); return; }
+    for (const cat of CONFIG.DISEASE_CATEGORIES) {
+      const found = cat.diseases.find(d => d.id === id);
+      if (found) { diseaseNames.push(found.name); break; }
+    }
+  });
+  const diseaseLabelForChat = diseaseNames.length > 0
+    ? diseaseNames.slice(0, 2).join('・') + (diseaseNames.length > 2 ? 'など' : '')
+    : store.get('selectedDisease')?.name || '健康';
+
   return `
   <div style="margin-bottom:20px">
     <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
@@ -2005,7 +2077,7 @@ App.prototype.render_chat = function() {
         ${messages || `
           <div style="text-align:center;padding:40px;color:var(--text-muted)">
             <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>ME/CFSについて何でも質問してください</p>
+            <p>${Components.escapeHtml(diseaseLabelForChat)}について何でも質問してください</p>
             <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
           </div>
         `}
