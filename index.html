@@ -2276,27 +2276,55 @@ function callClaude(text, apiKey, model, systemPrompt) {
     if (timer) clearTimeout(timer);
     if (err && err.name === 'AbortError') throw new Error('タイムアウト（30秒）。通信環境をご確認ください。');
     // "Load failed" / "Failed to fetch" / TypeError: network-level failure
-    // before any HTTP response — most commonly seen in in-app browsers
-    // (Facebook, Instagram, LINE, X) which block cross-origin fetches
-    // to workers.dev. Surface a clearer hint instead of the raw message.
+    // before any HTTP response — most commonly seen in two scenarios:
+    //   (a) in-app browsers (Facebook, Instagram, LINE, X) blocking
+    //       cross-origin fetches to workers.dev;
+    //   (b) Cloudflare account-level workers.dev disable, which returns
+    //       a 403 host_not_allowed without CORS headers — the browser
+    //       collapses that into the same TypeError, so we can't read
+    //       the status to differentiate from a real DNS / network fail.
+    // Best-effort detection: a `no-cors` probe succeeds (opaque
+    // response) when the host responded but CORS blocked us — almost
+    // always the workers.dev host_not_allowed signature. A throw on
+    // the probe means a real connectivity issue (in-app, captive
+    // portal, offline).
     var em = (err && err.message) ? String(err.message) : String(err);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
-      var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
-      // Stash the raw fetch URL + underlying error so the error UI can
-      // surface a copyable diagnostic — when neither in-app nor a stale
-      // SW explains the failure, we need to see exactly what the
-      // browser saw to pinpoint Worker / DNS / CORS issues.
-      var thrown = new Error(inApp
-        ? 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。'
-        : '接続できませんでした。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。通常ブラウザの場合は数秒待ってから再試行してください。');
-      thrown.diag = {
-        url: getAnthropicEndpoint(false),
-        rawErrorName: err && err.name,
-        rawErrorMessage: em,
-        timestamp: new Date().toISOString(),
-        ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-      };
-      throw thrown;
+      var endpoint = getAnthropicEndpoint(!!cleanKey);
+      var isWorker = /workers\.dev/.test(endpoint);
+      var probe = isWorker
+        ? fetch(endpoint, { method: 'GET', mode: 'no-cors', cache: 'no-store' })
+            .then(function(){ return true; })
+            .catch(function(){ return false; })
+        : Promise.resolve(false);
+      return probe.then(function(reachable) {
+        var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+        var msg;
+        if (isWorker && reachable) {
+          // Worker host is alive on the network but CORS-blocked us —
+          // overwhelmingly the Cloudflare account-level workers.dev
+          // disable. Tell users what action actually helps.
+          msg = 'AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
+              + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。'
+              + ' 復旧まで数分かかります。';
+        } else if (inApp) {
+          msg = 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。';
+        } else {
+          msg = '接続できませんでした。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。通常ブラウザの場合は数秒待ってから再試行してください。';
+        }
+        var thrown = new Error(msg);
+        // Stash diagnostic info so the error UI can surface a copyable
+        // block when neither in-app nor a stale SW explains the failure.
+        thrown.diag = {
+          url: endpoint,
+          rawErrorName: err && err.name,
+          rawErrorMessage: em,
+          probeReachable: reachable,
+          timestamp: new Date().toISOString(),
+          ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+        };
+        throw thrown;
+      });
     }
     throw err;
   });
@@ -2336,7 +2364,23 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   } catch (netErr) {
     var nem = (netErr && netErr.message) ? String(netErr.message) : String(netErr);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(nem)) {
+      var streamEp = getAnthropicEndpoint(!!cleanKey);
+      var streamIsWorker = /workers\.dev/.test(streamEp);
+      // Same no-cors probe as non-streaming callClaude: tells us whether
+      // the host is alive (CORS / workers.dev disable) vs truly
+      // unreachable (in-app / captive portal / offline).
+      var reachable = false;
+      try {
+        if (streamIsWorker) {
+          await fetch(streamEp, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+          reachable = true;
+        }
+      } catch (_) { reachable = false; }
       var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+      if (streamIsWorker && reachable) {
+        throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
+          + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
+      }
       throw new Error(inAppHit
         ? 'アプリ内ブラウザでは接続できません。Safari または Chrome で開いてください。'
         : '接続できませんでした。Safari / Chrome 等の標準ブラウザで開く、もしくはページを再読み込み (↻) してお試しください。');
