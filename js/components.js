@@ -439,12 +439,26 @@ var Components = {
 
     if (showElapsed && typeof window !== 'undefined') {
       const startTime = Date.now();
+      const encouragements = [
+        [15, '複数のデータを照合しています...'],
+        [25, 'もうしばらくお待ちください...'],
+        [35, '複雑な分析を実行中です...'],
+        [45, 'まもなく完了します...'],
+      ];
       setTimeout(() => {
         const interval = setInterval(() => {
           const el = document.getElementById(elapsedId);
           if (!el) { clearInterval(interval); return; }
           const secs = Math.floor((Date.now() - startTime) / 1000);
           el.textContent = secs + '秒経過';
+          // Switch subtext at milestones
+          const subtextEl = el.closest('[data-loading-subtext]') ||
+            el.parentElement?.parentElement?.querySelector('[data-loading-subtext]');
+          if (subtextEl) {
+            for (const [threshold, msg] of encouragements) {
+              if (secs === threshold) { subtextEl.textContent = msg; break; }
+            }
+          }
         }, 1000);
       }, 0);
     }
@@ -455,7 +469,7 @@ var Components = {
         <div class="progress-indeterminate" aria-hidden="true"><span></span></div>
         <div style="text-align:center">
           <div style="font-size:14px;color:var(--text-secondary);font-weight:600">${text}</div>
-          ${subtext ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${subtext}</div>` : ''}
+          ${subtext ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px" data-loading-subtext>${subtext}</div>` : ''}
           ${showElapsed ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace"><span id="${elapsedId}">0秒経過</span></div>` : ''}
         </div>
       </div>

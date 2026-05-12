@@ -27,7 +27,13 @@
 {
   "@context": "https://schema.org",
   "@graph": [
-    {"@type":"MedicalWebPage","name":"IBS（過敏性腸症候群）完全ガイド","url":"https://cares.advisers.jp/ibs.html","inLanguage":"ja","lastReviewed":"2026-04-23"},
+    {"@type":"FAQPage","@id":"https://cares.advisers.jp/ibs.html#faq","mainEntity":[
+      {"@type":"Question","name":"IBS（過敏性腸症候群）は治りますか？","acceptedAnswer":{"@type":"Answer","text":"完全な根治は難しい場合もありますが、適切な治療と生活習慣の改善で症状を大幅にコントロールできます。低 FODMAP 食の実践・ストレス管理・薬物療法の組み合わせで 60-70% の患者が症状改善を報告しています。毎日の食事と症状の記録がトリガー特定に最も効果的です。"}},
+      {"@type":"Question","name":"低 FODMAP 食とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"発酵性の糖類（オリゴ糖・二糖類・単糖類・ポリオール）を一時的に制限する食事療法です。モナッシュ大学が開発し、IBS 患者の 70-75% に有効とされています。除去期（2-6 週）→再導入期→維持期の 3 段階で進め、自分に合わない食品を特定します。"}},
+      {"@type":"Question","name":"IBS と腸内フローラの関係は？","acceptedAnswer":{"@type":"Answer","text":"IBS 患者では腸内細菌叢の多様性が低く、Lactobacillus や Bifidobacterium が少ない傾向が報告されています。プロバイオティクスの一部（VSL#3 等）は腹部膨満感や下痢に効果が示されていますが、製品や菌株によって効果は異なります。腸脳軸（腸と脳の双方向コミュニケーション）も IBS の症状に深く関わっています。"}},
+      {"@type":"Question","name":"IBS の記録に特化したアプリはありますか？","acceptedAnswer":{"@type":"Answer","text":"健康日記（cares.advisers.jp）は IBS の食事・症状・排便パターンの記録に対応しています。食べた物と症状の時間的相関を AI が分析し、個人の FODMAP トリガーを特定するサポートをします。完全無料で、スマートフォン・PC どちらでも使えます。"}}
+    ]},
+    {"@type":"MedicalWebPage","name":"IBS（過敏性腸症候群）完全ガイド","url":"https://cares.advisers.jp/ibs.html","inLanguage":"ja","lastReviewed":"2026-05-12"},
     {"@type":"MedicalCondition","name":"過敏性腸症候群","alternateName":["IBS","Irritable Bowel Syndrome"],"code":{"@type":"MedicalCode","code":"DD91.0","codingSystem":"ICD-11"},"epidemiology":"世界で約 10-15% の有病率、日本で約 1,200 万人（人口の 10%）と推計","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"反復する腹痛"},{"@type":"MedicalSignOrSymptom","name":"腹部膨満感"},{"@type":"MedicalSignOrSymptom","name":"下痢（IBS-D）"},{"@type":"MedicalSignOrSymptom","name":"便秘（IBS-C）"},{"@type":"MedicalSignOrSymptom","name":"排便異常の反復"}],"possibleTreatment":[{"@type":"DietarySupplement","name":"低 FODMAP 食"},{"@type":"DrugLegalStatus","name":"ポリカルボフィルカルシウム"},{"@type":"DrugLegalStatus","name":"ラモセトロン（IBS-D）"},{"@type":"DrugLegalStatus","name":"リナクロチド（IBS-C）"},{"@type":"MedicalTherapy","name":"プロバイオティクス・食物繊維"}]}
   ]
 }
@@ -141,6 +147,20 @@ footer a{color:#6366f1;text-decoration:none;margin:0 6px}
 <p style="color:#4338ca;font-size:13px">完全無料・広告なし・本人のみアクセス可能</p>
 <a class="cta" href="https://cares.advisers.jp/?d=ibs">健康日記を開く →</a>
 </div>
+
+<h2>よくある質問（FAQ）</h2>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">IBS（過敏性腸症候群）は治りますか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">完全な根治は難しい場合もありますが、適切な治療と生活習慣の改善で症状を大幅にコントロールできます。低 FODMAP 食の実践・ストレス管理・薬物療法の組み合わせで 60-70% の患者が症状改善を報告しています。毎日の食事と症状の記録がトリガー特定に最も効果的です。</p>
+</details>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">低 FODMAP 食とは何ですか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">発酵性の糖類（オリゴ糖・二糖類・単糖類・ポリオール）を一時的に制限する食事療法です。モナッシュ大学が開発し、IBS 患者の 70-75% に有効とされています。除去期（2-6 週）→再導入期→維持期の 3 段階で進め、自分に合わない食品を特定します。</p>
+</details>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">IBS と腸内フローラの関係は？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">IBS 患者では腸内細菌叢の多様性が低い傾向が報告されています。プロバイオティクス（VSL#3 等）の一部は腹部膨満感や下痢に効果が示されていますが、菌株によって効果は異なります。腸脳軸（腸と脳の双方向コミュニケーション）も症状に深く関わっています。</p>
+</details>
 
 <h2>関連疾患ガイド</h2>
 <div class="related">

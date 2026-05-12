@@ -29,6 +29,17 @@
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "FAQPage",
+      "@id": "https://cares.advisers.jp/long-covid.html#faq",
+      "mainEntity": [
+        {"@type":"Question","name":"Long COVID（コロナ後遺症）はいつまで続きますか？","acceptedAnswer":{"@type":"Answer","text":"個人差が大きく、数か月で回復する方から2年以上症状が持続する方まで様々です。2024年の大規模コホート研究では、発症1年後も約30%が何らかの症状を持ち、2年後には約15%が持続症状を報告しています。日々の症状記録で自分のパターンを把握し、主治医と共有することが予後改善に役立ちます。"}},
+        {"@type":"Question","name":"Long COVID と ME/CFS は同じ病気ですか？","acceptedAnswer":{"@type":"Answer","text":"別の病名ですが、Long COVID患者の多くがME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）のIOM 2015診断基準を満たすことが複数の研究で示されています。共通するのは「PEM（労作後倦怠感）」「非回復性睡眠」「自律神経障害」「ブレインフォグ」です。治療アプローチも多くの共通点があります。"}},
+        {"@type":"Question","name":"Long COVID の記録に特化したアプリはありますか？","acceptedAnswer":{"@type":"Answer","text":"健康日記（cares.advisers.jp）は、ME/CFS・Long COVID 専門の症状記録アプリです。PEM トリガーの追跡、LDN や HBOT の効果記録、HRV・起立時脈拍の変化、AI による個別分析（前24-48時間との相関）など、Long COVID 管理に特化した機能を完全無料で提供しています。開発者自身が2年以上の ME/CFS 闘病経験を持ちます。"}},
+        {"@type":"Question","name":"LDN（低用量ナルトレキソン）はコロナ後遺症に効きますか？","acceptedAnswer":{"@type":"Answer","text":"観察研究・症例報告で、疲労・疼痛・ブレインフォグへの改善報告が蓄積しています。大規模なRCTは進行中ですが、安価で副作用が比較的少ないため多くの専門家が試みています。日本では自費処方となり、対応医師は限られますが、処方可能なクリニックを通じて入手できます。必ず医師に相談してください。"}},
+        {"@type":"Question","name":"コロナ後遺症で仕事を続けられない場合はどうすればいいですか？","acceptedAnswer":{"@type":"Answer","text":"まず主治医に診断書を発行してもらい、会社に状況を説明することが重要です。傷病手当金（健康保険）や、重症の場合は障害年金の申請が可能です。症状の波を可視化するために毎日の体調記録を継続することで、医師への説明や各種申請書類に使える客観的なデータになります。"}}
+      ]
+    },
+    {
       "@type": "MedicalWebPage",
       "@id": "https://cares.advisers.jp/long-covid.html#webpage",
       "name": "Long COVID（コロナ後遺症）完全ガイド",
@@ -194,6 +205,24 @@ footer a{color:#6366f1;text-decoration:none;margin:0 6px}
 <li>血液検査結果（D-ダイマー、CRP、フェリチン等）の写真取り込み</li>
 <li>最新 AI による個別化フィードバック</li>
 </ul>
+
+<h2>よくある質問（FAQ）</h2>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">Long COVID（コロナ後遺症）はいつまで続きますか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">個人差が大きく、数か月で回復する方から2年以上症状が持続する方まで様々です。2024年の大規模コホート研究では、発症1年後も約30%が何らかの症状を持ち、2年後には約15%が持続症状を報告しています。日々の症状記録で自分のパターンを把握し、主治医と共有することが予後改善に役立ちます。</p>
+</details>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">Long COVID と ME/CFS は同じ病気ですか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">別の病名ですが、Long COVID 患者の多くが ME/CFS（筋痛性脳脊髄炎／慢性疲労症候群）の IOM 2015 診断基準を満たすことが複数の研究で示されています。共通するのは「PEM（労作後倦怠感）」「非回復性睡眠」「自律神経障害」「ブレインフォグ」です。治療アプローチも多くの共通点があります。</p>
+</details>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">LDN（低用量ナルトレキソン）はコロナ後遺症に効きますか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">観察研究・症例報告で、疲労・疼痛・ブレインフォグへの改善報告が蓄積しています。大規模な RCT は進行中ですが、安価で副作用が比較的少ないため多くの専門家が試みています。日本では自費処方となりますが、対応医師を通じて入手可能です。必ず医師にご相談ください。</p>
+</details>
+<details style="border:1px solid #e4e7ef;border-radius:10px;padding:12px 16px;margin-bottom:10px;background:#fff">
+<summary style="font-weight:700;font-size:14px;color:#3730a3;cursor:pointer">コロナ後遺症で仕事を続けられない場合はどうすればいいですか？</summary>
+<p style="margin-top:10px;font-size:13px;color:#475569">まず主治医に診断書を発行してもらい、会社に状況を説明することが重要です。傷病手当金（健康保険）や、重症の場合は障害年金の申請が可能です。毎日の体調記録を継続することで、医師への説明や各種申請書類に使える客観的なデータになります。</p>
+</details>
 
 <div class="hero" style="text-align:center;margin-top:24px">
 <h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から記録を始めましょう</h2>

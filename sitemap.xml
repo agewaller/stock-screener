@@ -13,7 +13,7 @@
   <!-- Main landing -->
   <url>
     <loc>https://cares.advisers.jp/</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/"/>
@@ -24,61 +24,61 @@
   <!-- Disease-specific landing pages (SEO long-tail coverage) -->
   <url>
     <loc>https://cares.advisers.jp/me-cfs.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/long-covid.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/fibromyalgia.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/pots.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/mcas.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/eds.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ibs.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/hashimoto.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/depression.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/insomnia.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -86,13 +86,13 @@
   <!-- Comparison + About -->
   <url>
     <loc>https://cares.advisers.jp/compare.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/about.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -100,19 +100,19 @@
   <!-- Long-tail FAQ pages -->
   <url>
     <loc>https://cares.advisers.jp/faq/pem.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/faq/brain-fog.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/faq/ldn.html</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -120,13 +120,13 @@
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/.well-known/security.txt</loc>
-    <lastmod>2026-04-23</lastmod>
+    <lastmod>2026-05-12</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

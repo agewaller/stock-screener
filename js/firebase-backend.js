@@ -42,7 +42,7 @@ var FirebaseBackend = {
       // return still navigates into the dashboard.
       this.auth.getRedirectResult().then(result => {
         if (result?.user) {
-          Components.showToast(`${result.user.displayName || result.user.email} でログインしました`, 'success');
+          Components.showToast(`${Components.escapeHtml(result.user.displayName || result.user.email)} でログインしました`, 'success');
           this.handleSignedInUser(result.user);
         }
       }).catch(err => {
@@ -105,8 +105,10 @@ var FirebaseBackend = {
       const avatarEl = document.getElementById('user-avatar');
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
-        if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+        if (user.photoURL && /^https:\/\//.test(user.photoURL)) {
+          const safeAlt = Components.escapeHtml(user.displayName || user.email || '');
+          const safeSrc = Components.escapeHtml(user.photoURL);
+          avatarEl.innerHTML = `<img src="${safeSrc}" alt="${safeAlt}">`;
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }
