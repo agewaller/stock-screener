@@ -1084,11 +1084,17 @@ var FirebaseBackend = {
     return cfg && cfg.apiKey && cfg.apiKey !== 'YOUR_FIREBASE_API_KEY';
   },
 
-  // Get Firebase config from CONFIG or localStorage
+  // Get Firebase config — admin-set localStorage override beats
+  // everything, then per-environment preset (staging gets its own
+  // project), then production CONFIG.FIREBASE as fallback.
   getConfig() {
     const stored = localStorage.getItem('firebase_config');
     if (stored) {
       try { return JSON.parse(stored); } catch {}
+    }
+    if (typeof Environment !== 'undefined') {
+      const envCfg = Environment.firebaseConfig();
+      if (envCfg) return envCfg;
     }
     return CONFIG.FIREBASE;
   },

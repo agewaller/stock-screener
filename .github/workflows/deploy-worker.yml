@@ -11,11 +11,12 @@ env:
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "staging"]
     paths:
       - "worker/**"
       - "wrangler.toml"
       - "wrangler.jsonc"
+      - "wrangler.staging.jsonc"
       - "wrangler.relay.jsonc"
       - "wrangler.plaud-inbox.toml"
       - "wrangler.professional-mailer.toml"
@@ -44,6 +45,7 @@ jobs:
 
   deploy-anthropic-proxy:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,8 +57,36 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.jsonc
 
+  # Staging Worker — independent script (stock-screener-staging) with
+  # its own ANTHROPIC_API_KEY secret so staging never spends production
+  # quota and a broken staging deploy can't take production down.
+  # First-time setup: in Cloudflare dashboard, set the secret on the
+  # `stock-screener-staging` Worker (Workers & Pages → stock-screener-staging
+  # → Settings → Variables → ANTHROPIC_API_KEY).
+  deploy-anthropic-proxy-staging:
+    needs: verify-token
+    if: github.ref == 'refs/heads/staging' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Deploy stock-screener-staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx -y wrangler@4 deploy --config wrangler.staging.jsonc
+      - name: Probe stock-screener-staging
+        run: |
+          sleep 8
+          echo "--- probe stock-screener-staging.agewaller.workers.dev ---"
+          curl -is -o /tmp/p.txt -w "HTTP %{http_code} in %{time_total}s\n" \
+            https://stock-screener-staging.agewaller.workers.dev/ || true
+          head -c 800 /tmp/p.txt
+
   deploy-relay:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +107,7 @@ jobs:
 
   deploy-plaud-inbox:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +121,7 @@ jobs:
 
   deploy-professional-mailer:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,6 +135,7 @@ jobs:
 
   deploy-research-updater:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -116,6 +149,7 @@ jobs:
 
   deploy-learning-orchestrator:
     needs: verify-token
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

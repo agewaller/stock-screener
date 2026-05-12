@@ -551,6 +551,12 @@ ${avoidBlock}
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+      // Per-environment fallback so staging.cares.advisers.jp hits the
+      // staging Worker (with its own ANTHROPIC_API_KEY secret) instead
+      // of leaking traffic to the production Worker.
+      if (!proxy && typeof Environment !== 'undefined') {
+        proxy = Environment.workerUrl() || '';
+      }
       if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
       url = proxy.replace(/\/+$/, '') + '/v1/messages';
     }

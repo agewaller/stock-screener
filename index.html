@@ -2108,6 +2108,7 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 
 <!-- App Modules — v2 forces cache refresh -->
 <script src="js/idb.js?v=40"></script>
+<script src="js/environment.js?v=40"></script>
 <script src="js/config.js?v=40"></script>
 <script src="js/prompts.js?v=40"></script>
 <script src="js/store.js?v=40"></script>
@@ -2191,6 +2192,11 @@ function getAnthropicEndpoint(hasKey) {
   if (hasKey) return ANTHROPIC_DIRECT_URL;
   var proxy = '';
   try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
+  // Per-environment fallback so staging.cares.advisers.jp routes to
+  // the staging Worker (independent ANTHROPIC_API_KEY secret).
+  if (!proxy && typeof Environment !== 'undefined') {
+    proxy = Environment.workerUrl() || '';
+  }
   if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
   return proxy.replace(/\/+$/, '') + '/v1/messages';
 }

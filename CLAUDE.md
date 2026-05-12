@@ -23,11 +23,14 @@ js/integrations.js            ← Plaud / Fitbit / Apple Health / CSV
 js/firebase-backend.js        ← Firebase Auth + Firestore 同期
 js/app.js                     ← メインロジック（ナビ、フォーム、API）
 js/pages.js                   ← 全画面レンダラー (render_*)
+js/environment.js             ← 環境判定（production / staging / local）
 worker/anthropic-proxy.js     ← Cloudflare Worker（Claude API プロキシ）
 worker/plaud-inbox.js         ← Plaud メール受信 Worker
 worker/professional-mailer.js ← 専門家メール送信 Worker
 firestore.rules               ← Firestore セキュリティルール
 CNAME                         ← cares.advisers.jp DNS 設定
+wrangler.jsonc                ← 本番 Worker (stock-screener)
+wrangler.staging.jsonc        ← ステージング Worker (stock-screener-staging)
 ```
 
 **編集の鉄則**: 該当する `js/*.js` モジュールを編集する。ビルド工程は存在しない。
@@ -43,8 +46,30 @@ git push origin main             # → GitHub Pages 自動デプロイ（pages.y
 Worker を変更した場合は `worker/*.js` を編集→push で
 `deploy-worker.yml` が Cloudflare に自動配布する。
 
+### 環境（本番 / ステージング）
+
+`js/environment.js` が `location.hostname` で環境を判定し、Firebase
+プロジェクトと Anthropic Worker URL を切り替える:
+
+| hostname | env | Firebase | Worker |
+|---|---|---|---|
+| `cares.advisers.jp` | production | `care-14c31` (本番) | `cares-relay.agewaller.workers.dev` |
+| `staging.cares.advisers.jp` | staging | 別プロジェクト（要作成） | `stock-screener-staging.agewaller.workers.dev` |
+| その他 (`*.github.io`, localhost) | local | デフォルト | デフォルト |
+
+ステージング Worker は `staging` ブランチへの push で
+`deploy-worker.yml` が `wrangler.staging.jsonc` を使ってデプロイする
+（本番 Worker は `main` ブランチ push のみ）。初回のみ Cloudflare
+ダッシュボードで `stock-screener-staging` Worker に
+`ANTHROPIC_API_KEY` secret を別途設定する必要あり。
+
+ステージング Firebase の config は Phase 3 完了後に
+`js/environment.js` の `STAGING_FIREBASE` か、staging サイトの
+管理パネルから設定する。
+
 ## JS モジュール構成（読み込み順 = 依存順）
 
+0. `js/environment.js` — Environment（hostname → production / staging / local 判定）
 1. `js/config.js` — CONFIG オブジェクト（疾患、AI モデル、金銭サポート等）
 2. `js/prompts.js` — PROMPT_HEADER, DEFAULT_PROMPTS, INLINE_PROMPTS
 3. `js/store.js` — Store クラス + `var store` インスタンス
@@ -63,7 +88,7 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 
 - **デフォルト**: `claude-opus-4-6`（最強、課金OK）
 - 選択肢: Opus 4.6 / Sonnet 4.6 / Haiku 4.5 / GPT-4o / Gemini 2.5 Pro
-- Anthropic は Cloudflare Worker 経由（`anthropic_proxy_url` を localStorage に保存、未設定なら `https://stock-screener.agewaller.workers.dev`）
+- Anthropic は Cloudflare Worker 経由。Worker URL の解決順は: ① `localStorage.anthropic_proxy_url` ② `Environment.workerUrl()`（hostname 判定: 本番→ `cares-relay`, staging→ `stock-screener-staging`）③ `https://cares-relay.agewaller.workers.dev`
 - `callAnthropic` は MODEL_MAP で CONFIG id → API id を動的マッピング（ハードコード禁止、Anthropic は model id を定期的に rotate する）
 - Vision: `options.imageBase64` で自動的に image block 付きに切り替わる
 
