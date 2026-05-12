@@ -1085,8 +1085,10 @@ var FirebaseBackend = {
   },
 
   // Get Firebase config — admin-set localStorage override beats
-  // everything, then per-environment preset (staging gets its own
-  // project), then production CONFIG.FIREBASE as fallback.
+  // everything, then the per-environment preset injected at deploy
+  // time (see js/environment.js + scripts/inject-firebase-config.sh).
+  // Returns null when nothing is configured; isConfigured() handles
+  // that by surfacing the admin panel instead of crashing.
   getConfig() {
     const stored = localStorage.getItem('firebase_config');
     if (stored) {
@@ -1096,7 +1098,7 @@ var FirebaseBackend = {
       const envCfg = Environment.firebaseConfig();
       if (envCfg) return envCfg;
     }
-    return CONFIG.FIREBASE;
+    return null;
   },
 
   saveConfig(config) {

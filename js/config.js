@@ -11,16 +11,11 @@ var CONFIG = {
   // Update this one value to change the contact address everywhere.
   CONTACT_EMAIL: 'info@bluemarl.in',
 
-  // Firebase config
-  FIREBASE: {
-    apiKey: 'AIzaSyDx9ByplxdzaWkLJrHnPhbf13MmUBEmLT8',
-    authDomain: 'care-14c31.firebaseapp.com',
-    projectId: 'care-14c31',
-    storageBucket: 'care-14c31.firebasestorage.app',
-    messagingSenderId: '429015904719',
-    appId: '1:429015904719:web:0b57bb424006e86ab7a2ba',
-    measurementId: 'G-YEHQ7MNRFX'
-  },
+  // Firebase config is environment-specific and lives in
+  // js/environment.js (injected at deploy time from CI Secrets / CF
+  // Pages env vars). Do not re-add a FIREBASE block here — keeping
+  // production credentials in this shared file caused environment
+  // cross-contamination before the staging split.
 
   // AI Model Options. Opus 4.6 is the default because billing is not a
   // constraint and we want the strongest model by default.
