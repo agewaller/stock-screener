@@ -551,7 +551,11 @@ ${avoidBlock}
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
+      // Custom-domain hostname on our own Cloudflare zone — survives the
+      // account-level workers.dev disable that previously killed every
+      // *.agewaller.workers.dev URL at once. See wrangler.relay.jsonc
+      // "routes" for the custom_domain registration.
+      if (!proxy) proxy = 'https://ai.cares.advisers.jp';
       url = proxy.replace(/\/+$/, '') + '/v1/messages';
     }
     const headers = {
@@ -645,6 +649,22 @@ ${avoidBlock}
         }
       }
       if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
+        // Differentiate host_not_allowed (Cloudflare workers.dev disabled
+        // → CORS-less 403, browser collapses to TypeError) from real
+        // network unreachability. A successful no-cors probe means the
+        // host is alive — it's a CORS / Worker-disable problem the
+        // operator can fix, not the user's browser.
+        let reachable = false;
+        if (/workers\.dev/.test(url)) {
+          try {
+            await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+            reachable = true;
+          } catch (_) { reachable = false; }
+        }
+        if (reachable) {
+          throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
+            + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
+        }
         throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
       }
       throw new Error(`Anthropic API 接続失敗: ${em}`);

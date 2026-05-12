@@ -13,5 +13,18 @@
   // bypasses Cloudflare Access protecting stock-screener's public URL).
   "services": [
     { "binding": "PROXY", "service": "stock-screener" }
+  ],
+  // Custom domain — pins the AI proxy URL to a Cloudflare zone we
+  // control instead of *.workers.dev. The workers.dev subdomain is an
+  // account-level toggle: when an operator (or Cloudflare) flips it
+  // off, every *.agewaller.workers.dev URL starts returning 403
+  // host_not_allowed without CORS headers, which the browser collapses
+  // into "Failed to fetch" and kills AI for everyone.
+  // ai.cares.advisers.jp is on our own zone, so the toggle no longer
+  // affects us. custom_domain:true tells wrangler to register the
+  // hostname as a Worker Custom Domain on deploy (DNS + cert handled
+  // by Cloudflare automatically — no extra DNS records needed).
+  "routes": [
+    { "pattern": "ai.cares.advisers.jp", "custom_domain": true }
   ]
 }
