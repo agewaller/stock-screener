@@ -42,38 +42,118 @@ var App = class App {
     // Multi-source admin check. Previously this only read from
     // store.get('user').email, which silently returned false whenever
     // the in-memory store was stale or never populated (e.g. right
-    // after a hard refresh before the auth state listener ran). The
-    // user got "管理者権限がない" even though they were signed in as
-    // agewaller@gmail.com. We now consult three sources in order:
-    //   1. store.get('user').email
-    //   2. FirebaseBackend.auth.currentUser.email
-    //   3. firebase.auth().currentUser.email
-    // Any matching one grants admin. The hardcoded owner email is
-    // ALWAYS admin (matches removeAdmin's owner-protect logic).
-    const email = this.currentUserEmail();
-    if (!email) return false;
-    if (email === 'agewaller@gmail.com') return true;
-    return Array.isArray(this.ADMIN_EMAILS) && this.ADMIN_EMAILS.includes(email);
+    // after a hard refresh before the auth state listener ran).
+    //
+    // We now collect emails from every authoritative source and admit
+    // admin if ANY of them matches. Short-circuiting on the first
+    // non-null email was itself buggy: if store.user.email was stale
+    // (e.g., a previous sign-in's address) but firebase.auth().
+    // currentUser.email was the live admin address, we'd still return
+    // false. The diagnostic returned by adminDiagnostic() includes
+    // every source we considered so the rejection toast can show
+    // exactly what we saw.
+    //
+    // IMPORTANT: only canonical currentUser.email is checked, NOT
+    // providerData[].email. Firestore rules see request.auth.token.
+    // email, which is the canonical address; if we admit on providerData
+    // we'd grant client-side access for operations the server will
+    // reject, producing confusing "click then silently fail" UX.
+    const d = this.adminDiagnostic();
+    return d.granted;
   }
 
   currentUserEmail() {
+    // Kept for backwards compatibility (used by error UI labels).
+    // Returns the first non-null authoritative email seen.
+    return this.adminDiagnostic().primaryEmail || null;
+  }
+
+  // Returns a detailed snapshot of every email source plus the final
+  // decision. Used by isAdmin() (which only consults .granted) and by
+  // the admin-failure toast (which surfaces .sources so the operator
+  // can see what we actually observed when the check fails).
+  adminDiagnostic() {
+    const seen = new Map();
+    const push = (label, e) => {
+      if (!e || typeof e !== 'string') return;
+      const norm = e.trim().toLowerCase();
+      if (!norm) return;
+      if (!seen.has(norm)) seen.set(norm, []);
+      seen.get(norm).push(label);
+    };
     try {
       const u = store.get('user');
-      if (u && u.email) return u.email;
+      if (u && u.email) push('store.user', u.email);
     } catch (_) {}
     try {
       if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth
-          && FirebaseBackend.auth.currentUser && FirebaseBackend.auth.currentUser.email) {
-        return FirebaseBackend.auth.currentUser.email;
+          && FirebaseBackend.auth.currentUser) {
+        push('FirebaseBackend.auth', FirebaseBackend.auth.currentUser.email);
       }
     } catch (_) {}
     try {
       if (typeof firebase !== 'undefined' && firebase.auth) {
         const fu = firebase.auth().currentUser;
-        if (fu && fu.email) return fu.email;
+        if (fu) push('firebase.auth', fu.email);
       }
     } catch (_) {}
-    return null;
+    const authoritative = [...seen.keys()];
+
+    // Provider-data emails are informational only — not used to grant
+    // admin (see comment in isAdmin). Collected so the rejection toast
+    // can hint "you appear to be linked to that address on Google but
+    // your canonical Firebase email is different".
+    const providerSeen = new Set();
+    const pushProv = (e) => {
+      if (!e || typeof e !== 'string') return;
+      const norm = e.trim().toLowerCase();
+      if (norm && !seen.has(norm)) providerSeen.add(norm);
+    };
+    try {
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        const fu = firebase.auth().currentUser;
+        if (fu) (fu.providerData || []).forEach(p => p && pushProv(p.email));
+      }
+    } catch (_) {}
+
+    const adminList = Array.isArray(this.ADMIN_EMAILS) ? this.ADMIN_EMAILS : ['agewaller@gmail.com'];
+    const adminListNorm = adminList.map(e => String(e || '').trim().toLowerCase());
+    const matched = authoritative.find(e => e === 'agewaller@gmail.com' || adminListNorm.includes(e));
+    return {
+      granted: !!matched,
+      matchedEmail: matched || null,
+      primaryEmail: authoritative[0] || null,
+      authoritativeEmails: authoritative,
+      providerEmails: [...providerSeen],
+      adminList: adminListNorm,
+      sources: [...seen.entries()].map(([email, labels]) => ({ email, labels })),
+    };
+  }
+
+  // Shared rejection UI for any admin-only operation. Surfaces the
+  // full diagnostic so the operator can see *why* the check failed —
+  // for example "you're signed in as agewaller@example.com but the
+  // admin list expects agewaller@gmail.com", which the previous
+  // generic "管理者専用" toast hid completely.
+  _showAdminDeniedToast(label) {
+    const d = this.adminDiagnostic();
+    const seen = d.authoritativeEmails.length > 0 ? d.authoritativeEmails.join(', ') : '(未ログイン)';
+    const providerHint = d.providerEmails.length > 0
+      ? `\nGoogle 連携先: ${d.providerEmails.join(', ')}（これは canonical email ではないので管理者判定には使えません）`
+      : '';
+    const adminHint = d.adminList.length > 0
+      ? `\n許可されている管理者: ${d.adminList.join(', ')}`
+      : '';
+    const msg = `${label}は管理者専用です。`
+              + `\n現在のログイン: ${seen}`
+              + providerHint
+              + adminHint
+              + '\n\nもし agewaller@gmail.com で正しくサインインしているのにこの表示が出る場合は、'
+              + '一度ログアウト → 再ログインしてみてください。';
+    try { Components.showToast(msg, 'error', 9000); } catch (_) {}
+    try {
+      console.warn('[admin-denied]', label, JSON.stringify(d, null, 2));
+    } catch (_) {}
   }
 
   // Boot-time canary: walk through every onclick / on* attribute in
@@ -227,7 +307,7 @@ var App = class App {
 
   navigate(page, fromHash = false) {
     if (['admin', 'analysis'].includes(page) && !this.isAdmin()) {
-      Components.showToast('この機能は管理者専用です', 'error');
+      this._showAdminDeniedToast('この画面');
       return;
     }
 
@@ -571,13 +651,7 @@ var App = class App {
 
   async saveApiKeys() {
     if (!this.isAdmin()) {
-      const seen = this.currentUserEmail() || '(未ログイン)';
-      Components.showToast(
-        'APIキー設定は管理者専用です。現在のログイン: ' + seen
-        + '\n管理者は agewaller@gmail.com です。一度ログアウト → 再ログインしてください。',
-        'error'
-      );
-      console.warn('[saveApiKeys] admin check failed. seen email:', seen, 'ADMIN_EMAILS:', this.ADMIN_EMAILS);
+      this._showAdminDeniedToast('APIキー設定');
       return;
     }
     const keys = ['anthropic', 'openai', 'google'];
@@ -641,7 +715,7 @@ var App = class App {
 
   async clearApiKeys() {
     if (!this.isAdmin()) {
-      Components.showToast('APIキー設定は管理者専用です', 'error');
+      this._showAdminDeniedToast('APIキー削除');
       return;
     }
     ['anthropic', 'openai', 'google'].forEach(k => {
@@ -5998,7 +6072,7 @@ ${axisHint}
 
   setModel(modelId) {
     if (!this.isAdmin()) {
-      Components.showToast('モデル選択は管理者専用です', 'error');
+      this._showAdminDeniedToast('モデル選択');
       return;
     }
     store.set('selectedModel', modelId);
@@ -6160,7 +6234,7 @@ ${axisHint}
 
   async saveProfessionalsFromUI() {
     if (!this.isAdmin()) {
-      Components.showToast('管理者のみが保存できます', 'error');
+      this._showAdminDeniedToast('専門家一覧の保存');
       return;
     }
     const pros = this._collectProfessionalsFromUI();
@@ -6184,7 +6258,7 @@ ${axisHint}
 
   async saveMailerConfig() {
     if (!this.isAdmin()) {
-      Components.showToast('管理者のみが保存できます', 'error');
+      this._showAdminDeniedToast('メーラー設定の保存');
       return;
     }
     const urlEl = document.getElementById('input-mailer-url');
