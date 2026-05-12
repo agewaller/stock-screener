@@ -23,7 +23,7 @@ js/integrations.js            ← Plaud / Fitbit / Apple Health / CSV
 js/firebase-backend.js        ← Firebase Auth + Firestore 同期
 js/app.js                     ← メインロジック（ナビ、フォーム、API）
 js/pages.js                   ← 全画面レンダラー (render_*)
-js/environment.js             ← 環境判定（production / staging / local）
+js/environment.js             ← 環境判定 + Firebase / Worker URL 切替
 worker/anthropic-proxy.js     ← Cloudflare Worker（Claude API プロキシ）
 worker/plaud-inbox.js         ← Plaud メール受信 Worker
 worker/professional-mailer.js ← 専門家メール送信 Worker
@@ -31,6 +31,7 @@ firestore.rules               ← Firestore セキュリティルール
 CNAME                         ← cares.advisers.jp DNS 設定
 wrangler.jsonc                ← 本番 Worker (stock-screener)
 wrangler.staging.jsonc        ← ステージング Worker (stock-screener-staging)
+scripts/inject-firebase-config.sh ← deploy 時に Firebase config を注入
 ```
 
 **編集の鉄則**: 該当する `js/*.js` モジュールを編集する。ビルド工程は存在しない。
@@ -68,9 +69,19 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 
 | hostname | env | Firebase | Worker |
 |---|---|---|---|
-| `cares.advisers.jp` | production | `care-14c31` (本番) | `cares-relay.agewaller.workers.dev` |
-| `staging.cares.advisers.jp` | staging | 別プロジェクト（要作成） | `stock-screener-staging.agewaller.workers.dev` |
-| その他 (`*.github.io`, localhost) | local | デフォルト | デフォルト |
+| `cares.advisers.jp` | production | 本番プロジェクト | `cares-relay.agewaller.workers.dev` |
+| `staging.cares.advisers.jp` | staging | staging プロジェクト | `stock-screener-staging.agewaller.workers.dev` |
+| その他 (`*.github.io`, localhost) | local | 未注入 (admin パネルで手動) | デフォルト |
+
+**Firebase の `apiKey` 等は git にコミットしない**。
+`js/environment.js` には `__FB_PROD_*__` / `__FB_STAGING_*__` の
+プレースホルダだけがあり、deploy 時に
+[`scripts/inject-firebase-config.sh`](./scripts/inject-firebase-config.sh)
+が CI Secret / env var から値を置換する:
+
+- 本番: `pages.yml` が GitHub Secrets (`FB_PROD_*`) を読んで注入
+- staging: Cloudflare Pages の Build command が同スクリプトを呼び、
+  プロジェクトの env vars (`FB_STAGING_*`) を読んで注入
 
 ステージング Worker は `staging` ブランチへの push で
 `deploy-worker.yml` が `wrangler.staging.jsonc` を使ってデプロイする
@@ -78,9 +89,8 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 ダッシュボードで `stock-screener-staging` Worker に
 `ANTHROPIC_API_KEY` secret を別途設定する必要あり。
 
-ステージング Firebase の config は Phase 3 完了後に
-`js/environment.js` の `STAGING_FIREBASE` か、staging サイトの
-管理パネルから設定する。
+詳細手順・初回セットアップ・トラブルシューティングは
+[DEPLOY.md](./DEPLOY.md) を参照。
 
 ## JS モジュール構成（読み込み順 = 依存順）
 
@@ -113,7 +123,7 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - `localStorage.clear()` を使わない（`store.clearAll()` を使う。Firebase 設定が消える）
 - `confirm()` / `alert()` を使わない（モバイルでブロックされる。インライン UI にする）
 - `signInWithPopup` をモバイルで使わない（`signInWithRedirect` を使う）
-- API キー・Firebase 設定をコードにハードコードしない（管理パネル経由で設定）
+- API キー・Firebase 設定をコードにハードコードしない（`js/environment.js` のプレースホルダ + CI 注入経由。詳細は `DEPLOY.md` の「Firebase config の仕組み」）
 - 管理者メール `agewaller@gmail.com` を削除しない
 - Google 翻訳リンクは必ず `translate.goog` サブドメイン形式（`<host-with-dashes>.translate.goog/...?_x_tr_sl=...&_x_tr_tl=ja&_x_tr_hl=ja`）を使う。旧 `translate.google.com/translate?u=` 形式は 2019 年に廃止されていてクリックすると無限リダイレクトする
 - Claude モデル id（`claude-3-5-sonnet-20241022` 等の datestamped 名）をハードコードしない。必ず `MODEL_MAP` 経由で解決する
