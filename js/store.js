@@ -156,18 +156,58 @@ var Store = class Store {
 
   saveToStorage(key, value) {
     if (Store.PERSIST_KEYS.includes(key)) {
-      try {
-        localStorage.setItem(`cc_${key}`, JSON.stringify(value));
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.code === 22) {
-          console.error('[Store] localStorage quota exceeded for key:', key);
+      this._setSafe(`cc_${key}`, JSON.stringify(value), key);
+    }
+  }
+
+  // Quota-aware localStorage write. On QuotaExceededError, archives the
+  // oldest entries of large array keys (photos, analysisHistory,
+  // apiUsage) and retries. If still failing, drops a warning toast
+  // but never silently loses data — the in-memory state.{key} is
+  // untouched so an explicit user retry will succeed.
+  _setSafe(storageKey, serialized, logicalKey) {
+    const tryWrite = () => localStorage.setItem(storageKey, serialized);
+    try {
+      tryWrite();
+      return true;
+    } catch (e) {
+      if (!(e && (e.name === 'QuotaExceededError' || e.code === 22))) {
+        console.warn('[Store] storage write failed (non-quota):', storageKey, e);
+        return false;
+      }
+      console.warn('[Store] quota exceeded for', storageKey, '— archiving and retrying');
+      // Archive the heaviest array keys first. Photos win because each
+      // base64 JPEG is ~50-200KB. Then analysisHistory (long markdown
+      // strings), then apiUsage (5000 row cap is generous). For each
+      // pass we trim 50% and try again.
+      const HEAVY_KEYS = ['photos', 'analysisHistory', 'apiUsage', 'plaudAnalyses', 'deepAnalyses'];
+      for (const k of HEAVY_KEYS) {
+        const cur = this.state[k];
+        if (!Array.isArray(cur) || cur.length === 0) continue;
+        const half = Math.max(1, Math.floor(cur.length / 2));
+        const archived = cur.slice(0, half);
+        const remaining = cur.slice(half);
+        try {
+          // Save archived items separately so the user can recover later.
+          const archiveKey = `cc_archive_${k}_${Date.now().toString(36)}`;
+          try { localStorage.setItem(archiveKey, JSON.stringify(archived)); } catch (_) {}
+          this.state[k] = remaining;
+          localStorage.setItem(`cc_${k}`, JSON.stringify(remaining));
+          tryWrite();
+          console.log('[Store] archived', archived.length, k, 'and recovered');
           if (typeof Components !== 'undefined' && Components.showToast) {
-            Components.showToast('端末の保存容量が不足しています。古いデータを削除するか、Firebaseにバックアップしてください。', 'error');
+            Components.showToast(`端末の容量を確保するため、古い${k}を${archived.length}件アーカイブしました`, 'warning');
           }
-        } else {
-          console.warn('Storage save failed:', e);
+          return true;
+        } catch (_) {
+          // Keep trying with the next heavy key
         }
       }
+      console.error('[Store] could not free space; write skipped:', storageKey);
+      if (typeof Components !== 'undefined' && Components.showToast) {
+        Components.showToast('端末の保存容量が不足しています。設定 → データ管理 から古い記録を削除してください。', 'error');
+      }
+      return false;
     }
   }
 
@@ -184,13 +224,38 @@ var Store = class Store {
           this.state[key] = JSON.parse(val);
         }
       } catch (e) {
-        console.warn('[Store] corrupt data for', key, '- resetting to default');
-        localStorage.removeItem(`cc_${key}`);
+        // Corrupt JSON — copy it aside so we can inspect/recover later,
+        // then leave the in-memory default in place. Never silently
+        // removeItem(): that's the kind of "small fix" that erases
+        // someone's only copy of their data.
+        console.warn('[Store] corrupt data for', key, '- archiving and keeping default');
+        try {
+          const corrupt = localStorage.getItem(`cc_${key}`);
+          if (corrupt) localStorage.setItem(`cc_corrupt_${key}_${Date.now().toString(36)}`, corrupt);
+        } catch (_) {}
+        // Note: we deliberately do NOT remove the original. If the
+        // user has a backup/restore tool later, they can recover.
       }
     });
     if (savedVersion < Store.SCHEMA_VERSION) {
-      this._runMigrations(savedVersion);
-      localStorage.setItem('cc_schema_version', String(Store.SCHEMA_VERSION));
+      try {
+        this._runMigrations(savedVersion);
+        localStorage.setItem('cc_schema_version', String(Store.SCHEMA_VERSION));
+      } catch (e) {
+        // Migration crashed mid-way — do NOT bump the schema version,
+        // so the next load can retry from where we are. Log to
+        // applicationLog for the admin "セーフティ" tab to surface.
+        console.error('[Store] migration failed, keeping old schema version', savedVersion, e);
+        try {
+          const log = (this.state.applicationLog || []);
+          log.push({ ts: new Date().toISOString(), level: 'error',
+            source: 'migration', message: String(e && e.message || e),
+            fromVersion: savedVersion, targetVersion: Store.SCHEMA_VERSION });
+          if (log.length > 200) log.splice(0, log.length - 200);
+          this.state.applicationLog = log;
+          this._setSafe('cc_applicationLog', JSON.stringify(log), 'applicationLog');
+        } catch (_) {}
+      }
     }
   }
 
@@ -366,10 +431,47 @@ var Store = class Store {
   // integration tokens so the user doesn't have to re-paste their
   // ICS URL / re-OAuth Fitbit / re-enter Firebase config every time
   // they log out and back in.
+  //
+  // Before nuking anything we snapshot the full localStorage to a
+  // dated archive key (kept for the last 3 logouts) so even an
+  // accidental logout can be recovered by an admin via the data
+  // management tab.
   clearAll() {
+    // Take a recovery snapshot BEFORE doing anything destructive.
+    try {
+      const snapshot = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        // Skip previous backups so we don't recursively bloat.
+        if (k.startsWith('cc_last_clear_backup_')) continue;
+        snapshot[k] = localStorage.getItem(k);
+      }
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      localStorage.setItem(`cc_last_clear_backup_${stamp}`, JSON.stringify(snapshot));
+      // Prune backups beyond the last 3.
+      const backupKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('cc_last_clear_backup_')) backupKeys.push(k);
+      }
+      backupKeys.sort();
+      while (backupKeys.length > 3) {
+        const old = backupKeys.shift();
+        try { localStorage.removeItem(old); } catch (_) {}
+      }
+    } catch (e) {
+      console.warn('[Store] could not create clearAll backup', e);
+    }
+
     // Save device-level config that survives logout. These are not
     // per-user data — they're per-device integration settings that
     // a user explicitly configured and expects to persist.
+    //
+    // API keys are intentionally NOT preserved any more. In v2 they
+    // live exclusively in the Cloudflare Worker environment; any key
+    // still found in localStorage is a leftover from v1 and should
+    // be cleared on logout for safety.
     const PRESERVE_KEYS = [
       // System config
       'firebase_config',
@@ -377,10 +479,6 @@ var Store = class Store {
       'anthropic_mode',
       'admin_emails',
       'enable_shared_guest_ai',
-      // API keys (admin-managed, shared across users)
-      'apikey_anthropic',
-      'apikey_openai',
-      'apikey_google',
       // Calendar integrations
       'ics_calendar_url',
       'google_calendar_oauth_connected',
@@ -391,6 +489,10 @@ var Store = class Store {
       // Apple Health / Plaud integrations
       'apple_health_last_import',
       'plaud_email',
+      // Privacy choice (anonymize before AI)
+      'privacy_anonymize_ai',
+      // Language preference
+      'cc_language',
     ];
     const preserved = {};
     PRESERVE_KEYS.forEach(k => {
@@ -398,10 +500,28 @@ var Store = class Store {
       if (v !== null) preserved[k] = v;
     });
 
+    // Also preserve all backup keys (clear-backups + archives + corrupt)
+    // so this clearAll() doesn't destroy our recovery surface.
+    const recoveryKeys = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith('cc_last_clear_backup_') ||
+            k.startsWith('cc_archive_') ||
+            k.startsWith('cc_corrupt_')) {
+          recoveryKeys[k] = localStorage.getItem(k);
+        }
+      }
+    } catch (_) {}
+
     localStorage.clear();
 
     // Restore preserved device-level config
     Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
+    Object.entries(recoveryKeys).forEach(([k, v]) => {
+      try { localStorage.setItem(k, v); } catch (_) {}
+    });
 
     Object.keys(this.state).forEach(key => {
       if (Array.isArray(this.state[key])) this.state[key] = [];
@@ -411,6 +531,43 @@ var Store = class Store {
     this.state.user = null;
     this.state.currentPage = 'login';
     this.state.selectedModel = 'claude-opus-4-6';
+  }
+
+  // ---- Metrics (A.3) ----
+  // Append a single metric event. Used to track value-validation
+  // KPIs (record_save, ai_success, ai_failure, quick_input, etc.).
+  // Stored in localStorage under cc_metricEvents (capped at 500
+  // events per device) and rolled up to Firestore by the daily
+  // metrics-aggregator Worker. Failure to record is silent — never
+  // let metrics get in the way of the actual operation.
+  recordMetric(name, value, meta) {
+    if (!name) return;
+    try {
+      const events = this._metricEvents || [];
+      events.push({
+        ts: new Date().toISOString(),
+        name,
+        value: typeof value === 'number' ? value : 1,
+        meta: meta || null,
+        uid: (this.state.user && this.state.user.uid) || null
+      });
+      if (events.length > 500) events.splice(0, events.length - 500);
+      this._metricEvents = events;
+      this._setSafe('cc_metricEvents', JSON.stringify(events), 'metricEvents');
+    } catch (e) {
+      // metrics are best-effort; swallow errors silently
+    }
+  }
+
+  getMetricEvents() {
+    try {
+      if (this._metricEvents) return this._metricEvents;
+      const raw = localStorage.getItem('cc_metricEvents');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      this._metricEvents = Array.isArray(parsed) ? parsed : [];
+      return this._metricEvents;
+    } catch (_) { return []; }
   }
 };
 

@@ -580,53 +580,71 @@ var App = class App {
   setAnthropicMode(_mode) {
   }
 
+  // ── DEPRECATED in v1 hardening (A.1.3) ──
+  //
+  // API keys MUST live exclusively in the Cloudflare Worker environment
+  // (ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_AI_API_KEY env vars).
+  // The previous flow let an admin paste keys into a UI textbox which
+  // were then mirrored into localStorage AND admin/config in Firestore,
+  // both of which are reachable from the browser. This created two
+  // permanent leak vectors:
+  //   1. Anyone with XSS gets the key out of localStorage instantly.
+  //   2. Firestore Rules used to allow any authenticated user to read
+  //      admin/config (the rule was tightened in firestore.rules but
+  //      the legacy data may still be live).
+  //
+  // We keep proxyUrl saveable here because it is NOT a secret (it is
+  // a public hostname), but the API key fields are intentionally
+  // accepted-as-noop with a clear error message. The admin tab no
+  // longer surfaces a key input either.
   async saveApiKeys() {
     if (!this.isAdmin()) {
       const seen = this.currentUserEmail() || '(未ログイン)';
       Components.showToast(
-        'APIキー設定は管理者専用です。現在のログイン: ' + seen
-        + '\n管理者は agewaller@gmail.com です。一度ログアウト → 再ログインしてください。',
+        'この設定は管理者専用です。現在のログイン: ' + seen,
         'error'
       );
-      console.warn('[saveApiKeys] admin check failed. seen email:', seen, 'ADMIN_EMAILS:', this.ADMIN_EMAILS);
       return;
     }
-    const keys = ['anthropic', 'openai', 'google'];
-    const keyData = {};
     let saved = 0;
     let proxyUrl = '';
-    // Save proxy URL
     const proxyEl = document.getElementById('input-proxy-url');
     if (proxyEl && proxyEl.value.trim()) {
       proxyUrl = proxyEl.value.trim();
       localStorage.setItem('anthropic_proxy_url', proxyUrl);
       saved++;
     }
-
-    keys.forEach(k => {
+    // Detect attempted API key submission and refuse with guidance.
+    // Sweep any previously-stored keys out of localStorage on every
+    // submit so a one-time mistake is cleaned up automatically.
+    let attemptedKey = false;
+    ['anthropic', 'openai', 'google'].forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
-      if (el && el.value.trim()) {
-        localStorage.setItem('apikey_' + k, el.value.trim());
-        keyData[k] = el.value.trim();
-        saved++;
-      }
+      if (el && el.value && el.value.trim()) attemptedKey = true;
+      if (el) el.value = '';
+      try { localStorage.removeItem('apikey_' + k); } catch (_) {}
     });
+    if (attemptedKey) {
+      Components.showToast(
+        'APIキーはこの画面では保存できません。'
+        + 'Cloudflare Worker 環境変数（ANTHROPIC_API_KEY 等）に設定してください。',
+        'warning'
+      );
+    }
     if (saved > 0) {
-      // Save to global admin config so all users inherit these settings
       if (FirebaseBackend.initialized) {
-        const globalConfig = { apiKeys: keyData };
-        if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
-        // Include the current Anthropic transport mode so other users
-        // inherit the admin's choice (direct vs proxy).
+        const globalConfig = { proxyUrl };
         const mode = localStorage.getItem('anthropic_mode');
         if (mode) globalConfig.anthropicMode = mode;
+        // NOTE: We do NOT write apiKeys to admin/config any more.
+        // The Worker holds the keys exclusively.
         await FirebaseBackend.saveGlobalConfig(globalConfig);
       } else {
-        Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
+        Components.showToast('Proxy URLを保存しました（ローカル）', 'success');
       }
       this.loadApiKeyFields();
-    } else {
-      Components.showToast('保存するAPIキーがありません', 'error');
+    } else if (!attemptedKey) {
+      Components.showToast('保存する項目がありません', 'info');
     }
   }
 
@@ -650,20 +668,29 @@ var App = class App {
     }
   }
 
+  // Removes any leftover API keys from localStorage AND from the
+  // Firestore admin/config doc. v1 hardening: keys belong in the
+  // Cloudflare Worker env, never in browser-reachable storage.
   async clearApiKeys() {
     if (!this.isAdmin()) {
-      Components.showToast('APIキー設定は管理者専用です', 'error');
+      Components.showToast('この設定は管理者専用です', 'error');
       return;
     }
     ['anthropic', 'openai', 'google'].forEach(k => {
-      localStorage.removeItem('apikey_' + k);
+      try { localStorage.removeItem('apikey_' + k); } catch (_) {}
       const el = document.getElementById('input-apikey-' + k);
       if (el) el.value = '';
     });
     if (FirebaseBackend.initialized) {
-      await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
+      try {
+        // Explicitly write an empty apiKeys object to scrub anything
+        // still living in admin/config from the legacy flow.
+        await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
+      } catch (e) {
+        console.warn('[clearApiKeys] could not scrub admin/config:', e?.message);
+      }
     }
-    Components.showToast('すべてのAPIキーを削除しました', 'info');
+    Components.showToast('レガシーのAPIキーをすべて削除しました', 'info');
     this.loadApiKeyFields();
   }
 

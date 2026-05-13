@@ -397,13 +397,15 @@ ${avoidBlock}
     }
 
     // ── Global timeout ──
-    // Cap the entire provider chain at 55s so users never wait
+    // Cap the entire provider chain at 75s so users never wait
     // indefinitely. A hard deadline prevents the 87-second spinner
     // reported by users when the retry chain stacked up. After the
     // deadline, abort remaining retries and return the graceful
-    // disease-aware fallback.
+    // disease-aware fallback. Vision (image) requests get the full
+    // 75s budget — earlier 55s caused premature failure on photo
+    // analysis which routinely takes 35-50s server-side.
     const startTime = Date.now();
-    const GLOBAL_DEADLINE_MS = options.globalTimeoutMs || 55000;
+    const GLOBAL_DEADLINE_MS = options.globalTimeoutMs || 75000;
     const timeRemaining = () => GLOBAL_DEADLINE_MS - (Date.now() - startTime);
 
     const providers = this.buildProviderFallbackList(modelId);
@@ -545,19 +547,36 @@ ${avoidBlock}
     // workers.dev hostname for their Cloudflare account — the
     // hardcoded fallback may be wrong if the account's workers_dev
     // subdomain isn't `agewaller`.
-    let url;
+    // Build the list of proxy URLs to try in order. We always start
+    // with the admin-configured proxy (or the custom-domain default),
+    // then fall back to the *.workers.dev hosts. Even if one becomes
+    // unreachable (account-level workers.dev disable, CORS misconfig,
+    // DNS issue), we transparently try the next one before surfacing
+    // an error to the user.
+    let urls;
     if (apiKey) {
-      url = 'https://api.anthropic.com/v1/messages';
+      urls = ['https://api.anthropic.com/v1/messages'];
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      // Custom-domain hostname on our own Cloudflare zone — survives the
-      // account-level workers.dev disable that previously killed every
-      // *.agewaller.workers.dev URL at once. See wrangler.relay.jsonc
-      // "routes" for the custom_domain registration.
       if (!proxy) proxy = 'https://ai.cares.advisers.jp';
-      url = proxy.replace(/\/+$/, '') + '/v1/messages';
+      const fallbackHosts = [
+        proxy,
+        'https://ai.cares.advisers.jp',
+        'https://cares-relay.agewaller.workers.dev',
+        'https://stock-screener.agewaller.workers.dev'
+      ];
+      // Dedup while preserving order
+      const seen = new Set();
+      urls = fallbackHosts
+        .map(h => h.replace(/\/+$/, ''))
+        .filter(h => !seen.has(h) && seen.add(h))
+        .map(h => h + '/v1/messages');
     }
+    // The first URL is the primary; the rest are retried on network /
+    // CORS failure inside the catch block below.
+    let url = urls[0];
+    const _alternateUrls = urls.slice(1);
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
@@ -618,56 +637,81 @@ ${avoidBlock}
     const tid = setTimeout(() => controller.abort(), timeoutMs);
 
     let response;
+    const _doFetch = (targetUrl) => fetch(targetUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
     try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
+      response = await _doFetch(url);
     } catch (fetchErr) {
-      if (fetchErr.name === 'AbortError') {
-        const sec = Math.round(timeoutMs / 1000);
-        throw new Error(`Anthropic API タイムアウト（${sec}秒）。写真分析は時間がかかることがあります。もう一度お試しください。`);
-      }
-      // Network-level failure before any HTTP response. Facebook /
-      // Instagram / LINE / X in-app browsers surface this as the
-      // opaque Safari message "Load failed"; surface an actionable
-      // hint instead of the raw string so users know what to try.
-      const em = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
-      // Try Gemini fallback before throwing (same pattern as the inline
-      // callAI in index.html). If admin has saved a Gemini key in
-      // admin/config, Cloudflare Worker outages no longer break AI for
-      // logged-in users either.
-      const gemKey = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
-      if (gemKey && /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed/i.test(em)) {
-        console.warn('[Anthropic] network failure, falling back to Gemini:', em.slice(0, 80));
-        try {
-          return await this.callGoogle('gemini-2.5-flash', prompt, gemKey, options || {});
-        } catch (gErr) {
-          console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
-        }
-      }
-      if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
-        // Differentiate host_not_allowed (Cloudflare workers.dev disabled
-        // → CORS-less 403, browser collapses to TypeError) from real
-        // network unreachability. A successful no-cors probe means the
-        // host is alive — it's a CORS / Worker-disable problem the
-        // operator can fix, not the user's browser.
-        let reachable = false;
-        if (/workers\.dev/.test(url)) {
+      // Network-class failure (CORS, DNS, host_not_allowed, browser
+      // collapsed to TypeError): silently rotate through the
+      // alternate proxy URLs before reporting the error. Skip rotation
+      // on timeout (AbortError) — those are usually upstream slowness
+      // and switching hosts won't help.
+      const _emEarly = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
+      const _isNetClass = fetchErr.name !== 'AbortError'
+        && /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed/i.test(_emEarly);
+      if (_isNetClass && _alternateUrls && _alternateUrls.length > 0) {
+        for (const altUrl of _alternateUrls) {
+          if (controller.signal.aborted) break;
           try {
-            await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
-            reachable = true;
-          } catch (_) { reachable = false; }
+            console.warn('[Anthropic] primary proxy failed, trying', altUrl);
+            response = await _doFetch(altUrl);
+            url = altUrl; // for downstream logging
+            try { store.recordMetric('ai_proxy_fallback', 1, { url: altUrl }); } catch (_) {}
+            break;
+          } catch (altErr) {
+            console.warn('[Anthropic] alt proxy also failed:', altUrl, altErr.message);
+          }
         }
-        if (reachable) {
-          throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
-            + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
-        }
-        throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
       }
-      throw new Error(`Anthropic API 接続失敗: ${em}`);
+      if (!response) {
+        if (fetchErr.name === 'AbortError') {
+          const sec = Math.round(timeoutMs / 1000);
+          throw new Error(`Anthropic API タイムアウト（${sec}秒）。写真分析は時間がかかることがあります。もう一度お試しください。`);
+        }
+        // Network-level failure before any HTTP response. Facebook /
+        // Instagram / LINE / X in-app browsers surface this as the
+        // opaque Safari message "Load failed"; surface an actionable
+        // hint instead of the raw string so users know what to try.
+        const em = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
+        // Try Gemini fallback before throwing (same pattern as the inline
+        // callAI in index.html). If admin has saved a Gemini key in
+        // admin/config, Cloudflare Worker outages no longer break AI for
+        // logged-in users either.
+        const gemKey = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
+        if (gemKey && /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed/i.test(em)) {
+          console.warn('[Anthropic] network failure, falling back to Gemini:', em.slice(0, 80));
+          try {
+            return await this.callGoogle('gemini-2.5-flash', prompt, gemKey, options || {});
+          } catch (gErr) {
+            console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
+          }
+        }
+        if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
+          // Differentiate host_not_allowed (Cloudflare workers.dev disabled
+          // → CORS-less 403, browser collapses to TypeError) from real
+          // network unreachability. A successful no-cors probe means the
+          // host is alive — it's a CORS / Worker-disable problem the
+          // operator can fix, not the user's browser.
+          let reachable = false;
+          if (/workers\.dev/.test(url)) {
+            try {
+              await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+              reachable = true;
+            } catch (_) { reachable = false; }
+          }
+          if (reachable) {
+            throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
+              + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
+          }
+          throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
+        }
+        throw new Error(`Anthropic API 接続失敗: ${em}`);
+      }
     } finally {
       clearTimeout(tid);
     }

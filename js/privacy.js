@@ -5,10 +5,9 @@
    Strips obvious personal identifiers (emails, phone numbers,
    postal codes, addresses, honorific-suffixed names, long
    number sequences) from any text about to be sent to an AI
-   provider. Opt-in via the "AI 送信前の匿名化" toggle in
-   設定 → プライバシー設定. Off by default because masking can
-   degrade analysis quality; users concerned about leaks can
-   turn it on for a measurable reduction in surface area.
+   provider. **Defaults to ON** in v1 hardening — users who
+   want to send raw text can opt OUT via the "AI 送信前の匿名化"
+   toggle in 設定 → プライバシー設定.
 
    This is NOT a guarantee — Japanese names in particular are
    hard to detect reliably without a morphological analyzer.
@@ -18,9 +17,13 @@
 var Privacy = {
   STORAGE_KEY: 'privacy_anonymize_ai',
 
+  // Default ON: privacy_anonymize_ai is enabled unless the user
+  // explicitly stored '0'. This means a fresh browser or any
+  // device that hasn't toggled the setting will mask PII before
+  // sending to AI providers.
   isEnabled() {
-    try { return localStorage.getItem(this.STORAGE_KEY) === '1'; }
-    catch (_) { return false; }
+    try { return localStorage.getItem(this.STORAGE_KEY) !== '0'; }
+    catch (_) { return true; }
   },
   setEnabled(v) {
     try { localStorage.setItem(this.STORAGE_KEY, v ? '1' : '0'); }

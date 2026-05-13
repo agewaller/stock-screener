@@ -423,6 +423,102 @@ var Components = {
     }, 4000);
   },
 
+  // Promise-based confirmation dialog.
+  // Replaces native browser modal prompts which are silently blocked
+  // in many mobile in-app browsers (LINE, Instagram, Facebook). Returns
+  // a promise that resolves to true (confirmed) or false (cancelled).
+  //
+  // Usage:
+  //   if (await Components.confirmDialog({
+  //         title: '削除しますか?',
+  //         body: 'この操作は元に戻せません。',
+  //         confirmLabel: '削除する',
+  //         danger: true })) {
+  //     // user confirmed
+  //   }
+  confirmDialog(opts = {}) {
+    const title = opts.title || '確認';
+    const body = opts.body || '';
+    const confirmLabel = opts.confirmLabel || 'はい';
+    const cancelLabel = opts.cancelLabel || 'キャンセル';
+    const danger = !!opts.danger;
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.45);' +
+        'display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:var(--bg-secondary,#fff);max-width:420px;width:100%;' +
+        'border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.25);';
+      box.innerHTML =
+        '<div style="font-size:17px;font-weight:700;margin-bottom:10px;color:var(--text-primary)">'
+          + this.escapeHtml(title) + '</div>'
+        + (body
+            ? '<div style="font-size:15px;line-height:1.6;color:var(--text-secondary);margin-bottom:20px">'
+              + this.escapeHtml(body) + '</div>'
+            : '')
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">'
+          + '<button class="btn btn-secondary" data-act="cancel" style="min-height:44px;padding:10px 18px">'
+            + this.escapeHtml(cancelLabel) + '</button>'
+          + '<button class="btn ' + (danger ? 'btn-danger' : 'btn-primary')
+            + '" data-act="ok" style="min-height:44px;padding:10px 18px">'
+            + this.escapeHtml(confirmLabel) + '</button>'
+        + '</div>';
+      overlay.appendChild(box);
+      const close = (v) => { try { overlay.remove(); } catch (_) {} resolve(v); };
+      box.querySelector('[data-act="ok"]').addEventListener('click', () => close(true));
+      box.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+      document.body.appendChild(overlay);
+      // Move focus to the confirm button so keyboard users can submit immediately.
+      try { box.querySelector('[data-act="ok"]').focus(); } catch (_) {}
+    });
+  },
+
+  // Action toast for AI / network errors. Shows the message plus
+  // explicit retry / copy-to-clipboard / dismiss buttons so users
+  // never see a "blank" failure they cannot recover from. Sticky
+  // until the user clicks something.
+  //
+  //   Components.errorActionToast({
+  //     message: '分析できませんでした。',
+  //     retry: () => app.runAnalysis(),
+  //     copyText: 'symptoms json...'
+  //   });
+  errorActionToast(opts = {}) {
+    const message = opts.message || 'エラーが発生しました';
+    const retry = typeof opts.retry === 'function' ? opts.retry : null;
+    const copyText = opts.copyText || '';
+    const container = document.getElementById('toast-container') || (() => {
+      const c = document.createElement('div');
+      c.id = 'toast-container';
+      c.className = 'toast-container';
+      document.body.appendChild(c);
+      return c;
+    })();
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-error';
+    toast.style.flexDirection = 'column';
+    toast.style.alignItems = 'stretch';
+    toast.style.gap = '10px';
+    toast.innerHTML =
+      '<div style="font-size:14px;line-height:1.5">' + this.escapeHtml(message) + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      + (retry ? '<button class="btn btn-primary" data-act="retry" style="font-size:12px;padding:6px 12px;min-height:36px">再試行</button>' : '')
+      + (copyText ? '<button class="btn btn-secondary" data-act="copy" style="font-size:12px;padding:6px 12px;min-height:36px">医師相談用にコピー</button>' : '')
+      + '<button class="btn btn-ghost" data-act="dismiss" style="font-size:12px;padding:6px 12px;min-height:36px">閉じる</button>'
+      + '</div>';
+    container.appendChild(toast);
+    const close = () => { try { toast.remove(); } catch (_) {} };
+    const btnRetry = toast.querySelector('[data-act="retry"]');
+    if (btnRetry) btnRetry.addEventListener('click', () => { close(); try { retry(); } catch (_) {} });
+    const btnCopy = toast.querySelector('[data-act="copy"]');
+    if (btnCopy) btnCopy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(copyText); this.showToast('コピーしました', 'success'); }
+      catch (_) { this.showToast('コピーに失敗しました', 'error'); }
+    });
+    toast.querySelector('[data-act="dismiss"]').addEventListener('click', close);
+  },
+
   // Loading spinner with indeterminate progress gauge.
   //
   // Shows active feedback while background analysis runs. The elapsed

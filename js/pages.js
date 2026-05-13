@@ -2918,46 +2918,43 @@ App.prototype.render_admin = function() {
     </div>
   </div>
 
-  <!-- TAB: API Keys -->
+  <!-- TAB: API Keys (v1 ハードニング後: シークレットでない接続設定のみ) -->
   <div class="admin-tab-content" id="admin-tab-api" style="display:none">
   <div class="card" style="margin-bottom:28px">
     <div class="card-header">
-      <span class="card-title">APIキー設定</span>
+      <span class="card-title">プロキシ・接続設定</span>
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
-      <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:16px">
-        <b>全ユーザー共通設定:</b> ここで保存したAPIキー・プロキシURLは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
-      </div>
-      <div style="padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:var(--radius-sm);font-size:11px;color:#78350f;margin-bottom:16px;line-height:1.7">
-        🔒 <b>セキュリティ:</b> すべての Claude API 呼び出しは Cloudflare Worker プロキシを経由します。
-        プロンプトインジェクション防御・拒否回避・レスポンス検証はサーバー側で処理されます。
-      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Cloudflare Worker への接続先と、シークレットでない共通設定を管理します。APIキーは Worker 側の環境変数で保管します。</p>
       <div class="form-group" id="proxy-url-group">
         <label class="form-label">APIプロキシURL</label>
-        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Worker のデプロイ後にURLを貼り付け。未設定の場合デフォルトの Worker が使われます。</span>
+        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://ai.cares.advisers.jp" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Worker のホスト名。未設定の場合 ai.cares.advisers.jp が使われます。</span>
       </div>
-      <div class="form-group">
-        <label class="form-label">Anthropic API Key</label>
-        <input type="text" class="form-input" id="input-apikey-anthropic" placeholder="sk-ant-api03-..." autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
+      <div style="margin-top:14px;padding:12px 14px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:var(--radius-sm);font-size:12px;color:#7f1d1d;line-height:1.7">
+        🔒 <b>APIキーはこの画面からは設定できません。</b><br>
+        v1 ハードニング (A.1.3) で、APIキー (Anthropic / OpenAI / Google) はすべて
+        Cloudflare Worker の環境変数のみで保管する設計に変更しました。
+        ブラウザ側に保存・転送する経路を排除しています。<br>
+        キーを追加・更新する場合は <code>wrangler secret put ANTHROPIC_API_KEY</code>
+        などで Worker に直接設定してください。
       </div>
-      <div class="form-group">
-        <label class="form-label">OpenAI API Key（GPT-4o）</label>
-        <input type="text" class="form-input" id="input-apikey-openai" placeholder="sk-proj-..." autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Google AI API Key（Gemini 2.5 Pro）</label>
-        <input type="text" class="form-input" id="input-apikey-google" placeholder="AIza..." autocomplete="off">
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="app.saveApiKeys()">APIキーを保存</button>
-        <button class="btn btn-secondary" onclick="app.testApiKey()" style="margin-left:8px">接続テスト</button>
-        <div id="api-test-result" style="margin-top:8px"></div>
-        <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">すべて削除</button>
-      </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--text-muted)">レガシーAPIキーの掃除（管理者のみ）</summary>
+        <div style="margin-top:8px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:11px;color:var(--text-secondary);line-height:1.6">
+          以前のバージョンで localStorage や admin/config に保存された
+          APIキーがまだ残っている場合、ここから削除できます。新規の
+          キー入力は受け付けません。
+        </div>
+        <input type="hidden" id="input-apikey-anthropic" value="">
+        <input type="hidden" id="input-apikey-openai" value="">
+        <input type="hidden" id="input-apikey-google" value="">
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="app.saveApiKeys()">Proxy URLを保存</button>
+          <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">レガシーAPIキーを掃除</button>
+        </div>
+      </details>
     </div>
   </div>
 

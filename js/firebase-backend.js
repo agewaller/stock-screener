@@ -354,7 +354,15 @@ var FirebaseBackend = {
     }
   },
 
-  // Save health data entry to a subcollection
+  // Save health data entry to a subcollection.
+  //
+  // Stamps two timestamps on every doc:
+  //   - createdAt        : Firestore serverTimestamp (authoritative)
+  //   - clientWriteAt    : client wall-clock ISO string (tiebreaker
+  //                        for cross-device conflict resolution and
+  //                        ordering when serverTimestamp is still null
+  //                        in the snapshot that includes the local
+  //                        write).
   async saveHealthEntry(collection, entry) {
     try {
       const cleaned = { ...entry };
@@ -362,11 +370,14 @@ var FirebaseBackend = {
       delete cleaned.previewImage;
       const docRef = await this.userCollection(collection).add({
         ...cleaned,
+        clientWriteAt: new Date().toISOString(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      try { store.recordMetric('record_save', 1, { collection }); } catch (_) {}
       return docRef.id;
     } catch (err) {
       console.error('Save entry error:', err);
+      try { store.recordMetric('record_save_failure', 1, { collection, code: err && err.code }); } catch (_) {}
       return null;
     }
   },
@@ -628,14 +639,19 @@ var FirebaseBackend = {
   },
 
   // ---- Batch Load All User Data ----
+  //
+  // Exposes `_loadAllDataPromise` so callers (e.g. enableAutoSync, UI
+  // components) can `await` the initial load before kicking off any
+  // operation that might race the data hydration.
   async loadAllData() {
     if (!this.userId) return;
     // Re-entry guard: handleSignedInUser may be called both from the
     // popup success path (signInWithGoogle) and from onAuthStateChanged
     // almost simultaneously. Without this guard, the second call would
     // trigger a second round of Firestore reads while the first is
-    // still in flight.
-    if (this._loading) return;
+    // still in flight. Returning the existing promise lets the caller
+    // still await completion.
+    if (this._loadAllDataPromise) return this._loadAllDataPromise;
 
     // Guard against autosync listeners re-writing loaded data back to
     // Firestore. Without this, every store.set() below fires listeners in
@@ -643,6 +659,13 @@ var FirebaseBackend = {
     // in Firestore. The result: one duplicate of the latest entry per
     // page reload, per collection. Must be set before the first store.set.
     this._loading = true;
+    this._loadAllDataPromise = this._doLoadAllData()
+      .finally(() => { this._loading = false; });
+    return this._loadAllDataPromise;
+  },
+
+  async _doLoadAllData() {
+    if (!this.userId) return;
 
     try {
       // Load global admin-managed config FIRST so API keys are in
@@ -758,11 +781,9 @@ var FirebaseBackend = {
       this._maybeRunWeeklyBackup().catch(e => console.warn('[backup]', e?.message || e));
     } catch (err) {
       console.error('Load all data error:', err);
-    } finally {
-      // Release the autosync guard. Any store.set() from here on (e.g.
-      // a user submitting a new entry) will sync normally.
-      this._loading = false;
     }
+    // _loading is reset by the wrapper loadAllData() in the .finally
+    // attached to the returned promise.
   },
 
   // ── Weekly auto-backup ──
@@ -1039,7 +1060,25 @@ var FirebaseBackend = {
             if (isFirst && data.length === 0 && hasLocal) {
               console.log('[Firebase] keep local data for', storeKey, '(empty initial cloud snapshot)');
             } else {
-              store.set(storeKey, data);
+              // Merge: cloud data is authoritative for synced entries,
+              // but any local entry that has NOT been synced yet
+              // (no _synced flag, no Firestore-shaped id) must be
+              // preserved across the snapshot. Without this, a user
+              // who adds a record while the sync is still in flight
+              // would see their entry vanish as the cloud snapshot
+              // arrives before the write completes.
+              var localUnsynced = hasLocal
+                ? localData.filter(function(e) { return e && !e._synced; })
+                : [];
+              if (localUnsynced.length > 0) {
+                console.log('[Firebase] merging', localUnsynced.length,
+                  'unsynced local entries into', storeKey, 'snapshot');
+                var merged = data.concat(localUnsynced);
+                merged.sort(function(a, b) { return tsOf(a) - tsOf(b); });
+                store.set(storeKey, merged);
+              } else {
+                store.set(storeKey, data);
+              }
             }
           } finally {
             self._loading = prev;
