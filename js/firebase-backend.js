@@ -992,6 +992,11 @@ var FirebaseBackend = {
       conversationHistory: 'conversations'
     };
 
+    // Track whether each collection has received its initial snapshot.
+    // If Firestore is empty on first login but localStorage already has
+    // historical records, avoid wiping local history immediately.
+    if (!this._initialSnapshotSeen) this._initialSnapshotSeen = {};
+
     Object.keys(collections).forEach(function(storeKey) {
       var fbColl = collections[storeKey];
       // NOTE: We deliberately do NOT use .orderBy('createdAt', 'desc')
@@ -1023,7 +1028,19 @@ var FirebaseBackend = {
               return Number(t) || 0;
             };
             data.sort(function(a, b) { return tsOf(a) - tsOf(b); });
-            store.set(storeKey, data);
+
+            var isFirst = !self._initialSnapshotSeen[storeKey];
+            self._initialSnapshotSeen[storeKey] = true;
+            var localData = store.get(storeKey);
+            var hasLocal = Array.isArray(localData) && localData.length > 0;
+
+            // Do not overwrite existing local history with an empty first
+            // snapshot (common when cloud data is not yet created/migrated).
+            if (isFirst && data.length === 0 && hasLocal) {
+              console.log('[Firebase] keep local data for', storeKey, '(empty initial cloud snapshot)');
+            } else {
+              store.set(storeKey, data);
+            }
           } finally {
             self._loading = prev;
           }
