@@ -1,0 +1,16 @@
+# Cloudflare Pages project config for cares-ai-proxy-pages.
+# Replaces the dead *.workers.dev path. Deployed via
+# .github/workflows/oneshot-deploy-pages-proxy.yml.
+
+name = "cares-ai-proxy-pages"
+pages_build_output_dir = "."
+compatibility_date = "2026-04-06"
+compatibility_flags = ["nodejs_compat"]
+
+# Service binding — internal call to stock-screener Worker which
+# already has ANTHROPIC_API_KEY secret + Origin check logic. This
+# bypasses workers.dev account-level disable AND the Cloudflare
+# Access policy on stock-screener.
+[[services]]
+binding = "PROXY"
+service = "stock-screener"
