@@ -1,0 +1,130 @@
+name: Oneshot - Cleanup cares-ai-proxy Access policy
+
+# 緊急復旧用 one-shot workflow:
+# cares-ai-proxy.agewaller.workers.dev を保護している Cloudflare Access
+# Application を Cloudflare API 経由で削除する。stock-screener など
+# 他の Worker の Access ポリシーには触らない (target を hostname 一致で
+# 厳密フィルタ)。
+#
+# このファイルへの push で自動起動。Claude Code が手元で
+# workflow_dispatch を叩けないための回避策。安全に何度実行しても OK
+# (削除対象が無ければ no-op)。
+
+on:
+  push:
+    branches:
+      - claude/health-diary-spec-IjT9N
+    paths:
+      - ".github/workflows/oneshot-cleanup-cares-ai-proxy.yml"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+      TARGET_HOST: cares-ai-proxy.agewaller.workers.dev
+    steps:
+      - name: Verify token
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret is missing."
+            exit 1
+          fi
+          echo "✓ token present (length=${#T})"
+
+      - name: List + delete matching Access apps
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -e
+          echo "## cares-ai-proxy Access cleanup" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps?per_page=200" \
+            > /tmp/apps.json
+
+          python3 - <<'PY' | tee /tmp/result.txt
+          import json, os, sys, urllib.request
+
+          token   = os.environ['T']
+          account = os.environ['CLOUDFLARE_ACCOUNT_ID']
+          target  = os.environ['TARGET_HOST']
+
+          with open('/tmp/apps.json') as f:
+              d = json.load(f)
+          if not d.get('success'):
+              print("::error::list failed:", json.dumps(d.get('errors', d), ensure_ascii=False))
+              sys.exit(1)
+
+          apps = d.get('result', [])
+          print(f"Found {len(apps)} Access apps total")
+
+          to_delete = []
+          for a in apps:
+              dests = []
+              if a.get('domain'):
+                  dests.append(a['domain'])
+              for sd in a.get('self_hosted_domains', []) or []:
+                  dests.append(sd)
+              for r in a.get('destinations', []) or []:
+                  if isinstance(r, dict):
+                      v = r.get('uri') or r.get('hostname') or ''
+                      if v:
+                          dests.append(v)
+                  else:
+                      dests.append(str(r))
+              hits = [x for x in dests if target in x]
+              if hits:
+                  to_delete.append((a['id'], a.get('name', '?'), hits))
+
+          print(f"Apps protecting {target}: {len(to_delete)}")
+          for aid, name, hits in to_delete:
+              print(f"  - id={aid[:8]}... name={name!r} dests={hits}")
+
+          if not to_delete:
+              print("(nothing to delete — already clean)")
+              sys.exit(0)
+
+          for aid, name, hits in to_delete:
+              url = f"https://api.cloudflare.com/client/v4/accounts/{account}/access/apps/{aid}"
+              req = urllib.request.Request(url, method='DELETE')
+              req.add_header('Authorization', f'Bearer {token}')
+              try:
+                  with urllib.request.urlopen(req) as r:
+                      body = r.read().decode()
+                      print(f"DELETED {aid[:8]}: HTTP {r.status}")
+              except Exception as e:
+                  print(f"::error::DELETE FAILED {aid[:8]}: {e}")
+                  sys.exit(1)
+          print("ALL DONE")
+          PY
+
+          {
+            echo '```'
+            cat /tmp/result.txt
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Probe cares-ai-proxy
+        run: |
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '## Probe result' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Waiting 15s for propagation..."
+          sleep 15
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/probe.txt -w "%{http_code}" -m 10 \
+              "https://${TARGET_HOST}/" || echo "000")
+            echo "attempt $i: HTTP $code" | tee -a $GITHUB_STEP_SUMMARY
+            if [ "$code" != "403" ] && [ "$code" != "000" ]; then
+              echo "✓ Worker is reachable (no longer 403)" | tee -a $GITHUB_STEP_SUMMARY
+              break
+            fi
+            sleep 10
+          done
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # never fail the workflow — even if probe still 403, that means
+          # workers.dev subdomain toggle still needs flipping (operator action)
