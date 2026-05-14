@@ -190,7 +190,8 @@ var CONFIG = {
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
-        { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
+        { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' },
+        { id: 'low_back_pain', name: '慢性腰痛症（腰椎椎間板ヘルニア・脊柱管狭窄症）', icd: 'M54.5' }
       ]
     },
     {
@@ -215,6 +216,7 @@ var CONFIG = {
         { id: 'lyme', name: 'ライム病（慢性）', icd: '1C1G' },
         { id: 'mold', name: 'カビ毒（マイコトキシン）症', icd: '' },
         { id: 'hsd', name: '関節過可動性症候群', icd: 'FB32' },
+        { id: 'glaucoma', name: '緑内障（開放隅角・正常眼圧緑内障）', icd: 'H40' },
         { id: 'custom', name: 'その他（自由記入）', icd: '' }
       ]
     }
@@ -365,6 +367,10 @@ var CONFIG = {
                           japan:    150_000, japanLabel: '約 10-15 万人 (推計)',  japanSource: '1/500-1/900 を人口比外挿' },
     myasthenia:         { world:     1_000_000, label: '約 100 万人 (推計)',       tier: 3, density: 'high',   source: '12.4/10万外挿',
                           japan:     23_000, japanLabel: '約 2.3 万人',           japanSource: '指定難病' },
+    low_back_pain:      { world:   619_000_000, label: '約 6 億 1,900 万人',      tier: 1, density: 'high',   source: 'GBD 2020',
+                          japan:  28_000_000, japanLabel: '約 2,800 万人',        japanSource: '国民生活基礎調査（有訴者率 男性1位・女性2位）' },
+    glaucoma:           { world:    76_000_000, label: '約 7,600 万人',            tier: 1, density: 'high',   source: 'WHO/GBD 2022',
+                          japan:   3_500_000, japanLabel: '約 300〜400 万人',     japanSource: '多治見スタディ（40歳以上 2.2%）' },
     als:                { world:       370_000, label: '約 37 万人 (推計)',        tier: 3, density: 'high',   source: '4.5/10万外挿',
                           japan:     10_000, japanLabel: '約 1 万人',             japanSource: '指定難病' },
 
@@ -2612,6 +2618,53 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-15T10:00:00Z', name: 'メトホルミン塩酸塩500mg', notes: '1日2回 食直後（インスリン抵抗性改善・消化器症状軽減のため食後服用）' },
         { timestamp: '2026-01-15T10:00:00Z', name: '低用量エストロゲン・プロゲスチン配合薬（LEP）', notes: '毎日1錠（月経調整・アンドロゲン抑制・子宮内膜保護）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    low_back_pain: {
+      diseases: ['慢性腰痛症（腰部脊柱管狭窄症）'],
+      profile: { age: 62, gender: 'male', height: 170, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-03-17T07:00:00Z', category: 'symptoms', title: '腰痛・右足のしびれ', content: '数か月前から右足のしびれと腰痛が続いている。歩いていると500mほどで右足がしびれて痛くなり、少し休むと楽になる（間欠性跛行）。NRS 7/10。整形外科を受診。' },
+        { timestamp: '2026-03-24T10:00:00Z', category: 'consultation', title: 'MRI→脊柱管狭窄症確定診断', content: 'L4/5 で脊柱管が著明に狭窄。神経根の圧迫あり。「まず保存療法（薬・ブロック・リハビリ）で経過を見ましょう」。プレガバリン（リリカ）75mg 夕食後 開始。ロキソニン頓用。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'vitals', title: 'リリカ2週目', content: 'リリカ開始2週間。夜間の足のしびれが NRS 7→4 に改善。眠気あり（朝がつらい）。歩行距離: 700m まで伸びた（前回 500m）。' },
+        { timestamp: '2026-04-08T14:00:00Z', category: 'medication', title: '硬膜外ブロック1回目', content: 'ペインクリニックにて硬膜外神経ブロック（L4/5）。施術後30分で足のしびれが劇的に軽減。腰痛 NRS 6→2。「2〜3週おきに計3〜4回行いましょう」。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'vitals', title: 'ブロック後経過', content: '歩行距離: 1.2km まで改善（間欠性跛行の閾値が上がった）。腰痛 NRS 3/10。リハビリで体幹トレーニング開始（腹横筋・多裂筋）。' },
+        { timestamp: '2026-04-22T21:00:00Z', category: 'symptoms', title: '2回目ブロック後', content: '2回目の硬膜外ブロック後。腰痛 NRS 2/10。歩行距離 1.5km。「手術は今のところ不要ですが、排尿障害が出た場合はすぐに受診を」と医師。リハビリ継続。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, pain_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-24T08:00:00Z', name: 'プレガバリン（リリカ）', notes: '75mg 夕食後1錠（神経障害性疼痛・しびれ）' },
+        { timestamp: '2026-03-24T08:00:00Z', name: 'ロキソプロフェン（ロキソニン）', notes: '60mg 頓用（強い腰痛時）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    glaucoma: {
+      diseases: ['緑内障（正常眼圧緑内障）'],
+      profile: { age: 54, gender: 'female', height: 158, weight: 53 },
+      textEntries: [
+        { timestamp: '2026-03-10T10:00:00Z', category: 'consultation', title: '人間ドックで緑内障疑い', content: '人間ドック眼底写真で「視神経乳頭陥凹拡大の疑い」と指摘。眼圧は14mmHg（正常範囲）。眼科専門医を受診。ハンフリー視野検査→上半視野に弓状暗点。OCT: RNFL菲薄化あり。「正常眼圧緑内障です」と確定診断。' },
+        { timestamp: '2026-03-17T08:00:00Z', category: 'medication', title: 'ラタノプロスト点眼開始', content: 'ラタノプロスト（キサラタン）0.005%点眼 就寝前1回開始。「1日1回、毎晩必ず」と医師。目が充血したがアレルギーではないとのこと。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'vitals', title: '1か月後の眼圧検査', content: '眼圧: 右 14→9 mmHg（-5）、左 15→10 mmHg（-5）。大幅低下。ラタノプロストの効果を確認。視力: 1.0/0.8。点眼の副作用（まつ毛が少し長くなった・充血が続く）。' },
+        { timestamp: '2026-04-08T09:00:00Z', category: 'vitals', title: '点眼継続', content: 'アラームを22時にセットして点眼継続。健康日記に毎日チェックを記録。充血が1週間で改善してきた。' },
+        { timestamp: '2026-04-15T11:00:00Z', category: 'consultation', title: '視野検査・経過良好', content: 'ハンフリー視野検査（3か月後）: MD -2.1 dB（前回 -2.3 dB）。「軽微な変動の範囲内で進行はみられません」。6か月ごとのOCT・視野検査を継続予定。' },
+        { timestamp: '2026-04-22T22:00:00Z', category: 'medication', title: '点眼記録', content: '今月の点眼率 30/31日。1日だけ忘れた（家族の緊急入院日）。医師から「点眼継続が視野を守る最大の手段」と教わって、大切さを実感している。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-17T08:00:00Z', name: 'ラタノプロスト点眼液（キサラタン）', notes: '0.005% 就寝前1回点眼（右・左それぞれ1滴）' }
       ],
       sleepData: [], activityData: [], meals: []
     }

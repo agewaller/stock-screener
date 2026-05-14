@@ -1386,6 +1386,8 @@ ${recentText || '記録なし'}
       atrial_fibrillation: { ja: '心房細動 AFib 動悸 脈の乱れ DOAC 抗凝固薬 カテーテルアブレーション 循環器内科', en: 'atrial fibrillation AFib DOAC anticoagulation' },
       myasthenia: { ja: '重症筋無力症 眼瞼下垂 複視 嚥下障害 AChR抗体 ピリドスチグミン 神経内科', en: 'myasthenia gravis MG ptosis dysphagia AChR antibody' },
       pcos: { ja: '多嚢胞性卵巣症候群 PCOS 月経不順 多毛 インスリン抵抗性 メトホルミン 婦人科', en: 'polycystic ovary syndrome PCOS ovulation dysfunction' },
+      low_back_pain: { ja: '慢性腰痛 腰椎椎間板ヘルニア 脊柱管狭窄症 坐骨神経痛 リリカ 硬膜外ブロック 整形外科 ペインクリニック', en: 'chronic low back pain lumbar disc herniation spinal stenosis sciatica' },
+      glaucoma: { ja: '緑内障 正常眼圧緑内障 開放隅角緑内障 眼圧 視野障害 ラタノプロスト キサラタン 眼科', en: 'glaucoma open-angle glaucoma normal tension glaucoma IOP visual field' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1544,6 +1546,8 @@ ${recentText || '記録なし'}
       atrial_fibrillation: 'atrial fibrillation DOAC apixaban catheter ablation stroke prevention',
       myasthenia: 'myasthenia gravis eculizumab efgartigimod pyridostigmine thymectomy treatment',
       pcos: 'polycystic ovary syndrome metformin letrozole insulin resistance treatment fertility',
+      low_back_pain: 'chronic low back pain pregabalin duloxetine epidural steroid injection exercise therapy',
+      glaucoma: 'glaucoma latanoprost prostaglandin eye drop IOP reduction visual field normal tension',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1732,6 +1736,8 @@ ${titles}`;
       atrial_fibrillation: 'atrial fibrillation pulmonary vein isolation ablation DOAC stroke recurrence',
       myasthenia: 'myasthenia gravis eculizumab efgartigimod complement inhibitor FcRn thymectomy outcome',
       pcos: 'polycystic ovary syndrome PCOS metformin letrozole clomiphene insulin resistance long-term outcome',
+      low_back_pain: 'chronic low back pain spinal stenosis disc herniation pregabalin duloxetine exercise rehabilitation',
+      glaucoma: 'glaucoma normal tension prostaglandin latanoprost intraocular pressure visual field progression',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -3156,7 +3162,9 @@ ${responseText.substring(0, 3000)}`;
       sjogrens: '#シェーグレン症候群',
       atrial_fibrillation: '#心房細動',
       myasthenia: '#重症筋無力症',
-      pcos: '#多嚢胞性卵巣症候群PCOS'
+      pcos: '#多嚢胞性卵巣症候群PCOS',
+      low_back_pain: '#慢性腰痛脊柱管狭窄症',
+      glaucoma: '#緑内障眼圧管理'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
