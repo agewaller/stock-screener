@@ -1,0 +1,86 @@
+name: Oneshot - Restore account workers.dev subdomain
+
+# 緊急復旧 part 3:
+# Cloudflare アカウントの workers.dev サブドメイン (agewaller) が
+# 消失/無効化されたため、全 Worker URL が "Host not in allowlist" の
+# 403 を返している。Cloudflare API で再作成 (PUT /workers/subdomain)。
+#
+# 既に存在する場合は no-op。GUI から探しても見つからない時の最終手段。
+
+on:
+  push:
+    branches:
+      - claude/health-diary-spec-IjT9N
+    paths:
+      - ".github/workflows/oneshot-restore-workers-subdomain.yml"
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+      DESIRED_SUBDOMAIN: agewaller
+    steps:
+      - name: Verify token + permissions
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN missing"; exit 1
+          fi
+          echo "## Token verify" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Get current subdomain state
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## Current state (before)" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: PUT subdomain (create / restore)
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## PUT subdomain {name: $DESIRED_SUBDOMAIN}" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -X PUT \
+            -H "Authorization: Bearer $T" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"$DESIRED_SUBDOMAIN\"}" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Get state after
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## State after" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Probe Worker URLs
+        run: |
+          echo "## Probe" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Waiting 30s for propagation..."
+          sleep 30
+          for host in cares-ai-proxy.agewaller.workers.dev stock-screener.agewaller.workers.dev cares-relay.agewaller.workers.dev; do
+            code=$(curl -s -o /tmp/b.txt -w "%{http_code}" -m 10 "https://$host/" || echo "000")
+            body=$(head -c 100 /tmp/b.txt 2>/dev/null)
+            echo "$host: HTTP $code body='$body'" | tee -a $GITHUB_STEP_SUMMARY
+          done
+          echo '```' >> $GITHUB_STEP_SUMMARY
