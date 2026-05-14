@@ -3853,6 +3853,12 @@ ${bloodText || '記録なし'}
       results
     };
     const json = JSON.stringify(summary, null, 2);
+    // JSON.stringify(json) は JS 文字列リテラルを返すが " を含むので
+    // HTML 属性に直接入れると属性が早期終了してテンプレート末尾が
+    // 画面に漏れる。escapeHtml で &quot; に変換しておくと、ブラウザが
+    // 属性値として解釈する時にデコードされ JS engine には正しい
+    // 文字列リテラルとして渡る。
+    const jsonForOnclick = Components.escapeHtml(JSON.stringify(json));
 
     const rows = results.map(r => {
       if (r.fatal) {
@@ -3874,7 +3880,7 @@ ${bloodText || '記録なし'}
         <details style="margin-top:8px">
           <summary style="cursor:pointer;font-weight:600;color:#475569">詳細（運営者に共有）</summary>
           <pre style="margin-top:6px;padding:8px;background:#f8fafc;border-radius:6px;font-size:10px;white-space:pre-wrap;word-break:break-all;line-height:1.5">${Components.escapeHtml(json)}</pre>
-          <button onclick="(navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(json)}))?.then(()=>Components.showToast('診断情報をコピーしました','success'))"
+          <button onclick="(navigator.clipboard&&navigator.clipboard.writeText(${jsonForOnclick}))?.then(()=>Components.showToast('診断情報をコピーしました','success'))"
             style="margin-top:6px;padding:6px 12px;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
         </details>
       </div>`;
@@ -4396,6 +4402,9 @@ ${axisHint}
         'UA: ' + (navigator.userAgent || '')
       ].join('\n');
       const diagEscaped = Components.escapeHtml(diag);
+      // see コメント at line ~3856: JSON.stringify(diag) で作った JS
+      // 文字列リテラルを HTML 属性に入れる時は escapeHtml が必須。
+      const diagForOnclick = Components.escapeHtml(JSON.stringify(diag));
       if (resultEl) {
         resultEl.innerHTML = `
           <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
@@ -4410,7 +4419,7 @@ ${axisHint}
             <details style="font-size:11px;color:#7f1d1d;margin-top:6px">
               <summary style="cursor:pointer;font-weight:600">🔍 詳細（運営者への報告に使えます）</summary>
               <pre style="margin-top:6px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;white-space:pre-wrap;word-break:break-all;line-height:1.5">${diagEscaped}</pre>
-              <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(diag)}).then(()=>Components.showToast('診断情報をコピーしました。info@bluemarl.in までお送りください','success'))"
+              <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${diagForOnclick}).then(()=>Components.showToast('診断情報をコピーしました。info@bluemarl.in までお送りください','success'))"
                 style="margin-top:6px;padding:6px 12px;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
               ${isAdmin
                 ? `<div style="margin-top:10px;padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.7">
