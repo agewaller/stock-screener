@@ -1,0 +1,113 @@
+name: Oneshot - Diagnose workers.dev subdomain (commit results)
+
+# 診断結果をリポジトリにコミットして外部から読めるようにする。
+# (workflow run log は閲覧に GitHub 認証が必要なため)
+
+on:
+  push:
+    branches:
+      - claude/health-diary-spec-IjT9N
+    paths:
+      - ".github/workflows/oneshot-diagnose-subdomain.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/health-diary-spec-IjT9N
+
+      - name: Collect API responses
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          mkdir -p .diag
+          OUT=.diag/subdomain-state.md
+          {
+            echo "# workers.dev Subdomain Diagnostics"
+            echo ""
+            echo "Run: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            echo "## 1. Token verify"
+            echo '```json'
+            curl -s -H "Authorization: Bearer $T" \
+              https://api.cloudflare.com/client/v4/user/tokens/verify
+            echo ""
+            echo '```'
+            echo ""
+            echo "## 2. Account-level subdomain (GET)"
+            echo '```json'
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+            echo ""
+            echo '```'
+            echo ""
+            echo "## 3. Try PUT subdomain {name: agewaller}"
+            echo '```json'
+            curl -s -X PUT \
+              -H "Authorization: Bearer $T" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"agewaller"}' \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+            echo ""
+            echo '```'
+            echo ""
+            echo "## 4. Per-Worker cares-ai-proxy subdomain (GET)"
+            echo '```json'
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/cares-ai-proxy/subdomain"
+            echo ""
+            echo '```'
+            echo ""
+            echo "## 5. Try POST per-Worker subdomain {enabled: true}"
+            echo '```json'
+            curl -s -X POST \
+              -H "Authorization: Bearer $T" \
+              -H "Content-Type: application/json" \
+              -d '{"enabled":true,"previews_enabled":false}' \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/cares-ai-proxy/subdomain"
+            echo ""
+            echo '```'
+            echo ""
+            echo "## 6. List all Access apps (for context)"
+            echo '```json'
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps?per_page=200" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'success':d.get('success'),'count':len(d.get('result',[])), 'apps':[{'id':a.get('id','')[:8],'name':a.get('name'),'domain':a.get('domain'),'destinations':a.get('destinations',[]),'self_hosted_domains':a.get('self_hosted_domains',[])} for a in d.get('result',[])]}, indent=2, ensure_ascii=False))"
+            echo '```'
+            echo ""
+            echo "## 7. Probe from GitHub runner (different network than user's iPhone)"
+            echo '```'
+            for host in cares-ai-proxy.agewaller.workers.dev stock-screener.agewaller.workers.dev cares-relay.agewaller.workers.dev; do
+              code=$(curl -s -o /tmp/b.txt -w "%{http_code}" -m 8 "https://$host/" || echo "000")
+              body=$(head -c 80 /tmp/b.txt 2>/dev/null)
+              echo "$host: HTTP $code | $body"
+            done
+            echo '```'
+            echo ""
+            echo "## 8. List all Workers scripts (sanity check)"
+            echo '```json'
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'success':d.get('success'),'count':len(d.get('result',[])),'names':[s.get('id') for s in d.get('result',[])]}, indent=2, ensure_ascii=False))"
+            echo '```'
+          } > $OUT
+          echo "Wrote $OUT ($(wc -l < $OUT) lines)"
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .diag/
+          git diff --staged --quiet || git commit -m "diag: subdomain state $(date -u +%Y-%m-%dT%H:%M:%SZ) [skip ci]"
+          # Push with retry
+          for i in 1 2 3; do
+            git push origin claude/health-diary-spec-IjT9N && break || sleep 5
+          done
