@@ -559,12 +559,15 @@ ${avoidBlock}
     } else {
       let proxy = '';
       try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      if (!proxy) proxy = 'https://ai.cares.advisers.jp';
+      // Primary: cares-relay on workers.dev. ai.cares.advisers.jp は
+      // advisers.jp ゾーンが Cloudflare 外（GitHub Pages 用 DNS）に
+      // 居る間は wrangler の custom_domain: true が登録できず DNS
+      // 解決ゼロになるため、フォールバックとしてのみ残す。
+      if (!proxy) proxy = 'https://cares-relay.agewaller.workers.dev';
       const fallbackHosts = [
         proxy,
-        'https://ai.cares.advisers.jp',
         'https://cares-relay.agewaller.workers.dev',
-        'https://stock-screener.agewaller.workers.dev'
+        'https://ai.cares.advisers.jp'
       ];
       // Dedup while preserving order
       const seen = new Set();

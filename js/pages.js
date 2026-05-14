@@ -617,7 +617,7 @@ App.prototype.render_dashboard = function() {
         const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
         let currentProxy = '';
         try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = 'https://ai.cares.advisers.jp';
+        if (!currentProxy) currentProxy = 'https://cares-relay.agewaller.workers.dev';
         const safeProxy = Components.escapeHtml(currentProxy);
         const escapeHatches = isConnFail
           ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -2929,8 +2929,8 @@ App.prototype.render_admin = function() {
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Cloudflare Worker への接続先と、シークレットでない共通設定を管理します。APIキーは Worker 側の環境変数で保管します。</p>
       <div class="form-group" id="proxy-url-group">
         <label class="form-label">APIプロキシURL</label>
-        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://ai.cares.advisers.jp" autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Worker のホスト名。未設定の場合 ai.cares.advisers.jp が使われます。</span>
+        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://cares-relay.agewaller.workers.dev" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Worker のホスト名。未設定の場合 cares-relay.agewaller.workers.dev が使われます。</span>
       </div>
       <div style="margin-top:14px;padding:12px 14px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:var(--radius-sm);font-size:12px;color:#7f1d1d;line-height:1.7">
         🔒 <b>APIキーはこの画面からは設定できません。</b><br>

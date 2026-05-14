@@ -63,8 +63,9 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 
 - **デフォルト**: `claude-opus-4-6`（最強、課金OK）
 - 選択肢: Opus 4.6 / Sonnet 4.6 / Haiku 4.5 / GPT-4o / Gemini 2.5 Pro
-- Anthropic は Cloudflare Worker 経由（`anthropic_proxy_url` を localStorage に保存、未設定なら `https://ai.cares.advisers.jp`）
-- `ai.cares.advisers.jp` は cares-relay Worker のカスタムドメイン（`wrangler.relay.jsonc` の `routes` で `custom_domain: true` 登録）。`*.workers.dev` のアカウントレベル無効化を回避するため、必ずこの独自ドメインを使う。`cares-relay.agewaller.workers.dev` / `stock-screener.agewaller.workers.dev` への直接アクセスはフォールバックとしてのみ残存
+- Anthropic は Cloudflare Worker 経由（`anthropic_proxy_url` を localStorage に保存、未設定なら `https://cares-relay.agewaller.workers.dev`）
+- 経路: ブラウザ → `cares-relay`（service binding）→ `stock-screener` Worker。`stock-screener` は Cloudflare Access で保護されているのでブラウザから直叩きしない（403 にリダイレクトされ CORS が壊れる）
+- 当初は `ai.cares.advisers.jp` をカスタムドメインにしていたが、`advisers.jp` ゾーンが Cloudflare 外（GitHub Pages 用 DNS）にあり `custom_domain: true` の DNS / 証明書発行が成立せず、ユーザー全員が "Load failed" になった。今は workers.dev サブドメインを再有効化して `cares-relay.agewaller.workers.dev` を正規ホストとして使う。`ai.cares.advisers.jp` は将来 advisers.jp を Cloudflare に移管した時のためにフォールバックとしてのみ残存（`wrangler.relay.jsonc` の `routes` も同じ理由で残置 — バインドできなくても Worker コード自体はデプロイされる）
 - `callAnthropic` は MODEL_MAP で CONFIG id → API id を動的マッピング（ハードコード禁止、Anthropic は model id を定期的に rotate する）
 - Vision: `options.imageBase64` で自動的に image block 付きに切り替わる
 
