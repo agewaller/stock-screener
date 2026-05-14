@@ -68,6 +68,7 @@ Worker を変更した場合は `worker/*.js` を編集→push で
 - 当初は `ai.cares.advisers.jp` をカスタムドメインにしていたが、`advisers.jp` ゾーンが Cloudflare 外（GitHub Pages 用 DNS）にあり `custom_domain: true` の DNS / 証明書発行が成立せず、ユーザー全員が "Load failed" になった。今は workers.dev サブドメインを再有効化して `cares-relay.agewaller.workers.dev` を正規ホストとして使う。`ai.cares.advisers.jp` は将来 advisers.jp を Cloudflare に移管した時のためにフォールバックとしてのみ残存（`wrangler.relay.jsonc` の `routes` も同じ理由で残置 — バインドできなくても Worker コード自体はデプロイされる）
 - `callAnthropic` は MODEL_MAP で CONFIG id → API id を動的マッピング（ハードコード禁止、Anthropic は model id を定期的に rotate する）
 - Vision: `options.imageBase64` で自動的に image block 付きに切り替わる
+- **AI が止まった時の復旧手順**: `docs/runbook-AI接続が動かない時.md`（非エンジニア向け、Cloudflare ダッシュボード操作を含む）
 
 ## 絶対にやってはいけないこと
 
