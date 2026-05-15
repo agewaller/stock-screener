@@ -66,6 +66,14 @@ var FirebaseBackend = {
           this.handleSignedInUser(user);
         } else {
           this.userId = null;
+          // Reset per-session caches so a future sign-in re-attaches
+          // its own collection listeners. Without this, after sign-out
+          // the next sign-in's loadAllData() short-circuits on the
+          // stale promise and silently does not subscribe.
+          this._loadAllDataPromise = null;
+          this._loadAllDataUid = null;
+          this._initialSnapshotSeen = {};
+          this.cleanupListeners();
           // Only force login if not already authenticated via localStorage
           if (!store.get('isAuthenticated')) {
             store.update({ user: null, isAuthenticated: false });
@@ -272,6 +280,14 @@ var FirebaseBackend = {
   async signOut() {
     try {
       this.cleanupListeners();
+      // Reset all per-session state so a fresh sign-in (possibly as a
+      // different user) re-runs subscribeToCollections from scratch.
+      // Without these resets the loadAllData re-entry guard would
+      // short-circuit and the new user would see no Firestore data.
+      this._loadAllDataPromise = null;
+      this._loading = false;
+      this._initialSnapshotSeen = {};
+      this.userId = null;
       await this.auth.signOut();
       store.clearAll();
       Components.showToast('ログアウトしました', 'info');
@@ -651,7 +667,16 @@ var FirebaseBackend = {
     // trigger a second round of Firestore reads while the first is
     // still in flight. Returning the existing promise lets the caller
     // still await completion.
-    if (this._loadAllDataPromise) return this._loadAllDataPromise;
+    //
+    // The cached promise is KEYED BY UID so a different user signing
+    // in (e.g. user A signs out → user B signs in within the same tab,
+    // or anonymous → Google link) does not reuse user A's promise and
+    // miss subscribing to user B's collections.
+    if (this._loadAllDataPromise && this._loadAllDataUid === this.userId) {
+      return this._loadAllDataPromise;
+    }
+    this._loadAllDataUid = this.userId;
+    this._initialSnapshotSeen = {};
 
     // Guard against autosync listeners re-writing loaded data back to
     // Firestore. Without this, every store.set() below fires listeners in
