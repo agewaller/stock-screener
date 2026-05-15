@@ -166,6 +166,44 @@ var App = class App {
     ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
+    // Auto-refresh the timeline/records page when any collection updates.
+    // Without this hook, users who navigate to "記録" before the
+    // Firestore onSnapshot has fired see an empty list and have no way
+    // to trigger a re-render except by manually navigating away and
+    // back. This was the dominant "ログインしたら履歴が消えた" report.
+    let timelineTimer = null;
+    const scheduleTimelineRefresh = () => {
+      if (this.currentPage !== 'timeline') return;
+      if (timelineTimer) return;
+      timelineTimer = setTimeout(() => {
+        timelineTimer = null;
+        if (this.currentPage !== 'timeline') return;
+        try {
+          const content = document.getElementById('page-content');
+          if (!content) return;
+          const newHtml = this.render_timeline();
+          if (typeof morphdom !== 'undefined') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = newHtml;
+            morphdom(content, tmp, {
+              childrenOnly: true,
+              onBeforeElUpdated: (from, to) => {
+                if (from.tagName === 'INPUT' || from.tagName === 'TEXTAREA' || from.tagName === 'SELECT') {
+                  if (from === document.activeElement) return false;
+                }
+                return true;
+              }
+            });
+            if (typeof this.afterRender === 'function') this.afterRender('timeline');
+          } else {
+            this.navigate('timeline');
+          }
+        } catch (e) { console.warn('timeline refresh:', e); }
+      }, 200);
+    };
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory']
+      .forEach(key => store.on(key, scheduleTimelineRefresh));
+
     // Start the auto-sync scheduler so connected integrations
     // (Fitbit, Google Calendar) refresh automatically while the
     // app is open — set up once, update forever.

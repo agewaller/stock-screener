@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>健康日記 — データ診断</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; color: #1f2937; background: #f9fafb; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  p.lead { color: #6b7280; font-size: 13px; margin-bottom: 18px; line-height: 1.6; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f3f4f6; font-size: 13px; }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: #6b7280; }
+  .row .v { font-family: ui-monospace, SFMono-Regular, monospace; }
+  .row .v.ok { color: #16a34a; }
+  .row .v.warn { color: #d97706; }
+  .row .v.err { color: #dc2626; }
+  a.btn { display: inline-block; background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; margin-right: 8px; margin-bottom: 8px; }
+  a.btn.secondary { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+  button { background: #fff; color: #2563eb; border: 1px solid #2563eb; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  pre { background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 11px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .total { font-size: 22px; font-weight: 700; color: #2563eb; }
+  .muted { color: #9ca3af; font-size: 11px; }
+  .err-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+  .ok-banner { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>🩺 健康日記 — データ診断</h1>
+<p class="lead">あなたのアカウントの記録が、クラウド (Firestore) と端末 (localStorage) のそれぞれに何件保存されているかを確認します。<br>「履歴が出てこない」「他の端末で記録が見えない」といった問題の原因特定にご利用ください。</p>
+
+<div id="banner"></div>
+
+<div class="card">
+  <div style="margin-bottom:8px;font-weight:600;font-size:14px">サインイン状態</div>
+  <div id="auth-info">確認中…</div>
+  <div style="margin-top:10px" id="auth-actions"></div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div style="font-weight:600;font-size:14px">クラウド (Firestore) の記録件数</div>
+    <button id="btn-refresh">🔄 再読込</button>
+  </div>
+  <div id="cloud-info">サインインすると読み込みます…</div>
+</div>
+
+<div class="card">
+  <div style="font-weight:600;font-size:14px;margin-bottom:8px">この端末 (localStorage) の記録件数</div>
+  <div id="local-info"></div>
+</div>
+
+<div class="card">
+  <div style="font-weight:600;font-size:14px;margin-bottom:8px">問題切り分け</div>
+  <div id="diagnosis">サインイン後に判定します。</div>
+</div>
+
+<div class="card">
+  <div style="font-weight:600;font-size:14px;margin-bottom:8px">技術情報</div>
+  <pre id="tech-info"></pre>
+</div>
+
+<p class="muted">このページは健康日記の補助診断ツールです。データの読み取りのみ行い、何も変更しません。<br>本体: <a href="./">cares.advisers.jp</a></p>
+
+<!-- Firebase SDK + 本体と同じ CONFIG を使う -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/config.js"></script>
+
+<script>
+// Firebase config は本体の js/config.js から取得。
+// 本体と同じ care-14c31 プロジェクトのセッションを共有するので、
+// cares.advisers.jp でサインインしていればそのまま続行できる。
+var fbConfig = (typeof CONFIG !== 'undefined' && CONFIG.FIREBASE) || null;
+if (!fbConfig) {
+  document.body.innerHTML = '<div style="padding:24px;font:14px/1.7 sans-serif;color:#991b1b">設定ファイル js/config.js が読み込めません。<br>このページは健康日記本体と同じディレクトリにある必要があります。</div>';
+  throw new Error('CONFIG.FIREBASE not available');
+}
+
+firebase.initializeApp(fbConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch(e) {}
+
+var COLLECTIONS = [
+  { key: 'textEntries',     label: 'テキスト記録', localKey: 'textEntries' },
+  { key: 'symptoms',        label: '症状',        localKey: 'symptoms' },
+  { key: 'vitals',          label: 'バイタル',    localKey: 'vitals' },
+  { key: 'sleep',           label: '睡眠',        localKey: 'sleepData' },
+  { key: 'activity',        label: '活動',        localKey: 'activityData' },
+  { key: 'medications',     label: '薬',          localKey: 'medications' },
+  { key: 'bloodTests',      label: '血液検査',    localKey: 'bloodTests' },
+  { key: 'meals',           label: '食事',        localKey: 'meals' },
+  { key: 'photos',          label: '写真',        localKey: 'photos' },
+  { key: 'plaudAnalyses',   label: '禅トラック',  localKey: 'plaudAnalyses' },
+  { key: 'conversations',   label: 'AIチャット',  localKey: 'conversationHistory' },
+  { key: 'analyses',        label: '分析履歴',    localKey: null }
+];
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+}); }
+
+function setBanner(html, type) {
+  $('banner').innerHTML = html ? '<div class="' + (type === 'ok' ? 'ok-banner' : 'err-banner') + '">' + html + '</div>' : '';
+}
+
+function renderLocal() {
+  var rows = COLLECTIONS.map(function(c) {
+    if (!c.localKey) return '';
+    var raw = '';
+    try { raw = localStorage.getItem('cc_' + c.localKey) || localStorage.getItem(c.localKey) || ''; } catch(e) {}
+    var arr = [];
+    try { arr = raw ? JSON.parse(raw) : []; } catch(e) {}
+    if (!Array.isArray(arr)) arr = [];
+    var cls = arr.length > 0 ? 'ok' : '';
+    return '<div class="row"><span class="k">' + esc(c.label) + '</span><span class="v ' + cls + '">' + arr.length + ' 件</span></div>';
+  }).filter(Boolean).join('');
+  $('local-info').innerHTML = rows;
+}
+
+async function loadCloud(uid) {
+  $('cloud-info').innerHTML = '<div class="muted">読み込み中…（最大 30 秒）</div>';
+  var results = [];
+  var totalErrors = 0;
+  for (var i = 0; i < COLLECTIONS.length; i++) {
+    var c = COLLECTIONS[i];
+    try {
+      var snap = await db.collection('users').doc(uid).collection(c.key).limit(1000).get();
+      var latest = 0;
+      snap.forEach(function(d) {
+        var t = d.data() || {};
+        var ms = (t.createdAt && t.createdAt.toMillis && t.createdAt.toMillis()) ||
+                 (typeof t.timestamp === 'string' ? Date.parse(t.timestamp) : 0) || 0;
+        if (ms > latest) latest = ms;
+      });
+      results.push(Object.assign({}, c, { count: snap.size, latest: latest, err: null }));
+    } catch (e) {
+      totalErrors++;
+      results.push(Object.assign({}, c, { count: -1, err: e.code + ': ' + e.message }));
+    }
+  }
+  var totalRecords = results.reduce(function(s, r) { return s + (r.count > 0 ? r.count : 0); }, 0);
+  var fmt = function(ms) {
+    if (!ms) return '—';
+    var d = new Date(ms);
+    return d.getFullYear() + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  };
+  var html = '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px"><span class="total">' + totalRecords.toLocaleString() + '</span><span class="muted">件 / Firestore に保存済み</span></div>';
+  html += results.map(function(r) {
+    var v, cls;
+    if (r.count < 0) { v = '取得エラー'; cls = 'err'; }
+    else if (r.count === 0) { v = '0 件'; cls = ''; }
+    else { v = r.count + ' 件 (最終: ' + fmt(r.latest) + ')'; cls = 'ok'; }
+    return '<div class="row"><span class="k">' + esc(r.label) + '</span><span class="v ' + cls + '">' + esc(v) + '</span></div>';
+  }).join('');
+  if (totalErrors > 0) {
+    html += '<div class="muted" style="margin-top:10px">※ 一部コレクションが取得エラー。詳細は「技術情報」を参照。</div>';
+  }
+  $('cloud-info').innerHTML = html;
+
+  // 診断
+  var localCounts = {};
+  COLLECTIONS.forEach(function(c) {
+    if (!c.localKey) return;
+    var raw = '';
+    try { raw = localStorage.getItem('cc_' + c.localKey) || localStorage.getItem(c.localKey) || ''; } catch(e) {}
+    var arr = [];
+    try { arr = raw ? JSON.parse(raw) : []; } catch(e) {}
+    localCounts[c.key] = Array.isArray(arr) ? arr.length : 0;
+  });
+  var totalLocal = Object.values(localCounts).reduce(function(s, n) { return s + n; }, 0);
+
+  var diag = '';
+  if (totalRecords === 0 && totalLocal === 0) {
+    diag = '<div style="color:#6b7280;font-size:13px">クラウド・端末ともに記録がありません。新規ユーザーか、未だ記録を作っていない状態です。</div>';
+  } else if (totalRecords === 0 && totalLocal > 0) {
+    diag = '<div style="color:#d97706;font-size:13px"><strong>⚠️ 端末には ' + totalLocal + ' 件あるが、クラウドには 0 件。</strong><br>過去の記録が端末のみに保存され、クラウドに同期されていない可能性があります。端末を変える・キャッシュを消すとデータが失われます。</div>';
+  } else if (totalRecords > 0 && totalLocal === 0) {
+    diag = '<div style="color:#d97706;font-size:13px"><strong>⚠️ クラウドに ' + totalRecords + ' 件あるが、端末は 0 件。</strong><br>ログイン後に同期が完了する前にこのページを開いた可能性。本体 (cares.advisers.jp) に戻って数秒待ってからリロードしてください。</div>';
+  } else if (totalRecords > 0 && totalLocal > 0) {
+    diag = '<div style="color:#16a34a;font-size:13px"><strong>✅ クラウド: ' + totalRecords + ' 件 / 端末: ' + totalLocal + ' 件</strong><br>データはクラウドに保存されています。本体で「記録」タブが空に見える場合は、ページをリロードしてみてください。</div>';
+  }
+  if (totalErrors > 0) {
+    diag += '<div style="color:#dc2626;font-size:12px;margin-top:8px">⚠️ Firestore 読み取りで ' + totalErrors + ' 件のエラー。ルールが正しくないか、ネットワークの問題の可能性。</div>';
+  }
+  $('diagnosis').innerHTML = diag;
+
+  $('tech-info').textContent = JSON.stringify({
+    uid: uid,
+    email: (auth.currentUser && auth.currentUser.email) || '',
+    project: fbConfig.projectId,
+    cloudTotal: totalRecords,
+    localTotal: totalLocal,
+    errors: results.filter(function(r) { return r.err; }).map(function(r) { return r.key + ': ' + r.err; }),
+    cloudPerCollection: results.reduce(function(o, r) { o[r.key] = r.count; return o; }, {}),
+    localPerCollection: localCounts,
+    timestamp: new Date().toISOString()
+  }, null, 2);
+}
+
+auth.onAuthStateChanged(async function(user) {
+  if (user && !user.isAnonymous) {
+    $('auth-info').innerHTML =
+      '<div class="row"><span class="k">メール</span><span class="v ok">' + esc(user.email || '(なし)') + '</span></div>' +
+      '<div class="row"><span class="k">表示名</span><span class="v">' + esc(user.displayName || '(なし)') + '</span></div>' +
+      '<div class="row"><span class="k">UID</span><span class="v muted">' + esc(user.uid) + '</span></div>';
+    $('auth-actions').innerHTML = '<a class="btn secondary" href="./">本体へ戻る</a>';
+    setBanner('サインインしています: ' + esc(user.email || user.uid), 'ok');
+    try { await loadCloud(user.uid); } catch(e) {
+      $('cloud-info').innerHTML = '<div class="err-banner">読み込みエラー: ' + esc(e.message) + '</div>';
+    }
+  } else {
+    // 匿名 / 未サインイン — 本体で Google ログインしてもらう
+    var hint = user && user.isAnonymous
+      ? '匿名 (ゲスト) セッションです。'
+      : 'サインインしていません。';
+    $('auth-info').innerHTML = '<div class="muted">' + hint + '<br>履歴を確認するには本体でサインインしてください。</div>';
+    $('auth-actions').innerHTML = '<a class="btn" href="./">本体でサインインする</a>';
+    $('cloud-info').innerHTML = '<div class="muted">本体 (cares.advisers.jp) で Google サインインしたあと、このページに戻ってきてください。同じセッションが共有されます。</div>';
+    $('diagnosis').innerHTML = '<div class="muted">サインイン後に判定します。</div>';
+    $('tech-info').textContent = JSON.stringify({ signedIn: false, project: fbConfig.projectId, timestamp: new Date().toISOString() }, null, 2);
+  }
+  renderLocal();
+});
+
+$('btn-refresh').onclick = function() {
+  if (auth.currentUser && !auth.currentUser.isAnonymous) {
+    loadCloud(auth.currentUser.uid);
+  } else {
+    setBanner('まず本体でサインインしてください');
+  }
+};
+
+renderLocal();
+</script>
+</body>
+</html>
