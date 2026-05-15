@@ -1,6 +1,7 @@
 /**
  * Cloudflare Pages Functions — Anthropic proxy relay
  *
+ * Deployed by .github/workflows/oneshot-deploy-pages-proxy.yml on push.
  * 役割: cares-ai-proxy-pages.pages.dev で受けたリクエストを、
  * service binding (env.PROXY) 経由で stock-screener Worker に転送する。
  *
