@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="100%" stop-color="#ffe4e6"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#e11d48" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="52" font-weight="900" fill="#4c0519">がんサバイバー</text>
+    <text x="0" y="155" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="32" font-weight="600" fill="#be123c">がん治療後の体調管理・サバイバーシップ</text>
+    <text x="0" y="210" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">後遺症・CRF・再発不安・記録の完全ガイド</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="520" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">患者数（5年生存）</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e1b4b">日本 300 万人 / 世界 5,350 万人</text>
+    <rect x="540" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="560" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">CRF 有病率</text>
+    <text x="560" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e1b4b">60〜90%（がん関連疲労）</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e1b4b">📝  完全無料  ・  広告なし</text>
+  </g>
+</svg>
