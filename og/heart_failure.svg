@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef2f2"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#b91c1c" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="52" font-weight="900" fill="#450a0a">心不全（Heart Failure）</text>
+    <text x="0" y="155" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="600" fill="#b91c1c">利尿薬・ACE阻害薬・運動療法の完全ガイド</text>
+  </g>
+  <g transform="translate(80,360)">
+    <rect x="0" y="0" width="640" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">患者数</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="21" font-weight="700" fill="#1e1b4b">日本 約120万人 / 世界 6,400万人</text>
+    <rect x="660" y="0" width="260" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="680" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">分類</text>
+    <text x="680" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="21" font-weight="700" fill="#1e1b4b">ICD-11  BD10</text>
+  </g>
+  <g transform="translate(80,500)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e1b4b">📝  完全無料  ・  広告なし</text>
+  </g>
+</svg>
