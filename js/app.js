@@ -329,6 +329,7 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      try { this.maybeShowNotRecordedTodayNudge(); } catch (_) {}
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -4156,6 +4157,42 @@ ${bloodText || '記録なし'}
       </div>
     `;
     host.insertBefore(card.firstElementChild, host.firstElementChild);
+  }
+
+  // Show a subtle reminder banner when the user has prior records but
+  // hasn't logged anything yet today. Shown once per calendar day.
+  // Dismissed by clicking the input area (auto-removed on first submit).
+  maybeShowNotRecordedTodayNudge() {
+    const entries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const totalRecords = entries.length + symptoms.length;
+    // Need at least 2 prior records before showing the nudge
+    if (totalRecords < 2) return;
+    if (document.getElementById('not-recorded-today-nudge')) return;
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dismissedKey = 'nudge_dismissed_' + todayJst;
+    try { if (localStorage.getItem(dismissedKey)) return; } catch (_) {}
+    // Check if there's an entry today
+    const hasEntryToday = entries.some(e => {
+      try { return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst; } catch (_) { return false; }
+    });
+    if (hasEntryToday) return;
+    const host = document.getElementById('page-content');
+    if (!host) return;
+    const el = document.createElement('div');
+    el.id = 'not-recorded-today-nudge';
+    el.innerHTML = `<div style="margin-bottom:12px;padding:10px 16px;background:#fef9c3;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="font-size:12px;color:#854d0e;line-height:1.5">
+        📝 <strong>今日はまだ記録がありません。</strong> 体調を一言でも残しておきましょう。
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="document.getElementById('dash-quick-input')&&(document.getElementById('dash-quick-input').focus());document.getElementById('not-recorded-today-nudge').remove()"
+          style="padding:6px 12px;background:#eab308;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">記録する ↑</button>
+        <button onclick="try{localStorage.setItem('${dismissedKey}','1')}catch(_){}document.getElementById('not-recorded-today-nudge').remove()"
+          style="padding:6px 8px;background:transparent;color:#a16207;border:none;font-size:10px;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+    host.insertBefore(el.firstElementChild, host.firstElementChild);
   }
 
   // Update the "選択疾患の規模" badge when the user ticks disease
