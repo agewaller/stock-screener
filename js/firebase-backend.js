@@ -967,12 +967,63 @@ var FirebaseBackend = {
     });
   },
 
-  // ── Real-time cross-device sync via onSnapshot ──
-  // Keeps health data synchronized across all devices in real time.
-  // Any write on Device A propagates to Device B within seconds via
-  // Firestore's onSnapshot listeners. Replaces the one-shot .get()
-  // reads that only ran at login (causing the "data not visible on
-  // other devices" bug).
+  // Best-available timestamp of a health doc, in ms. Tries the common
+  // fields in priority order so docs written by different code paths
+  // (saveHealthEntry / Plaud / CSV import) all sort correctly.
+  _tsOf(e) {
+    var t = e && (e.timestamp || e.createdAt || e.date || e.recordedAt);
+    if (!t) return 0;
+    if (typeof t === 'object' && typeof t.toMillis === 'function') return t.toMillis();
+    if (t instanceof Date) return t.getTime();
+    if (typeof t === 'string') { var p = Date.parse(t); return isNaN(p) ? 0 : p; }
+    return Number(t) || 0;
+  },
+
+  // Fetch EVERY document in a collection via document-id pagination.
+  //
+  // Ordering by documentId() (rather than createdAt) is deliberate:
+  // every document has an id, so — unlike .orderBy('createdAt') —
+  // nothing is silently excluded when a field is missing, and it gives
+  // a stable cursor for startAfter(). This is what makes the user's
+  // full history visible again instead of an arbitrary .limit(500)
+  // window (the cause of "過去の記録が見えない").
+  async _fetchAllDocs(collectionRef, pageSize) {
+    pageSize = pageSize || 1000;
+    var all = [];
+    var lastSnap = null;
+    var byId = firebase.firestore.FieldPath.documentId();
+    // Hard guard: stop after 100 pages (1e5 docs) so a pathological
+    // account can never spin forever / run up an unbounded read bill.
+    for (var page = 0; page < 100; page++) {
+      var q = collectionRef.orderBy(byId).limit(pageSize);
+      if (lastSnap) q = q.startAfter(lastSnap);
+      var snap = await q.get();
+      if (snap.empty) break;
+      snap.forEach(function(d) {
+        all.push(Object.assign({ id: d.id, _synced: true }, d.data()));
+      });
+      if (snap.size < pageSize) break;
+      lastSnap = snap.docs[snap.docs.length - 1];
+    }
+    return all;
+  },
+
+  // ── Cross-device sync ──
+  // Two-part strategy per collection:
+  //   1. One-time FULL paginated history load (no .limit cap, no
+  //      orderBy field-exclusion) so the user always sees every past
+  //      record.
+  //   2. A lightweight realtime listener (createdAt desc, small limit)
+  //      that MERGES new/changed docs into the loaded history by id,
+  //      keeping live cross-device sync without ever truncating the
+  //      history. New docs always carry createdAt (saveHealthEntry
+  //      stamps serverTimestamp), so the listener never misses a live
+  //      write; old field-less docs are already covered by step 1.
+  //
+  // Trade-off: a record deleted on another device that is OUTSIDE the
+  // realtime window is not pruned until the next full reload. Health-
+  // diary deletions are rare and "show all my history" is the far more
+  // important guarantee here, so this is an accepted compromise.
   subscribeToCollections() {
     if (!this.userId) return;
     if (this._collectionUnsubs) {
@@ -992,47 +1043,68 @@ var FirebaseBackend = {
       conversationHistory: 'conversations'
     };
 
+    // Merge `incoming` into the current store array for `storeKey` by
+    // id (upsert), re-sort ascending by timestamp (newest last, the
+    // addHealthData convention), and write back under the _loading
+    // guard so autosync listeners don't echo it back to Firestore.
+    var mergeIntoStore = function(storeKey, incoming) {
+      var prev = self._loading;
+      self._loading = true;
+      try {
+        var map = {};
+        var order = [];
+        var cur = store.get(storeKey);
+        if (Array.isArray(cur)) {
+          cur.forEach(function(d) {
+            if (!d) return;
+            var k = d.id || ('_x' + order.length);
+            if (!(k in map)) order.push(k);
+            map[k] = d;
+          });
+        }
+        incoming.forEach(function(d) {
+          if (!d) return;
+          var k = d.id || ('_x' + order.length);
+          if (!(k in map)) order.push(k);
+          map[k] = d;
+        });
+        var merged = order.map(function(k) { return map[k]; });
+        merged.sort(function(a, b) { return self._tsOf(a) - self._tsOf(b); });
+        store.set(storeKey, merged);
+      } finally {
+        self._loading = prev;
+      }
+    };
+
     Object.keys(collections).forEach(function(storeKey) {
       var fbColl = collections[storeKey];
-      // NOTE: We deliberately do NOT use .orderBy('createdAt', 'desc')
-      // here. Firestore silently EXCLUDES documents missing the field
-      // used in orderBy. Some older entries (written before
-      // saveHealthEntry stamped serverTimestamp() on every doc, or
-      // hand-imported via Plaud / CSV) lack createdAt — they would
-      // disappear from the user's history even though they exist in
-      // Firestore. We fetch up to 500 docs and sort client-side using
-      // any available timestamp field (timestamp / createdAt / date).
-      var unsub = self.userCollection(fbColl)
-        .limit(500)
+      var coll = self.userCollection(fbColl);
+
+      // 1) Full history (paginated, no exclusion, no cap).
+      self._fetchAllDocs(coll).then(function(all) {
+        mergeIntoStore(storeKey, all);
+      }).catch(function(err) {
+        console.warn('[fullLoad]', fbColl, err.code || '', err.message);
+      });
+
+      // 2) Realtime listener for ongoing cross-device updates. Small
+      //    window — it only needs to catch fresh writes; the bulk is
+      //    already loaded by step 1.
+      var unsub = coll
+        .orderBy('createdAt', 'desc')
+        .limit(50)
         .onSnapshot(function(snap) {
-          var prev = self._loading;
-          self._loading = true;
-          try {
-            var data = [];
-            snap.forEach(function(d) {
-              data.push(Object.assign({ id: d.id, _synced: true }, d.data()));
-            });
-            // Sort ascending by best-available timestamp so newest is last
-            // (matches the addHealthData order convention used by store.js).
-            var tsOf = function(e) {
-              var t = e.timestamp || e.createdAt || e.date || e.recordedAt;
-              if (!t) return 0;
-              if (typeof t === 'object' && typeof t.toMillis === 'function') return t.toMillis();
-              if (t instanceof Date) return t.getTime();
-              if (typeof t === 'string') { var p = Date.parse(t); return isNaN(p) ? 0 : p; }
-              return Number(t) || 0;
-            };
-            data.sort(function(a, b) { return tsOf(a) - tsOf(b); });
-            store.set(storeKey, data);
-          } finally {
-            self._loading = prev;
-          }
+          var incoming = [];
+          snap.forEach(function(d) {
+            incoming.push(Object.assign({ id: d.id, _synced: true }, d.data()));
+          });
+          mergeIntoStore(storeKey, incoming);
         }, function(err) {
           console.warn('[onSnapshot]', fbColl, err.code || '', err.message);
         });
       self._collectionUnsubs.push(unsub);
     });
-    console.log('[Firebase] Real-time collection listeners active (8 collections, no orderBy)');
+    console.log('[Firebase] Full history loaded + realtime listeners active (8 collections)');
   },
 
   subscribeToSettings() {

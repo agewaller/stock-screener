@@ -450,10 +450,12 @@ var App = class App {
     for (const [fbKey, storeKey, label] of subs) {
       let cloudCount = 0, oldest = null, newest = null, errMsg = '';
       try {
-        const snap = await FirebaseBackend.userCollection(fbKey).limit(1000).get();
-        cloudCount = snap.size;
-        snap.forEach(d => {
-          const data = d.data() || {};
+        // Full paginated count (no .limit cap) so the diagnosis reflects
+        // the TRUE number of records in Firestore — otherwise a heavy
+        // user would see a misleading ceiling here too.
+        const docs = await FirebaseBackend._fetchAllDocs(FirebaseBackend.userCollection(fbKey));
+        cloudCount = docs.length;
+        docs.forEach(data => {
           const t = data.timestamp || data.createdAt || data.date || data.recordedAt;
           let ms = 0;
           if (t && typeof t === 'object' && typeof t.toMillis === 'function') ms = t.toMillis();
