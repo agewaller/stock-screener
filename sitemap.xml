@@ -13,7 +13,7 @@
   <!-- Main landing -->
   <url>
     <loc>https://cares.advisers.jp/</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/"/>
@@ -24,398 +24,398 @@
   <!-- Disease-specific landing pages (SEO long-tail coverage) -->
   <url>
     <loc>https://cares.advisers.jp/me-cfs.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/long-covid.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/fibromyalgia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/pots.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/mcas.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/eds.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ibs.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/hashimoto.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/depression.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/insomnia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/bipolar.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/adhd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/migraine.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ptsd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ra.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/sle.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/asd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/crohns.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/gad.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/sjogrens.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ocd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/epilepsy.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/burnout.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/parkinsons.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ms.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/chronic_pain.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/panic.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/endometriosis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/diabetes.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/atopy.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/asthma.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ckd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/heart_failure.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/gout.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://cares.advisers.jp/liver_disease.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/cancer_fatigue.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/copd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/thyroid_cancer.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/sleep_apnea.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/sad.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/anorexia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/schizophrenia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/alzheimers.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/osteoporosis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/menopause.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/hypertension.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/hyperlipidemia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/anemia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/allergic_rhinitis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/psoriasis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/chronic_urticaria.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/pms_pmdd.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/overactive_bladder.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/tinnitus.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/vertigo.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/dry_eye.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/chronic_prostatitis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ulcerative_colitis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/ankylosing_spondylitis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/hyperthyroidism.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/narcolepsy.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/osteoarthritis.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/sjogrens.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/atrial_fibrillation.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/myasthenia.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/pcos.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -423,13 +423,13 @@
   <!-- Comparison + About -->
   <url>
     <loc>https://cares.advisers.jp/compare.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/about.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -437,19 +437,19 @@
   <!-- Long-tail FAQ pages -->
   <url>
     <loc>https://cares.advisers.jp/faq/pem.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/faq/brain-fog.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/faq/ldn.html</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -457,13 +457,13 @@
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://cares.advisers.jp/.well-known/security.txt</loc>
-    <lastmod>2026-05-11</lastmod>
+    <lastmod>2026-05-16</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
