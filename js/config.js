@@ -150,7 +150,8 @@ var CONFIG = {
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
         { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
         { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' },
-        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' }
+        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' },
+        { id: 'stroke', name: '脳卒中・脳梗塞', icd: 'I64' }
       ]
     },
     {
