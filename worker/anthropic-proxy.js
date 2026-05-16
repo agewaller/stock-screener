@@ -1,17 +1,28 @@
 /**
- * Cloudflare Worker — Anthropic Secure Proxy
+ * Cloudflare Worker — Secure AI Proxy
  *
- * ブラウザ → Worker → Anthropic API の経路で中継。
+ * ブラウザ → (cares-relay) → この Worker → Anthropic / OpenAI / Google。
  *
- * セキュリティ:
+ * セキュリティ設計（データ主権・鍵漏洩ゼロ）:
  *   1. CORS Origin を cares.advisers.jp のみに制限
- *   2. env.ANTHROPIC_API_KEY をゲスト用フォールバックとして使用
- *   3. クライアントが x-api-key を持っていればそちらを優先
+ *   2. プロバイダ鍵はサーバ側のみ（KV `admin:key:<provider>` → env 秘密）。
+ *      ブラウザから来る x-api-key は完全に無視する（鍵はブラウザに出ない）
+ *   3. 管理エンドポイントは「Firebase ID トークン検証(email==owner)」
+ *      または break-glass の x-admin-token のいずれかで保護
+ *
+ * ルート:
+ *   POST /v1/messages       Anthropic Messages（既存。ストリーム対応）
+ *   POST /v1/ai             汎用（provider: openai|google）→ {text}
+ *   POST /admin/keys        鍵保存（{keys:{anthropic,openai,google}} / {clear:true}）
+ *   GET  /admin/key-status  設定状況のみ返す（鍵値は絶対に返さない）
  *
  * デプロイ:
  *   git push → deploy-worker.yml → Cloudflare Workers 自動デプロイ
  *   シークレット: wrangler secret put ANTHROPIC_API_KEY --name stock-screener
+ *               wrangler secret put ADMIN_WRITE_TOKEN --name stock-screener
  *   env: ALLOWED_ORIGINS (カンマ区切り; 省略時 https://cares.advisers.jp)
+ *        FIREBASE_PROJECT_ID (Firebase ID トークン検証用)
+ *   KV : RESEARCH_KV（research context と admin:key:* を共用）
  */
 
 // ────────────────────────────────────────────────
@@ -33,11 +44,104 @@ function corsOrigin(request, env) {
 function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, anthropic-version, Authorization, x-admin-token',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
+}
+
+const OWNER_EMAIL = 'agewaller@gmail.com';
+
+// ────────────────────────────────────────────────
+// Server-side provider key resolution.
+// Order: KV `admin:key:<provider>` (set via /admin/keys) → env secret.
+// The browser-supplied x-api-key is NEVER consulted.
+// ────────────────────────────────────────────────
+async function resolveProviderKey(env, provider) {
+  const envName = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', google: 'GOOGLE_API_KEY' }[provider];
+  try {
+    if (env.RESEARCH_KV) {
+      const v = await env.RESEARCH_KV.get('admin:key:' + provider);
+      if (v) return v;
+    }
+  } catch (_) { /* KV miss is non-fatal */ }
+  return (envName && env[envName]) || null;
+}
+
+// ────────────────────────────────────────────────
+// Admin authentication for /admin/* endpoints.
+// Primary: Firebase ID token (Authorization: Bearer) verified against
+// Google's public keys, email must equal the owner.
+// Break-glass: x-admin-token === env.ADMIN_WRITE_TOKEN, so the owner is
+// never locked out even if Firebase auth is unavailable.
+// ────────────────────────────────────────────────
+function b64urlToBytes(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function b64urlToString(s) {
+  return new TextDecoder().decode(b64urlToBytes(s));
+}
+
+async function verifyFirebaseIdToken(token, env) {
+  const projectId = env.FIREBASE_PROJECT_ID;
+  if (!token || !projectId) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  let header, payload;
+  try {
+    header = JSON.parse(b64urlToString(parts[0]));
+    payload = JSON.parse(b64urlToString(parts[1]));
+  } catch (_) { return null; }
+  if (header.alg !== 'RS256' || !header.kid) return null;
+
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.exp && payload.exp < now) return null;
+  if (payload.aud !== projectId) return null;
+  if (payload.iss !== 'https://securetoken.google.com/' + projectId) return null;
+
+  let jwks;
+  try {
+    const r = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com');
+    jwks = await r.json();
+  } catch (_) { return null; }
+  const jwk = jwks && Array.isArray(jwks.keys) && jwks.keys.find(k => k.kid === header.kid);
+  if (!jwk) return null;
+
+  try {
+    const key = await crypto.subtle.importKey(
+      'jwk', jwk,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['verify']
+    );
+    const data = new TextEncoder().encode(parts[0] + '.' + parts[1]);
+    const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64urlToBytes(parts[2]), data);
+    if (!ok) return null;
+  } catch (_) { return null; }
+
+  return payload;
+}
+
+async function isAdminRequest(request, env) {
+  // Break-glass token path.
+  const tok = request.headers.get('x-admin-token');
+  if (tok && env.ADMIN_WRITE_TOKEN && tok === env.ADMIN_WRITE_TOKEN) return true;
+  // Firebase ID token path.
+  const auth = request.headers.get('Authorization') || '';
+  const m = /^Bearer\s+(.+)$/.exec(auth);
+  if (m) {
+    const payload = await verifyFirebaseIdToken(m[1], env);
+    if (payload && payload.email_verified !== false
+        && String(payload.email || '').trim().toLowerCase() === OWNER_EMAIL) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function json(data, status, origin) {
@@ -201,20 +305,68 @@ async function callAnthropic(body, apiKey, timeoutMs = 30000) {
 }
 
 // ────────────────────────────────────────────────
+// Generic (OpenAI / Google) call → normalized { text }
+// ────────────────────────────────────────────────
+async function callGenericProvider(env, b) {
+  const provider = b.provider === 'openai' ? 'openai' : 'google';
+  const key = await resolveProviderKey(env, provider);
+  if (!key) return { status: 401, error: provider + ' key not configured' };
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 30000);
+  try {
+    if (provider === 'openai') {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        body: JSON.stringify({
+          model: b.model || 'gpt-4o',
+          messages: [
+            { role: 'system', content: b.system || 'You are a health diary companion.' },
+            { role: 'user', content: String(b.prompt || '') }
+          ],
+          max_tokens: b.maxTokens || 4096,
+          temperature: typeof b.temperature === 'number' ? b.temperature : 0.3
+        }),
+        signal: controller.signal
+      });
+      if (!res.ok) return { status: res.status, error: (await res.text().catch(() => '')).slice(0, 300) };
+      const d = await res.json();
+      return { status: 200, text: d.choices?.[0]?.message?.content || '' };
+    }
+    const model = b.model && /^gemini-/.test(b.model) ? b.model : 'gemini-2.5-pro';
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'
+      + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: String(b.prompt || '') }] }],
+        systemInstruction: { parts: [{ text: b.system || 'You are a health diary companion.' }] },
+        generationConfig: { temperature: typeof b.temperature === 'number' ? b.temperature : 0.3, maxOutputTokens: b.maxTokens || 4096 }
+      }),
+      signal: controller.signal
+    });
+    if (!res.ok) return { status: res.status, error: (await res.text().catch(() => '')).slice(0, 300) };
+    const d = await res.json();
+    return { status: 200, text: d.candidates?.[0]?.content?.parts?.[0]?.text || '' };
+  } catch (e) {
+    return { status: 502, error: (e && e.message) || 'request failed' };
+  } finally {
+    clearTimeout(tid);
+  }
+}
+
+// ────────────────────────────────────────────────
 // Main handler
 // ────────────────────────────────────────────────
 export default {
   async fetch(request, env) {
     const origin = corsOrigin(request, env);
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, '') || '/';
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    }
-
-    // Only POST
-    if (request.method !== 'POST') {
-      return json({ error: 'Method not allowed' }, 405, origin);
     }
 
     // Origin check — reject requests from non-allowed origins
@@ -224,13 +376,37 @@ export default {
       return json({ error: 'Origin not allowed' }, 403, origin);
     }
 
-    // API key — prefer client-provided key; fall back to env secret
-    // ONLY for verified origins. This enables guest mode (anonymous
-    // users who haven't loaded keys from Firestore yet) while still
-    // blocking unauthorized callers from other origins.
-    const apiKey = request.headers.get('x-api-key') || (originVerified ? env.ANTHROPIC_API_KEY : null);
-    if (!apiKey) {
-      return json({ error: 'x-api-key header required' }, 401, origin);
+    // ─── Admin endpoints (server-side key management) ───
+    if (path === '/admin/key-status') {
+      if (!(await isAdminRequest(request, env))) return json({ error: 'admin auth required' }, 401, origin);
+      const status = {};
+      for (const p of ['anthropic', 'openai', 'google']) {
+        status[p] = !!(await resolveProviderKey(env, p));
+      }
+      status.configured = status.anthropic || status.openai || status.google;
+      return json(status, 200, origin);
+    }
+
+    if (path === '/admin/keys') {
+      if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin);
+      if (!(await isAdminRequest(request, env))) return json({ error: 'admin auth required' }, 401, origin);
+      if (!env.RESEARCH_KV) return json({ error: 'KV not configured' }, 500, origin);
+      let b;
+      try { b = await request.json(); } catch (_) { return json({ error: 'Invalid JSON' }, 400, origin); }
+      let changed = 0;
+      for (const p of ['anthropic', 'openai', 'google']) {
+        if (b.clear === true) {
+          await env.RESEARCH_KV.delete('admin:key:' + p); changed++;
+        } else if (b.keys && typeof b.keys[p] === 'string' && b.keys[p].trim()) {
+          await env.RESEARCH_KV.put('admin:key:' + p, b.keys[p].trim()); changed++;
+        }
+      }
+      return json({ ok: true, changed }, 200, origin);
+    }
+
+    // ─── AI endpoints ───
+    if (request.method !== 'POST') {
+      return json({ error: 'Method not allowed' }, 405, origin);
     }
 
     let body;
@@ -240,12 +416,25 @@ export default {
       return json({ error: 'Invalid JSON' }, 400, origin);
     }
 
+    // Generic provider route (OpenAI / Google) → normalized { text }
+    if (path === '/v1/ai' && body.provider && body.provider !== 'anthropic') {
+      const r = await callGenericProvider(env, body);
+      if (r.status !== 200) return json({ error: r.error || 'provider error' }, r.status, origin);
+      return json({ text: r.text }, 200, origin);
+    }
+
+    // Anthropic Messages route. The server-side key is resolved from
+    // KV/env — the browser-supplied x-api-key is ignored entirely.
+    const apiKey = await resolveProviderKey(env, 'anthropic');
+    if (!apiKey) {
+      return json({ error: '共有 AI キーが未設定です（管理者が管理画面で設定してください）' }, 401, origin);
+    }
+
     // Inject server-side system prompt + KV research context
     const userMsg = body.messages?.[0]?.content || '';
     const msgText = typeof userMsg === 'string' ? userMsg : (Array.isArray(userMsg) ? userMsg.map(b => b.text || '').join(' ') : '');
     body.system = await buildSystemPrompt(body.system, env, msgText);
 
-    // First attempt
     let response;
     try {
       response = await callAnthropic(body, apiKey);

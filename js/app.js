@@ -52,28 +52,56 @@ var App = class App {
     // ALWAYS admin (matches removeAdmin's owner-protect logic).
     const email = this.currentUserEmail();
     if (!email) return false;
+    // The owner is ALWAYS admin regardless of stale localStorage /
+    // store state, so agewaller@gmail.com can never be locked out of
+    // /admin or key configuration. Comparison is normalized (lowercase,
+    // trimmed) because Firebase surfaces the address with varying
+    // casing depending on the sign-in path.
     if (email === 'agewaller@gmail.com') return true;
-    return Array.isArray(this.ADMIN_EMAILS) && this.ADMIN_EMAILS.includes(email);
+    return Array.isArray(this.ADMIN_EMAILS)
+      && this.ADMIN_EMAILS.map(e => String(e || '').trim().toLowerCase()).includes(email);
   }
 
   currentUserEmail() {
+    const norm = (e) => {
+      const s = String(e || '').trim().toLowerCase();
+      return s || null;
+    };
+    // Prefer the LIVE Firebase auth user (authoritative) over the
+    // in-memory store, which can be stale right after a hard refresh
+    // before the auth-state listener runs — that staleness is what
+    // previously made the owner silently fail the admin check.
     try {
-      const u = store.get('user');
-      if (u && u.email) return u.email;
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        const fu = firebase.auth().currentUser;
+        if (fu && fu.email) return norm(fu.email);
+      }
     } catch (_) {}
     try {
       if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth
           && FirebaseBackend.auth.currentUser && FirebaseBackend.auth.currentUser.email) {
-        return FirebaseBackend.auth.currentUser.email;
+        return norm(FirebaseBackend.auth.currentUser.email);
       }
     } catch (_) {}
     try {
-      if (typeof firebase !== 'undefined' && firebase.auth) {
-        const fu = firebase.auth().currentUser;
-        if (fu && fu.email) return fu.email;
-      }
+      const u = store.get('user');
+      if (u && u.email) return norm(u.email);
     } catch (_) {}
     return null;
+  }
+
+  // Fetch the signed-in user's Firebase ID token for authenticating
+  // admin-only Worker endpoints (/admin/keys). The Worker verifies the
+  // token server-side and checks the email == owner. Returns '' when
+  // not signed in (the break-glass token path is then required).
+  async getAdminIdToken() {
+    try {
+      let u = null;
+      if (typeof firebase !== 'undefined' && firebase.auth) u = firebase.auth().currentUser;
+      if (!u && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth) u = FirebaseBackend.auth.currentUser;
+      if (u && u.getIdToken) return await u.getIdToken(/* forceRefresh */ false);
+    } catch (_) {}
+    return '';
   }
 
   // Boot-time canary: walk through every onclick / on* attribute in
@@ -551,28 +579,54 @@ var App = class App {
     }
   }
 
-  loadApiKeyFields() {
-    // Load proxy URL (show default if not custom-set)
-    const proxyEl = document.getElementById('input-proxy-url');
-    if (proxyEl) {
-      const proxyStored = localStorage.getItem('anthropic_proxy_url');
-      proxyEl.value = proxyStored || 'https://ai.cares.advisers.jp';
-    }
+  // Build auth headers for admin-only Worker endpoints. Primary path:
+  // the owner's Firebase ID token (verified server-side). Break-glass
+  // path: a manually entered ADMIN_WRITE_TOKEN, so the owner is never
+  // locked out even if Firebase auth itself is unavailable.
+  async _adminAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const idToken = await this.getAdminIdToken();
+    if (idToken) headers['Authorization'] = 'Bearer ' + idToken;
+    const tokEl = document.getElementById('input-admin-token');
+    const tok = tokEl && tokEl.value.trim();
+    if (tok) headers['x-admin-token'] = tok;
+    return headers;
+  }
 
+  async loadApiKeyFields() {
     const keys = ['anthropic', 'openai', 'google'];
+    // Inputs are always blank: stored key values are NEVER returned to
+    // the browser. We only show whether each provider is configured.
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
-      const stored = localStorage.getItem('apikey_' + k);
-      if (el && stored) {
-        el.value = stored;
-      }
+      if (el) { el.value = ''; el.placeholder = '設定済みの場合も表示されません（再入力で上書き）'; }
     });
-    // Update status badge
     const statusEl = document.getElementById('api-key-status');
     if (statusEl) {
-      const hasAny = keys.some(k => localStorage.getItem('apikey_' + k));
-      statusEl.className = 'tag ' + (hasAny ? 'tag-success' : 'tag-warning');
-      statusEl.textContent = hasAny ? 'APIキー設定済' : 'APIキー未設定';
+      statusEl.className = 'tag';
+      statusEl.textContent = '確認中...';
+      try {
+        const resp = await fetch(AIEngine.PROXY_URL + '/admin/key-status', {
+          method: 'GET',
+          headers: await this._adminAuthHeaders()
+        });
+        if (resp.ok) {
+          const s = await resp.json();
+          const configured = !!(s && (s.anthropic || s.configured));
+          statusEl.className = 'tag ' + (configured ? 'tag-success' : 'tag-warning');
+          const on = [];
+          if (s && s.anthropic) on.push('Claude');
+          if (s && s.openai) on.push('GPT');
+          if (s && s.google) on.push('Gemini');
+          statusEl.textContent = configured ? ('設定済: ' + on.join(' / ')) : 'APIキー未設定';
+        } else {
+          statusEl.className = 'tag tag-warning';
+          statusEl.textContent = (resp.status === 401 || resp.status === 403) ? '管理者ログインが必要' : '状態を取得できません';
+        }
+      } catch (_) {
+        statusEl.className = 'tag tag-warning';
+        statusEl.textContent = '状態を取得できません';
+      }
     }
   }
 
@@ -590,60 +644,47 @@ var App = class App {
         + '\n管理者は agewaller@gmail.com です。一度ログアウト → 再ログインしてください。',
         'error'
       );
-      console.warn('[saveApiKeys] admin check failed. seen email:', seen, 'ADMIN_EMAILS:', this.ADMIN_EMAILS);
       return;
     }
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
-    let saved = 0;
-    let proxyUrl = '';
-    // Save proxy URL
-    const proxyEl = document.getElementById('input-proxy-url');
-    if (proxyEl && proxyEl.value.trim()) {
-      proxyUrl = proxyEl.value.trim();
-      localStorage.setItem('anthropic_proxy_url', proxyUrl);
-      saved++;
-    }
-
+    let provided = 0;
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
-      if (el && el.value.trim()) {
-        localStorage.setItem('apikey_' + k, el.value.trim());
-        keyData[k] = el.value.trim();
-        saved++;
-      }
+      if (el && el.value.trim()) { keyData[k] = el.value.trim(); provided++; }
     });
-    if (saved > 0) {
-      // Save to global admin config so all users inherit these settings
-      if (FirebaseBackend.initialized) {
-        const globalConfig = { apiKeys: keyData };
-        if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
-        // Include the current Anthropic transport mode so other users
-        // inherit the admin's choice (direct vs proxy).
-        const mode = localStorage.getItem('anthropic_mode');
-        if (mode) globalConfig.anthropicMode = mode;
-        await FirebaseBackend.saveGlobalConfig(globalConfig);
-      } else {
-        Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
-      }
-      this.loadApiKeyFields();
-    } else {
+    if (provided === 0) {
       Components.showToast('保存するAPIキーがありません', 'error');
+      return;
+    }
+    try {
+      const resp = await fetch(AIEngine.PROXY_URL + '/admin/keys', {
+        method: 'POST',
+        headers: await this._adminAuthHeaders(),
+        body: JSON.stringify({ keys: keyData })
+      });
+      if (resp.ok) {
+        // Wipe the inputs immediately so the raw key never lingers in
+        // the DOM after a successful server-side save.
+        keys.forEach(k => { const el = document.getElementById('input-apikey-' + k); if (el) el.value = ''; });
+        const tokEl = document.getElementById('input-admin-token'); if (tokEl) tokEl.value = '';
+        Components.showToast(provided + '個のAPIキーをサーバーに保存しました', 'success');
+        this.loadApiKeyFields();
+      } else if (resp.status === 401 || resp.status === 403) {
+        Components.showToast('保存できません: 管理者として認証されていません。Google で agewaller@gmail.com でログインし直すか、緊急アクセストークンを入力してください。', 'error');
+      } else {
+        const t = await resp.text().catch(() => '');
+        Components.showToast('保存に失敗しました（' + resp.status + '）: ' + t.slice(0, 120), 'error');
+      }
+    } catch (e) {
+      Components.showToast('保存に失敗しました: ' + (e.message || e), 'error');
     }
   }
 
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-
     const model = store.get('selectedModel') || 'claude-opus-4-6';
-    const apiKey = aiEngine.getApiKey(model);
-
-    if (!apiKey) {
-      if (result) result.innerHTML = '<div style="color:var(--danger);font-size:12px">APIキーが設定されていません。上のフィールドにキーを入力して「保存」してください。</div>';
-      return;
-    }
-
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -657,16 +698,24 @@ var App = class App {
       Components.showToast('APIキー設定は管理者専用です', 'error');
       return;
     }
-    ['anthropic', 'openai', 'google'].forEach(k => {
-      localStorage.removeItem('apikey_' + k);
-      const el = document.getElementById('input-apikey-' + k);
-      if (el) el.value = '';
-    });
-    if (FirebaseBackend.initialized) {
-      await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
+    try {
+      const resp = await fetch(AIEngine.PROXY_URL + '/admin/keys', {
+        method: 'POST',
+        headers: await this._adminAuthHeaders(),
+        body: JSON.stringify({ clear: true })
+      });
+      if (resp.ok) {
+        ['anthropic', 'openai', 'google'].forEach(k => { const el = document.getElementById('input-apikey-' + k); if (el) el.value = ''; });
+        Components.showToast('サーバー上のすべてのAPIキーを削除しました', 'info');
+        this.loadApiKeyFields();
+      } else if (resp.status === 401 || resp.status === 403) {
+        Components.showToast('削除できません: 管理者として認証されていません。', 'error');
+      } else {
+        Components.showToast('削除に失敗しました（' + resp.status + '）', 'error');
+      }
+    } catch (e) {
+      Components.showToast('削除に失敗しました: ' + (e.message || e), 'error');
     }
-    Components.showToast('すべてのAPIキーを削除しました', 'info');
-    this.loadApiKeyFields();
   }
 
   // ---- Auth ----
@@ -3727,35 +3776,12 @@ ${bloodText || '記録なし'}
     }
   }
 
-  // ---- Manual proxy URL override -------------------------------------
-  // When the hardcoded Worker URL doesn't resolve (e.g. workers.dev
-  // trigger disabled, custom domain used, account subdomain differs)
-  // and admin/config sync hasn't reached the user yet, give them a
-  // way to type the correct URL directly. Stored in localStorage so
-  // it sticks across reloads.
-  // -------------------------------------------------------------------
+  // The AI endpoint is now fixed in code (a single relay URL). Manual
+  // proxy-URL overrides were removed because stale localStorage values
+  // were a root cause of returning users staying broken. This stub
+  // remains only so any cached onclick handler can't throw.
   setProxyUrlFromInput() {
-    const input = document.getElementById('proxy-url-override-input');
-    if (!input) return;
-    const raw = input.value.trim();
-    if (!raw) {
-      try { Components.showToast('URL を入力してください', 'error'); } catch (_) {}
-      return;
-    }
-    // Strip trailing /v1/messages if user pasted the full path
-    let url = raw.replace(/\/v1\/messages\/?$/, '');
-    // Basic URL sanity check
-    if (!/^https?:\/\//.test(url)) {
-      try { Components.showToast('URL は https:// で始まる必要があります', 'error'); } catch (_) {}
-      return;
-    }
-    try {
-      localStorage.setItem('anthropic_proxy_url', url);
-      try { Components.showToast('Proxy URL を保存しました。リロードします…', 'success'); } catch (_) {}
-      setTimeout(() => location.reload(), 800);
-    } catch (e) {
-      try { Components.showToast('保存に失敗しました: ' + e.message, 'error'); } catch (_) {}
-    }
+    try { Components.showToast('この設定は不要になりました（AI接続は自動です）', 'info'); } catch (_) {}
   }
 
   // ---- AI connection diagnostic --------------------------------------
@@ -4537,54 +4563,25 @@ ${axisHint}
     // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
 
-    // Simple direct API call — no heavy prompt interpolation, no fallback chain.
+    // Simple analysis via the shared relay → proxy Worker. The browser
+    // holds no key; key-less registered users and guests both work.
     const entryId = entry.id;
-    const apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey) {
-      store.set('isAnalyzing', false);
-      store.set('latestFeedbackError', 'APIキーが設定されていません。管理パネル→APIキーで設定してください。');
-      return;
-    }
-
     const diseases = (store.get('selectedDiseases') || []).join('・');
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 25000);
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: store.get('selectedModel') || 'claude-sonnet-4-6',
-        max_tokens: 800,
-        temperature: 0.4,
-        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
-        messages: [{ role: 'user', content: (diseases ? '【疾患: ' + diseases + '】\n' : '') + content }]
-      }),
-      signal: ctrl.signal
+    const sys = 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。';
+    const userMsg = (diseases ? '【疾患: ' + diseases + '】\n' : '') + content;
+    aiEngine.callModel(store.get('selectedModel') || 'claude-sonnet-4-6', userMsg, {
+      maxTokens: 800, temperature: 0.4, systemPrompt: sys, globalTimeoutMs: 30000
     })
-    .then(res => {
-      clearTimeout(tid);
-      if (!res.ok) return res.text().then(t => { throw new Error('API ' + res.status + ': ' + t.substring(0, 200)); });
-      return res.json();
-    })
-    .then(data => {
+    .then(text => {
       store.set('isAnalyzing', false);
-      const text = data?.content?.[0]?.text || '';
-      const result = { summary: '分析結果', findings: text, actions: [], _fromAPI: true };
+      const result = { summary: '分析結果', findings: text || '', actions: [], _fromAPI: true };
       try { const p = this.parseAIResponse(text); if (p && p.summary) Object.assign(result, p); } catch(_){}
       store.set('latestFeedback', result);
       this.saveAIComment(entryId, result);
     })
     .catch(err => {
-      clearTimeout(tid);
       store.set('isAnalyzing', false);
-      const msg = err.name === 'AbortError' ? '25秒以内に応答がありませんでした。もう一度お試しください。' : (err.message || String(err));
-      store.set('latestFeedbackError', msg);
+      store.set('latestFeedbackError', (err && err.message) || String(err));
     });
   }
 
@@ -7212,11 +7209,6 @@ ${values._user_name}
       return;
     }
     const model = store.get('selectedModel') || 'claude-opus-4-6';
-    const apiKey = aiEngine.getApiKey(model);
-    if (!apiKey) {
-      Components.showToast('モデルのAPIキーが未設定です（設定ページから登録してください）', 'error');
-      return;
-    }
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');

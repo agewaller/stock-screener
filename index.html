@@ -1614,29 +1614,6 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 </head>
 <body>
 <script>
-// One-time migration of any stale Worker URL cached in localStorage to
-// the current default. Two migrations apply here:
-//   1. stock-screener.agewaller.workers.dev — protected by Cloudflare
-//      Access, returns auth redirects → CORS fails (legacy).
-//   2. cares-relay.agewaller.workers.dev — workers.dev account-level
-//      subdomain toggle disabled every *.agewaller.workers.dev URL,
-//      returning 403 host_not_allowed without CORS headers → "Failed
-//      to fetch" for everyone. We moved to the custom-domain
-//      ai.cares.advisers.jp which is pinned to our own zone and not
-//      affected by the workers.dev toggle.
-// In both cases the fix is to drop the cached value so the new
-// hardcoded default in getAnthropicEndpoint kicks in.
-(function () {
-  try {
-    var stale = (localStorage.getItem('anthropic_proxy_url') || '').trim();
-    if (/stock-screener\.agewaller\.workers\.dev/.test(stale) ||
-        /cares-relay\.agewaller\.workers\.dev/.test(stale)) {
-      localStorage.removeItem('anthropic_proxy_url');
-    }
-  } catch (_) {}
-})();
-</script>
-<script>
 // Defensive cleanup of any stale Service Worker. Earlier app versions
 // (a9d314a, cf528a4, 738fcd1, etc.) registered '/sw.js' as a PWA worker
 // with a cache-first strategy. Even though the current code no longer
@@ -2169,127 +2146,41 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <div style="text-align:center;padding:20px 16px;font-size:10px;color:#94a3b8;border-top:1px solid #e4e7ef;margin-top:20px">&copy; 2026 シェアーズ株式会社 All rights reserved.</div>
 
 <!-- App Modules — v2 forces cache refresh -->
-<script src="js/idb.js?v=41"></script>
-<script src="js/config.js?v=41"></script>
-<script src="js/prompts.js?v=41"></script>
-<script src="js/store.js?v=41"></script>
-<script src="js/privacy.js?v=41"></script>
-<script src="js/ai-engine.js?v=41"></script>
-<script src="js/affiliate.js?v=41"></script>
-<script src="js/components.js?v=41"></script>
-<script src="js/i18n.js?v=41"></script>
-<script src="js/calendar.js?v=41"></script>
-<script src="js/integrations.js?v=41"></script>
-<script src="js/firebase-backend.js?v=41"></script>
-<script src="js/app.js?v=41"></script>
-<script src="js/pages.js?v=41"></script>
+<script src="js/idb.js?v=42"></script>
+<script src="js/config.js?v=42"></script>
+<script src="js/prompts.js?v=42"></script>
+<script src="js/store.js?v=42"></script>
+<script src="js/privacy.js?v=42"></script>
+<script src="js/ai-engine.js?v=42"></script>
+<script src="js/affiliate.js?v=42"></script>
+<script src="js/components.js?v=42"></script>
+<script src="js/i18n.js?v=42"></script>
+<script src="js/calendar.js?v=42"></script>
+<script src="js/integrations.js?v=42"></script>
+<script src="js/firebase-backend.js?v=42"></script>
+<script src="js/app.js?v=42"></script>
+<script src="js/pages.js?v=42"></script>
 <script>
-// Core AI call. Direct fetch to Anthropic with 30s timeout and friendly
-// error messages. Non-Claude selectedModel values fall back to Sonnet so
-// users who picked GPT/Gemini in settings still get a response instead of
-// a 404 from the Anthropic endpoint. The system prompt is built by the
-// caller so we can inject the user's selected-disease context.
-//
-// Routing policy: when the client has a key (admin's shared Anthropic
-// key synced from Firestore admin/secrets, or a user's own key from
-// the admin panel), call api.anthropic.com DIRECTLY with that key.
-// Otherwise route through the Cloudflare Worker proxy whose URL is
-// taken from `localStorage.anthropic_proxy_url` (synced from
-// admin/config.proxyUrl) — falling back to the hardcoded default
-// only when admin hasn't configured it.
-//
-// Why localStorage-first matters: the actual workers.dev URL depends
-// on the Cloudflare account's `workers_dev` subdomain setting. If the
-// admin's account uses a non-`agewaller` subdomain (or migrated
-// accounts), the hardcoded fallback resolves to a non-existent host
-// and every fetch dies as `TypeError: Load failed`. The diagnostic
-// against `stock-screener.agewaller.workers.dev` returned all-fatal
-// — the URL itself was wrong. Restore the pre-PR-#31 behavior of
-// reading the correct URL from admin/config sync.
-var ANTHROPIC_DIRECT_URL = 'https://api.anthropic.com/v1/messages';
+// Single AI entry point. Every visitor — new guest, returning guest
+// with stale localStorage, registered user, admin — posts to ONE relay
+// endpoint. The browser never holds or sends an API key; the relay
+// forwards to the proxy Worker which injects the server-side key. No
+// localStorage dependency, no per-user key, no fallback chain — kept
+// deliberately simple so a returning user is always treated as fresh.
+var ANTHROPIC_PROXY_URL = 'https://cares-relay.agewaller.workers.dev/v1/messages';
 
-// Gemini direct-from-browser endpoint. Google's generative-language API
-// supports CORS for browser callers when the key is passed as a query
-// parameter — no Worker / proxy needed. We use this as the FALLBACK
-// when Anthropic (Worker or direct) fails for infrastructure reasons
-// (workers.dev disabled, network blocked, etc.). As long as the admin
-// has saved a Gemini key in admin/config, AI keeps working even when
-// the Cloudflare Worker chain is dead.
-var GEMINI_DIRECT_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
-async function callGemini(text, apiKey, systemPrompt, modelName) {
-  var key = String(apiKey || '').trim();
-  if (!key) throw new Error('Gemini key missing');
-  var model = modelName || 'gemini-2.5-flash';
-  var ctrl = ('AbortController' in window) ? new AbortController() : null;
-  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
-  var body = {
-    contents: [{ role: 'user', parts: [{ text: String(text || '') }] }],
-    generationConfig: { maxOutputTokens: 800, temperature: 0.7 }
-  };
-  if (systemPrompt) body.systemInstruction = { parts: [{ text: String(systemPrompt) }] };
-  try {
-    var r = await fetch(GEMINI_DIRECT_URL + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: ctrl ? ctrl.signal : undefined
-    });
-    if (!r.ok) {
-      var t = await r.text();
-      throw new Error('Gemini ' + r.status + ': ' + t.slice(0, 300));
-    }
-    var d = await r.json();
-    var reply = (d && d.candidates && d.candidates[0] && d.candidates[0].content
-                && d.candidates[0].content.parts && d.candidates[0].content.parts[0]
-                && d.candidates[0].content.parts[0].text) || '';
-    if (!reply) throw new Error('Gemini returned empty response');
-    return reply;
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+function getAnthropicEndpoint() {
+  return ANTHROPIC_PROXY_URL;
 }
-
-function getAnthropicEndpoint(hasKey) {
-  if (hasKey) return ANTHROPIC_DIRECT_URL;
-  var proxy = '';
-  try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-  // Default to the Cloudflare custom-domain hostname (ai.cares.advisers.jp).
-  // This is pinned to our own zone, so it survives the workers.dev
-  // account-level subdomain toggle that previously took down every
-  // *.agewaller.workers.dev URL at once.
-  if (!proxy) proxy = 'https://ai.cares.advisers.jp';
-  return proxy.replace(/\/+$/, '') + '/v1/messages';
-}
-// Top-level entry point used by every guest / inline AI call. Tries
-// Claude first; on infrastructure failure (Worker down, network blocked,
-// host_not_allowed), automatically falls back to Gemini if a Gemini key
-// is present in localStorage. This means a single failing provider
-// (e.g. Cloudflare Worker disabled by an account-level subdomain
-// toggle) never takes the whole site down — as long as one provider
-// is configured, the app keeps working.
+// Top-level entry point used by every guest / inline AI call. Thin
+// wrapper around callClaude — no provider fallback chain (removed: the
+// multi-endpoint complexity is what broke existing users/admin before).
 async function callAI(text, apiKey, model, systemPrompt) {
-  try {
-    return await callClaude(text, apiKey, model, systemPrompt);
-  } catch (err) {
-    var em = String((err && err.message) || err);
-    var isInfra = /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed|一時停止|接続できません|タイムアウト|Cloudflare/i.test(em);
-    if (!isInfra) throw err;
-    var geminiKey = '';
-    try { geminiKey = (localStorage.getItem('apikey_google') || '').trim(); } catch (_) {}
-    if (!geminiKey) throw err;
-    console.warn('[callAI] Anthropic failed (' + em.slice(0, 80) + '), falling back to Gemini');
-    try {
-      return await callGemini(text, geminiKey, systemPrompt);
-    } catch (gErr) {
-      console.warn('[callAI] Gemini fallback also failed:', gErr.message);
-      throw err;
-    }
-  }
+  return await callClaude(text, model, systemPrompt);
 }
 
-function callClaude(text, apiKey, model, systemPrompt) {
+function callClaude(text, model, systemPrompt) {
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
-  var cleanKey = String(apiKey || '').trim();
   var defaultLang = 'ja';
   try { var p = store.get('userProfile'); defaultLang = (p && p.language) || localStorage.getItem('cc_language') || 'ja'; } catch(_) {}
   var defaultSys = defaultLang === 'ja'
@@ -2298,41 +2189,24 @@ function callClaude(text, apiKey, model, systemPrompt) {
   var sys = systemPrompt || defaultSys;
   var ctrl = ('AbortController' in window) ? new AbortController() : null;
   var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
-  // When we have a client key (admin/secrets-synced), hit Anthropic
-  // directly with x-api-key + the dangerous-direct-browser-access
-  // header that Anthropic requires for browser CORS. Otherwise route
-  // to the Worker which uses env.ANTHROPIC_API_KEY. This restores
-  // the pre-PR-#31 behavior — forcing every user through the Worker
-  // broke everyone when env API key wasn't set on Cloudflare.
-  var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-  if (cleanKey) {
-    headers['x-api-key'] = cleanKey;
-    headers['anthropic-dangerous-direct-browser-access'] = 'true';
-  }
-  return fetch(getAnthropicEndpoint(!!cleanKey), {
+  // Browser NEVER sends an API key. The relay forwards to the proxy
+  // Worker which injects the server-side key — the key never reaches
+  // or leaves the browser.
+  return fetch(getAnthropicEndpoint(), {
     method: 'POST',
-    headers: headers,
+    headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: sys, messages: [{ role: 'user', content: text }] }),
     signal: ctrl ? ctrl.signal : undefined
   }).then(function(r) {
     if (timer) clearTimeout(timer);
     if (!r.ok) return r.text().then(function(t){
       var msg = r.status + ': ' + t.substring(0, 300);
-      // Detect Cloudflare account-level workers.dev disable. When an
-      // account toggles workers.dev off, every Worker URL on
-      // *.workers.dev returns the exact response below — there is no
-      // way for the Worker code to override it. The fix is on
-      // Cloudflare side, not in our code.
-      var denyReason = '';
-      try { denyReason = r.headers.get('x-deny-reason') || ''; } catch(_) {}
-      if (r.status === 403 && (denyReason === 'host_not_allowed' || /Host not in allowlist/.test(t))) {
-        msg = 'AI 機能が一時停止しています（Cloudflare 設定）。'
-            + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。';
-      } else if (r.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
+      if (r.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください。';
       else if (r.status === 403) msg = 'このドメインからの接続が許可されていません (403)。cares.advisers.jp からご利用ください。';
       else if (r.status === 404) msg = 'モデル「' + claudeModel + '」が見つかりません。別のモデルに切り替えてください。';
       else if (r.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
       else if (r.status === 529 || r.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
+      else if (r.status >= 500) msg = 'AI 機能が一時的に利用できません。しばらく待ってから再試行してください。';
       throw new Error(msg);
     });
     return r.json();
@@ -2341,56 +2215,12 @@ function callClaude(text, apiKey, model, systemPrompt) {
   }).catch(function(err) {
     if (timer) clearTimeout(timer);
     if (err && err.name === 'AbortError') throw new Error('タイムアウト（30秒）。通信環境をご確認ください。');
-    // "Load failed" / "Failed to fetch" / TypeError: network-level failure
-    // before any HTTP response — most commonly seen in two scenarios:
-    //   (a) in-app browsers (Facebook, Instagram, LINE, X) blocking
-    //       cross-origin fetches to workers.dev;
-    //   (b) Cloudflare account-level workers.dev disable, which returns
-    //       a 403 host_not_allowed without CORS headers — the browser
-    //       collapses that into the same TypeError, so we can't read
-    //       the status to differentiate from a real DNS / network fail.
-    // Best-effort detection: a `no-cors` probe succeeds (opaque
-    // response) when the host responded but CORS blocked us — almost
-    // always the workers.dev host_not_allowed signature. A throw on
-    // the probe means a real connectivity issue (in-app, captive
-    // portal, offline).
     var em = (err && err.message) ? String(err.message) : String(err);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
-      var endpoint = getAnthropicEndpoint(!!cleanKey);
-      var isWorker = /workers\.dev/.test(endpoint);
-      var probe = isWorker
-        ? fetch(endpoint, { method: 'GET', mode: 'no-cors', cache: 'no-store' })
-            .then(function(){ return true; })
-            .catch(function(){ return false; })
-        : Promise.resolve(false);
-      return probe.then(function(reachable) {
-        var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
-        var msg;
-        if (isWorker && reachable) {
-          // Worker host is alive on the network but CORS-blocked us —
-          // overwhelmingly the Cloudflare account-level workers.dev
-          // disable. Tell users what action actually helps.
-          msg = 'AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
-              + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。'
-              + ' 復旧まで数分かかります。';
-        } else if (inApp) {
-          msg = 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。';
-        } else {
-          msg = '接続できませんでした。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。通常ブラウザの場合は数秒待ってから再試行してください。';
-        }
-        var thrown = new Error(msg);
-        // Stash diagnostic info so the error UI can surface a copyable
-        // block when neither in-app nor a stale SW explains the failure.
-        thrown.diag = {
-          url: endpoint,
-          rawErrorName: err && err.name,
-          rawErrorMessage: em,
-          probeReachable: reachable,
-          timestamp: new Date().toISOString(),
-          ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-        };
-        throw thrown;
-      });
+      var inApp = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
+      throw new Error(inApp
+        ? 'アプリ内ブラウザ (' + inApp.label + ') では接続できません。Safari または Chrome で開いてください。'
+        : '接続できませんでした。数秒待ってから再試行してください。アプリ内ブラウザの場合は Safari / Chrome で開き直してください。');
     }
     throw err;
   });
@@ -2403,21 +2233,14 @@ function callClaude(text, apiKey, model, systemPrompt) {
 // Returns the full concatenated text once message_stop arrives. Caller
 // is responsible for JSON-parsing the result.
 async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
-  var cleanKey = String(apiKey || '').trim();
   var claudeModel = (model && String(model).indexOf('claude-') === 0) ? model : 'claude-sonnet-4-6';
   var controller = new AbortController();
-  // Same routing policy as non-streaming callClaude: direct to
-  // api.anthropic.com when we have a key, Worker fallback when not.
-  var streamHeaders = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-  if (cleanKey) {
-    streamHeaders['x-api-key'] = cleanKey;
-    streamHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-  }
+  // Browser never sends a key — relay → proxy Worker injects it.
   var resp;
   try {
-    resp = await fetch(getAnthropicEndpoint(!!cleanKey), {
+    resp = await fetch(getAnthropicEndpoint(), {
       method: 'POST',
-      headers: streamHeaders,
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: claudeModel,
         max_tokens: maxTokens || 2500,
@@ -2430,23 +2253,7 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   } catch (netErr) {
     var nem = (netErr && netErr.message) ? String(netErr.message) : String(netErr);
     if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(nem)) {
-      var streamEp = getAnthropicEndpoint(!!cleanKey);
-      var streamIsWorker = /workers\.dev/.test(streamEp);
-      // Same no-cors probe as non-streaming callClaude: tells us whether
-      // the host is alive (CORS / workers.dev disable) vs truly
-      // unreachable (in-app / captive portal / offline).
-      var reachable = false;
-      try {
-        if (streamIsWorker) {
-          await fetch(streamEp, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
-          reachable = true;
-        }
-      } catch (_) { reachable = false; }
       var inAppHit = (typeof window.detectInAppBrowser === 'function' && window.detectInAppBrowser());
-      if (streamIsWorker && reachable) {
-        throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
-          + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
-      }
       throw new Error(inAppHit
         ? 'アプリ内ブラウザでは接続できません。Safari または Chrome で開いてください。'
         : '接続できませんでした。Safari / Chrome 等の標準ブラウザで開く、もしくはページを再読み込み (↻) してお試しください。');
@@ -2456,9 +2263,10 @@ async function callClaudeStream(text, apiKey, model, systemPrompt, maxTokens) {
   if (!resp.ok) {
     var errText = await resp.text().catch(function(){ return ''; });
     var msg = resp.status + ': ' + errText.substring(0, 300);
-    if (resp.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください (Worker 側の env.ANTHROPIC_API_KEY を確認)。';
+    if (resp.status === 401) msg = '共有 AI キーが認証エラーです。管理者にお知らせください。';
     else if (resp.status === 429) msg = '利用制限に達しました。しばらく待ってから再試行してください。';
     else if (resp.status === 529 || resp.status === 503) msg = 'Anthropic サーバーが混雑しています。少し待って再試行してください。';
+    else if (resp.status >= 500) msg = 'AI 機能が一時的に利用できません。しばらく待ってから再試行してください。';
     throw new Error(msg);
   }
   if (!resp.body || !resp.body.getReader) {
@@ -2547,36 +2355,12 @@ function extractJSON(text) {
 // Override ALL AI-related methods after external JS loads
 window.addEventListener('load', function() {
   if (typeof app === 'undefined' || typeof store === 'undefined') return;
-  var getKey = function() { return (localStorage.getItem('apikey_anthropic') || '').trim(); };
+  // The browser never holds an API key. AI calls route through the
+  // relay → proxy Worker which injects the server-side key. These
+  // shims keep existing call sites working while always yielding ''.
+  var getKey = function() { return ''; };
   var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
-  // Pull the global API key from Firestore if localStorage is empty.
-  // Works for both guest (anonymous) and logged-in users whose session
-  // hasn't yet finished loading the shared admin key.
-  //
-  // ensureGuestAuth signs the visitor in anonymously and polls for the
-  // key for up to ~4 seconds. If that initial pass times out (slow
-  // Firestore, throttled mobile network), we retry _loadGlobalConfigOnly
-  // once more synchronously. This is the difference between a stranded
-  // guest (no key → broken Worker → "接続できませんでした") and a working
-  // session — well worth the extra round-trip on the rare slow-network
-  // case.
-  var resolveKey = async function() {
-    var k = getKey();
-    if (k) return k;
-    try {
-      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.ensureGuestAuth) {
-        await FirebaseBackend.ensureGuestAuth();
-      }
-      k = getKey();
-      if (k) return k;
-      // Last-ditch: explicit one-shot fetch of admin/config in case the
-      // ensureGuestAuth poll loop didn't catch the snapshot in time.
-      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend._loadGlobalConfigOnly) {
-        await FirebaseBackend._loadGlobalConfigOnly();
-      }
-    } catch (e) { /* fall through to whatever localStorage has */ }
-    return getKey();
-  };
+  var resolveKey = async function() { return ''; };
 
   // Resolve the user's selected diseases into human-readable names using
   // CONFIG.DISEASE_CATEGORIES, matching the lookup aiEngine.interpolatePrompt
@@ -3058,15 +2842,9 @@ window.addEventListener('load', function() {
     var stallTimer = null;
     var lastByteAt = Date.now();
     try {
-      // Direct to Anthropic when we have a client key (admin/secrets
-      // sync), Worker proxy otherwise. Mirrors callClaude routing.
-      var hasKey = !!(key && String(key).trim());
+      // Browser never sends a key — relay → proxy Worker injects it.
       var headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-      if (hasKey) {
-        headers['x-api-key'] = String(key).trim();
-        headers['anthropic-dangerous-direct-browser-access'] = 'true';
-      }
-      var resp = await fetch(getAnthropicEndpoint(hasKey), {
+      var resp = await fetch(getAnthropicEndpoint(), {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -3256,21 +3034,9 @@ window.addEventListener('load', function() {
         var diagSlot = isConnFail
           ? '<div id="guest-ai-diag"></div>'
           : '';
-        // Manual proxy URL override: when the Worker URL we're hitting
-        // is wrong (workers_dev disabled, account subdomain differs,
-        // admin moved to a custom domain), let the user paste the
-        // correct URL right here. Saved to localStorage.
-        var currentProxy = '';
-        try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = 'https://ai.cares.advisers.jp';
-        var proxyForm = isConnFail
-          ? '<details style="margin-top:10px;font-size:11px"><summary style="cursor:pointer;color:#7f1d1d;font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>'
-            + '<div style="margin-top:8px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px">'
-            + '<div style="font-size:10px;color:#475569;margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → stock-screener で表示される実際の URL を貼り付けてください。</div>'
-            + '<input type="text" id="proxy-url-override-input" placeholder="https://stock-screener.xxx.workers.dev" value="' + esc(currentProxy) + '" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid #cbd5e1;border-radius:6px;font-family:monospace;box-sizing:border-box">'
-            + '<button onclick="app.setProxyUrlFromInput()" style="margin-top:6px;padding:6px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">💾 保存して再読み込み</button>'
-            + '</div></details>'
-          : '';
+        // Proxy URL is fixed in code (single relay endpoint). No manual
+        // override — stale localStorage must never influence routing.
+        var proxyForm = '';
         // If the thrown error attached diag info (rawErrorMessage / url /
         // ua), surface it inside a <details> below the buttons. Users
         // copy-paste this back when reporting "still doesn't work".
@@ -3327,15 +3093,11 @@ window.addEventListener('load', function() {
     var diary = (CONFIG.GUEST_REPORT_DATA && CONFIG.GUEST_REPORT_DATA[diseaseKey]) || CONFIG.GUEST_REPORT_DATA.mecfs;
     if (!diary) return;
 
-    var key = await resolveKey();
-    var useProxy = !key;  // Guests → Worker proxy; users with key → direct + streaming
-
     el.innerHTML = '<div style="padding:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px">'
-      + '<div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・' + esc(diary.diseases[0] || '慢性疾患') + ' 想定の架空患者データ）を生成中...'
-      + (useProxy ? '（30-60 秒ほどお待ちください）' : '')
+      + '<div style="font-size:12px;color:#0e7490;margin-bottom:8px">🏥 医師提出レポート（サンプル・' + esc(diary.diseases[0] || '慢性疾患') + ' 想定の架空患者データ）を生成中...（30-60 秒ほどお待ちください）'
       + '</div>'
       + '<pre id="guest-report-text" style="white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.8;font-family:\'Hiragino Sans\',\'Noto Sans JP\',sans-serif;padding:12px;background:#f8fafc;border-radius:8px;max-height:50vh;overflow-y:auto;margin:0">'
-      + (useProxy ? '⏳ 生成中...（ゲストモードはストリーミング非対応のため、完成までお待ちください）' : '')
+      + '⏳ 生成中...（完成までお待ちください）'
       + '</pre>'
       + '<div id="guest-report-cta" style="display:none;margin-top:10px"></div>'
       + '</div>';
@@ -3376,99 +3138,26 @@ window.addEventListener('load', function() {
       }
     };
 
-    if (useProxy) {
-      // Non-streaming path via Cloudflare Worker (env.ANTHROPIC_API_KEY).
-      // Worker doesn't pass through SSE, so this is a single POST → JSON.
-      try {
-        var ep = getAnthropicEndpoint(false);
-        var resp = await fetch(ep, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6', max_tokens: 3500, system: sys,
-            messages: [{ role: 'user', content: userMsg }]
-          })
-        });
-        if (!resp.ok) {
-          var txt = await resp.text().catch(function(){return '';});
-          throw new Error(resp.status + ': ' + txt.substring(0, 200));
-        }
-        var data = await resp.json();
-        var full = (data.content && data.content[0] && data.content[0].text) || '(レポートが空でした)';
-        showDone(full);
-      } catch (e) {
-        showErr(e && e.message ? e.message : String(e));
-      }
-      return;
-    }
-
-    // Authenticated-user path: direct-to-Anthropic with streaming paint
-    // when the client holds a key, Worker proxy otherwise.
-    var controller = new AbortController();
-    var lastByteAt = Date.now();
-    var stallTimer = setInterval(function () {
-      if (Date.now() - lastByteAt > 60000) { try { controller.abort(); } catch (_) {} }
-    }, 5000);
-    var fullText = '';
+    // Single path: non-streaming POST via the relay → proxy Worker
+    // (server-side key). Browser never holds a key; no per-user branch.
     try {
-      var hasKey2 = !!(key && String(key).trim());
-      var headers2 = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' };
-      if (hasKey2) {
-        headers2['x-api-key'] = String(key).trim();
-        headers2['anthropic-dangerous-direct-browser-access'] = 'true';
-      }
-      var resp2 = await fetch(getAnthropicEndpoint(hasKey2), {
+      var resp = await fetch(getAnthropicEndpoint(), {
         method: 'POST',
-        headers: headers2,
+        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 3500, system: sys,
-          messages: [{ role: 'user', content: userMsg }], stream: true
-        }),
-        signal: controller.signal
+          messages: [{ role: 'user', content: userMsg }]
+        })
       });
-      if (!resp2.ok) {
-        var body2 = await resp2.text().catch(function () { return ''; });
-        throw new Error(resp2.status + ': ' + body2.substring(0, 200));
+      if (!resp.ok) {
+        var txt = await resp.text().catch(function(){return '';});
+        throw new Error(resp.status + ': ' + txt.substring(0, 200));
       }
-      if (!resp2.body || !resp2.body.getReader) {
-        throw new Error('お使いのブラウザはストリーミングに対応していません。');
-      }
-      var reader = resp2.body.getReader();
-      var decoder = new TextDecoder('utf-8');
-      var buffer = '';
-      while (true) {
-        var chunk = await reader.read();
-        if (chunk.done) break;
-        lastByteAt = Date.now();
-        buffer += decoder.decode(chunk.value, { stream: true });
-        var idx;
-        while ((idx = buffer.indexOf('\n\n')) >= 0) {
-          var frame = buffer.substring(0, idx);
-          buffer = buffer.substring(idx + 2);
-          var lines = frame.split('\n');
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            if (line.indexOf('data: ') !== 0) continue;
-            var payload = line.substring(6);
-            if (payload === '[DONE]') continue;
-            try {
-              var evt = JSON.parse(payload);
-              if (evt.type === 'content_block_delta' && evt.delta && typeof evt.delta.text === 'string') {
-                fullText += evt.delta.text;
-                if (target) {
-                  target.textContent = fullText;
-                  target.scrollTop = target.scrollHeight;
-                }
-              }
-            } catch (_) {}
-          }
-        }
-      }
-      showDone(fullText);
+      var data = await resp.json();
+      var full = (data.content && data.content[0] && data.content[0].text) || '(レポートが空でした)';
+      showDone(full);
     } catch (e) {
       showErr(e && e.message ? e.message : String(e));
-    } finally {
-      clearInterval(stallTimer);
     }
   };
 
@@ -3500,6 +3189,6 @@ window.addEventListener('load', function() {
   };
 });
 </script>
-<script defer src="js/inapp-browser-banner.js?v=41"></script>
+<script defer src="js/inapp-browser-banner.js?v=42"></script>
 </body>
 </html>

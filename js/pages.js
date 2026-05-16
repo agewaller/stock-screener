@@ -2928,16 +2928,16 @@ App.prototype.render_admin = function() {
     <div class="card-body">
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
       <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:16px">
-        <b>全ユーザー共通設定:</b> ここで保存したAPIキー・プロキシURLは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
+        <b>全ユーザー共通設定:</b> ここで保存したAPIキーは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
       </div>
       <div style="padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:var(--radius-sm);font-size:11px;color:#78350f;margin-bottom:16px;line-height:1.7">
-        🔒 <b>セキュリティ:</b> すべての Claude API 呼び出しは Cloudflare Worker プロキシを経由します。
-        プロンプトインジェクション防御・拒否回避・レスポンス検証はサーバー側で処理されます。
+        🔒 <b>セキュリティ:</b> キーはサーバー（Cloudflare Worker）側にのみ保存され、ブラウザや他の利用者には一切返されません。
+        すべての AI 呼び出しは Worker プロキシを経由し、キーがブラウザに出ることはありません。
       </div>
-      <div class="form-group" id="proxy-url-group">
-        <label class="form-label">APIプロキシURL</label>
-        <input type="text" class="form-input" id="input-proxy-url" placeholder="https://your-worker.workers.dev" autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">Cloudflare Worker のデプロイ後にURLを貼り付け。未設定の場合デフォルトの Worker が使われます。</span>
+      <div class="form-group" id="admin-token-group">
+        <label class="form-label">緊急アクセストークン（任意）</label>
+        <input type="password" class="form-input" id="input-admin-token" placeholder="通常は空のままでOK（Googleログイン中なら不要）" autocomplete="off">
+        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">agewaller@gmail.com でログイン中なら空のままで保存できます。ログインできない緊急時のみ ADMIN_WRITE_TOKEN を入力してください。</span>
       </div>
       <div class="form-group">
         <label class="form-label">Anthropic API Key</label>
