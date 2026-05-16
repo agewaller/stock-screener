@@ -686,6 +686,18 @@ App.prototype.render_dashboard = function() {
           </span>
         `).join('')}
       </div>` : ''}
+      ${streakStats.streak >= 7 && !localStorage.getItem('share_prompt_dismissed_' + streakStats.streak) ? `
+      <div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0;font-size:11px;color:#166534;line-height:1.5">
+          <strong>🎉 ${streakStats.streak}日連続達成！</strong> 同じ疾患で悩む方にも教えませんか？
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
+          <button onclick="app.navigate('settings')"
+            style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">紹介する</button>
+          <button onclick="localStorage.setItem('share_prompt_dismissed_${streakStats.streak}','1');this.closest('[style*=background:#f0fdf4]').remove()"
+            style="padding:6px 8px;background:transparent;color:#16a34a;border:none;font-size:10px;cursor:pointer">後で</button>
+        </div>
+      </div>` : ''}
     </div>
   </div>` : ''}
 
@@ -3241,6 +3253,41 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Referral / Invite friends -->
+  ${(() => {
+    const user = store.get('user') || {};
+    const uid = user.uid || '';
+    if (!uid) return '';
+    const refId = uid.substring(0, 10);
+    const diseases = store.get('selectedDiseases') || [];
+    const refUrl = 'https://cares.advisers.jp/?ref=' + encodeURIComponent(refId) +
+      (diseases.length > 0 ? '&d=' + encodeURIComponent(diseases[0]) : '');
+    return `
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1.5px solid #86efac">
+    <div class="card-body" style="padding:16px 18px">
+      <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:4px">🤝 同じ疾患の友人に紹介する</div>
+      <div style="font-size:11px;color:#15803d;line-height:1.7;margin-bottom:12px">
+        同じ症状で悩む友人や家族に紹介してください。あなたのリンクから登録すると、あなたが紹介した人として記録されます。（現在は記録のみ。将来的に特典を検討中）
+      </div>
+      <div style="background:#fff;border:1px solid #86efac;border-radius:8px;padding:8px 12px;font-size:11px;font-family:monospace;color:#166534;word-break:break-all;margin-bottom:10px;user-select:all" id="referral-url-display">${Components.escapeHtml(refUrl)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="(function(){var u=${JSON.stringify(refUrl)};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(function(){Components.showToast('紹介リンクをコピーしました','success');});}else{window.prompt('コピーしてください:',u);}})()"
+          style="padding:9px 16px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📋 リンクをコピー</button>
+        ${typeof navigator !== 'undefined' && navigator.share ? `
+        <button onclick="navigator.share({title:'健康日記',text:'同じ症状で悩む方に使ってほしい記録アプリです',url:${JSON.stringify(refUrl)}}).catch(function(){})"
+          style="padding:9px 16px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📤 シェア</button>
+        ` : ''}
+        <a href="https://x.com/intent/tweet?text=${encodeURIComponent('同じ疾患で悩む方に「健康日記」を紹介しています。体調記録・AI分析が無料で使えます。')}&url=${encodeURIComponent(refUrl)}&hashtags=${encodeURIComponent('健康日記,慢性疾患')}"
+          target="_blank" rel="noopener"
+          style="padding:9px 16px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center">𝕏 でシェア</a>
+        <a href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(refUrl)}"
+          target="_blank" rel="noopener"
+          style="padding:9px 16px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center">LINE でシェア</a>
+      </div>
+    </div>
+  </div>`;
+  })()}
 
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
