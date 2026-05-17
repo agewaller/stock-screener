@@ -112,19 +112,19 @@ var Components = {
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:20px">${typeIcons[rec.category] || '📋'}</span>
             <div>
-              <div class="card-title">${rec.title}</div>
+              <div class="card-title">${Components.escapeHtml(rec.title || '')}</div>
               <div style="display:flex;gap:6px;margin-top:4px">
                 <span class="tag" style="background:${priorityColors[rec.priority]}22;color:${priorityColors[rec.priority]}">
-                  優先度: ${priorityLabels[rec.priority]}
+                  優先度: ${priorityLabels[rec.priority] || ''}
                 </span>
-                ${rec.evidence ? `<span class="tag tag-accent">エビデンス: ${rec.evidence}</span>` : ''}
+                ${rec.evidence ? `<span class="tag tag-accent">エビデンス: ${Components.escapeHtml(rec.evidence)}</span>` : ''}
               </div>
             </div>
           </div>
-          ${rec.cost ? `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)">${rec.cost}</span>` : ''}
+          ${rec.cost ? `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)">${Components.escapeHtml(rec.cost)}</span>` : ''}
         </div>
         <div class="card-body">
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:14px">${rec.description}</p>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:14px">${Components.escapeHtml(rec.description || '')}</p>
           ${rec.action ? this.actionButtons(rec.action) : ''}
         </div>
       </div>
@@ -138,18 +138,22 @@ var Components = {
     if (action.type === 'supplement' && action.links) {
       action.links.forEach(link => {
         const affUrl = affiliateEngine.generateLink(link, affiliateEngine.detectStore(link.url));
-        html += `<a href="${affUrl}" target="_blank" rel="noopener"
+        const safeAffUrl = (typeof affUrl === 'string' && /^https?:\/\//.test(affUrl)) ? Components.escapeHtml(affUrl) : '#';
+        const safeProduct = Components.escapeHtml(String(action.product || '')).replace(/'/g, '&#39;');
+        const safeStore = Components.escapeHtml(String(affiliateEngine.detectStore(link.url) || '')).replace(/'/g, '&#39;');
+        html += `<a href="${safeAffUrl}" target="_blank" rel="noopener"
           class="btn btn-sm btn-primary"
-          onclick="affiliateEngine.trackClick('${action.product}','${affiliateEngine.detectStore(link.url)}','purchase')">
-          🛒 ${link.store} ${link.price || ''}
+          onclick="affiliateEngine.trackClick('${safeProduct}','${safeStore}','purchase')">
+          🛒 ${Components.escapeHtml(link.store || '')} ${Components.escapeHtml(String(link.price || ''))}
         </a>`;
       });
     }
 
     if (action.type === 'clinic' && action.facilities) {
       action.facilities.forEach(f => {
-        html += `<a href="${f.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">
-          🏥 ${f.name}（${f.area}）
+        const safeUrl = (typeof f.url === 'string' && /^https?:\/\//.test(f.url)) ? Components.escapeHtml(f.url) : '#';
+        html += `<a href="${safeUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">
+          🏥 ${Components.escapeHtml(f.name || '')}（${Components.escapeHtml(f.area || '')}）
         </a>`;
       });
     }
@@ -157,15 +161,19 @@ var Components = {
     if (action.type === 'device' && action.links) {
       action.links.forEach(link => {
         const affUrl = affiliateEngine.generateLink(link, affiliateEngine.detectStore(link.url));
-        html += `<a href="${affUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-success"
-          onclick="affiliateEngine.trackClick('${action.product}','${affiliateEngine.detectStore(link.url)}','purchase')">
-          🔧 ${link.store} ${link.price || ''}
+        const safeAffUrl = (typeof affUrl === 'string' && /^https?:\/\//.test(affUrl)) ? Components.escapeHtml(affUrl) : '#';
+        const safeProduct = Components.escapeHtml(String(action.product || '')).replace(/'/g, '&#39;');
+        const safeStore = Components.escapeHtml(String(affiliateEngine.detectStore(link.url) || '')).replace(/'/g, '&#39;');
+        html += `<a href="${safeAffUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-success"
+          onclick="affiliateEngine.trackClick('${safeProduct}','${safeStore}','purchase')">
+          🔧 ${Components.escapeHtml(link.store || '')} ${Components.escapeHtml(String(link.price || ''))}
         </a>`;
       });
     }
 
     if (action.type === 'clinical_trial') {
-      html += `<a href="${action.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-warning">
+      const safeUrl = (typeof action.url === 'string' && /^https?:\/\//.test(action.url)) ? Components.escapeHtml(action.url) : '#';
+      html += `<a href="${safeUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-warning">
         🧪 臨床試験の詳細を見る
       </a>`;
     }
@@ -204,11 +212,11 @@ var Components = {
             <div class="tag" style="background:${sigColors[research.significance]}22;color:${sigColors[research.significance]}">
               ${research.significance === 'high' ? '重要' : research.significance === 'medium' ? '注目' : '参考'}
             </div>
-            <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${research.date}</span>
+            <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${Components.escapeHtml(research.date || '')}</span>
           </div>
-          <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${research.title}</h4>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${research.authors} — ${research.journal}</p>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">${research.summary}</p>
+          <h4 style="font-size:14px;font-weight:600;margin-bottom:6px;line-height:1.5">${Components.escapeHtml(research.title || '')}</h4>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${Components.escapeHtml(research.authors || '')} — ${Components.escapeHtml(research.journal || '')}</p>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px">${Components.escapeHtml(research.summary || '')}</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a href="${pubmedSearchUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline">PubMedで検索</a>
             ${translateUrl ? `<a href="${translateUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary">日本語で読む</a>` : ''}
