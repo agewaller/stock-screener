@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="630" fill="white" fill-opacity="0.05"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="white" fill-opacity="0.1"/>
+  <text x="80" y="140" font-size="28" fill="white" fill-opacity="0.9" font-family="Noto Sans JP, sans-serif" font-weight="500">&#x5065;&#x5EB7;&#x65E5;&#x8A18; — &#x6162;&#x6027;&#x75BE;&#x60A3;&#x7BA1;&#x7406;&#x30A2;&#x30D7;&#x30EA;</text>
+  <text x="80" y="325" font-size="56" font-weight="700" fill="white" font-family="Noto Sans JP, sans-serif">PTSD</text>
+  <text x="80" y="430" font-size="26" fill="white" fill-opacity="0.85" font-family="Noto Sans JP, sans-serif">生涯有病率約10%</text>
+  <text x="80" y="478" font-size="22" fill="white" fill-opacity="0.7" font-family="monospace">ICD-11: 6B40</text>
+  <text x="1120" y="580" font-size="20" fill="white" fill-opacity="0.6" font-family="sans-serif" text-anchor="end">cares.advisers.jp</text>
+</svg>
