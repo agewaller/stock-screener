@@ -1,14 +1,33 @@
 {
   "name": "健康日記",
   "short_name": "健康日記",
-  "description": "慢性疾患患者のための体調記録・情報整理ツール",
+  "description": "慢性疾患患者のための体調記録・情報整理ツール。ME/CFS・Long COVID・線維筋痛症など80疾患に対応。",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#6C63FF",
   "orientation": "portrait-primary",
+  "lang": "ja",
+  "categories": ["health", "medical", "lifestyle"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "今日の記録を入力",
+      "short_name": "記録入力",
+      "description": "今日の体調を入力する",
+      "url": "/#/data-input",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ダッシュボードを開く",
+      "short_name": "ダッシュボード",
+      "description": "最近の記録と分析を確認する",
+      "url": "/#/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
