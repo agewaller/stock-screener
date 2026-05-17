@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#16a34a" letter-spacing="2">&#x5065;&#x5EB7;&#x65E5;&#x8A18;  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="84" font-weight="900" fill="#14532d">&#x80A5;&#x6EFF;&#x75C7;</text>
+    <text x="0" y="150" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="32" font-weight="600" fill="#16a34a">BMI &#x7BA1;&#x7406;&#x30FB;&#x4F53;&#x91CD;&#x8A18;&#x9332;&#x30FB;GLP-1 &#x742A;&#x5264;</text>
+    <text x="0" y="210" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">&#x4F53;&#x91CD;&#x30FB;&#x98DF;&#x4E8B;&#x30FB;&#x904B;&#x52D5;&#x30FB;&#x840C;&#x3092;&#x6BCE;&#x65E5;&#x8A18;&#x9332;&#x3057;&#x3066;&#x75C5;&#x614B;&#x5225;&#x8089;&#x6E80;&#x7A0B;&#x5EA6;&#x3092;&#x6539;&#x5584;</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="520" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">&#x60A3;&#x8005;&#x6570;</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#14532d">&#x65E5;&#x672C; &#x7D04; 1,000 &#x4E07;&#x4EBA;&#xFF08;&#x6210;&#x4EBA;&#x306E; 15〜20%&#xFF09;</text>
+    <rect x="540" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="560" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">&#x5206;&#x985E;</text>
+    <text x="560" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#14532d">ICD-11  5B81</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#14532d">&#x1F4DD;  &#x5B8C;&#x5168;&#x7121;&#x6599;  &#x30FB;  &#x5E83;&#x544A;&#x306A;&#x3057;  &#x30FB;  AI &#x5206;&#x6790;</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#16a34a">cares.advisers.jp/obesity.html</text>
+  </g>
+</svg>
