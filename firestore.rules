@@ -149,6 +149,25 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Newsletter subscribers — disease LP email capture.
+    // Allow unauthenticated create/update so users who are not logged
+    // in can subscribe from a static disease LP page. Fields are
+    // validated: email must be a non-empty string under 320 chars,
+    // consent must be true, and subscribedAt must be present.
+    match /newsletter_subscribers/{docId} {
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
+                    && request.resource.data.email.size() <= 320
+                    && request.resource.data.consent == true
+                    && request.resource.data.subscribedAt is string;
+      allow update: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
+                    && request.resource.data.email.size() <= 320
+                    && request.resource.data.consent == true;
+      allow read:   if isAdmin();
+      allow delete: if false;
+    }
+
     // Future: VoiceProfile / CharacterProfile. Publicly readable
     // only when licenseStatus == 'approved' — prevents placeholder
     // or pending assets from being surfaced in the UI.
