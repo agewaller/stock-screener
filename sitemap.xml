@@ -413,12 +413,17 @@
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
-
   <url>
-    <loc>https://cares.advisers.jp/learning.html</loc>
+    <loc>https://cares.advisers.jp/als.html</loc>
     <lastmod>2026-05-17</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/celiac.html</loc>
+    <lastmod>2026-05-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 
   <!-- Comparison + About -->
