@@ -488,8 +488,8 @@ App.prototype.render_dashboard = function() {
     }
   });
   const diseaseTagsHtml = diseaseNames.length > 0
-    ? diseaseNames.map(n => `<span class="tag tag-accent" style="font-size:10px">${n}</span>`).join(' ')
-    : `<span class="tag tag-accent" style="font-size:10px">${disease.name}</span>`;
+    ? diseaseNames.map(n => `<span class="tag tag-accent" style="font-size:10px">${Components.escapeHtml(n)}</span>`).join(' ')
+    : `<span class="tag tag-accent" style="font-size:10px">${Components.escapeHtml(disease.name || '')}</span>`;
 
   const latestParsed = latestAnalysis?.parsed || latestAnalysis?.result || {};
   const latestAlerts = latestParsed.riskAlerts || [];
