@@ -644,7 +644,7 @@ var App = class App {
 
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
-      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${Components.escapeHtml(model)}）: ${typeof response === 'string' ? Components.escapeHtml(response.substring(0, 100)) : 'OK'}</div>`;
     } catch (err) {
       if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${Components.escapeHtml(err.message || '')}</div>`;
     }
@@ -3250,7 +3250,7 @@ ${responseText.substring(0, 3000)}`;
 
     // Summary
     if (summary) {
-      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${summary}</div>`;
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${Components.escapeHtml(summary)}</div>`;
     }
 
     // Findings
@@ -3334,7 +3334,10 @@ ${responseText.substring(0, 3000)}`;
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">おすすめ</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${result.products.map(p => `<a href="${p.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${p.name}</a>`).join('')}
+          ${result.products.map(p => {
+            const safeUrl = (typeof p.url === 'string' && /^https?:\/\//.test(p.url)) ? Components.escapeHtml(p.url) : '#';
+            return `<a href="${safeUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${Components.escapeHtml(p.name || '')}</a>`;
+          }).join('')}
         </div>
       </div>`;
     }
@@ -3354,23 +3357,23 @@ ${responseText.substring(0, 3000)}`;
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:11px;font-weight:600;color:var(--text-muted)">📊 定点観測</div>
-          ${result.monitoring.overall_trend ? `<span style="font-size:10px;color:${result.monitoring.overall_trend.includes('改善') ? 'var(--success)' : result.monitoring.overall_trend.includes('注意') ? 'var(--danger)' : 'var(--text-muted)'}">${result.monitoring.overall_trend}</span>` : ''}
+          ${result.monitoring.overall_trend ? `<span style="font-size:10px;color:${result.monitoring.overall_trend.includes('改善') ? 'var(--success)' : result.monitoring.overall_trend.includes('注意') ? 'var(--danger)' : 'var(--text-muted)'}">${Components.escapeHtml(result.monitoring.overall_trend)}</span>` : ''}
         </div>
         ${result.monitoring.items.slice(0, 6).map(m => `
           <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px">
             <span>${statusIcons[m.status] || '❓'}</span>
-            <span style="flex:1;color:var(--text-secondary)">${m.metric}</span>
-            <span style="font-weight:600;color:${statusColors[m.status] || 'var(--text-muted)'}">${m.current || '-'}</span>
-            <span style="color:var(--text-muted);font-size:10px">目標:${m.target || '-'}</span>
+            <span style="flex:1;color:var(--text-secondary)">${Components.escapeHtml(m.metric || '')}</span>
+            <span style="font-weight:600;color:${statusColors[m.status] || 'var(--text-muted)'}">${Components.escapeHtml(String(m.current || '-'))}</span>
+            <span style="color:var(--text-muted);font-size:10px">目標:${Components.escapeHtml(String(m.target || '-'))}</span>
           </div>
         `).join('')}
-        ${result.monitoring.next_milestone ? `<div style="font-size:10px;color:var(--accent);margin-top:6px">🎯 ${result.monitoring.next_milestone}</div>` : ''}
+        ${result.monitoring.next_milestone ? `<div style="font-size:10px;color:var(--accent);margin-top:6px">🎯 ${Components.escapeHtml(result.monitoring.next_milestone)}</div>` : ''}
       </div>`;
     }
 
     // Deeper prompt
     if (result.deeper_prompt) {
-      html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${result.deeper_prompt}</div>`;
+      html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${Components.escapeHtml(result.deeper_prompt)}</div>`;
     }
 
     html += '</div>';
