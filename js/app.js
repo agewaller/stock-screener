@@ -307,7 +307,7 @@ var App = class App {
         this.afterRender(page);
       } catch(err) {
         console.error('Page render error:', page, err);
-        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${Components.escapeHtml(err.message || String(err))}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
       }
     }
   }
@@ -646,7 +646,7 @@ var App = class App {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
     } catch (err) {
-      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${err.message}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${Components.escapeHtml(err.message || '')}</div>`;
     }
   }
 
@@ -1167,7 +1167,7 @@ var App = class App {
       if (resultArea) this.renderAnalysisResult(result, resultArea);
       Components.showToast('分析が完了しました', 'success');
     } catch (err) {
-      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${err.message}</div>`;
+      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${Components.escapeHtml(err.message || '')}</div>`;
       Components.showToast('分析に失敗しました', 'error');
     }
   }
@@ -1990,7 +1990,7 @@ ${titles}`;
       await Integrations.fitbit.importToday();
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">今日のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || '')}</div>`;
     }
   }
 
@@ -2001,7 +2001,7 @@ ${titles}`;
       await Integrations.fitbit.importHistory(7);
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">過去7日分のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || '')}</div>`;
     }
   }
 
@@ -2013,7 +2013,7 @@ ${titles}`;
       const count = await Integrations.importFile(file);
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">${count}件のデータを取り込みました</div>`;
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || '')}</div>`;
     }
   }
 
@@ -2035,7 +2035,7 @@ ${titles}`;
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ ${events.length}件のイベントを取り込みました</div>`;
       Components.showToast(`カレンダーから${events.length}件取り込みました`, 'success');
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err.message || '')}</div>`;
       Components.showToast(err.message, 'error');
     }
   }
@@ -2134,7 +2134,7 @@ ${titles}`;
         this.showGoogleCalendarIcsFallback(status);
         return;
       }
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err.message || '')}</div>`;
       Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
     }
   }

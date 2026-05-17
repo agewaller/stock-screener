@@ -19,6 +19,14 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
+  '/js/analytics.js',
+  '/js/a11y-enhancements.js',
+  '/js/disease-affiliate-panel.js',
+  '/js/disease-lp-enhancements.js',
+  '/js/idb.js',
+  '/js/inapp-browser-banner.js',
+  '/js/newsletter-signup.js',
+  '/js/social-share.js',
   '/manifest.json'
 ];
 
