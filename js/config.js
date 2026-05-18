@@ -99,7 +99,8 @@ var CONFIG = {
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
         { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' },
-        { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'EE40' }
+        { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'EE40' },
+        { id: 'vitiligo', name: '白斑（尋常性白斑）', icd: 'EE60' }
       ]
     },
     {
@@ -117,7 +118,8 @@ var CONFIG = {
         { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' },
         { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' },
         { id: 'interstitial_cystitis', name: '間質性膀胱炎（IC・膀胱痛症候群）', icd: 'MF55' },
-        { id: 'loh', name: '男性更年期障害（LOH症候群）', icd: 'MA13' }
+        { id: 'loh', name: '男性更年期障害（LOH症候群）', icd: 'MA13' },
+        { id: 'bph', name: '前立腺肥大症（BPH）', icd: 'GA90' }
       ]
     },
     {
@@ -151,7 +153,8 @@ var CONFIG = {
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
         { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
         { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' },
-        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' }
+        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' },
+        { id: 'stroke', name: '脳卒中後遺症（脳梗塞・脳出血後）', icd: '8B20' }
       ]
     },
     {
@@ -179,7 +182,8 @@ var CONFIG = {
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
         { id: 'functional_dyspepsia', name: '機能性ディスペプシア（FD）', icd: 'DA45' },
-        { id: 'chronic_pancreatitis', name: '慢性膵炎（慢性膵臓炎）', icd: 'DC31' }
+        { id: 'chronic_pancreatitis', name: '慢性膵炎（慢性膵臓炎）', icd: 'DC31' },
+        { id: 'constipation', name: '慢性便秘症', icd: 'DD91' }
       ]
     },
     {
@@ -454,6 +458,14 @@ var CONFIG = {
                           japan:      66_000, japanLabel: '約 6.6 万人',            japanSource: '日本膵臓学会全国調査' },
     lymphedema:         { world:  250_000_000, label: '約 2.5 億人 (推計)',          tier: 2, density: 'high',   source: 'がん治療後・フィラリア等含む世界推計',
                           japan:     300_000, japanLabel: '約 30 万人以上',         japanSource: '日本リンパ浮腫学会推計' },
+    stroke:             { world:   80_000_000, label: '約 8,000 万人 (推計)',         tier: 2, density: 'high',   source: '脳卒中後遺症患者世界推計',
+                          japan:   1_740_000, japanLabel: '約 174 万人',            japanSource: '厚生労働省患者調査 2020年' },
+    bph:                { world:  630_000_000, label: '約 6.3 億人 (推計)',           tier: 2, density: 'medium', source: '60歳以上男性の約60%外挿',
+                          japan:   5_300_000, japanLabel: '約 530 万人',            japanSource: '日本泌尿器科学会推計' },
+    vitiligo:           { world:  200_000_000, label: '約 2 億人 (推計)',             tier: 2, density: 'medium', source: '生涯有病率 1〜2% (世界人口比)',
+                          japan:   2_000_000, japanLabel: '約 200 万人',            japanSource: '日本皮膚科学会推計（有病率約 1〜2%）' },
+    constipation:       { world: 1_000_000_000, label: '約 10 億人 (推計)',          tier: 2, density: 'medium', source: '世界有病率 14〜16% メタ解析外挿',
+                          japan:  15_000_000, japanLabel: '約 1,500 万人',          japanSource: '日本消化器病学会推計（有病率 14〜16%）' },
   },
 
   // ============================================================
@@ -1427,6 +1439,22 @@ var CONFIG = {
     lymphedema: [
       '乳がん手術（右乳房切除術＋腋窩リンパ節郭清）から1年。右腕がむくんでリンパ浮腫と診断された。弾性スリーブを毎日使用し、用手リンパドレナージを週2回受けている。腕の周径を毎週測定して浮腫の変化を記録している。',
       '子宮頸がんの治療（手術＋放射線）後に両足のリンパ浮腫が出た。弾性ストッキングが欠かせない。蜂窩織炎を2回経験したので感染の早期サインに注意している。浮腫の変化と皮膚の状態を毎日記録してセラピストとの連携に役立てている。'
+    ],
+    stroke: [
+      '脳梗塞（左中大脳動脈領域）後3ヶ月。右手足の麻痺と失語症がある。毎日リハビリ（PT・OT・ST各30分）に通っている。mRS 3。歩行可能距離と言葉の出やすさを毎日記録してリハビリの進歩を確認したい。',
+      '脳出血から半年。左手の巧緻障害が残り、箸が使いにくい。抗血小板薬（アスピリン）と降圧薬を服用中。再発予防のために血圧を毎日記録している。PT・OTは週2回で継続中。'
+    ],
+    bph: [
+      '頻尿・夜間頻尿（夜3回）・残尿感で泌尿器科を受診。IPSS 19点（重症）。タムスロシン0.2mgを開始して3週間。排尿の勢いが少し改善した気がする。毎日の排尿回数と夜間排尿回数を記録して主治医に報告したい。',
+      '前立腺肥大症でシロドシン服用中。射精障害の副作用が出ている。PSA 3.8 ng/mL。前立腺がんとの鑑別のため半年後に再検査予定。排尿症状スコアと副作用を記録して次回受診に備えたい。'
+    ],
+    vitiligo: [
+      '白斑と診断されて2年。顔・首・手背に脱色素斑がある。PUVA療法を週2回受けているが効果はゆっくり。日焼けが怖くて外出時は日焼け止めが欠かせない。SALT スコアの変化を記録して治療効果を追いたい。',
+      '尋常性白斑でルキソリチニブクリーム（ruxolitinib）の塗布を開始して2ヶ月。左頬の白斑が少し色素が戻ってきた。橋本病も合併しているのでTSHも管理している。白斑の広がりと色素再生を毎日写真で記録している。'
+    ],
+    constipation: [
+      '慢性便秘症で週1〜2回しか排便がない。ブリストル便形状スコアは1〜2。酸化マグネシウムを飲んでいるが効果が不十分。排便回数・便形状・腹部症状を毎日記録して主治医に改善を相談したい。',
+      '過敏性腸症候群（便秘型）で下剤を飲み続けているが、繰り返し便秘になる。リナクロチドを追加して1ヶ月。お腹の張りと排便のパターンを記録して薬の調整に役立てたい。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -3959,6 +3987,107 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-25T08:00:00Z', name: 'アマンタジン 200mg/日', notes: '朝昼 100mg ずつ。TBI後認知改善目的。午後3時以降は飲まない（不眠予防）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    stroke: {
+      diseases: ['脳卒中後遺症（左中大脳動脈領域梗塞・右片麻痺・失語）'],
+      profile: { age: 67, gender: 'male', height: 168, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: '回復期病院への転院時', content: '脳梗塞発症から1ヶ月。右上下肢の麻痺（MMT 3/5）と失語症（Broca型）が残っている。mRS 3（軽度〜中等度障害）。回復期リハビリ病院に転院。PT（歩行訓練）・OT（上肢機能・ADL）・ST（言語訓練）を毎日実施。抗血小板薬（クロピドグレル 75mg）・スタチン（ロスバスタチン 5mg）・降圧薬（ARB）を内服。血圧目標 130/80mmHg未満。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'symptoms', title: 'リハビリ3週目', content: '歩行が監視歩行レベルに改善。T字杖を使えば病棟を1周できるようになった（100m程度）。言葉が少し出やすくなった。「ありがとう」「はい」は確実に言える。家族の顔はわかるが名前がすぐに出ない（喚語困難）。右手の細かい動作（箸・書字）は依然困難。血圧 128/76 mmHg（朝測定）。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'vitals', title: '6週目評価', content: 'FIM（機能的自立度評価表）：入院時 62点 → 84点（改善）。歩行距離：100m → 250m（T字杖使用）。ST：短文なら伝えられるようになった。「痛い」「お腹すいた」「散歩したい」などの意思表示可能。OT：右手でスプーンが握れるようになった（箸はまだ困難）。退院予定：再来月（自宅退院目標）。' },
+        { timestamp: '2026-05-12T10:00:00Z', category: 'symptoms', title: '退院前評価', content: '自宅退院に向けた家屋評価を実施。玄関の段差と浴室に手すりを設置予定。FIM 98点。歩行：T字杖で平地500m。言語：日常会話の約60%理解・発話可能。ADL：食事（スプーン）・更衣（一部介助）・排泄（自立）・入浴（要見守り）。外来リハ（週2回）に移行予定。再発予防薬の継続を確認した。血圧今月平均 125/74mmHg（良好）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 7, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-12T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '転院時採血', findings: 'LDL 112 mg/dL（スタチン開始前）・HbA1c 6.1%（境界域）・Hb 13.8・Cr 0.98・PT-INR 1.0・心電図：洞調律（AF なし）' },
+        { timestamp: '2026-05-01T09:00:00Z', name: '外来採血（2ヶ月後）', findings: 'LDL 72 mg/dL（スタチン効果・目標達成）・HbA1c 5.9%（改善）・腎機能正常' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T08:00:00Z', name: 'クロピドグレル 75mg（朝食後）', notes: '抗血小板薬。脳梗塞再発予防。内服忘れに注意。' },
+        { timestamp: '2026-02-01T08:00:00Z', name: 'ロスバスタチン 5mg（夕食後）', notes: 'スタチン。LDL目標 70mg/dL未満。横紋筋融解症に注意（筋痛が出たらすぐ報告）。' },
+        { timestamp: '2026-02-01T08:00:00Z', name: 'オルメサルタン 20mg（朝食後）', notes: 'ARB。降圧目標 130/80mmHg未満。脳卒中再発リスク低減のため血圧管理が最重要。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    bph: {
+      diseases: ['前立腺肥大症（BPH・IPSS中等症→重症）'],
+      profile: { age: 68, gender: 'male', height: 170, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: '泌尿器科初診', content: '頻尿（日中8回・夜間3回）・残尿感・尿勢低下を主訴に初診。IPSS 22点（重症）・QoL 5点（非常につらい）。直腸診：前立腺腫大（くるみ大）。PSA 2.8 ng/mL（年齢基準内）。残尿測定 95mL（超音波）。タムスロシン 0.4mg/日を開始。生活習慣の見直し（夕方以降の水分制限・カフェイン制限）を指導された。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'medication', title: 'α1遮断薬1ヶ月効果', content: 'タムスロシン開始3週間後。IPSS 22→15点（中等症に改善）。夜間頻尿 3→2回に減少。尿勢は改善を実感。残尿量は再測定で 50mL（改善）。立ちくらみは最初の1週間のみ。起き上がりをゆっくりすることで対処できている。QoL 5→3点（かなり改善）。' },
+        { timestamp: '2026-04-15T11:00:00Z', category: 'medication', title: 'デュタステリド追加', content: '前立腺が大きめ（30cc以上推定）のため、デュタステリド 0.5mg/日を追加。5α還元酵素阻害薬。PSAが半分程度になる副作用に注意（PSA追跡に影響）。射精量の減少が出ることも説明された。タムスロシン＋デュタステリドの併用療法（コンビネーション療法）。効果発現まで3〜6ヶ月かかると説明あり。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '3ヶ月まとめ', content: 'IPSS 22→11点（中等症の下限近く）。夜間頻尿 3→1〜2回。QoL 5→2点（比較的良い）。PSA：2.8→1.5 ng/mL（デュタステリドによる低下 - 正常反応）。残尿量 50→25mL（改善）。排尿日誌：1日平均5〜6回（初診時8〜10回から改善）。次の3ヶ月でさらなる改善を期待。手術（TURP / HoLEP）は現時点では不要。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 4 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '初診時採血', findings: 'PSA 2.8 ng/mL（年齢基準内・要注意上限）・Cr 0.85（腎機能正常）・尿沈渣：白血球0〜1/HPF（感染なし）・血糖 105mg/dL' },
+        { timestamp: '2026-05-15T09:00:00Z', name: '3ヶ月後採血', findings: 'PSA 1.5 ng/mL（デュタステリドによる低下・予定範囲内）・Cr 0.83（腎機能維持）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-03T08:00:00Z', name: 'タムスロシン（ハルナール）0.4mg/日', notes: '朝食後。α1遮断薬。立ちくらみに注意（最初の1週間）。' },
+        { timestamp: '2026-04-15T08:00:00Z', name: 'デュタステリド（アボルブ）0.5mg/日', notes: '朝食後。5α還元酵素阻害薬。効果発現まで3〜6ヶ月。PSAが約半分に低下（正常）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    vitiligo: {
+      diseases: ['白斑（尋常性白斑・非分節型・顔・体幹・四肢）'],
+      profile: { age: 28, gender: 'female', height: 163, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-02T10:00:00Z', category: 'symptoms', title: '皮膚科初診', content: '2年前から頬・首・手背に白い斑点が出始め、徐々に広がった。SALT スコア 8%（体表面積の8%に脱色素斑）。組織学的に白斑（vitiligo）確定。非分節型（尋常性白斑）。橋本病・甲状腺機能低下症を合併（チラージン服用中）。日焼け後に白斑境界が目立つため夏が特につらい。自己免疫との関係を説明された。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'medication', title: 'ルキソリチニブクリーム開始', content: 'ルキソリチニブクリーム（Opzelura・1.5%）を顔の白斑に1日2回塗布開始。JAK1/2阻害薬。「効果が出るまで24週かかることもある」と説明された。顔以外（体幹・四肢）にはタクロリムス軟膏 0.1%（プロトピック）を継続。毎週写真を撮って変化を記録することを勧められた。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'symptoms', title: 'ルキソリチニブ4週目', content: 'ルキソリチニブ開始から4週間。左頬の白斑（約2×3cm）の縁に薄い色素沈着が戻ってきた！主治医：「早期反応例で良好」。皮膚の発赤・かゆみなどの副作用はなし。体幹の白斑はプロトピックでほぼ変化なし（NB-UVBを追加提案された）。VESスコア（白斑広がり）：前回と同等（進行は止まっている）。' },
+        { timestamp: '2026-05-10T10:00:00Z', category: 'symptoms', title: '3ヶ月まとめ', content: '3ヶ月経過。SALT スコア 8% → 5%（3%改善・約38%縮小）。顔の反応が最も良好。左頬：白斑の70%が色素再生。右頬：40%再生。首は20%程度改善。NB-UVB光線療法を週2回開始（NB-UVB照射）し、体幹・四肢の白斑にも効果が出始めた。橋本病：TSH 2.1（安定）。精神面：白斑が改善するにつれて自信が戻ってきた。日焼け止めはSPF50+を通年塗布。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-02T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-10T09:00:00Z', fatigue_level: 1, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-02T09:00:00Z', name: '初診時採血（自己免疫スクリーニング）', findings: 'TSH 3.2（やや高め）・FT4 1.0（正常）・抗TPO抗体 850 IU/mL（高値・橋本病）・ANA 1:40陰性・血糖・腎機能正常' },
+        { timestamp: '2026-05-10T09:00:00Z', name: '3ヶ月後採血', findings: 'TSH 2.1（改善）・FT4 1.1（正常）・25-OH ビタミンD 28 ng/mL（補充効果）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'レボチロキシン（チラージン）50μg/朝', notes: '橋本病・甲状腺機能低下症の治療。TSH目標 1〜2.5。' },
+        { timestamp: '2026-03-18T08:00:00Z', name: 'ルキソリチニブクリーム 1.5%（Opzelura）1日2回', notes: 'JAK1/2阻害薬。顔の白斑に塗布。効果発現まで最大24週。' },
+        { timestamp: '2026-03-18T08:00:00Z', name: 'タクロリムス軟膏 0.1%（プロトピック）1日2回', notes: '顔以外の白斑部位。カルシニューリン阻害薬。長期使用時は悪性腫瘍リスクに注意（ステロイドより安全とされる）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    constipation: {
+      diseases: ['慢性便秘症（機能性・便秘型IBS合併・難治性）'],
+      profile: { age: 62, gender: 'female', height: 155, weight: 53 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: '消化器内科初診', content: '10年以上の慢性便秘。週1〜2回の排便（ブリストルスコア 1〜2）。腹部膨満感・鼓腸・左下腹部の不快感が毎日ある。酸化マグネシウム 1,000mg/日を5年以上内服しているが効果が不十分。大腸内視鏡（5年前）：器質的異常なし。Rome IV 基準：機能性便秘（FC）確定。排便日誌をつけるよう指示された。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'medication', title: 'リナクロチド追加', content: '機能性便秘に対してリナクロチド 0.25mg/日（ByovizTD・クロリナコチド）を朝食30分前に追加。腸管内 cGMP↑ → クロライドチャンネル活性化 → 腸液分泌促進 → 排便促進。主な副作用：下痢（注意）・腹痛。最初の1〜2週間は軟便になりやすいとのこと。酸化マグネシウムは 500mg/日に減量。' },
+        { timestamp: '2026-04-08T11:00:00Z', category: 'symptoms', title: 'リナクロチド3週目', content: 'リナクロチド開始後3週間。排便回数 週1〜2回 → 週4〜5回（ほぼ毎日）に改善！ブリストルスコア 1〜2 → 3〜4（普通便）に改善。腹部膨満感が明らかに軽減した。副作用（下痢）：最初の1週間に2回（軽度・自然軽快）。現在は問題なし。腸が「動いている」感覚が戻ってきた。QOLの大幅な改善を実感。' },
+        { timestamp: '2026-05-10T10:00:00Z', category: 'vitals', title: '2ヶ月まとめ', content: '排便回数：週1〜2 → 週4〜5回（安定）。ブリストルスコア：平均 3.5（普通便）。腹部膨満感：以前より60〜70%軽減。排便時の努力：「力まずに出る」日が増えた。体重：53kg → 53.5kg（微増・栄養吸収の改善）。食物繊維：1日 18g（目標 20g）。水分：1日 1.5L。ウォーキング：週4日・20分（継続）。次回受診：3ヶ月後。酸化マグネシウムの中止を検討中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-10T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '初診時採血（器質的疾患除外）', findings: 'CEA 1.8 ng/mL（正常）・TSH 2.2（正常）・Ca 9.2（正常）・血糖 98mg/dL・貧血なし・便潜血（2回）：陰性' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T08:00:00Z', name: '酸化マグネシウム（当初1,000mg → 現在500mg/日）', notes: '緩下剤。水分を引き込んで軟便化。腎機能低下時は高Mg血症に注意。長期使用中。' },
+        { timestamp: '2026-03-18T08:00:00Z', name: 'リナクロチド 0.25mg（朝食30分前）', notes: '腸液分泌促進薬（グアニル酸シクラーゼC作動薬）。機能性便秘・IBS-Cに適応。最初の1〜2週間は下痢に注意。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
