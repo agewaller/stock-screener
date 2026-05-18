@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0f4ff"/>
+      <stop offset="100%" stop-color="#c7d2fe"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4f46e5" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="58" font-weight="900" fill="#1e1b4b">肺線維症</text>
+    <text x="0" y="162" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="36" font-weight="800" fill="#1e40af">（IPF・間質性肺疾患）</text>
+    <text x="0" y="218" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">SpO2・肺機能・抗線維化薬・在宅酸素を AI で記録・管理</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="260" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">世界患者数</text>
+    <text x="20" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="26" font-weight="800" fill="#1e1b4b">約 300 万人（推計）</text>
+    <rect x="280" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="300" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">抗線維化薬</text>
+    <text x="300" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="800" fill="#1e1b4b">ニンテダニブ・ピルフェニドン</text>
+    <rect x="580" y="0" width="220" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="600" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">ICD-11</text>
+    <text x="600" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#1e1b4b">CB03</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e1b4b">📝  完全無料  ・  広告なし  ・  AI 分析</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#4f46e5">cares.advisers.jp/pulmonary_fibrosis.html</text>
+  </g>
+</svg>
