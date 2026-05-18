@@ -3436,6 +3436,31 @@ var CONFIG = {
       ],
       sleepData: [], activityData: [], meals: []
     },
+    emf: {
+      diseases: ['電磁波過敏症（EHS）・機能性身体症候群'],
+      profile: { age: 40, gender: 'female', height: 162, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: '症状の始まり', content: '3年前から、スマートフォンを長時間使うと頭痛・ピリピリ感・集中力低下が出るようになった。Wi-Fi機器を自宅から撤去し、有線LANに切り替えた。スマートフォンは機内モードで使用中。症状が「電磁波」から来ていると確信しているが、内科・神経科・心療内科では「電磁波との因果関係は証明されていない」と言われた。' },
+        { timestamp: '2026-03-12T09:00:00Z', category: 'symptoms', title: '外出困難の記録', content: 'カフェや図書館ではWi-Fiが多く、入った直後から頭痛（5/10）が始まる。電車内でスマートフォンを使っている乗客が多く、頭痛が悪化。外出を週1〜2回に制限している。在宅ワークに切り替えたが、仕事の効率が落ちている。睡眠の質も低下（4〜5時間で目が覚める）。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'symptoms', title: '心療内科受診', content: '心療内科医から「症状は実在するが電磁波との関連を示す客観的証拠はない」と説明を受けた。睡眠障害・不安症状を治療することを提案された。ミルタザピン 15mg（睡眠改善）とSSRI（パロキセチン 10mg）の処方を受けた。「電磁波が原因」という考えには複雑な気持ちがある。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'medication', title: '睡眠改善効果', content: 'ミルタザピン開始3週間。睡眠時間が 4→6時間に改善。睡眠の質向上と同時に、頭痛の頻度も減少（週7→4回）。主治医：「睡眠不足が症状を悪化させていた可能性が高い」。電磁波曝露と症状の記録を続けているが、睡眠良好の日は同じ環境でも症状が軽いパターンに気づいた。' },
+        { timestamp: '2026-05-05T11:00:00Z', category: 'symptoms', title: '認知行動療法（CBT）開始', content: 'CBT（認知行動療法）を週1回開始。「電磁波が危険」という信念と症状の関係を客観視する練習。段階的に曝露を試みている（最初は10分→20分→30分のスマートフォン使用）。頭痛は出るが「以前より短時間で回復するようになった」実感がある。週の外出回数が2→4回に増加。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 4 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-05-05T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '除外診断のための採血', findings: '甲状腺（TSH・FT4）正常・貧血なし・電解質正常・CRP正常・ANA陰性。神経学的検査：異常なし。MRI脳：異常なし。電磁波曝露との因果関係を支持する客観的検査所見は見つからなかった。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-25T22:00:00Z', name: 'ミルタザピン 15mg（就寝前）', notes: '睡眠障害改善目的。電磁波過敏症の直接治療ではなく、睡眠と不安症状へのアプローチ。' },
+        { timestamp: '2026-03-25T08:00:00Z', name: 'パロキセチン 10mg（朝）', notes: '不安症状・身体化への対処。徐々に増量予定。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
     chronic_back_pain: {
       diseases: ['慢性腰痛症（椎間板ヘルニア・腰部脊柱管狭窄症）'],
       profile: { age: 52, gender: 'male', height: 172, weight: 78 },
