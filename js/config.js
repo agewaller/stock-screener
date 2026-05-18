@@ -113,7 +113,9 @@ var CONFIG = {
         { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' },
         { id: 'tinnitus', name: '耳鳴り・感音性難聴', icd: 'H93.1' },
         { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' },
-        { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' }
+        { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' },
+        { id: 'interstitial_cystitis', name: '間質性膀胱炎（IC・膀胱痛症候群）', icd: 'MF55' },
+        { id: 'loh', name: '男性更年期障害（LOH症候群）', icd: 'MA13' }
       ]
     },
     {
@@ -173,7 +175,8 @@ var CONFIG = {
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
-        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
+        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
+        { id: 'functional_dyspepsia', name: '機能性ディスペプシア（FD）', icd: 'DA45' }
       ]
     },
     {
@@ -192,7 +195,8 @@ var CONFIG = {
         { id: 'behcet', name: 'ベーチェット病', icd: '4A44.00' },
         { id: 'dermatomyositis', name: '多発性筋炎・皮膚筋炎（IIM）', icd: 'L94.0' },
         { id: 'ssc', name: '全身性強皮症（SSc）', icd: 'LD50' },
-        { id: 'nmosd', name: '視神経脊髄炎スペクトラム障害（NMOSD）', icd: '8A42' }
+        { id: 'nmosd', name: '視神経脊髄炎スペクトラム障害（NMOSD）', icd: '8A42' },
+        { id: 'spinal_stenosis', name: '脊柱管狭窄症（腰部・頸部）', icd: 'FA88' }
       ]
     },
     {
@@ -430,6 +434,14 @@ var CONFIG = {
                           japan:     50_000, japanLabel: '約 5 万人',              japanSource: '難病情報センター（指定難病第51号）' },
     nmosd:              { world:    350_000, label: '約 35 万人 (推計)',            tier: 2, density: 'medium', source: '10万人に 0.52〜4.4 人',
                           japan:       4_500, japanLabel: '約 4,500 人',            japanSource: '難病情報センター（指定難病第131号）' },
+    spinal_stenosis:    { world:  500_000_000, label: '約 5 億人 (推計)',           tier: 2, density: 'medium', source: '腰部・頸部脊柱管狭窄症合計推計',
+                          japan:   3_600_000, japanLabel: '約 360 万人',            japanSource: '日本整形外科学会推計' },
+    functional_dyspepsia: { world: 800_000_000, label: '約 8 億人 (推計)',          tier: 2, density: 'medium', source: '世界有病率 約10%',
+                          japan:  13_000_000, japanLabel: '約 1,300 万人',          japanSource: '日本消化器病学会推計' },
+    interstitial_cystitis: { world: 10_000_000, label: '約 1,000 万人 (推計)',      tier: 2, density: 'high',   source: '世界有病率推計',
+                          japan:      50_000, japanLabel: '約 5 万人',              japanSource: '厚労省推計' },
+    loh:                { world:  200_000_000, label: '約 2 億人 (推計)',            tier: 2, density: 'medium', source: '40歳以上男性の 20〜30%',
+                          japan:   6_000_000, japanLabel: '約 600 万人',            japanSource: '日本Men\'s Health医学会推計' },
   },
 
   // ============================================================
@@ -1371,6 +1383,22 @@ var CONFIG = {
     nmosd: [
       '視神経脊髄炎スペクトラム障害（NMOSD）と診断されてイネビリズマブを月1回投与している。以前多発性硬化症と誤診されていた。再発の早期発見のために、視力変化・脊髄症状（手足のしびれ・排尿障害）を毎日記録したい。',
       '抗AQP4抗体陽性のNMOSD。視神経炎を2回経験して左眼の視力が低下した。現在サトラリズマブで再発予防中。再発の前触れとなる症状（Uhthoff現象・Lhermitte徴候）を日記に記録している。'
+    ],
+    spinal_stenosis: [
+      '腰部脊柱管狭窄症と診断されて1年。歩くと右足がしびれて200m以上歩けない。少し前屈みになると楽になる。プロスタグランジンE1とNSAIDsを服用中。手術を避けたいので、歩行距離としびれを記録して保存療法の効果を確かめたい。',
+      '頸部脊柱管狭窄症。手指のしびれと巧緻運動障害（ボタンが留めにくい）が主な症状。MRIで脊髄圧迫があると言われている。神経ブロックと理学療法を受けている。首の痛みと手指の動きを毎日記録して担当医に報告したい。'
+    ],
+    functional_dyspepsia: [
+      '機能性ディスペプシア（FD）と診断されて2年。食後の胃もたれと早期満腹感が主な悩み。ピロリ菌除菌後も症状が続いている。六君子湯とモサプリドを服用中。何を食べると悪化するか食事日誌をつけて担当医に見せたい。',
+      '食後にみぞおちが痛くて眠れない夜がある。内視鏡では異常なし。ストレスが多い職場環境。FDと診断されてPPIをもらったが効きが不十分。症状と食事・ストレスレベルの関係を記録して治療に役立てたい。'
+    ],
+    interstitial_cystitis: [
+      '間質性膀胱炎と診断されて3年。1日30回以上のトイレ、膀胱が張ると激しい痛みが出る。ペントサンポリサルフェートとアミトリプチリンを服用中。食事でトリガーになるものを特定するために排尿日誌と食事記録をつけている。',
+      'ハンナ型間質性膀胱炎。膀胱水圧拡張術を半年ごとに受けている。手術後2〜3ヶ月は症状が楽になるが、またぶり返す。夜間頻尿で睡眠が取れずQOLが著しく低下。症状の波と治療タイミングを記録して最適化したい。'
+    ],
+    loh: [
+      '50代から倦怠感・気力の低下・性欲の減退が続いている。テストステロン検査で「低値」と言われた。LOH症候群（男性更年期障害）と診断。テストステロン補充療法（筋注）を始めて2ヶ月経つ。AMSスコアと体力の変化を記録して治療効果を確かめたい。',
+      '45歳・男性。仕事のストレスが増えてからイライラ・不眠・集中力の低下が続く。うつかと思ったが、テストステロンが低かった。生活習慣改善（筋トレ・禁酒・睡眠改善）を始めたところ。気力・睡眠・体力の変化を毎日記録している。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -3501,6 +3529,111 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-03-03T09:00:00Z', name: 'サトラリズマブ（エンスプリング）120mg/4週 皮下注射', notes: '抗IL-6受容体抗体。NMOSD再発予防。自己注射可能（冷蔵保存）。' },
         { timestamp: '2026-03-03T08:00:00Z', name: 'ソリフェナシン（ベシケア）5mg', notes: '過活動膀胱・排尿障害（NMOSD合併）。残尿測定を定期的に実施。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    spinal_stenosis: {
+      diseases: ['腰部脊柱管狭窄症'],
+      profile: { age: 68, gender: 'male', height: 168, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-03-05T10:00:00Z', category: 'symptoms', title: '診断から1ヶ月', content: '1年前から歩くと右足の外側がしびれてくる。300m歩くと休まないといけない（間欠性跛行）。前かがみになると楽になる。MRIで「L4-5レベルの腰部脊柱管狭窄症」と確定診断。プロスタグランジンE1（オパルモン）とロキソプロフェンを処方された。手術はなるべく避けたい。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'symptoms', title: '歩行記録', content: '今日の歩行：自宅→コンビニ（200m）で右足しびれ出現→ベンチで3分休憩→また歩けた。休憩なしで歩ける距離：150〜200m。前かがみ（シルバーカー使用）だと300m歩けた。痛みNRS 4/10、しびれNRS 5/10。プロスタグランジンを2週間服用しているがまだ改善は感じない。' },
+        { timestamp: '2026-04-02T11:00:00Z', category: 'treatment', title: '硬膜外ブロック1回目', content: '整形外科クリニックで硬膜外神経ブロック（L4-5、ステロイド＋局所麻酔）を受けた。施術後6時間は右足のしびれが消えた。翌日から徐々に再発したが、ピーク時のしびれがNRS 5→3に改善。歩行距離：300mで休憩が必要だったのが400mまで伸びた。理学療法（体幹安定化訓練）も週1回開始。' },
+        { timestamp: '2026-04-25T09:00:00Z', category: 'symptoms', title: 'PT2ヶ月評価', content: '理学療法（ドローイン・骨盤傾斜）を2ヶ月継続。毎朝10分の体幹トレを習慣化。歩行可能距離：150m→500mに改善（大幅改善！）。痛みNRS 2/10・しびれNRS 2/10。排尿障害：なし（膀胱直腸障害出たら即受診と医師に言われている）。硬膜外ブロック2回目を来月予定。' },
+        { timestamp: '2026-05-18T10:00:00Z', category: 'symptoms', title: '3ヶ月まとめ', content: '保存療法（薬・ブロック・理学療法）で大幅改善。現在700m程度は休まず歩ける。スーパーの買い物カートを使うとさらに楽（前傾姿勢の効果）。手術を回避できる可能性が出てきた。次回MRI（3ヶ月後）で骨棘の変化を確認予定。毎日の歩行距離記録が治療選択の根拠になっている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 5, pain_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-02T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-25T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-05-18T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T09:00:00Z', name: 'MRI診断時採血', findings: 'CRP 0.2mg/dL（正常）・血糖 108mg/dL（境界）・腎機能正常・貧血なし。MRI L4-5：黄色靱帯肥厚・硬膜管面積 70mm²（正常：100mm²以上）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-05T08:00:00Z', name: 'リマプロストアルファデクス（オパルモン）15μg/日', notes: 'プロスタグランジンE1製剤。脊柱管内血流改善。腰部脊柱管狭窄症の第一選択薬。食直前服用。' },
+        { timestamp: '2026-03-05T08:00:00Z', name: 'ロキソプロフェン 60mg/回（頓服）', notes: '疼痛時のみ。胃保護のためPPIと併用。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    functional_dyspepsia: {
+      diseases: ['機能性ディスペプシア（FD・食後愁訴症候群）'],
+      profile: { age: 38, gender: 'female', height: 162, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-01T11:00:00Z', category: 'symptoms', title: '記録開始', content: '2年前からずっと食後の胃もたれが辛い。食べ始めてすぐ満腹感が出る（早期満腹感）。200g以上食べられないので体重が減ってきた。内視鏡（ガスリー）で異常なし・ピロリ菌陰性。消化器内科で「機能性ディスペプシア（FD）の食後愁訴症候群型（PDS型）」と診断された。六君子湯とモサプリドを処方された。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'symptoms', title: '食事日誌2週間まとめ', content: '食事記録をつけ始めて分かったこと：脂質が多い食事（揚げ物・ステーキ）で翌日まで胃もたれが続く。コーヒーを飲むと30分後に胃痛（NRS 4）。炭酸飲料はガスで腹部膨満感が悪化。逆に、白米・卵・白身魚・豆腐は症状が出にくい。少量（100〜150g）を1日5〜6回に分けて食べると楽。' },
+        { timestamp: '2026-04-01T09:00:00Z', category: 'medication', title: '六君子湯2ヶ月評価', content: '六君子湯（7.5g/日）を2ヶ月服用。早期満腹感が NRS 7→4 に改善（！）。胃もたれは NRS 6→5（やや改善）。食事量が 200g→280g に増加。体重 52.0kg→53.2kg（＋1.2kg）。モサプリドはあまり効果を実感できず。主治医：「続けましょう、もう少し改善するかも」。ストレスのある週は悪化するパターンも明確になってきた。' },
+        { timestamp: '2026-04-20T10:00:00Z', category: 'symptoms', title: 'ストレスと症状の関連', content: '職場の繁忙期（4月・新入社員研修を担当）に入ってから症状悪化。NRS 平均：胃もたれ 6、早期満腹感 6。ストレスレベル 8/10（多忙）の週は症状スコアが高いパターンが記録に明確に現れている。主治医に相談→アミトリプチリン（10mg/夜）を追加。「脳腸相関のアプローチ」と説明された。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'medication', title: 'アミトリプチリン1ヶ月', content: 'アミトリプチリン追加1ヶ月。胃もたれ NRS 6→3（大幅改善）。食事量 280g→350g に増加。体重 53.2kg→54.8kg（順調回復）。繁忙期が落ち着いたこともあり相乗効果。日記記録で「食事・ストレス・症状」の三角関係が可視化でき、主治医との会話の質が変わった。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 5, pain_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-03-15T09:00:00Z', fatigue_level: 5, pain_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 6, pain_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '初診時採血・内視鏡', findings: 'CRP正常・甲状腺機能正常・血糖正常。上部消化管内視鏡：異常なし（胃潰瘍・胃癌なし）。H.pylori 抗体陰性（除菌歴なし）。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: '六君子湯エキス顆粒 7.5g/日', notes: '胃排出促進・グレリン分泌刺激。食前30分服用。FD・PDS型に保険適用。' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'モサプリドクエン酸塩（ガスモチン）15mg/日', notes: '消化管運動改善薬。食後服用。' },
+        { timestamp: '2026-04-20T22:00:00Z', name: 'アミトリプチリン（トリプタノール）10mg 就寝前', notes: '三環系抗うつ薬・少量使用。内臓知覚過敏・FD の脳腸相関治療。眠気に注意（就寝前に服用）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    interstitial_cystitis: {
+      diseases: ['間質性膀胱炎（ハンナ型・膀胱痛症候群）'],
+      profile: { age: 44, gender: 'female', height: 160, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-02T10:00:00Z', category: 'symptoms', title: '間質性膀胱炎の経過', content: '4年前から頻尿・骨盤痛が悪化。最初は「細菌性膀胱炎」と繰り返し抗菌薬を処方されたが改善なし。膀胱内視鏡（麻酔下）でハンナ病変を確認→「ハンナ型間質性膀胱炎」確定診断。現在ペントサンポリサルフェート（SP-54）とアミトリプチリン 25mg を服用中。1日の排尿回数 30〜35回、夜間頻尿 6〜8回。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'symptoms', title: '排尿日誌まとめ', content: '排尿日誌1週間分：1日排尿回数 平均31回（最多38回・最少25回）、夜間頻尿 平均6.5回（睡眠分断が深刻）。1回排尿量：平均 60〜80mL（膀胱容量が著しく低下）。膀胱充満時の痛み NRS 7/10（排尿後は3/10に下がる）。トリガー食品の確認：コーヒー・オレンジジュース・トマト・チョコレートで増悪を確認。' },
+        { timestamp: '2026-04-05T11:00:00Z', category: 'treatment', title: '膀胱水圧拡張術（2回目）', content: '膀胱水圧拡張術（麻酔下）実施。ハンナ病変に対して電気凝固術も同時施行。術後1週間：排尿回数 31→20回（大幅減少）・夜間頻尿 7→3回。骨盤痛 NRS 7→3。前回（6ヶ月前）と同様の改善。「効果は3〜6ヶ月持続する」と主治医から説明。1日の記録を継続して次回拡張術のタイミングを判断する。' },
+        { timestamp: '2026-04-28T10:00:00Z', category: 'symptoms', title: '拡張術後3週間', content: '排尿回数：15〜18回/日に安定（IC としてはかなり良い状態）。夜間頻尿：2〜3回（以前の7〜8回から大幅改善）。睡眠の質が回復した実感がある。IC 食事（酸性食品・カフェイン・アルコール・スパイシー完全除去）を継続。体重が安定している（以前は痛みで食事が減っていた）。骨盤底筋リラクゼーション（PT指導）も並行して継続。' },
+        { timestamp: '2026-05-16T10:00:00Z', category: 'symptoms', title: '拡張術後6週間', content: 'やや症状がぶり返し始めた：排尿回数 18→23回/日に増加。骨盤痛 NRS 4（先週2から増悪）。「ぶり返しのパターン」が記録で見えてきた→次の拡張術は術後3〜4ヶ月目が最適と主治医と相談。ペントサンポリサルフェートを増量（100mg×3→100mg×4）検討中。記録が「治療サイクルの最適化」に役立っている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-02T09:00:00Z', fatigue_level: 7, pain_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 7, pain_level: 6, sleep_quality: 3 },
+        { timestamp: '2026-04-05T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-28T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-05-16T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-02T09:00:00Z', name: '細菌培養・尿検査', findings: '尿培養：陰性（細菌性膀胱炎ではない）。尿細胞診：陰性（膀胱癌否定）。尿中好酸球：検出（ハンナ型IC の特徴的所見）。過去4年の繰り返し尿培養：全て陰性。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-02T08:00:00Z', name: 'ペントサンポリサルフェートナトリウム（SP-54）300mg/日', notes: '膀胱粘膜保護薬。IC 第一選択薬。効果発現まで3〜6ヶ月かかることがある。食前1時間に服用。' },
+        { timestamp: '2026-03-02T22:00:00Z', name: 'アミトリプチリン（トリプタノール）25mg 就寝前', notes: '内臓痛覚過敏の軽減・夜間頻尿による睡眠障害の改善。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    loh: {
+      diseases: ['男性更年期障害（LOH症候群・加齢性腺機能低下症）'],
+      profile: { age: 53, gender: 'male', height: 173, weight: 82 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: 'LOH診断', content: '2年前から疲れやすく気力が出ない。性欲の低下・勃起力の低下。集中力・記憶力の低下を感じる。うつ病かと思って心療内科を受診したが「うつの基準は満たさない」と言われた。泌尿器科でテストステロン測定：総テストステロン 210ng/dL・遊離テストステロン 6.5pg/mL（ともに低値）。AMS スコア 45点（中等度）→LOH症候群と診断。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'TRT開始2週間', content: 'テストステロン補充療法（筋注：エナント酸テストステロン 250mg/4週）開始2週間。今週のAMSスコア：38点（45→38、やや改善）。エネルギーが少し戻ってきた実感あり。性欲：変化感じない（まだ早いかも）。副作用：注射部位の痛みあり。PSA検査：1.2ng/mL（正常範囲）。血球（多血症チェック）：Hct 44%（正常）。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'medication', title: 'TRT2ヶ月評価', content: 'TRT 2ヶ月目の採血：総テストステロン 580ng/dL（正常範囲）・遊離テストステロン 14.2pg/mL（改善）。AMSスコア 45→32（改善）。疲労感：大幅改善（朝のだるさがなくなった）。性欲：回復してきた。集中力：「仕事のパフォーマンスが上がった」実感。体重：82kg→81kg（筋肉増加・脂肪減少）。筋トレ週3回を継続している。' },
+        { timestamp: '2026-04-28T10:00:00Z', category: 'symptoms', title: '生活習慣改善の効果', content: '筋トレ（週3回・週60分）と良質な睡眠（7時間確保）を継続中。飲酒を週3回→週1回に減らした。体重 81→79kg（-3kg）。腹囲 95→90cm（内臓脂肪の減少）。BMI 27→26。テストステロン値との相乗効果を感じる。AMSスコア：28点（軽度範囲）。「10年前の自分に戻った気分」と主治医に伝えた。' },
+        { timestamp: '2026-05-18T10:00:00Z', category: 'vitals', title: '3ヶ月後の総評', content: 'TRT 3ヶ月・筋トレ継続。AMSスコア 45→25（著明改善）。体重 82→78kg。Hct 45%（多血症なし）・PSA 1.3ng/mL（変化なし・前立腺は問題なし）。6ヶ月後に次回採血予定。「このまま治療を継続するか、3〜6ヶ月の休薬試験をするか」を主治医と相談中。毎日の記録が「治療前との比較」を可能にした。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 7, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-28T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-18T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '初診時採血（早朝採血）', findings: '総テストステロン 210ng/dL（基準値 270〜1070ng/dL、低値）・遊離テストステロン 6.5pg/mL（基準値 8.5pg/mL以上、低値）・LH・FSH：正常（原発性腺機能低下でなく加齢性）・PSA 1.2ng/mL（正常）・Hct 44%・甲状腺正常・血糖 HbA1c 5.9%（境界）' },
+        { timestamp: '2026-04-10T09:00:00Z', name: 'TRT 2ヶ月後採血', findings: '総テストステロン 580ng/dL（正常化）・遊離テストステロン 14.2pg/mL（正常化）・Hct 45%（多血症なし）・PSA 1.3ng/mL（変化なし）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-05T10:00:00Z', name: 'エナント酸テストステロン 250mg 4週毎筋注', notes: 'TRT（テストステロン補充療法）。泌尿器科で実施。PSA・Hct 定期モニタリング必須。前立腺肥大症・前立腺癌に禁忌。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
