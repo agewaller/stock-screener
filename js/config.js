@@ -75,7 +75,8 @@ var CONFIG = {
         { id: 'substance', name: '物質依存症', icd: '6C4' },
         { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
         { id: 'dissociative', name: '解離性障害', icd: '6B6' },
-        { id: 'panic', name: 'パニック障害', icd: 'F41.0' }
+        { id: 'panic', name: 'パニック障害', icd: 'F41.0' },
+        { id: 'postpartum', name: '産後うつ（周産期メンタルヘルス）', icd: '6E20' }
       ]
     },
     {
@@ -100,7 +101,8 @@ var CONFIG = {
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
         { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' },
         { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'EE40' },
-        { id: 'vitiligo', name: '白斑（尋常性白斑）', icd: 'EE60' }
+        { id: 'vitiligo', name: '白斑（尋常性白斑）', icd: 'EE60' },
+        { id: 'herpes_zoster', name: '帯状疱疹（急性期・PHN予防）', icd: '1E91' }
       ]
     },
     {
@@ -119,7 +121,9 @@ var CONFIG = {
         { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' },
         { id: 'interstitial_cystitis', name: '間質性膀胱炎（IC・膀胱痛症候群）', icd: 'MF55' },
         { id: 'loh', name: '男性更年期障害（LOH症候群）', icd: 'MA13' },
-        { id: 'bph', name: '前立腺肥大症（BPH）', icd: 'GA90' }
+        { id: 'bph', name: '前立腺肥大症（BPH）', icd: 'GA90' },
+        { id: 'infertility', name: '不妊症・ART（体外受精・不妊治療）', icd: 'GB40' },
+        { id: 'myoma', name: '子宮筋腫（子宮平滑筋腫）', icd: 'DF20' }
       ]
     },
     {
@@ -466,6 +470,14 @@ var CONFIG = {
                           japan:   2_000_000, japanLabel: '約 200 万人',            japanSource: '日本皮膚科学会推計（有病率約 1〜2%）' },
     constipation:       { world: 1_000_000_000, label: '約 10 億人 (推計)',          tier: 2, density: 'medium', source: '世界有病率 14〜16% メタ解析外挿',
                           japan:  15_000_000, japanLabel: '約 1,500 万人',          japanSource: '日本消化器病学会推計（有病率 14〜16%）' },
+    infertility:        { world:  50_000_000, label: '約 5,000 万カップル (推計)',    tier: 2, density: 'high',   source: 'WHO 世界不妊推計（カップルの 8〜12%）',
+                          japan:     650_000, japanLabel: '年間約 65 万件（ART 周期）', japanSource: '日本産科婦人科学会 ART データブック' },
+    myoma:              { world: 200_000_000, label: '約 2 億人 (推計)',              tier: 2, density: 'medium', source: '生殖年齢女性の 20〜40% に発症',
+                          japan:   6_000_000, japanLabel: '約 600 万人',            japanSource: '日本産科婦人科学会推計（生殖年齢女性の 20〜30%）' },
+    postpartum:         { world:  20_000_000, label: '年間約 2,000 万人 (推計)',      tier: 2, density: 'high',   source: '産後うつ有病率 10〜15%（世界出生数推計）',
+                          japan:     130_000, japanLabel: '年間約 13 万人 (推計)',   japanSource: '日本の出生数×産後うつ有病率 10〜15%' },
+    herpes_zoster:      { world:  30_000_000, label: '年間約 3,000 万人 (推計)',      tier: 2, density: 'medium', source: '80歳までの生涯累積有病率 30%（世界推計）',
+                          japan:   1_000_000, japanLabel: '年間約 100 万人発症',     japanSource: '国内疫学調査（MHLW）' },
   },
 
   // ============================================================
@@ -1455,6 +1467,22 @@ var CONFIG = {
     constipation: [
       '慢性便秘症で週1〜2回しか排便がない。ブリストル便形状スコアは1〜2。酸化マグネシウムを飲んでいるが効果が不十分。排便回数・便形状・腹部症状を毎日記録して主治医に改善を相談したい。',
       '過敏性腸症候群（便秘型）で下剤を飲み続けているが、繰り返し便秘になる。リナクロチドを追加して1ヶ月。お腹の張りと排便のパターンを記録して薬の調整に役立てたい。'
+    ],
+    infertility: [
+      '体外受精（IVF）3周期目。AMH 0.8 ng/mL（低値）。今周期は採卵5個で受精2個、胚盤胞1個（4BB）が凍結保存できた。次の凍結胚移植に向けてホルモン値と周期記録をまとめたい。',
+      '原因不明不妊で人工授精（IUI）を5回試みたが妊娠せず。今月から体外受精に移行。卵巣刺激注射の記録・内診所見・採卵数を毎日記録して治療経過を整理したい。'
+    ],
+    myoma: [
+      '子宮筋腫（筋層内・5cm）があり、過多月経でナプキンを1時間に1枚替える日が3日続く。Hb 9.2（貧血）。鉄剤とジエノゲストを開始。月経量と貧血の改善を記録したい。',
+      '子宮筋腫核出術を受けて3ヶ月。筋腫は3個（最大3cm・粘膜下）を摘出。術後の月経量が劇的に改善した。再発がないか超音波所見と症状を半年ごとに記録していきたい。'
+    ],
+    postpartum: [
+      '産後3ヶ月。赤ちゃんがかわいいと思えない日がある。夜中の授乳で睡眠が取れず、涙が止まらない。EPDSスコアが12点。産後うつかもしれない。毎日の気分と睡眠を記録して主治医に見せたい。',
+      '産後うつでセルトラリンを服用中。少しずつ気分が安定してきた。育児が少し楽になった気がする。薬の効果を記録して、主治医との受診に活かしたい。'
+    ],
+    herpes_zoster: [
+      '帯状疱疹が右側胸部に出た。抗ウイルス薬（バラシクロビル）を3日前から飲んでいる。水疱が多く痛みが強い（NRS 8/10）。痂皮化の進行と痛みの変化を毎日記録して主治医に報告したい。',
+      '帯状疱疹後神経痛（PHN）への移行が心配。皮疹は治ったが3ヶ月経っても痛みが続いている。プレガバリンを開始。痛みのスコアと薬の効果を記録して次のペインクリニック受診に備えたい。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -4088,6 +4116,104 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-02-01T08:00:00Z', name: '酸化マグネシウム（当初1,000mg → 現在500mg/日）', notes: '緩下剤。水分を引き込んで軟便化。腎機能低下時は高Mg血症に注意。長期使用中。' },
         { timestamp: '2026-03-18T08:00:00Z', name: 'リナクロチド 0.25mg（朝食30分前）', notes: '腸液分泌促進薬（グアニル酸シクラーゼC作動薬）。機能性便秘・IBS-Cに適応。最初の1〜2週間は下痢に注意。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    infertility: {
+      diseases: ['不妊症（両側卵管閉塞・男性軽度不妊・体外受精周期3回目）'],
+      profile: { age: 35, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: 'IVF周期3回目スタート', content: '不妊治療を始めて2年。タイミング法（6ヶ月）→人工授精 3 回（失敗）→ IVF 2 回（採卵 5 個・3 個→受精したが胚盤胞に至らず）。今周期は卵巣刺激プロトコルをショート法に変更。AMH 0.8 ng/mL（低値）・AFC（月経3日目の卵胞数）：右 3 個・左 2 個＝5 個。FSH 12.4 mIU/mL（軽度上昇）。主治医：「今回はゴナドトロピン量を増やして丁寧に刺激します」。パートナーの精液所見：精子濃度 18M/mL・運動率 42%（軽度低値）→ ICSI を使用予定。' },
+        { timestamp: '2026-03-08T09:00:00Z', category: 'treatment', title: '卵巣刺激8日目', content: '連日のゴナドトロピン注射（rFSH 225 単位）を8日間継続。今日の内診：右卵巣 3 個（14〜17mm）・左卵巣 2 個（12〜15mm）。E2：1,820 pg/mL（良好）。明日は HCG トリガー（オビドレル250μg）予定。腹部の張り感・軽い不快感あり（OHSS は軽度以下）。採卵は明後日（10日目）。7時間の絶食後に採卵室へ。' },
+        { timestamp: '2026-03-10T16:00:00Z', category: 'treatment', title: '採卵日', content: '採卵完了！採卵数 6 個（前回最多！）。全卵成熟（MII）：5 個。受精確認（明日）を待つ。採卵後の麻酔覚醒は良好。下腹部の鈍痛（NRS 3/10）で鎮痛剤（ロキソプロフェン）を使用。今夜から黄体サポート（プロゲステロン腟剤 400mg/日）開始。OHSS 予防のため水分 2L/日・塩分補給を指示された。' },
+        { timestamp: '2026-03-11T10:00:00Z', category: 'treatment', title: '受精確認', content: '受精確認：6 個採卵 → 5 個成熟卵 → ICSI で 4 個受精（受精率 80%！過去最高）。培養5日目（3/15）に胚盤胞を確認予定。今周期は新鮮胚移植はせず全胚凍結方針（軽度 OHSS リスクと子宮内膜の状態から）。採卵後の腹部膨満感は軽快中。' },
+        { timestamp: '2026-03-15T11:00:00Z', category: 'treatment', title: '胚盤胞確認', content: '培養5日目（D5）胚盤胞確認：4受精卵 → 3個が胚盤胞（D5：1個 4AA、D6：2個 4BB・3BB）。3個を凍結保存！前回は0個だったので大きな進歩。PGT-A（着床前胚染色体異数性検査）の適応を主治医と相談中（35歳・反復不成功）。凍結胚移植は来月の自然周期を予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-03-08T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-03-10T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-03-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: 'IVF開始前採血', findings: 'AMH 0.8 ng/mL（低値）・FSH 12.4 mIU/mL（軽度高値）・LH 5.2・E2 38 pg/mL・PRL 正常・TSH 1.8・空腹時血糖 正常' },
+        { timestamp: '2026-03-08T09:00:00Z', name: '卵巣刺激8日目', findings: 'E2 1,820 pg/mL（目標通り）・LH <1（GnRHアゴニストで抑制中）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'rFSH（ゴナドトロピン）225単位 連日皮下注射', notes: '卵巣刺激用。腹部皮下に自己注射。注射部位を毎日記録。' },
+        { timestamp: '2026-03-10T22:00:00Z', name: 'プロゲステロン腟剤 400mg/日', notes: '黄体サポート。採卵後〜移植後8週まで継続予定。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    myoma: {
+      diseases: ['子宮筋腫（筋層内・漿膜下・多発・過多月経・鉄欠乏性貧血合併）'],
+      profile: { age: 38, gender: 'female', height: 162, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-03-02T10:00:00Z', category: 'symptoms', title: '婦人科初診', content: '1年前から月経量が増え、最近は月経量が異常に多い。1時間に夜用ナプキン1枚が必要な日が4日間続く。PBAC スコア（ピクハム採点）：280（正常 <100）。定期健診で Hb 8.4（貧血）・フェリチン 5 ng/mL（枯渇）。経腟超音波：筋腫 3 個（最大筋層内 6cm、他に 3cm・2.5cm）。MRI で確認予定。子宮全体のサイズ：妊娠16週大に増大。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'ジエノゲスト開始', content: '手術前の貧血改善と月経量減少のため、ジエノゲスト（ディナゲスト）2mg/日を開始。同時に経口鉄剤（フェロミア 100mg/日）を追加。ジエノゲスト 1 週間後：不正出血が少量続いているが月経は来ていない（正常反応）。Hb が 8.4→ 8.7 と微改善。今月中に腹腔鏡下子宮筋腫核出術（LM）の予定を入れる。' },
+        { timestamp: '2026-04-15T11:00:00Z', category: 'treatment', title: '腹腔鏡下筋腫核出術（LM）', content: 'ジエノゲスト 4 週間後に LM を実施。最大筋腫（6cm）と中等大（3cm）を核出（漿膜下の 2.5cm は出血増加リスクから温存）。手術時間 2 時間10分・出血量 180mL。術後 Hb 7.8（術中出血を考慮して鉄剤継続）。翌日から歩行開始。3日で退院。病理：全て良性（平滑筋腫）。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '術後1ヶ月', content: '術後1ヶ月。月経再開：今月の月経量が劇的に改善！PBAC スコア 280 → 65（正常範囲内）。ナプキン交換：1時間毎 → 半日1枚で対応可能。Hb 8.4 → 10.8（大幅改善！）。フェリチン 5 → 18（補充継続中）。子宮の大きさ：超音波で妊娠16週大 → 妊娠10週大に縮小。3cmの筋腫は残存しているが症状なし。次回 MRI は3ヶ月後予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-02T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 4 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-02T09:00:00Z', name: '初診時採血', findings: 'Hb 8.4 g/dL（中等度貧血）・フェリチン 5 ng/mL（鉄欠乏）・MCV 74 fL（小球性）・WBC 正常・TSH 正常' },
+        { timestamp: '2026-05-15T09:00:00Z', name: '術後1ヶ月採血', findings: 'Hb 10.8 g/dL（改善）・フェリチン 18 ng/mL（補充中）・MCV 84 fL（改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-20T08:00:00Z', name: 'ジエノゲスト（ディナゲスト）2mg/日', notes: '術前：月経量減少・筋腫縮小。術後：再発予防。不正出血は最初の1〜2ヶ月で落ち着く。' },
+        { timestamp: '2026-03-20T08:00:00Z', name: 'フェロミア 100mg/日', notes: '鉄欠乏性貧血の治療。食後服用（空腹時は胃部不快感）。便が黒くなるのは正常。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    postpartum: {
+      diseases: ['産後うつ（周産期うつ病・EPDS 13点・母乳育児中）'],
+      profile: { age: 31, gender: 'female', height: 158, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-05T10:00:00Z', category: 'symptoms', title: '産後8週目・受診のきっかけ', content: '出産（第1子）から8週間。マタニティブルーが続いているのかと思っていたが、保健師の1ヶ月健診でEPDS 13点（カットオフ9点以上）。「涙が止まらない」「赤ちゃんがかわいいと思えない瞬間がある」「夜中の授乳が苦痛」「消えてしまいたいと思うことがある（Q10：0点、消極的な希死念慮なし）」。初めて産婦人科の産後うつ外来を受診した。主治医：「産後うつの診断です。治療しましょう」。' },
+        { timestamp: '2026-03-12T09:00:00Z', category: 'medication', title: 'セルトラリン開始', content: 'セルトラリン（ジェイゾロフト）25mg を開始。「授乳中でも安全なSSRIです。母乳への移行量は非常に少ない」と説明を受けた。最初の1週間は効果が出る前に吐気が出ることがある、と聞いた。1週間後：吐気（軽度）→ 徐々に改善。EPDS 13 → 12（微改善）。' },
+        { timestamp: '2026-03-26T11:00:00Z', category: 'symptoms', title: 'セルトラリン2週目', content: 'セルトラリン 50mg に増量。吐気は消えた。「赤ちゃんが笑った！」と気づいて泣いてしまった（つらいではなく嬉しくて）。睡眠：夫が週3回の夜間授乳を担当してくれるようになり、連続4時間眠れるようになった。EPDS 12 → 8（改善傾向）。「消えたい」という考えは消えた。育児を少し楽しめる瞬間が出てきた。' },
+        { timestamp: '2026-04-25T10:00:00Z', category: 'vitals', title: '2ヶ月まとめ', content: 'EPDS スコア：13 → 8 → 5（正常範囲に改善！）。セルトラリン 50mg 継続中（授乳継続・赤ちゃんの発達良好）。気分の変化：「まだつらい日もあるが、楽しい瞬間が増えた。好きな音楽を聴けるようになった」。心理士との認知行動療法（CBT）を月2回開始。「完璧な母親でなくていい」という考え方の練習中。保健師の訪問：週1回→隔週に変更（安定化のため）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 9, pain_level: 2, sleep_quality: 3 },
+        { timestamp: '2026-03-12T09:00:00Z', fatigue_level: 8, pain_level: 1, sleep_quality: 3 },
+        { timestamp: '2026-03-26T09:00:00Z', fatigue_level: 7, pain_level: 1, sleep_quality: 5 },
+        { timestamp: '2026-04-25T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T09:00:00Z', name: '産後うつ外来初診採血', findings: 'TSH 1.8（正常・産後甲状腺炎除外）・Hb 11.4（軽度低下・産後）・鉄 正常・ビタミンD 18 ng/mL（軽度低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-12T08:00:00Z', name: 'セルトラリン 50mg（朝食後）', notes: 'SSRI。産後うつ第一選択薬。授乳中OK（母乳移行量最小クラス）。効果発現まで2〜4週。突然中断しない。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    herpes_zoster: {
+      diseases: ['帯状疱疹（右肋間神経・急性期→PHN移行リスク管理）'],
+      profile: { age: 68, gender: 'female', height: 157, weight: 53 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: '帯状疱疹発症（前駆期記録）', content: '3日前から右胸部のピリピリ感・灼熱感が続いていた。今朝、右肋間（第6〜7肋間・デルマトーム）に帯状の紅斑が出現。水疱が形成されつつある。かかりつけ医を受診し、帯状疱疹の診断。疼痛 NRS 7/10（安静時でも痛い）。バラシクロビル 3000mg/日（1000mg×3）を処方された。「発症から3日以内なので抗ウイルス薬の効果が最大限期待できます」との説明。SLE（関節症状あり）でプレドニゾロン 5mg/日を内服中→ 免疫抑制が誘発因子の可能性。' },
+        { timestamp: '2026-03-05T09:00:00Z', category: 'symptoms', title: '発症4〜5日目', content: 'バラシクロビル5日目。皮疹の変化：紅斑→水疱形成ピーク（水疱数は増えていない・良い傾向）。疼痛 NRS 7/10→6/10（わずかに改善）。睡眠への影響：夜間の疼痛で2〜3時間ごとに目が覚める。ロキソプロフェン（NSAIDs）を食後服用。アリナミン（ビタミンB1）を追加した（神経ダメージ軽減のため）。水疱は壊れていない→感染リスク低い。患部を触らないように注意。' },
+        { timestamp: '2026-03-12T11:00:00Z', category: 'symptoms', title: '発症10日目・痂皮化', content: 'バラシクロビル 7日間コース完了。皮疹の変化：全水疱が痂皮化（かさぶた化）。感染力なし。疼痛：NRS 6→4/10（改善傾向だが依然強い）。皮膚の「触れるだけで痛い」感覚（アロディニア）が右胸部に残る。主治医：「痂皮が取れても3ヶ月以上痛みが続く場合はPHNです。プレガバリンを早めに始めましょう」として、プレガバリン 75mg×2/日を開始した。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'symptoms', title: '6週目・PHN移行確認', content: 'プレガバリン開始5週間。疼痛：NRS 4→2/10（大幅改善！）。アロディニア：軽減（衣服が当たる痛みが減った）。睡眠：ほぼ通常通りになった（プレガバリンの鎮静効果も一因）。皮疹：完全消退（跡は薄く残るが色素沈着のみ）。PHN（帯状疱疹後神経痛）への移行は起きたが、プレガバリン早期導入で軽症に抑えられている。シングリックスワクチン（再発予防）の接種を秋に予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 6, pain_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 6, pain_level: 6, sleep_quality: 3 },
+        { timestamp: '2026-03-12T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 4 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '発症時採血', findings: 'WBC 6,200（正常）・リンパ球 1,050（やや低値・免疫抑制の影響）・CRP 0.6（軽度上昇）・血糖 98mg/dL（正常）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'バラシクロビル 3000mg/日（7日間）', notes: '1000mg 朝昼夕 7日間。抗ウイルス薬。腎機能に応じて減量が必要（今回は正常のためフル量）。' },
+        { timestamp: '2026-03-12T08:00:00Z', name: 'プレガバリン（リリカ）150mg/日', notes: 'PHN 予防・治療。朝夕75mg。眠気の副作用あり（夜の服用で対処）。急に中断しない。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
