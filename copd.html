@@ -3,189 +3,402 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COPD（慢性閉塞性肺疾患）の症状記録・吸入管理アプリ | 健康日記</title>
-<meta name="description" content="COPD（慢性閉塞性肺疾患）の息切れ・喀痰・吸入薬・増悪をAI記録。mMRCスコア、6分間歩行、SpO2、吸入薬の使用状況を継続的に追跡し、呼吸器内科への報告を効率化します。">
-<meta name="keywords" content="COPD,慢性閉塞性肺疾患,息切れ,吸入薬,増悪,SpO2,mMRC,FEV1,禁煙,呼吸器内科,健康日記">
+<title>COPD（慢性閉塞性肺疾患）完全ガイド｜息切れ・SpO2・吸入薬・急性増悪・禁煙・HOT - 健康日記</title>
+<meta name="description" content="COPD（慢性閉塞性肺疾患、ICD-11: CA22）のGOLD重症度分類（GOLD 1-4）・息切れ評価（mMRC）・LAMA/LABA/ICS三重療法・急性増悪の早期発見・在宅酸素療法（HOT）・禁煙・呼吸リハビリを詳解。SpO2・息切れを毎日記録して急性増悪を早期発見する。">
+<meta name="keywords" content="COPD,慢性閉塞性肺疾患,肺気腫,慢性気管支炎,息切れ,SpO2,GOLD分類,mMRC,CAT,LAMA,LABA,ICS,チオトロピウム,インダカテロール,三重療法,急性増悪,禁煙,バレニクリン,在宅酸素療法,HOT,呼吸リハビリ,6分間歩行">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="https://cares.advisers.jp/copd.html">
 <link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/copd.html">
 <link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/copd.html">
 <meta property="og:type" content="article">
-<meta property="og:title" content="COPD（慢性閉塞性肺疾患）の症状記録・吸入管理アプリ | 健康日記">
-<meta property="og:description" content="COPD（慢性閉塞性肺疾患）の息切れ・喀痰・吸入薬・増悪をAI記録。mMRCスコア、6分間歩行、SpO2、吸入薬の使用状況を継続的に追跡し、呼吸器内科への報告を効率化します。">
+<meta property="og:title" content="COPD（慢性閉塞性肺疾患）完全ガイド｜息切れ・SpO2・吸入薬・急性増悪・禁煙・HOT - 健康日記">
+<meta property="og:description" content="COPDのGOLD重症度分類・吸入薬（LAMA/LABA/ICS）・急性増悪の早期発見・在宅酸素療法・禁煙・呼吸リハビリを詳解。SpO2・息切れを記録して主治医への報告に役立てる。無料AI記録アプリ。">
 <meta property="og:url" content="https://cares.advisers.jp/copd.html">
-<meta property="og:image" content="https://cares.advisers.jp/og/depression.svg">
+<meta property="og:image" content="https://cares.advisers.jp/og/copd.svg">
 <meta property="og:image:type" content="image/svg+xml">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="健康日記 — COPD（慢性閉塞性肺疾患）">
-<meta name="twitter:image" content="https://cares.advisers.jp/og/depression.svg">
+<meta property="og:image:alt" content="健康日記 — COPD（慢性閉塞性肺疾患・息切れ・SpO2・増悪予防）">
+<meta name="twitter:image" content="https://cares.advisers.jp/og/copd.svg">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230284c7'/%3E%3C/svg%3E">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@graph":[
-{"@type":"FAQPage","@id":"https://cares.advisers.jp/copd.html#faq","mainEntity":[
-  {"@type":"Question","name":"COPDと喘息の違いは何ですか？","acceptedAnswer":{"@type":"Answer","text":"喘息は気道の可逆的な炎症（治療で元に戻る）、COPDは不可逆的な気流制限（元に戻らない）が特徴です。COPDの主因は喫煙、喘息はアレルギー・過敏反応です。鑑別はスパイロメトリー（FEV1/FVC 70%未満がCOPD）で行います。両方を合併（ACOS）することもあります。"}},
-  {"@type":"Question","name":"禁煙はCOPDにどれほど効果がありますか？","acceptedAnswer":{"@type":"Answer","text":"禁煙はCOPDで唯一、進行を遅らせる確実な方法です。どの病期でも禁煙により肺機能低下速度が非喫煙者レベルに近づきます。禁煙補助薬（バレニクリン・ニコチンパッチ）と組み合わせた禁煙成功率は薬なしの2〜3倍です。「今からでも遅くない」のが禁煙です。"}},
-  {"@type":"Question","name":"急性増悪とはどういう状態で、どう対応すれば？","acceptedAnswer":{"@type":"Answer","text":"急性増悪とは感染・気温変化などで息切れ・咳・喀痰が急激に悪化する状態です。増悪を繰り返すたびに肺機能が回復しにくくなるため早期対応が重要です。喀痰が黄色・茶色になり息切れが著しく増した場合は、SABAを使用しながら速やかに受診してください。"}},
-  {"@type":"Question","name":"在宅酸素療法（HOT）はどんな状態で始まるの？","acceptedAnswer":{"@type":"Answer","text":"安静時のSpO2が88%以下（動脈血PaO2 60mmHg以下）が続く場合に適応となります。HOTにより生存率が有意に改善します。酸素を使いながら適切に生活すれば旅行・外出も可能です。携帯用酸素ボンベ・液体酸素システムの選択肢があります。"}},
-  {"@type":"Question","name":"肺リハビリテーションとは何ですか？","acceptedAnswer":{"@type":"Answer","text":"肺リハビリは、理学療法士・作業療法士・栄養士が連携して行う総合的プログラムで、運動療法（有酸素・筋力トレーニング）・患者教育・栄養指導が含まれます。COPDの運動耐容能・息切れ・QOL・入院回数を有意に改善します。週2〜3回のプログラムが推奨されています。"}}
-]},
-{"@type":"MedicalWebPage","name":"COPD（慢性閉塞性肺疾患）の症状記録・吸入管理アプリ","url":"https://cares.advisers.jp/copd.html","inLanguage":"ja","lastReviewed":"2026-05-11"},
-{"@type":"MedicalCondition","name":"COPD（慢性閉塞性肺疾患）","alternateName":["Chronic Obstructive Pulmonary Disease","肺気腫","慢性気管支炎"],"code":{"@type":"MedicalCode","code":"J44","codingSystem":"ICD-10"},"epidemiology":"日本の潜在患者数は約530万人（診断率25%未満）。40歳以上の約8.6%に推定される","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"進行性の息切れ（労作時→安静時へ）"},{"@type":"MedicalSignOrSymptom","name":"慢性咳嗽（長期にわたる咳）"},{"@type":"MedicalSignOrSymptom","name":"喀痰（慢性的な痰）"},{"@type":"MedicalSignOrSymptom","name":"急性増悪（感染等による急激な悪化）"},{"@type":"MedicalSignOrSymptom","name":"SpO2低下・チアノーゼ（進行例）"},{"@type":"MedicalSignOrSymptom","name":"体重減少・筋力低下（全身合併症）"}],"possibleTreatment":[{"@type":"DrugLegalStatus","name":"LAMA（チオトロピウム・グリコピロニウム）"},{"@type":"DrugLegalStatus","name":"LABA（インダカテロール・ビランテロール）"},{"@type":"DrugLegalStatus","name":"LAMA/LABA配合薬（ウルティブロ・アノーロ）"},{"@type":"DrugLegalStatus","name":"ICS/LABA（シムビコート・アドエア）"},{"@type":"DrugLegalStatus","name":"ロフルミラスト（ダルレスタ）"},{"@type":"MedicalTherapy","name":"在宅酸素療法（HOT）・肺リハビリテーション"}],"relevantSpecialty":{"@type":"MedicalSpecialty","name":"呼吸器内科"}}
-]}
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {"@type":"FAQPage","@id":"https://cares.advisers.jp/copd.html#faq","mainEntity":[
+      {"@type":"Question","name":"COPDと喘息はどう違いますか？","acceptedAnswer":{"@type":"Answer","text":"最大の違いは気流閉塞の「可逆性」です。喘息は気管支拡張薬を使うと気流閉塞がほぼ完全に回復する可逆性があります。一方COPDは、吸入薬を使っても気流閉塞が完全には戻らない「不可逆性」が特徴です。スパイロメトリーで気管支拡張薬吸入後のFEV1/FVC比が0.7未満であればCOPDと診断します。ただし、喘息とCOPDが合併する「喘息COPD重複（ACO）」もあり、その場合は両疾患の治療を組み合わせます。"}},
+      {"@type":"Question","name":"吸入薬はいつまで使い続けるのですか？","acceptedAnswer":{"@type":"Answer","text":"COPDの吸入薬は「根治薬」ではなく「症状管理・増悪予防薬」です。現時点では気道の構造的変化（肺気腫・気道リモデリング）を元に戻すことはできないため、吸入薬は基本的に生涯継続します。自己判断で中止すると息切れ・増悪リスクが急増します。「薬が効いている実感がない」「副作用が心配」という場合は必ず主治医・薬剤師に相談し、種類・デバイスの変更を検討してください。定期的なスパイロメトリーで効果を評価しながら、薬の種類や吸入デバイスを最適化します。"}},
+      {"@type":"Question","name":"急性増悪の早期サインは何ですか？","acceptedAnswer":{"@type":"Answer","text":"急性増悪の主な早期サインは、①息切れの悪化（いつもより短い距離・少ない動作で息苦しくなる）、②痰の量が増える・色が黄色や緑色になる（感染を示唆）、③咳の増加、④SpO2の低下（平常時より2〜3%以上の低下）です。これらのサインに気づいたら早めに主治医に連絡することが大切です。増悪が軽度のうちに治療を始めると、入院を回避できることが多くあります。SpO2が88%未満になった場合・急激な息切れ増悪・チアノーゼ（唇・爪の紫色化）が出た場合は119番または救急受診が必要です。"}},
+      {"@type":"Question","name":"禁煙するとCOPDは治りますか？","acceptedAnswer":{"@type":"Answer","text":"COPDで失われた肺機能（気流閉塞・肺気腫）は禁煙しても元に戻りません。しかし、禁煙は「COPDで最も効果的な介入」です。喫煙を続けると年間約60〜80mL/年のペースでFEV1が低下し続けますが、禁煙するとFEV1の低下速度が非喫煙者と同等レベル（約20〜30mL/年）に戻ります。つまり禁煙によって「これ以上悪化するスピードを止める」ことができます。また急性増悪の頻度・死亡リスクも明確に減少します。禁煙補助薬（バレニクリン・ニコチン補充療法）を使うと成功率が大幅に高まります。"}},
+      {"@type":"Question","name":"在宅酸素療法（HOT）の適応はどう決まりますか？","acceptedAnswer":{"@type":"Answer","text":"在宅酸素療法（HOT）の保険適用条件は、安定した状態（急性増悪回復後3週間以上経過）で測定した動脈血酸素分圧（PaO2）が55mmHg以下、またはSpO2が88%以下が目安です。また、PaO2が60mmHg以下（SpO2≤90%）でも、肺高血圧・二次性多血症・右心不全を伴う場合は適応になります。HOTを始めると生命予後・運動耐容能・QOLが改善します。必要な酸素流量は主治医が設定しますので、自己判断で流量を上げ下げしないでください（特にCO2貯留がある方は過剰投与で呼吸抑制のリスクがあります）。"}}
+    ]},
+    {"@type":"MedicalWebPage","name":"COPD（慢性閉塞性肺疾患）完全ガイド","url":"https://cares.advisers.jp/copd.html","inLanguage":"ja","lastReviewed":"2026-05-18"},
+    {"@type":"MedicalCondition","name":"慢性閉塞性肺疾患","alternateName":["COPD","肺気腫","慢性気管支炎","Chronic Obstructive Pulmonary Disease","慢性閉塞性肺疾患"],"code":{"@type":"MedicalCode","code":"CA22","codingSystem":"ICD-11"},"epidemiology":"日本の推計患者数は約530万人。実際に診断・治療を受けているのはその約20%に過ぎず、多くが未診断とされる。40歳以上の約8.6%（NICE study）。主な危険因子は喫煙（全体の約90%）","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"労作時息切れ（mMRC grade 1以上）、階段・坂道で息苦しくなる"},{"@type":"MedicalSignOrSymptom","name":"慢性咳嗽（毎日の咳・特に朝の咳）"},{"@type":"MedicalSignOrSymptom","name":"喀痰（白色〜黄色・増悪時に増量・膿性化）"},{"@type":"MedicalSignOrSymptom","name":"SpO2低下（労作時・増悪時・重症例では安静時も低下）"},{"@type":"MedicalSignOrSymptom","name":"急性増悪（息切れ・痰・咳の急激な悪化・入院リスク）"}],"possibleTreatment":[{"@type":"MedicalTherapy","name":"LAMA（長時間作用型抗コリン薬）— チオトロピウム・グリコピロニウム等、COPD吸入療法の基盤"},{"@type":"MedicalTherapy","name":"LABA（長時間作用型β2刺激薬）— インダカテロール・サルメテロール等、LAMAとの併用で相加効果"},{"@type":"MedicalTherapy","name":"ICS（吸入コルチコステロイド）— 増悪頻度が多い・末梢血好酸球高値の場合にLAMA+LABAへ追加"},{"@type":"MedicalTherapy","name":"禁煙療法（バレニクリン・ニコチン補充療法）— 最も重要な病気の進行抑制介入"},{"@type":"MedicalTherapy","name":"在宅酸素療法（HOT）— 安静時PaO2≤55mmHg/SpO2≤88%で長期酸素療法"}],"relevantSpecialty":"呼吸器内科"}
+  ]
+}
 </script>
-<style>*{box-sizing:border-box;margin:0;padding:0}html{font-size:15px;scroll-behavior:smooth}body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}.container{max-width:820px;margin:0 auto;padding:20px}header{padding:16px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px}header a{color:#6366f1;text-decoration:none;font-weight:700;font-size:14px}h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#3730a3}h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef}p{margin-bottom:12px}ul{margin:8px 0 14px 22px}li{margin-bottom:4px}.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}.cta{display:inline-block;padding:14px 28px;background:#6366f1;color:#fff;border-radius:24px;text-decoration:none;font-weight:700;font-size:14px;margin-top:12px}.box{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 10px 10px 0;margin-bottom:14px}.box-title{font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px}.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:14px 0}.related a{padding:8px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#4338ca;font-size:12px;font-weight:600;text-align:center}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}.stat-card{padding:14px;background:#fff;border:1px solid #e4e7ef;border-radius:10px}.stat-num{font-size:22px;font-weight:800;color:#4338ca}.stat-label{font-size:11px;color:#64748b;margin-top:2px}footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:36px;text-align:center;font-size:12px;color:#64748b}footer a{color:#6366f1;text-decoration:none;margin:0 6px}</style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f0f9ff;line-height:1.8}
+.container{max-width:820px;margin:0 auto;padding:20px}
+header{padding:16px 0;border-bottom:1px solid #bae6fd;margin-bottom:20px}
+header a{color:#0284c7;text-decoration:none;font-weight:700;font-size:14px}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#0c4a6e}
+h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #bae6fd;color:#0c4a6e}
+h3{font-size:17px;font-weight:700;margin:18px 0 8px;color:#0284c7}
+p{margin-bottom:12px}
+ul,ol{padding-left:20px;margin-bottom:12px}
+li{margin-bottom:6px}
+.hero{background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-radius:12px;padding:24px;margin-bottom:24px;border-left:4px solid #0284c7}
+.hero p{margin-bottom:0}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#0284c7,#0c4a6e);color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;margin:12px 0;text-align:center}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+.stat-card{background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08);border:1px solid #bae6fd}
+.stat-num{font-size:20px;font-weight:800;color:#0284c7}
+.stat-label{font-size:12px;color:#64748b;margin-top:4px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th{background:#e0f2fe;padding:10px 12px;text-align:left;font-weight:700;border:1px solid #bae6fd;color:#0c4a6e}
+td{padding:9px 12px;border:1px solid #bae6fd;vertical-align:top}
+tr:nth-child(even) td{background:#f0f9ff}
+.warn{background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:18px 20px;margin:20px 0;font-size:14px}
+.warn-title{font-weight:800;color:#991b1b;font-size:16px;margin-bottom:10px}
+.box{padding:14px 18px;background:#e0f2fe;border-left:4px solid #0284c7;border-radius:0 10px 10px 0;margin-bottom:14px}
+.box-title{font-size:13px;font-weight:700;color:#0c4a6e;margin-bottom:6px}
+.tip{background:#fff;border:1px solid #0284c7;border-radius:8px;padding:14px 16px;margin:16px 0;font-size:14px}
+.tip-title{font-weight:700;color:#0c4a6e;font-size:14px;margin-bottom:8px}
+.faq-item{border:1px solid #bae6fd;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.faq-q{background:#e0f2fe;padding:12px 16px;font-weight:700;color:#0c4a6e;font-size:15px}
+.faq-a{padding:12px 16px;font-size:14px;background:#fff}
+.related{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.related a{background:#e0f2fe;color:#0284c7;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #bae6fd}
+.related a:hover{background:#bae6fd}
+footer{margin-top:32px;padding-top:16px;border-top:1px solid #bae6fd;color:#64748b;font-size:12px;text-align:center}
+footer a{color:#0284c7;text-decoration:none;margin:0 6px}
+footer p+p{margin-top:6px}
+@media(max-width:600px){h1{font-size:22px}h2{font-size:18px}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body data-disease-label="COPD（慢性閉塞性肺疾患）" data-app-param="copd">
 <div class="container">
-<header><a href="https://cares.advisers.jp/">← 健康日記トップ</a></header>
+<header>
+  <a href="https://cares.advisers.jp/">← 健康日記トップ</a>
+</header>
+
+<h1>COPD（慢性閉塞性肺疾患）完全ガイド</h1>
+<p style="color:#64748b;font-size:13px">ICD-11: CA22 ／ 更新日: 2026年5月</p>
 
 <div class="hero">
-<h1>COPD（慢性閉塞性肺疾患）の症状記録・吸入管理アプリ</h1>
-<p style="color:#4338ca;font-size:13px">COPD（慢性閉塞性肺疾患）は、長期の喫煙や大気汚染によって気道と肺が慢性的に炎症・破壊される疾患で、進行性の息切れ・慢性咳嗽・喀痰が特徴です。急性増悪（感染などによる急激な悪化）を繰り返すたびに肺機能が加速度的に低下するため、日常の症状記録と増悪の早期発見が重要です。健康日記は、息切れ（mMRCスコア）・SpO2・吸入薬の使用状況・増悪の前兆を継続管理し、呼吸器内科への報告を効率化します。</p>
-<a class="cta" href="https://cares.advisers.jp/?d=copd">無料で症状記録を始める →</a>
+  <p>COPD（慢性閉塞性肺疾患）は、<strong>主に喫煙によって気道・肺胞が慢性的に傷つき、息切れ・咳・痰が進行する疾患</strong>です。日本の推計患者数は約530万人ですが、診断・治療を受けているのはその約20%に過ぎません。適切な吸入薬・禁煙・呼吸リハビリで<strong>進行を抑え、急性増悪を予防</strong>することが治療の柱です。健康日記は、SpO2・息切れ・吸入薬の使用状況を毎日記録し、急性増悪の早期発見と専門医への報告に役立てます。</p>
 </div>
 
 <div class="stat-grid">
-<div class="stat-card"><div class="stat-num">約530万人</div><div class="stat-label">日本の潜在患者数（診断率25%未満）</div></div>
-<div class="stat-card"><div class="stat-num">40歳以上の 約8.6%</div><div class="stat-label">推定有病率</div></div>
-<div class="stat-card"><div class="stat-num">禁煙で進行を 50〜80%抑制</div><div class="stat-label">最も有効な介入</div></div>
+  <div class="stat-card"><div class="stat-num">約530万人</div><div class="stat-label">日本の推計患者数</div></div>
+  <div class="stat-card"><div class="stat-num">約20%のみ</div><div class="stat-label">診断・治療を受けている割合</div></div>
+  <div class="stat-card"><div class="stat-num">息切れ・咳・痰</div><div class="stat-label">三主症状</div></div>
+  <div class="stat-card"><div class="stat-num">ICD-11 CA22</div><div class="stat-label">国際診断分類</div></div>
 </div>
 
-<h2>COPDとは</h2>
-<p>COPD（慢性閉塞性肺疾患、Chronic Obstructive Pulmonary Disease）は、主に長期喫煙や大気汚染による有害物質の吸入によって気道と肺実質が慢性的に炎症・破壊され、気流制限が進行する疾患です。ICD-10 コードは J44 に分類されます。</p>
-<p>COPDは「肺気腫」と「慢性気管支炎」を合わせた概念であり、スパイロメトリー検査で気管支拡張薬吸入後の FEV1/FVC が 70% 未満であることが診断基準（GOLD 基準）です。初期は労作時の息切れのみですが、進行とともに安静時にも息切れが出現し、日常生活が大きく制限されます。</p>
-<p>日本では潜在患者数が約 530 万人とされているにもかかわらず、実際に診断・治療を受けている患者は 25% 未満と言われており、「見えない病気」になっています。症状を「年のせい」と放置せず、早期発見・早期治療が重要です。</p>
+<a class="cta-btn" href="https://cares.advisers.jp/?disease=copd" data-app-param="copd" data-disease-label="COPD（慢性閉塞性肺疾患）">SpO2・息切れ・吸入薬を記録・管理する →</a>
 
-<h2>記録が役立つ理由</h2>
-<div class="box">
-<div class="box-title">継続記録で増悪を早期に察知できる項目</div>
-<ul>
-<li>息切れの程度（mMRCスコア・CAT）の変化を定期記録</li>
-<li>吸入薬（LAMA/LABA/ICS）の使用確認と急性期吸入（SABA）の回数</li>
-<li>SpO2・心拍数の朝夕測定（増悪の早期警告サイン）</li>
-<li>喀痰の量・色の変化（感染による増悪の前兆）</li>
-<li>歩行距離・運動耐容能の変化（肺リハビリの効果測定）</li>
-</ul>
-</div>
+<h2>COPDの定義・重症度分類・症状評価</h2>
+<p>COPDは、有害な粒子やガス（主にタバコ煙）に長期曝露することで気道と肺胞に持続的な炎症が起き、<strong>不可逆性の気流閉塞</strong>をきたす疾患です。「肺気腫型」（肺胞が破壊されてガス交換が低下）と「慢性気管支炎型」（気道分泌増加・慢性咳嗽・喀痰）の二つの側面があり、多くの患者で両者が混在します。</p>
 
-<h2>病期と症状の特徴</h2>
-<div class="box">
-<div class="box-title">GOLD 分類（重症度）</div>
-<ul>
-<li><strong>GOLD 1（軽症）</strong>: FEV1 ≥ 80% 予測値。症状はほとんどなく、労作時にわずかな息切れを感じる程度。多くの場合この段階で気づかれない</li>
-<li><strong>GOLD 2（中等症）</strong>: FEV1 50〜79%。坂道・階段で息切れを自覚し始める。慢性咳嗽・喀痰が出現する。この段階で初めて受診する患者が最も多い</li>
-<li><strong>GOLD 3（重症）</strong>: FEV1 30〜49%。平地歩行でも息切れが生じ、歩行速度が低下する。急性増悪の頻度が増し、入院リスクが高まる</li>
-<li><strong>GOLD 4（最重症）</strong>: FEV1 &lt; 30%。安静時の息切れ・慢性呼吸不全・在宅酸素療法（HOT）が必要になる場合がある</li>
-</ul>
-</div>
-<div class="box">
-<div class="box-title">急性増悪（Acute Exacerbation）</div>
-<p>急性増悪とは、感染（ウイルス・細菌）・大気汚染・気温変化などを契機に、息切れ・咳・喀痰が数日以内に急激に悪化する状態です。増悪を繰り返すたびに肺機能の回復が不完全になり、長期的な予後を悪化させます。年 2 回以上の増悪歴がある場合は「増悪リスクの高い COPD」として管理が強化されます。</p>
-<p>増悪の前兆：喀痰の色が白から黄・茶色に変わる、SpO2 の低下、平時より息切れが強い、発熱。これらのサインが出たら速やかに受診し、SABA（短時間作用型気管支拡張薬）を吸入してください。</p>
-</div>
+<h3>GOLD 重症度分類（スパイロメトリーによる気流閉塞の程度）</h3>
+<table>
+  <tr><th>GOLD ステージ</th><th>FEV1%予測値</th><th>気流閉塞の程度</th><th>主な症状の目安</th></tr>
+  <tr><td><strong>GOLD 1（軽症）</strong></td><td>80%以上</td><td>軽度</td><td>ほぼ自覚症状なし。労作時に軽い息切れ。多くが未診断</td></tr>
+  <tr><td><strong>GOLD 2（中等症）</strong></td><td>50%以上〜80%未満</td><td>中等度</td><td>坂道・階段で息切れ。慢性咳嗽・喀痰が多い。受診のきっかけになる時期</td></tr>
+  <tr><td><strong>GOLD 3（重症）</strong></td><td>30%以上〜50%未満</td><td>高度</td><td>平地歩行でも息切れ。QOL低下。急性増悪入院リスクが上昇</td></tr>
+  <tr><td><strong>GOLD 4（最重症）</strong></td><td>30%未満</td><td>非常に高度</td><td>着替えや会話でも息切れ。生命予後に影響。HOT適応を検討</td></tr>
+</table>
+<p style="font-size:13px;color:#64748b">※気流閉塞の判定基準：気管支拡張薬吸入後のFEV1/FVC比が0.7未満（GOLD基準）</p>
 
-<h2>診断の流れ</h2>
-<p>COPDの診断は呼吸器内科で行われます。喫煙歴（20 pack-years 以上）と症状があれば積極的にスパイロメトリーを受けることが推奨されます。</p>
-<ul>
-<li><strong>問診・身体所見</strong>: 喫煙歴・職業歴・症状（息切れ・咳・痰）の詳細、mMRC スコアの評価、呼吸音（wheeze・coarse crackle）</li>
-<li><strong>スパイロメトリー（肺活量測定）</strong>: 気管支拡張薬吸入後の FEV1/FVC &lt; 70% が診断基準。FEV1 の絶対値が重症度（GOLD 分類）を決定する</li>
-<li><strong>胸部 X 線・CT</strong>: 肺気腫（過膨張・肺野透過性亢進）・気道壁肥厚の確認。肺がんなど合併症の除外</li>
-<li><strong>SpO2・動脈血ガス分析</strong>: 低酸素血症・高二酸化炭素血症の評価。在宅酸素療法の適応判断に必要</li>
-<li><strong>CAT（COPD Assessment Test）・mMRC スコア</strong>: 症状の重さと QOL を数値化。治療方針の選択に使用</li>
-<li><strong>6 分間歩行試験</strong>: 運動耐容能の客観的評価。リハビリ効果の測定にも活用</li>
-</ul>
+<h3>mMRC 息切れスケール（Modified Medical Research Council）</h3>
+<table>
+  <tr><th>Grade</th><th>息切れの状況</th></tr>
+  <tr><td><strong>Grade 0</strong></td><td>激しい運動をしたときだけ息切れがある</td></tr>
+  <tr><td><strong>Grade 1</strong></td><td>平坦な道を急いで歩く、または緩やかな坂道を歩くときに息切れがある</td></tr>
+  <tr><td><strong>Grade 2</strong></td><td>息切れのために平坦な道を同年齢の人よりゆっくり歩く、または自分のペースで平坦な道を歩いていても息継ぎのために立ち止まる</td></tr>
+  <tr><td><strong>Grade 3</strong></td><td>平坦な道を約100m、または数分歩くと息継ぎのために立ち止まる</td></tr>
+  <tr><td><strong>Grade 4</strong></td><td>息切れがひどくて外出できない、または着替えや入浴で息切れがある</td></tr>
+</table>
 
-<h2>主な治療薬</h2>
+<h3>CAT（COPD アセスメントテスト）</h3>
 <div class="box">
-<div class="box-title">吸入気管支拡張薬（維持療法の中心）</div>
-<p>チオトロピウム（スピリーバ）、グリコピロニウム（シーブリ）、ウルティブロ（LAMA/LABA）、アノーロ（LAMA/LABA）、シムビコート（ICS/LABA）、ロフルミラスト（ダルレスタ）、増悪時：アモキシシリン・プレドニゾロン</p>
-<ul>
-<li><strong>LAMA（長時間作用型抗コリン薬）</strong>: チオトロピウム（スピリーバ）、グリコピロニウム（シーブリ）。1 日 1 回吸入。気道を広げ息切れを改善。COPDの維持療法の第一選択</li>
-<li><strong>LABA（長時間作用型β2刺激薬）</strong>: インダカテロール（オンブレス）、ビランテロール（エリプタ製剤に含有）。1〜2 回/日吸入。LAMAと組み合わせることで相乗効果</li>
-<li><strong>LAMA/LABA 配合薬</strong>: ウルティブロ（グリコピロニウム/インダカテロール）、アノーロ（ウメクリジニウム/ビランテロール）。1 日 1 回吸入で管理が簡便になる</li>
-<li><strong>ICS/LABA（吸入ステロイド/長時間作用型β2刺激薬）</strong>: シムビコート（ブデソニド/ホルモテロール）、アドエア（フルチカゾン/サルメテロール）。好酸球性炎症が高い例・増悪頻度が高い例に適応</li>
-</ul>
-</div>
-<div class="box">
-<div class="box-title">急性増悪時・その他の治療</div>
-<ul>
-<li><strong>SABA（短時間作用型β2刺激薬）</strong>: サルブタモール（サルタノール）。増悪時・労作前の頓用吸入。SABA 使用回数の増加は増悪の早期サイン</li>
-<li><strong>ロフルミラスト（ダルレスタ）</strong>: PDE4 阻害薬（経口）。重症 COPD で増悪頻度が高い場合に追加。吐き気・体重減少に注意</li>
-<li><strong>抗菌薬（アモキシシリン・クラリスロマイシン等）</strong>: 細菌性増悪（喀痰の膿性化・発熱）に使用</li>
-<li><strong>経口ステロイド（プレドニゾロン）</strong>: 中等症〜重症増悪に短期使用（5〜7 日間）。長期使用は骨粗鬆症・糖尿病リスクがあり禁忌</li>
-<li><strong>在宅酸素療法（HOT）</strong>: SpO2 88% 以下が持続する場合に適応。1 日 15 時間以上の使用で生存率が有意に改善</li>
-</ul>
+  <div class="box-title">CATスコアの見方（0〜40点）</div>
+  <ul>
+    <li><strong>0〜10点（軽微な影響）</strong>: QOLへの影響は少ない。禁煙・ワクチン接種・運動継続を優先</li>
+    <li><strong>11〜20点（中等度の影響）</strong>: 日常生活に支障あり。吸入薬の最適化・呼吸リハビリを強化</li>
+    <li><strong>21〜30点（高度の影響）</strong>: 多くの活動が制限される。三重療法・増悪予防に注力</li>
+    <li><strong>31〜40点（非常に高度）</strong>: 生活全般に深刻な影響。緩和ケア・多職種チームによるサポートも検討</li>
+    <li>CATは8項目（咳・痰・胸の圧迫感・坂道の息切れ・家事制限・外出時の心配・睡眠・活力）をそれぞれ0〜5点で自己評価</li>
+  </ul>
 </div>
 
-<h2>健康日記で記録できること</h2>
-<div class="box">
-<div class="box-title">日々の記録から医師への報告まで一括管理</div>
-<ul>
-<li>息切れスコア（mMRC・CAT）の定期記録</li>
-<li>SpO2・心拍数（朝夕）の自宅モニタリング</li>
-<li>吸入薬の使用確認・急性期吸入（SABA）の回数</li>
-<li>喀痰の量・色・粘稠度の変化（増悪の前兆）</li>
-<li>運動量・歩行距離・歩行後の息切れ回復時間</li>
-</ul>
-</div>
-<p>記録データをもとに「息切れスコアの推移グラフ」「SABA 使用頻度と増悪の関係」「SpO2 の朝夕変動パターン」を自動分析し、次の受診前にサマリーを生成します。呼吸器内科の受診時間を最大限有効に活用できます。</p>
+<h3>COPDの主な原因・危険因子</h3>
+<table>
+  <tr><th>原因・危険因子</th><th>詳細</th></tr>
+  <tr><td><strong>喫煙（最多・約90%）</strong></td><td>1日の喫煙本数×喫煙年数＝喫煙指数（Brinkman指数）。400以上でCOPDリスク上昇、600以上で肺がんリスクも上昇。受動喫煙も危険因子</td></tr>
+  <tr><td><strong>職業性粉塵・化学物質</strong></td><td>石炭・シリカ・綿・穀物粉塵・溶接ヒューム等への長期曝露。全体の約15%に関与</td></tr>
+  <tr><td><strong>大気汚染（屋外）</strong></td><td>PM2.5・NOx・オゾン等。喫煙との相互作用でリスク増大</td></tr>
+  <tr><td><strong>バイオマス燃料</strong></td><td>薪・木炭・牛糞等の燃焼による室内大気汚染。途上国での非喫煙女性COPDの主因</td></tr>
+  <tr><td><strong>遺伝的素因（α1-AT欠乏）</strong></td><td>α1-アンチトリプシン欠乏症（AATD）。若年発症・非喫煙者のCOPDでは検査を検討</td></tr>
+</table>
 
-<div class="hero" style="text-align:center;margin-top:24px">
-<h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から息切れ・吸入薬の記録を始めましょう</h2>
-<p style="color:#4338ca;font-size:13px">完全無料・本人のみアクセス可能</p>
-<a class="cta" href="https://cares.advisers.jp/?d=copd">健康日記を開く →</a>
-</div>
+<h2>診断・スパイロメトリー・鑑別・合併症</h2>
+<p>COPDの確定診断にはスパイロメトリー（肺機能検査）が必須です。「息切れが出てから受診」では既に相当な肺機能が失われていることも多く、40歳以上で喫煙歴がある方は症状がなくても一度スパイロメトリーを受けることが推奨されています。</p>
 
-<h2>よくある質問</h2>
+<h3>スパイロメトリーの主要指標</h3>
+<table>
+  <tr><th>指標</th><th>意味</th><th>COPDの判定基準</th></tr>
+  <tr><td><strong>FEV1（1秒量）</strong></td><td>最大吸気後に1秒間で吐き出せる空気量</td><td>低下（GOLD分類の根拠。気管支拡張薬吸入後で評価）</td></tr>
+  <tr><td><strong>FVC（努力性肺活量）</strong></td><td>最大吸気後に最大努力で吐き出せる空気量</td><td>ほぼ正常〜軽度低下（気腫型では過膨張により増加することも）</td></tr>
+  <tr><td><strong>FEV1/FVC 比</strong></td><td>肺活量に占める1秒量の割合</td><td><strong>気管支拡張薬吸入後 0.7未満</strong> → COPD と確定診断</td></tr>
+  <tr><td><strong>FEV1%予測値</strong></td><td>年齢・性別・身長の正常予測値に対するFEV1の割合</td><td>GOLD 1〜4の重症度分類に使用</td></tr>
+</table>
+
+<h3>胸部 CT 所見</h3>
 <div class="box">
-<div class="box-title">COPDと喘息の違いは何ですか？</div>
-<p>喘息は気道の可逆的な炎症（治療で元に戻る）、COPDは不可逆的な気流制限（元に戻らない）が特徴です。COPDの主因は喫煙、喘息はアレルギー・過敏反応です。鑑別はスパイロメトリー（FEV1/FVC 70%未満がCOPD）で行います。両方を合併（ACOS）することもあります。</p>
-</div>
-<div class="box">
-<div class="box-title">禁煙はCOPDにどれほど効果がありますか？</div>
-<p>禁煙はCOPDで唯一、進行を遅らせる確実な方法です。どの病期でも禁煙により肺機能低下速度が非喫煙者レベルに近づきます。禁煙補助薬（バレニクリン・ニコチンパッチ）と組み合わせた禁煙成功率は薬なしの2〜3倍です。「今からでも遅くない」のが禁煙です。</p>
-</div>
-<div class="box">
-<div class="box-title">急性増悪とはどういう状態で、どう対応すれば？</div>
-<p>急性増悪とは感染・気温変化などで息切れ・咳・喀痰が急激に悪化する状態です。増悪を繰り返すたびに肺機能が回復しにくくなるため早期対応が重要です。喀痰が黄色・茶色になり息切れが著しく増した場合は、SABAを使用しながら速やかに受診してください。</p>
-</div>
-<div class="box">
-<div class="box-title">在宅酸素療法（HOT）はどんな状態で始まるの？</div>
-<p>安静時のSpO2が88%以下（動脈血PaO2 60mmHg以下）が続く場合に適応となります。HOTにより生存率が有意に改善します。酸素を使いながら適切に生活すれば旅行・外出も可能です。携帯用酸素ボンベ・液体酸素システムの選択肢があります。</p>
-</div>
-<div class="box">
-<div class="box-title">肺リハビリテーションとは何ですか？</div>
-<p>肺リハビリは、理学療法士・作業療法士・栄養士が連携して行う総合的プログラムで、運動療法（有酸素・筋力トレーニング）・患者教育・栄養指導が含まれます。COPDの運動耐容能・息切れ・QOL・入院回数を有意に改善します。週2〜3回のプログラムが推奨されています。</p>
+  <div class="box-title">COPD の CT 所見パターン（肺気腫型・慢性気管支炎型）</div>
+  <ul>
+    <li><strong>肺気腫型（気腫優位型）</strong>: 肺野の低吸収域（LAA: Low Attenuation Area）。肺胞破壊による空気の閉じ込め。上葉優位（喫煙型肺気腫）が多い。CT で蜂の巣状ではなく「黒い穴」が散在</li>
+    <li><strong>慢性気管支炎型（気道優位型）</strong>: 気管支壁肥厚・気管支拡張。「気道壁が厚く見える」CT 所見。喀痰・慢性咳嗽が目立つ</li>
+    <li><strong>エアートラッピング</strong>: 呼気 CT で肺野の不均一な低吸収域。空気の閉じ込めを示す</li>
+    <li>胸部 X 線: 肺の過膨張・横隔膜平低化・滴状心・肺野の透過性亢進（重症例で確認）</li>
+  </ul>
 </div>
 
-<h2>関連疾患ガイド</h2>
+<h3>鑑別疾患</h3>
+<table>
+  <tr><th>疾患</th><th>COPDとの違い</th></tr>
+  <tr><td><strong>気管支喘息</strong></td><td>気流閉塞が可逆性（気管支拡張薬で改善）。アレルギー歴・若年発症が多い。FEV1/FVCが正常化する</td></tr>
+  <tr><td><strong>心不全（左心不全）</strong></td><td>労作時息切れ・起坐呼吸・夜間発作性呼吸困難。BNP上昇・心エコー異常。COPDに合併することも多い</td></tr>
+  <tr><td><strong>気管支拡張症</strong></td><td>大量の膿性痰・反復する気道感染。CT で気管支拡張像。COPD に合併（喫煙者に多い）</td></tr>
+  <tr><td><strong>びまん性汎細気管支炎（DPB）</strong></td><td>慢性副鼻腔炎合併・両側下葉優位の小葉中心性病変。エリスロマイシン少量長期療法が有効</td></tr>
+</table>
+
+<h3>COPDに多い合併症（見逃しに注意）</h3>
+<div class="box">
+  <div class="box-title">COPD の主な合併症</div>
+  <ul>
+    <li><strong>肺がん</strong>: 喫煙という共通危険因子。COPD 患者は非喫煙者の数倍のリスク。年1回の低線量 CT 検診を検討</li>
+    <li><strong>心血管疾患</strong>: 虚血性心疾患・心房細動・心不全。COPD 患者の死因の第1〜2位。定期的な心電図・心エコー確認が推奨</li>
+    <li><strong>うつ・不安</strong>: 息切れによる活動制限・孤立からうつ状態・不安障害が高頻度に合併。QOL に大きく影響。見過ごされやすい</li>
+    <li><strong>骨粗鬆症</strong>: ステロイド使用・栄養不良・活動低下が原因。COPD 患者の約35%に合併。定期的な骨密度（DEXA）検査を推奨</li>
+    <li><strong>栄養不良・体重減少</strong>: 呼吸筋の高消費エネルギー・食欲低下。BMI低下は独立した予後不良因子</li>
+    <li><strong>肺高血圧・右心不全（肺性心）</strong>: 重症 COPD で低酸素血症が持続することで発症。HOT で予防できる</li>
+    <li><strong>睡眠時無呼吸症候群（OVS）</strong>: COPD と睡眠時無呼吸の合併（Overlap Syndrome）。低酸素血症が夜間に著しく悪化する</li>
+  </ul>
+</div>
+
+<h2>吸入薬・薬物療法</h2>
+<p>COPD の薬物療法の中心は<strong>吸入気管支拡張薬</strong>です。内服薬に比べて少量で効果が得られ、全身副作用が少なくなります。吸入デバイスの正しい使い方が治療効果を大きく左右します。</p>
+
+<h3>吸入薬の種類と適応（比較表）</h3>
+<table>
+  <tr><th>薬剤カテゴリー</th><th>代表薬（商品名）</th><th>主な適応</th><th>主な注意点</th></tr>
+  <tr><td><strong>LAMA（長時間作用型抗コリン薬）</strong></td><td>チオトロピウム（スピリーバ）、グリコピロニウム（シーブリ）、ウメクリジニウム（エンクラッセ）</td><td>COPD の基本薬。気道分泌抑制・気管支拡張。急性増悪予防効果あり</td><td>口渇・尿閉（前立腺肥大に注意）・便秘。緑内障には点眼での目への暴露を避ける</td></tr>
+  <tr><td><strong>LABA（長時間作用型β2刺激薬）</strong></td><td>インダカテロール（オンブレス）、オロダテロール（ストリベルジ）、サルメテロール（セレベント）</td><td>LAMAと同等の気管支拡張効果。LAMAと異なる機序で相加効果が得られる</td><td>動悸・頻脈・低カリウム血症。心疾患合併患者では注意</td></tr>
+  <tr><td><strong>LAMA+LABA 配合</strong></td><td>グリコピロニウム/インダカテロール（ウルティブロ）、チオトロピウム/オロダテロール（スピオルト）、ウメクリジニウム/ビランテロール（アノーロ）</td><td>GOLD 2以上・症状が多い・単剤で不十分な場合の第一選択</td><td>各成分の副作用に準ずる。デバイスごとに吸入方法が異なるため指導必須</td></tr>
+  <tr><td><strong>ICS+LABA 配合</strong></td><td>フルチカゾン/サルメテロール（アドエア）、ブデソニド/ホルモテロール（シムビコート）</td><td>喘息合併（ACO）・喘息的要素が強い・末梢血好酸球高値（300/µL以上）</td><td>口腔・咽頭カンジダ（吸入後うがいが必須）。肺炎リスクやや上昇</td></tr>
+  <tr><td><strong>三重療法（LAMA+LABA+ICS）</strong></td><td>フルチカゾン/ウメクリジニウム/ビランテロール（テリルジー）、ブデソニド/グリコピロニウム/ホルモテロール（ブレーズエリプタ）</td><td>GOLD 3〜4・増悪が多い（年2回以上）・好酸球高値・単剤/2剤で不十分</td><td>肺炎リスク（ICS成分による）。口腔カンジダ予防の徹底。吸入手技の定期確認</td></tr>
+</table>
+
+<h3>吸入デバイスの種類と特徴</h3>
+<div class="box">
+  <div class="box-title">吸入器の種類：あなたに合ったデバイスを選ぶ</div>
+  <ul>
+    <li><strong>pMDI（加圧式定量噴霧吸入器）</strong>: ボンベ式。スペーサーを使うと吸入効率が大幅に向上。吸気速度が遅くても使いやすい。押すタイミングと吸入のタイミングを合わせる必要あり</li>
+    <li><strong>DPI（ドライパウダー吸入器）</strong>: 粉末タイプ。自分で力強く吸い込む必要がある。急性増悪時・重症例では吸気速度が不十分になることがある</li>
+    <li><strong>ソフトミスト吸入器（SMI）</strong>: スピリーバ レスピマット等。遅いミストが長時間出るため肺への到達率が高い。吸気速度が弱い高齢者・重症例に有利</li>
+    <li><strong>ネブライザー</strong>: 電動霧化器。吸入技術が不要。急性増悪時・在宅ケアに使用。薬液を霧状にして吸入する</li>
+  </ul>
+</div>
+
+<h3>急性増悪時の追加薬物療法</h3>
+<div class="box">
+  <div class="box-title">急性増悪と診断された場合の標準的治療（入院・外来）</div>
+  <ul>
+    <li><strong>短時間作用型気管支拡張薬（SABA・SAMA）</strong>: サルブタモール・イプラトロピウム等。増悪時の基本薬。頻回吸入（ネブライザー使用も）</li>
+    <li><strong>経口ステロイド</strong>: プレドニゾロン 30〜40mg/日 × 5〜7日（短期投与）。FEV1 回復を促進し入院期間を短縮</li>
+    <li><strong>抗菌薬</strong>: 喀痰の膿性化・CRP上昇・発熱がある場合に使用。アモキシシリン・レボフロキサシン等（耐性菌を考慮して選択）</li>
+    <li><strong>去痰薬・粘液溶解薬</strong>: カルボシステイン（ムコダイン）・アンブロキソール（ムコソルバン）。排痰補助として使用</li>
+    <li><strong>酸素療法</strong>: SpO2 88〜92%を目標に調整。COPD ではCO2貯留があるため過剰投与は禁忌</li>
+  </ul>
+</div>
+
+<div class="warn">
+  <div class="warn-title">⚠️ 緊急警戒サイン — 急性増悪</div>
+  <ul>
+    <li>SpO2 が<strong>88%未満</strong>（安静時または労作時）</li>
+    <li>急激な息切れの増悪（数時間〜数日で急激に悪化）</li>
+    <li>チアノーゼ（唇・爪の紫色化）</li>
+    <li>意識が混濁する・ぼーっとする（CO2 貯留・呼吸不全の兆候）</li>
+    <li>痰が急激に増量し黄〜緑色になり、高熱を伴う</li>
+  </ul>
+  <p style="margin-top:10px;margin-bottom:0"><strong>→ 急性増悪の可能性。ただちに119番を呼ぶか救急受診してください。</strong><br>
+  COPD の急性増悪は入院・人工呼吸が必要になることがあり、生命に関わります。SpO2 が急低下した場合も同様に、自己判断で様子を見ずにすぐに医療機関に連絡してください。</p>
+</div>
+
+<h2>禁煙・呼吸リハビリ</h2>
+<p>COPDの治療で「最も効果的な単一介入」は<strong>禁煙</strong>です。いかなるステージでも禁煙により肺機能低下速度が正常化し、急性増悪頻度・死亡リスクが有意に減少します。</p>
+
+<h3>禁煙の重要性と効果</h3>
+<div class="box">
+  <div class="box-title">禁煙によるFEV1低下速度の変化（Fletcher-Peto 曲線）</div>
+  <ul>
+    <li><strong>喫煙を続ける場合</strong>: FEV1が年間約60〜80mL/年のペースで低下（非喫煙者の2〜3倍速）</li>
+    <li><strong>禁煙後</strong>: FEV1の低下速度が非喫煙者と同等（約20〜30mL/年）に戻る</li>
+    <li>失われた肺機能は戻らないが、「これ以上悪化するスピードを正常化」できる</li>
+    <li>禁煙後1年以内に急性増悪頻度が有意に減少。5年で心血管リスクも低下</li>
+    <li>禁煙は GOLD 4（最重症）でも有効。いつ始めても遅くない</li>
+  </ul>
+</div>
+
+<h3>禁煙補助療法</h3>
+<table>
+  <tr><th>方法</th><th>特徴</th><th>禁忌・注意</th></tr>
+  <tr><td><strong>バレニクリン（チャンピックス）</strong></td><td>ニコチン受容体部分作動薬。禁煙成功率が最も高い（NRT の約2倍）。12週間服用。服用中から喫煙可</td><td>神経精神症状（うつ・不眠・イライラ）に注意。腎機能低下では減量。妊婦禁忌</td></tr>
+  <tr><td><strong>ニコチン補充療法（NRT）</strong></td><td>パッチ・ガム・ロゼンジ。ニコチン量を段階的に減らす。OTC 購入可（禁煙外来でも処方可）</td><td>急性心筋梗塞直後・不安定狭心症・妊婦は禁忌。皮膚かぶれ（パッチ）</td></tr>
+  <tr><td><strong>禁煙外来（保険適用）</strong></td><td>ニコチン依存症スクリーニングテスト（TDS）5点以上で保険診療対象。12週プログラム。専門家のサポートで成功率が大幅に向上</td><td>—</td></tr>
+</table>
+
+<h3>呼吸リハビリテーション</h3>
+<div class="box">
+  <div class="box-title">呼吸リハビリの主要メニュー</div>
+  <ul>
+    <li><strong>6分間歩行テスト（6MWT）</strong>: 6分間で歩ける距離を測定。COPDの運動耐容能・予後予測に使用。定期的に評価して改善を確認する</li>
+    <li><strong>上肢トレーニング</strong>: 上肢を挙上すると補助呼吸筋が呼吸に使えなくなる。ウエイトリフティング・ペグボード等で上肢筋力を維持・向上させる</li>
+    <li><strong>呼吸筋訓練</strong>: 口すぼめ呼吸（呼気時に口をすぼめて「フー」と吐く）・腹式呼吸で呼吸効率を改善。パニック時に落ち着く手段としても有効</li>
+    <li><strong>全身持久力トレーニング</strong>: 歩行・自転車エルゴメータ等。高強度が最も効果的だが、SpO2 を監視しながら安全に実施</li>
+    <li><strong>パニックコントロール</strong>: 急な息切れ時に前傾座位・口すぼめ呼吸で落ち着く技術の習得。増悪時の不安軽減に有効</li>
+    <li><strong>患者教育</strong>: 疾患理解・吸入手技・増悪の早期認識・栄養管理・禁煙継続支援</li>
+  </ul>
+</div>
+
+<h2>在宅酸素療法（HOT）・栄養管理</h2>
+
+<h3>在宅酸素療法（HOT）の適応と管理</h3>
+<p>在宅酸素療法（HOT: Home Oxygen Therapy）は、重症 COPD で慢性低酸素血症がある場合に長期酸素を吸入する治療法です。1日15時間以上の酸素吸入で<strong>生命予後・肺高血圧・QOL が改善</strong>することが大規模試験で証明されています。</p>
+<table>
+  <tr><th>適応条件</th><th>基準値</th></tr>
+  <tr><td><strong>動脈血酸素分圧（PaO2）</strong></td><td>安静時 55mmHg 以下（急性増悪回復後3週間以上の安定期に測定）</td></tr>
+  <tr><td><strong>SpO2（経皮的酸素飽和度）</strong></td><td>安静時 88%以下が目安</td></tr>
+  <tr><td><strong>合併症がある場合</strong></td><td>PaO2 60mmHg 以下（SpO2≤90%）で、肺高血圧・多血症・右心不全・夜間低酸素を伴う場合は適応</td></tr>
+</table>
+
+<div class="box">
+  <div class="box-title">HOT の管理で注意すること</div>
+  <ul>
+    <li><strong>酸素流量の自己変更禁止</strong>: COPD では CO2 貯留（高炭酸ガス血症）がある場合、酸素を過剰投与すると呼吸中枢が抑制されて危険なことがある（CO2ナルコーシス）。主治医が指定した流量を厳守する</li>
+    <li><strong>目標 SpO2</strong>: 88〜92%（一般的な目標の95〜98%より低い）。主治医が指定した目標値を守る</li>
+    <li><strong>火気厳禁</strong>: 酸素吸入中の喫煙・火気は爆発・火災の原因。絶対に禁止。調理時も注意</li>
+    <li><strong>1日15時間以上</strong>: 特に夜間就寝中の継続使用が重要。睡眠時無呼吸との合併（OVS）にも注意</li>
+    <li><strong>携帯型液体酸素・酸素ボンベ</strong>: 外出・通院・旅行時に使用可能。使用前に残量を確認する</li>
+    <li>航空機搭乗時は事前に航空会社と搭乗可否・機内酸素の手配を確認する</li>
+  </ul>
+</div>
+
+<h3>栄養管理（COPDは消耗が大きい）</h3>
+<div class="box">
+  <div class="box-title">COPD の栄養管理が重要な理由</div>
+  <ul>
+    <li><strong>高消費エネルギー</strong>: COPD では呼吸仕事量が増大し、安静時でも健常者より多くのエネルギーを消費する</li>
+    <li><strong>体重減少と予後</strong>: BMI が低いほど死亡リスクが高い（BMI&lt;20は独立した予後不良因子）。意識的な体重維持・増加が重要</li>
+    <li><strong>タンパク質</strong>: 呼吸筋・骨格筋を維持するために十分なタンパク質（1.0〜1.5g/kg/日）を摂取する</li>
+    <li><strong>炭水化物の過剰摂取に注意</strong>: 糖質は代謝時に CO2 が多く産生される。CO2 貯留がある場合は脂質・タンパク質比率を高めに</li>
+    <li><strong>少量頻回食</strong>: 1回の食事量が多いと横隔膜が圧迫され息苦しさが増す。5〜6回/日の少量頻回食が推奨</li>
+    <li><strong>栄養補助食品</strong>: 食事だけで必要量を摂取できない場合は高カロリー・高タンパクの経腸栄養補助食品を活用</li>
+  </ul>
+</div>
+
+<h2>記録のポイント</h2>
+<div class="box">
+  <div class="box-title">SpO2 と息切れ NRS（毎日記録）</div>
+  <ul>
+    <li><strong>安静時 SpO2</strong>: 毎朝起床後、3分安静にしてから測定。HOT 使用者は吸入前と吸入後の両方を記録</li>
+    <li><strong>労作後 SpO2</strong>: 歩行・階段昇降後に測定。平常時より3%以上低下するか記録する</li>
+    <li><strong>息切れ NRS（0〜10 の数値評価）</strong>: 今日の息切れを0（なし）〜10（最強）で毎日評価。増悪の早期発見に役立つ</li>
+    <li>SpO2 が88%未満・NRS が7以上・平常時から急激に悪化した場合は担当医に連絡</li>
+  </ul>
+</div>
+<div class="box">
+  <div class="box-title">吸入薬の使用記録</div>
+  <ul>
+    <li><strong>吸入実施の記録</strong>: 朝・夕の吸入を実施したかを毎日チェック。飲み忘れは増悪リスクに直結する</li>
+    <li><strong>吸入手技の自己チェック</strong>: 咳き込む・薬の味がしない・粉が多く出るなど、手技の問題を記録して薬剤師・看護師に相談</li>
+    <li><strong>レスキュー薬（SABA）の使用回数</strong>: 1日何回使ったかを記録。週2回以上使う状態は増悪の前兆の可能性あり</li>
+    <li><strong>デバイスの残量確認</strong>: カウンターを確認し、残量が少なくなったら早めに受診・処方を依頼</li>
+  </ul>
+</div>
+<div class="box">
+  <div class="box-title">体重と栄養状態</div>
+  <ul>
+    <li><strong>体重</strong>: 毎朝同じ時間に測定。1週間で2kg以上の体重減少は医師に報告（感染・増悪・栄養不足のサイン）</li>
+    <li><strong>食事摂取量</strong>: 食欲の変化・食事量の減少を記録。食べられないことが続く場合は栄養相談を依頼</li>
+    <li><strong>浮腫の確認</strong>: 足首・すねの浮腫は右心不全（肺性心）のサイン。体重増加と同時に出現した場合は要注意</li>
+  </ul>
+</div>
+
+<div class="tip">
+  <div class="tip-title">受診前の記録まとめ方</div>
+  「前回受診から今日まで」の期間で、①SpO2の最低値・平均値（安静時・労作後）、②息切れ NRS の推移、③吸入薬のアドヒアランス（飲み忘れの頻度）、④体重の変化、⑤レスキュー薬の使用回数をまとめると、短い診察時間で主治医に正確に伝えられます。健康日記アプリはこれを自動でまとめます。
+</div>
+
+<a class="cta-btn" href="https://cares.advisers.jp/?disease=copd" data-app-param="copd" data-disease-label="COPD（慢性閉塞性肺疾患）">今日から SpO2・息切れ・吸入薬を記録する →</a>
+
+<h2>よくある質問（FAQ）</h2>
+<div id="faq">
+  <div class="faq-item">
+    <div class="faq-q">Q. COPD と喘息はどう違いますか？</div>
+    <div class="faq-a">最大の違いは気流閉塞の「可逆性」です。喘息は気管支拡張薬を使うと気流閉塞がほぼ完全に回復する可逆性があります。一方 COPD は、吸入薬を使っても気流閉塞が完全には戻らない「不可逆性」が特徴です。スパイロメトリーで気管支拡張薬吸入後の FEV1/FVC 比が 0.7 未満であれば COPD と診断します。ただし、喘息と COPD が合併する「喘息 COPD 重複（ACO）」もあり、その場合は両疾患の治療を組み合わせます。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 吸入薬はいつまで使い続けるのですか？</div>
+    <div class="faq-a">COPD の吸入薬は「根治薬」ではなく「症状管理・増悪予防薬」です。現時点では気道の構造的変化（肺気腫・気道リモデリング）を元に戻すことはできないため、吸入薬は基本的に生涯継続します。自己判断で中止すると息切れ・増悪リスクが急増します。「薬が効いている実感がない」「副作用が心配」という場合は必ず主治医・薬剤師に相談し、種類・デバイスの変更を検討してください。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 急性増悪の早期サインは何ですか？</div>
+    <div class="faq-a">急性増悪の主な早期サインは、①息切れの悪化（いつもより短い距離・少ない動作で息苦しくなる）、②痰の量が増える・色が黄色や緑色になる（感染を示唆）、③咳の増加、④SpO2 の低下（平常時より2〜3%以上の低下）です。これらのサインに気づいたら早めに主治医に連絡することが大切です。SpO2 が 88%未満・急激な息切れ増悪・チアノーゼが出た場合は119番または救急受診が必要です。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 禁煙すると COPD は治りますか？</div>
+    <div class="faq-a">COPD で失われた肺機能（気流閉塞・肺気腫）は禁煙しても元に戻りません。しかし、禁煙は「COPD で最も効果的な介入」です。喫煙を続けると FEV1 が年間約60〜80mL/年のペースで低下し続けますが、禁煙するとその低下速度が非喫煙者と同等レベルに戻ります。つまり禁煙によって「これ以上悪化するスピードを止める」ことができます。また急性増悪の頻度・死亡リスクも明確に減少します。禁煙補助薬（バレニクリン・ニコチン補充療法）を使うと成功率が大幅に高まります。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 在宅酸素療法（HOT）の適応はどう決まりますか？</div>
+    <div class="faq-a">在宅酸素療法（HOT）の保険適用条件は、安定した状態（急性増悪回復後3週間以上経過）で測定した動脈血酸素分圧（PaO2）が 55mmHg 以下、またはSpO2が88%以下が目安です。また、PaO2 が 60mmHg 以下（SpO2≤90%）でも、肺高血圧・二次性多血症・右心不全を伴う場合は適応になります。HOT を始めると生命予後・運動耐容能・QOL が改善します。必要な酸素流量は主治医が設定しますので、自己判断で流量を上げ下げしないでください。</div>
+  </div>
+</div>
+
+<h2>関連疾患</h2>
 <div class="related">
-<a href="/asthma.html">気管支喘息</a>
-<a href="/heart_failure.html">心不全</a>
-<a href="/sleep_apnea.html">睡眠時無呼吸症候群</a>
-<a href="/ckd.html">慢性腎臓病</a>
-<a href="/diabetes.html">糖尿病</a>
-<a href="/depression.html">うつ病</a>
-<a href="/burnout.html">バーンアウト</a>
-<a href="/me-cfs.html">ME/CFS</a>
-<a href="/long-covid.html">Long COVID</a>
-<a href="/ms.html">多発性硬化症</a>
+  <a href="https://cares.advisers.jp/asthma.html">気管支喘息</a>
+  <a href="https://cares.advisers.jp/pulmonary_fibrosis.html">肺線維症（IPF・間質性肺疾患）</a>
+  <a href="https://cares.advisers.jp/heart_failure.html">心不全</a>
+  <a href="https://cares.advisers.jp/sleep_apnea.html">睡眠時無呼吸症候群</a>
+  <a href="https://cares.advisers.jp/cancer_survivor.html">がん・がんサバイバー</a>
+  <a href="https://cares.advisers.jp/depression.html">うつ・抑うつ</a>
+  <a href="https://cares.advisers.jp/osteoporosis.html">骨粗鬆症</a>
+  <a href="https://cares.advisers.jp/ckd.html">慢性腎臓病（CKD）</a>
 </div>
 
 <footer>
-<div><a href="https://cares.advisers.jp/">健康日記</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a>・<a href="https://note.com/age">note</a>・<a href="mailto:info@bluemarl.in">問い合わせ</a></div>
-<div style="margin-top:8px;font-size:11px">本情報は参考情報です。健康上の判断は必ず医師にご相談ください。<br>© 2026 シェアーズ株式会社</div>
+  <p><a href="https://cares.advisers.jp/">健康日記トップ</a> <a href="https://cares.advisers.jp/#privacy">プライバシーポリシー</a> <a href="https://cares.advisers.jp/#terms">利用規約</a></p>
+  <p style="margin-top:8px">本ページは情報提供を目的としており、医療アドバイスではありません。SpO2 低下・急激な息切れ増悪など重篤な症状が現れた場合は直ちに医師または救急を受診してください。<br>© 2026 シェアーズ株式会社</p>
 </footer>
 </div>
-<script defer src="/js/analytics.js"></script>
-<script defer src="/js/disease-lp-enhancements.js"></script>
-<script defer src="/js/inapp-browser-banner.js"></script>
-<script defer src="/js/social-share.js"></script>
-<script defer src="/js/newsletter-signup.js"></script>
-<script defer src="/js/disease-affiliate-panel.js"></script>
-<script defer src="/js/a11y-enhancements.js"></script>
+
+<script src="js/disease-lp-enhancements.js" defer></script>
+<script src="js/inapp-browser-banner.js" defer></script>
+<script src="js/social-share.js" defer></script>
+<script src="js/newsletter-signup.js" defer></script>
+<script src="js/disease-affiliate-panel.js" defer></script>
+<script src="js/a11y-enhancements.js" defer></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YEHQ7MNRFX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YEHQ7MNRFX');</script>
 </body>
 </html>
