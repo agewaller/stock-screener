@@ -1257,6 +1257,10 @@ var CONFIG = {
       '健診でALTが68、γ-GTPが82と高く「脂肪肝」と言われた。BMI 27、お腹まわりが気になっている。食事改善を始めたいが何から手をつけていいかわからない。FIB-4スコアを記録したい。',
       '脂肪肝と診断されて3ヶ月。体重を4kg落としたらALTが68→42に改善してきた。地中海食を試している。清涼飲料水をやめて効果があった気がする。次の採血まで記録を続けたい。'
     ],
+    cptsd: [
+      '些細なことで感情が爆発してしまう。仕事でちょっと強めに言われただけでフラッシュバックが来る。昨夜も悪夢で目が覚めた。EMDRを始めたが、セッション後に疲弊する。記録を続けたい。',
+      '人を信頼できない。少し親しくなると突然怖くなって距離を置いてしまう。「自分は壊れている」という気持ちが消えない。グラウンディングを練習中。感情の波のパターンを記録したい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2647,6 +2651,31 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    cptsd: {
+      diseases: ['複雑性PTSD（C-PTSD）'],
+      profile: { age: 35, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-05T21:00:00Z', category: 'symptoms', title: 'フラッシュバック記録', content: '職場で上司に強い口調で指摘された後、強烈なフラッシュバック（幼少期の記憶）。胸が苦しく、1時間職場トイレにこもった。感情爆発 9/10。' },
+        { timestamp: '2026-03-08T09:00:00Z', category: 'medication', title: 'EMDR 開始', content: '心療内科でEMDR第1回。安全な場所のイメージを確立。今日は処理はせず、安定化のみ。セラピスト信頼できそう。' },
+        { timestamp: '2026-03-15T21:00:00Z', category: 'symptoms', title: 'グラウンディング実践', content: '夜中にフラッシュバック。5-4-3-2-1 法を試した。10分ほどで現実に戻れた（以前は30分以上かかった）。記録することで「必ず終わる」と実感できてきた。' },
+        { timestamp: '2026-03-22T09:00:00Z', category: 'symptoms', title: 'トリガー記録', content: '強い男性の声、急な叱責、ドアを強く閉める音がトリガーと判明。上司に会議前に「大きな声は避けてほしい」と伝えた。職場理解が進んでいる。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'symptoms', title: 'EMDR 第5回', content: '幼少期の記憶1つを処理。SUDS（苦痛度）10→3に低下。身体の重さが軽くなった感覚。今夜は悪夢なし（珍しい）。' },
+        { timestamp: '2026-04-18T20:00:00Z', category: 'symptoms', title: '感情調節の変化', content: '今週の感情爆発は2回（先月は毎日）。コンテナ技法を使えるようになってきた。「感情は波であり、必ず落ち着く」が体験として少し理解できてきた。' },
+        { timestamp: '2026-04-25T09:00:00Z', category: 'symptoms', title: '中間評価', content: 'PCL-5 スコア（PTSD症状）55→38（臨床的意義ある改善）。睡眠時間 4→6時間に改善。まだ対人関係は難しいが、フラッシュバックの頻度は半減した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 9, brain_fog: 8, sleep_quality: 2, pain_level: 5 },
+        { timestamp: '2026-03-15T09:00:00Z', fatigue_level: 8, brain_fog: 7, sleep_quality: 3, pain_level: 4 },
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, brain_fog: 5, sleep_quality: 4, pain_level: 3 },
+        { timestamp: '2026-04-25T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 5, pain_level: 2 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-08T09:00:00Z', name: 'EMDR（週1回）', notes: 'EMDR認定セラピスト（臨床心理士）。段階的治療プロトコル（安全化→処理）。' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'エスシタロプラム（レクサプロ）10mg', notes: '精神科処方。PTSD症状・抑うつの補助。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
