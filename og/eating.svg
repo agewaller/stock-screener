@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf2f8"/>
+      <stop offset="100%" stop-color="#fce7f3"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#9d174d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#db2777" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="60" font-weight="900" fill="#831843">摂食障害</text>
+    <text x="0" y="162" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="38" font-weight="800" fill="#9d174d">（神経性やせ症・過食症・回避性摂食障害）</text>
+    <text x="0" y="218" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">体重・食事・身体的健康状態を安全に記録・回復を支援</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">日本の推計患者数</text>
+    <text x="20" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="26" font-weight="800" fill="#831843">約 25 万人以上</text>
+    <rect x="300" y="0" width="260" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="320" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">精神疾患中の死亡率</text>
+    <text x="320" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="26" font-weight="800" fill="#831843">最高（AN の死亡率）</text>
+    <rect x="580" y="0" width="220" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="600" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">ICD-11</text>
+    <text x="600" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#831843">6B8</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#831843">📝  完全無料  ・  広告なし  ・  安全設計</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#db2777">cares.advisers.jp/eating.html</text>
+  </g>
+</svg>
