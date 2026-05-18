@@ -1293,6 +1293,14 @@ var CONFIG = {
       '副腎機能不全でヒドロコルチゾン 20mg/日を服用中。発熱のたびにシックデイルールで倍量にするのが不安。副腎クリーゼを1回経験した。ホルモン補充量と症状の記録を続けたい。',
       'アジソン病と診断されて2年。ヒドロコルチゾン＋フロリネフ服用中。倦怠感と低血圧が続いていて、用量が適切かどうか次の受診で確認したい。シックデイの判断が難しく、記録で証拠を残したい。'
     ],
+    celiac: [
+      'セリアック病と診断されてグルテンフリー生活を始めて3ヶ月。外食で隠れグルテンを摂取してしまい腹痛が続いた。抗tTG-IgA抗体がまだ高い。食事日記と症状を記録して抗体値の改善を確認したい。',
+      'セリアック病（小麦アレルギーではなく自己免疫疾患）。乾癬・橋本病も合併している。グルテンフリーを徹底しているつもりだが腹部症状がなくならない。交差汚染のリスクを記録して原因を特定したい。'
+    ],
+    polymyalgia: [
+      'リウマチ性多発筋痛症（PMR）でプレドニゾロン 15mg から治療開始。肩・首・腰の朝のこわばりが著明に改善した。CRP・ESR を毎回記録して薬の減量タイミングを主治医と相談したい。',
+      'PMR と診断されて8ヶ月。プレドニゾロンを 5mg まで減量した段階で症状が再燃した。ステロイドを長期服用しているため骨粗鬆症の予防薬も飲んでいる。症状と薬の記録を続けたい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2974,6 +2982,61 @@ var CONFIG = {
       medications: [
         { timestamp: '2024-01-01T08:00:00Z', name: 'ヒドロコルチゾン 15mg/5mg/5mg', notes: '8時・12時・17時に分割服用。シックデイ時は倍量。' },
         { timestamp: '2024-01-01T08:00:00Z', name: 'フルドロコルチゾン 0.1mg', notes: '毎朝。鉱質コルチコイド補充（原発性のため必要）。塩分増量と併用。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    celiac: {
+      diseases: ['セリアック病'],
+      profile: { age: 34, gender: 'female', height: 164, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-01T09:00:00Z', category: 'vitals', title: '診断・グルテンフリー開始', content: '小腸内視鏡でヴィラ萎縮（Marsh 3b）・抗tTG-IgA 156 U/mL（基準値 <20）を確認。セリアック病確定診断。今日からグルテンフリー食を開始。管理栄養士の指導を受けた。ラベルの確認・外食の注意点を学んだ。' },
+        { timestamp: '2026-03-15T08:00:00Z', category: 'symptoms', title: '2週間後の変化', content: '腹部膨満感と下痢が明らかに減少。以前は毎日あった軟便が週 1〜2 回に。疲労感も少し改善。外食は完全にやめてお弁当持参に変更。醤油の代わりにグルテンフリー醤油を使用中。' },
+        { timestamp: '2026-03-28T12:00:00Z', category: 'symptoms', title: '交差汚染エピソード', content: '友人の家で夕食。グルテンフリーのつもりで食べたが翌朝から腹痛・下痢・強い疲労感。おそらくパンを切ったまな板を共用した影響（交差汚染）。20ppm 以下のグルテンでも反応する場合があることを実感した。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'vitals', title: '1ヶ月後検査', content: '抗tTG-IgA 98 U/mL（低下傾向！）。鉄欠乏性貧血：Hb 10.8→11.6 g/dL（改善）。ビタミンD 24 ng/mL（まだ不足）→サプリ 2,000IU/日追加。体重 52kg→54kg（栄養吸収の改善）。' },
+        { timestamp: '2026-05-05T09:00:00Z', category: 'vitals', title: '2ヶ月まとめ', content: '抗tTG-IgA 61 U/mL（下降継続）。腸の修復に6〜12ヶ月かかると言われているが着実に改善している。倦怠感・腹部症状：ほぼ消失。グルテンフリー生活が安定してきた。職場の昼食も対応できるレパートリーが増えた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-03-15T08:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-05T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: 'セリアック病確定診断', findings: '抗tTG-IgA 156 U/mL（高値）・抗EMA-IgA 陽性・Hb 10.8g/dL・ビタミンD 18ng/mL・鉄 38μg/dL（低値）・HLA-DQ2 陽性' },
+        { timestamp: '2026-05-05T09:00:00Z', name: '2ヶ月後フォローアップ', findings: '抗tTG-IgA 61 U/mL（改善傾向）・Hb 11.9g/dL・ビタミンD 31ng/mL（改善）・鉄 58μg/dL（改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T09:00:00Z', name: 'ビタミンD 2,000IU/日', notes: 'グルテンフリー食開始後の栄養補充。' },
+        { timestamp: '2026-03-01T09:00:00Z', name: '鉄剤（フェロ・グラデュメット）', notes: '鉄欠乏性貧血の補充治療。食間に服用。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    polymyalgia: {
+      diseases: ['リウマチ性多発筋痛症（PMR）'],
+      profile: { age: 68, gender: 'female', height: 156, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'symptoms', title: '診断時の症状', content: '両肩・頸部・骨盤帯の朝のこわばりが3週間以上続く。特に起床時はつらく、腕を頭の上に上げられない。夜中に痛みで目が覚める。CRP 4.8mg/dL・ESR 62mm/h。リウマチ科でPMRと診断されプレドニゾロン 15mg を開始した。' },
+        { timestamp: '2026-03-10T08:00:00Z', category: 'medication', title: 'プレドニゾロン 3 日後の劇的改善', content: 'プレドニゾロン開始 3 日後に肩のこわばりが 8→2 に激減。「まるで別人のよう」という感覚。ステロイドへの劇的な反応がPMR診断の支持所見の一つとなった。朝の起き上がりがスムーズになった。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2 週間後検査', content: 'CRP 0.4mg/dL（ほぼ正常化）・ESR 28mm/h（改善）。症状消失。プレドニゾロンを 12.5mg に減量（2週間で 2.5mg ずつ減量する計画）。骨粗鬆症予防のためビスホスホネート（アレンドロン酸）とビタミンD・カルシウムを開始。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'symptoms', title: '減量中の再燃', content: 'プレドニゾロン 7.5mg まで減量した段階で肩・腰の症状が再燃（こわばり 5/10、CRP 1.8mg/dL）。主治医と相談して 10mg に戻した。「早く減量しすぎた」との判断。減量スピードを 1mg/月に変更。' },
+        { timestamp: '2026-05-08T09:00:00Z', category: 'vitals', title: '現在の状況', content: 'プレドニゾロン 9mg。CRP 0.6mg/dL。症状は安定（こわばり 1〜2/10）。減量スピードを落としたことで再燃なし。骨密度（DEXA）：T スコア -2.1（骨粗鬆症域）。アレンドロン酸を継続中。巨細胞性動脈炎への進展を警戒して頭痛・視力変化を自己チェック中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 7, pain_level: 8, sleep_quality: 4 },
+        { timestamp: '2026-03-10T08:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-05-08T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T09:00:00Z', name: '診断時検査', findings: 'CRP 4.8mg/dL・ESR 62mm/h・IL-6 28pg/mL（高値）・RF 陰性・抗CCP抗体 陰性・Hb 11.2g/dL（慢性炎症性貧血）' },
+        { timestamp: '2026-05-08T09:00:00Z', name: 'フォローアップ', findings: 'CRP 0.6mg/dL（改善）・ESR 31mm/h・Hb 12.4g/dL・骨密度 T スコア -2.1（骨粗鬆症）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-05T09:00:00Z', name: 'プレドニゾロン 9mg', notes: '毎朝。PMR治療の主軸。月1mgずつ減量中（再燃時は増量）。' },
+        { timestamp: '2026-03-20T09:00:00Z', name: 'アレンドロン酸 35mg', notes: '週1回（月曜朝、起床後すぐ水で服用・30分は横にならない）。ステロイド性骨粗鬆症予防。' },
+        { timestamp: '2026-03-20T09:00:00Z', name: 'ビタミンD 800IU + カルシウム 1000mg', notes: '骨粗鬆症予防補充。' }
       ],
       sleepData: [], activityData: [], meals: []
     }
