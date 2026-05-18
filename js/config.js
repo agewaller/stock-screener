@@ -183,10 +183,14 @@ var CONFIG = {
       icd: 'ICD-11: 15',
       diseases: [
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
+        { id: 'hsd', name: '関節過可動症スペクトラム障害（HSD）', icd: 'FA93' },
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
-        { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
+        { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' },
+        { id: 'chronic_back_pain', name: '慢性腰痛症', icd: 'ME84' },
+        { id: 'behcet', name: 'ベーチェット病', icd: '4A44.00' },
+        { id: 'dermatomyositis', name: '多発性筋炎・皮膚筋炎（IIM）', icd: 'L94.0' }
       ]
     },
     {
@@ -210,7 +214,6 @@ var CONFIG = {
         { id: 'emf', name: '電磁波過敏症', icd: '' },
         { id: 'lyme', name: 'ライム病（慢性）', icd: '1C1G' },
         { id: 'mold', name: 'カビ毒（マイコトキシン）症', icd: '' },
-        { id: 'hsd', name: '関節過可動性症候群', icd: 'FB32' },
         { id: 'custom', name: 'その他（自由記入）', icd: '' }
       ]
     }
@@ -415,6 +418,12 @@ var CONFIG = {
                           japan: null, japanLabel: '国内推計策定中' },
     substance:          { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
                           japan: null, japanLabel: '国内推計策定中' },
+    chronic_back_pain:  { world: 619_000_000, label: '約 6.2 億人 (GBD 2020)',    tier: 2, density: 'medium', source: 'GBD Study 2020',
+                          japan: 28_000_000, japanLabel: '約 2,800 万人',          japanSource: '日本整形外科学会推計' },
+    behcet:             { world:    300_000, label: '約 30 万人 (推計)',            tier: 2, density: 'medium', source: 'Silk Road 分布',
+                          japan:     20_000, japanLabel: '約 2 万人',              japanSource: '難病情報センター（指定難病第56号）' },
+    dermatomyositis:    { world:    150_000, label: '約 15 万人 (推計)',            tier: 2, density: 'medium', source: '10万人に 1〜2 人',
+                          japan:      25_000, japanLabel: '約 2.5 万人',            japanSource: '難病情報センター（指定難病第50・51号）' },
   },
 
   // ============================================================
@@ -1332,6 +1341,18 @@ var CONFIG = {
     mold: [
       '築30年のマンションに住んでいる。2年前から倦怠感・頭痛・集中力低下が続き、複数の病院を回ったが原因不明と言われた。最近、浴室と押し入れのカビを業者に除去してもらったら少し症状が改善した気がする。環境と症状の相関を記録したい。',
       'CIRS（慢性炎症性応答症候群）の診断を受けた。室内空気質検査でERMI指数が高値だった。現在引越しを検討中。引越し前後で症状がどう変わるか記録して、カビ毒曝露との因果関係を確かめたい。'
+    ],
+    chronic_back_pain: [
+      '慢性腰痛で整形外科に通って3年。椎間板ヘルニア（L4/L5）と診断されている。NSAIDsとリリカを服用中。雨の日と長時間座った後が特に辛い。痛みの強度と誘発因子を記録して、主治医に状態の変化を正確に伝えたい。',
+      '腰部脊柱管狭窄症と診断。歩くと脚がしびれてくる（神経性間欠性跛行）。プレガバリンを服用中。手術は今のところ避けたい。歩行可能距離と痛みのパターンを記録して、次のブロック注射の効果を評価したい。'
+    ],
+    behcet: [
+      'ベーチェット病と診断されて5年。口腔内潰瘍が毎月繰り返し、目の炎症（ぶどう膜炎）も2回経験した。コルヒチンとアザチオプリンを服用中。潰瘍の頻度・大きさ・誘発因子を記録して、次回の受診に備えたい。',
+      '神経ベーチェット（神経型）と診断。めまい・頭痛・認知機能の変化が出てきた。シクロスポリンとプレドニゾロンで治療中。症状の日変動と薬の効果を記録して主治医に報告したい。'
+    ],
+    dermatomyositis: [
+      '皮膚筋炎（DM）と診断されて1年。ヘリオトロープ疹・ゴットロン徴候・近位筋力低下が主な症状。プレドニゾロン + タクロリムスで治療中。間質性肺炎の合併も指摘されている。筋力・皮膚症状・SpO2を記録したい。',
+      '抗MDA5抗体陽性の皮膚筋炎。急速進行性間質性肺炎のリスクが高いと言われた。シクロホスファミドパルスを受けている。呼吸状態と皮膚症状の変化を毎日記録して、急性増悪の早期発見に役立てたい。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -3408,6 +3429,81 @@ var CONFIG = {
         { timestamp: '2026-03-05T08:00:00Z', name: 'TC療法（ドセタキセル+シクロホスファミド）3週ごと×4', notes: '全4サイクル完了。前投薬：デキサメタゾン・グラニセトロン・オランザピン。' },
         { timestamp: '2026-03-12T08:00:00Z', name: 'フィルグラスチム（G-CSF）自己注射', notes: 'Day 3〜5（または医師指示）。骨痛の副作用あり→アセトアミノフェンで対処。' },
         { timestamp: '2026-05-12T08:00:00Z', name: 'アナストロゾール 1mg/日（ホルモン療法）', notes: '術後補助ホルモン療法。5〜10年継続予定。ホットフラッシュ・骨密度低下に注意。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chronic_back_pain: {
+      diseases: ['慢性腰痛症（椎間板ヘルニア・腰部脊柱管狭窄症）'],
+      profile: { age: 52, gender: 'male', height: 172, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-03-03T09:00:00Z', category: 'symptoms', title: '慢性腰痛の現状', content: '腰部椎間板ヘルニア（L4/L5）と腰部脊柱管狭窄症（中等度）の合併診断。3年前から徐々に悪化。現在、右下肢への放散痛（VAS 6/10）と間欠性跛行（歩行可能距離：約200m）。坐骨神経痛で夜間の睡眠が妨げられることがある。NSAIDsとプレガバリン75mg×2/日を服用。' },
+        { timestamp: '2026-03-10T09:00:00Z', category: 'medication', title: '神経ブロック実施', content: '硬膜外ステロイド注射（ESI：L3/4）を実施。注射後2日間で放散痛が 6→3/10 に改善。歩行可能距離も 200m→350m に増加。3週間は効果が持続した。プレガバリンを150mg×2/日に増量。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'symptoms', title: '理学療法開始', content: '週2回の理学療法開始。腰椎安定化訓練（ドローイン・バードドッグ）と牽引療法を組み合わせ。5回後に「体幹が以前より安定している」実感。放散痛の頻度が減少。腰を反らす動作が特に危険因子（仕事中の重量物挙上で悪化）。職場での作業環境を改善（リフトを使用）。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'vitals', title: '3ヶ月後MRI評価', content: 'MRI再撮影：L4/5のヘルニアが縮小傾向（7mm→5mm）。狭窄は変化なし。歩行可能距離 350→500m（50%改善）。VAS 6→4/10。主治医から「手術は今の段階では不要」との判断。プレガバリンを75mg×2/日に減量（副作用：眠気が改善）。' },
+        { timestamp: '2026-05-12T10:00:00Z', category: 'symptoms', title: '現在の状況', content: '理学療法3ヶ月。VAS 3〜4/10（安定）。歩行距離 500m→700m（継続改善）。プレガバリン継続（75mg×2）。NSAIDsは「必要時のみ」に切り替え（週1〜2回）。職場の作業環境改善後、症状の悪化が明らかに減少。雨の日は依然として悪化するが予測できるようになった。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 6, pain_level: 7, sleep_quality: 4 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 5, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-05-12T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-03T08:00:00Z', name: 'プレガバリン（リリカ）150mg/日', notes: '朝夕75mgずつ。神経障害性疼痛。眠気の副作用あり—朝食後に服用で軽減。' },
+        { timestamp: '2026-03-03T08:00:00Z', name: 'セレコキシブ 200mg（頓服）', notes: '疼痛増悪時のみ。長期NSAIDs→胃粘膜保護薬と併用。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    behcet: {
+      diseases: ['ベーチェット病（不全型）'],
+      profile: { age: 35, gender: 'male', height: 175, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: 'ベーチェット病診断', content: '口腔内アフタ性潰瘍（月3〜5回）・陰部潰瘍（過去2回）・皮膚症状（結節性紅斑）・眼症状（ぶどう膜炎 1回経験）でベーチェット病と診断（指定難病第56号）。コルヒチン 0.5mg×2/日を開始。日本のベーチェット病診断基準：大症状3つ（口腔・陰部・眼）+ 皮膚症状を満たす。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'medication', title: 'コルヒチン1週間後', content: 'コルヒチン開始7日。口腔潰瘍の新規出現が 月5→2回に減少。腹部不快感（下痢気味）の副作用あり—食後に服用で改善。アザチオプリン（免疫抑制薬）を追加するかを主治医と検討中。ベーチェット病友の会に入会して情報交換を始めた。' },
+        { timestamp: '2026-03-28T10:00:00Z', category: 'vitals', title: '眼科受診', content: '定期眼科受診（3ヶ月ごと）。細隙灯検査：眼炎症再燃なし（1年以上再燃なし）。視力 1.0/0.8（正常）。眼科医から「眼病変がなければ視力温存は可能」との評価。コルヒチン継続が眼発作予防に貢献している可能性あり。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'symptoms', title: '口腔潰瘍の誘発因子', content: '記録を分析すると、口腔潰瘍の誘発因子が明確に。①ストレス（仕事の締め切り）②睡眠不足（6時間未満）③歯磨き後のラウリル硫酸ナトリウム含有歯磨き粉。SLS不含歯磨き粉に変えてから発現頻度がさらに減少（月2→1回）。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '3ヶ月評価', content: '口腔潰瘍 月1〜2回（治療前の月5回から改善）。陰部潰瘍・皮膚病変：過去3ヶ月は発症なし。眼病変：安定継続。CRP 0.3mg/dL（低下傾向）。コルヒチン継続。アザチオプリンは眼発作がなければ見送り方針。生活改善（睡眠確保・SLS不含歯磨き粉）の効果が記録で明確に確認できた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 5, pain_level: 6, sleep_quality: 5 },
+        { timestamp: '2026-03-28T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '初診時採血', findings: 'CRP 1.8mg/dL・ESR 28mm/h・WBC 7,200（正常）・HLA-B51 陽性（日本のベーチェット病の約60%に陽性）' },
+        { timestamp: '2026-05-15T09:00:00Z', name: '3ヶ月後採血', findings: 'CRP 0.3mg/dL（著明改善）・ESR 15mm/h（正常化）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'コルヒチン 1.0mg/日', notes: '朝夕0.5mgずつ。ベーチェット病の口腔/陰部潰瘍・皮膚病変予防。食後服用で下痢軽減。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    dermatomyositis: {
+      diseases: ['皮膚筋炎（抗MDA5抗体陽性型）'],
+      profile: { age: 42, gender: 'female', height: 160, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: '皮膚筋炎確定診断', content: '半年前からヘリオトロープ疹（両眼瞼の紫紅色変色）・ゴットロン徴候（指関節の落屑性紅斑）・近位筋力低下（階段昇降困難）が出現。筋生検でDM確定。抗MDA5抗体陽性→急速進行性間質性肺炎（RPILD）高リスクと説明を受け、強化療法を開始。' },
+        { timestamp: '2026-03-08T09:00:00Z', category: 'medication', title: 'シクロホスファミドパルス開始', content: 'ステロイドパルス（メチルプレドニゾロン 1g×3日間）→プレドニゾロン 60mg/日 + シクロホスファミドパルス（500mg/m² 月1回）。タクロリムス 3mg/日を追加。SpO2 安静時 96%・労作後 90%。CT：間質性肺炎（GGO散在）。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'vitals', title: '1ヶ月後評価', content: 'SpO2 安静時 97%（改善）・労作後 93%（改善）。筋力：MMT 近位筋 3→4（改善）。皮疹（ヘリオトロープ・ゴットロン）は改善傾向。CK 2,800→1,200IU/L（改善）。フェリチン 2,800→1,500ng/mL（改善—高フェリチンはMDA5陽性DMの活動性指標）。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'medication', title: 'プレドニゾロン減量開始', content: 'PSL 60→50mg/日（10mg減量）。ILD改善を確認してから慎重に減量。副作用：ムーンフェイス・血糖上昇（空腹時血糖 118mg/dL—ステロイド糖尿病に注意）・不眠。ビスホスホネート（アレンドロン酸）とカルシウム・VitD追加（ステロイド性骨粗鬆症予防）。' },
+        { timestamp: '2026-05-18T10:00:00Z', category: 'vitals', title: '2.5ヶ月後評価', content: 'PSL 40mg/日。SpO2 安静時 97%・労作後 95%（著明改善）。CT：GGOが縮小傾向。MMT 近位筋 4/5（ほぼ正常）。CK 680IU/L（正常近く）。フェリチン 850ng/mL（著明改善）。抗MDA5抗体価：低下傾向。「このペースが続けば6ヶ月でPSL 20mg以下を目標にできる」との主治医評価。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 9, pain_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 7, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 4 },
+        { timestamp: '2026-05-18T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 5 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '確定診断時採血', findings: 'CK 5,800IU/L・LDH 820IU/L・フェリチン 8,200ng/mL（著明高値）・抗MDA5抗体 陽性（強陽性）・ANA 1:320' },
+        { timestamp: '2026-05-18T09:00:00Z', name: '2.5ヶ月後採血', findings: 'CK 680IU/L（著明改善）・フェリチン 850ng/mL（改善）・KL-6 480 U/mL（間質性肺炎活動性低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'プレドニゾロン 40mg/日（漸減中）', notes: '60→50→40mgと慎重減量中。ステロイド性骨粗鬆症・糖尿病に注意。血糖モニタリング要。' },
+        { timestamp: '2026-03-08T08:00:00Z', name: 'タクロリムス（プログラフ）3mg/日', notes: '朝食後。DM・ILD への免疫抑制。トラフ値 5〜10ng/mL目標。腎機能モニタリング要。' },
+        { timestamp: '2026-03-08T09:00:00Z', name: 'シクロホスファミドパルス 500mg/m²/月', notes: '毎月1回点滴。急速進行性ILD（RPILD）の強化療法。白血球・出血性膀胱炎に注意。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
