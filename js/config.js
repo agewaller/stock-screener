@@ -1265,6 +1265,10 @@ var CONFIG = {
       'ALSFRS-R 今月 38点（先月 41点）。右手の筋力低下が進み、箸からスプーンに変えた。リルゾールを服用中。FVC 74%。来月の受診前に症状の変化を整理して主治医に伝えたい。',
       '球麻痺型。発話が聞き取りにくくなってきた。音声銀行の録音を急いでいる。嚥下はまだ問題ない。VOCA の練習を始めた。エダラボン点滴を月1回受けている。'
     ],
+    neuropathy: [
+      '両足の裏のしびれが続いている。糖尿病で15年。HbA1c 8.2%。プレガバリン75mgを飲み始めたが、眠気が強い。しびれの程度を毎日記録して主治医に見せたい。',
+      '大腸がんの抗がん剤（オキサリプラチン）治療後から手足のしびれが続いている。冷たいものを触ると激しく痛む。治療終了から8ヶ月経つが改善しない。痛みの記録を続けたい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2655,6 +2659,34 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    neuropathy: {
+      diseases: ['末梢神経障害（糖尿病性ニューロパチー）'],
+      profile: { age: 63, gender: 'female', height: 158, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-03-08T08:00:00Z', category: 'symptoms', title: 'しびれ記録開始', content: '両足の裏のしびれ NRS 6/10。「靴下を履いたような」感覚。夜間に悪化。HbA1c 8.2%。糖尿病歴15年。神経内科を受診しプレガバリン 75mg を開始。' },
+        { timestamp: '2026-03-12T08:00:00Z', category: 'medication', title: 'プレガバリン開始1週間', content: 'プレガバリン 75mg/日（就寝前）開始。眠気が強く、朝のふらつきあり。しびれは NRS 5/10 に若干改善した気がする。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '血糖記録', content: 'HbA1c 8.2%→7.8%（2ヶ月で改善）。空腹時血糖 145→118 mg/dL。食事制限を徹底した。神経障害の改善は血糖管理が鍵だと実感。' },
+        { timestamp: '2026-03-28T08:00:00Z', category: 'symptoms', title: '転倒エピソード', content: '夜中にトイレに行くときに足元がふらついて転倒しそうになった。バランス感覚の低下を感じる。暗がりでの深部感覚障害が怖い。階段は手すりを使うことにした。' },
+        { timestamp: '2026-04-10T08:00:00Z', category: 'medication', title: 'プレガバリン増量', content: 'プレガバリン 75mg→150mg に増量（主治医指示）。眠気は慣れてきた。しびれ NRS 4/10 に改善。夜間の痛みが減った。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'symptoms', title: 'フットケア開始', content: '足の定期観察を始めた。右足の親指に小さな水ぶくれを発見（痛みを感じていなかった）。傷があると感染リスクが高いため、皮膚科を受診して処置してもらった。' },
+        { timestamp: '2026-04-28T08:00:00Z', category: 'symptoms', title: '1ヶ月半の変化', content: 'しびれ NRS 平均 6→3.5 に改善。HbA1c 7.6%（目標 7%以下に向け継続）。プレガバリン 150mg の眠気は慣れた。転倒なし。フットケア継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-08T08:00:00Z', fatigue_level: 5, sleep_quality: 4, pain_level: 6 },
+        { timestamp: '2026-03-28T08:00:00Z', fatigue_level: 5, sleep_quality: 5, pain_level: 5 },
+        { timestamp: '2026-04-10T08:00:00Z', fatigue_level: 4, sleep_quality: 6, pain_level: 4 },
+        { timestamp: '2026-04-28T08:00:00Z', fatigue_level: 3, sleep_quality: 6, pain_level: 3 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T10:00:00Z', name: '糖尿病管理・神経障害検査', findings: 'HbA1c 8.2%、空腹時血糖 145 mg/dL、LDL 118 mg/dL、ビタミン B12 312 pg/mL（正常）、神経伝導速度検査：感覚神経伝導速度低下（足部）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'プレガバリン（リリカ）75mg', notes: '就寝前。3/28 より 150mg に増量。眠気・ふらつきのモニタリング継続。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'メコバラミン（メチコバール）500μg', notes: '毎朝。ビタミン B12 補充・神経修復サポート。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'エパルレスタット（キネダック）', notes: '毎食前。糖尿病性神経障害の進行抑制。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
