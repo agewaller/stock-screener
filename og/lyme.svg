@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#bbf7d0"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803d"/>
+      <stop offset="100%" stop-color="#14532d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#15803d" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="64" font-weight="900" fill="#14532d">ライム病</text>
+    <text x="0" y="162" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="36" font-weight="800" fill="#166534">（慢性ライム病・PTLDS・ボレリア感染）</text>
+    <text x="0" y="218" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">症状・抗菌薬治療・マダニ曝露・慢性症状を AI で記録・管理</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="260" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">世界年間新規感染</text>
+    <text x="20" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#14532d">約 60 万件（米国）</text>
+    <rect x="280" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="300" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">PTLDS（治療後症候群）</text>
+    <text x="300" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="800" fill="#14532d">感染者の約10〜20%</text>
+    <rect x="580" y="0" width="220" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="600" y="32" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="14" fill="#64748b">ICD-11</text>
+    <text x="600" y="60" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#14532d">1C1G</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#14532d">📝  完全無料  ・  広告なし  ・  AI 分析</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#15803d">cares.advisers.jp/lyme.html</text>
+  </g>
+</svg>
