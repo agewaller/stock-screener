@@ -1301,6 +1301,14 @@ var CONFIG = {
       'リウマチ性多発筋痛症（PMR）でプレドニゾロン 15mg から治療開始。肩・首・腰の朝のこわばりが著明に改善した。CRP・ESR を毎回記録して薬の減量タイミングを主治医と相談したい。',
       'PMR と診断されて8ヶ月。プレドニゾロンを 5mg まで減量した段階で症状が再燃した。ステロイドを長期服用しているため骨粗鬆症の予防薬も飲んでいる。症状と薬の記録を続けたい。'
     ],
+    substance: [
+      'アルコール依存症の治療中。断酒3ヶ月目。AA（アルコホーリクス・アノニマス）に週3回参加している。アカンプロサートを服用中。渇望が強い日・弱い日のパターンを記録して、主治医と次回の受診に備えたい。',
+      '覚醒剤依存で3年ぶりの断薬を継続中。DARC でのプログラムに参加している。再使用の引き金（特定の人・場所・感情）を記録して回復を継続したい。断薬日数を記録することが自信になっている。'
+    ],
+    raynauds: [
+      'レイノー症候群と診断されて2年。冬は毎日のように発作が起きる。ニフェジピン20mgを服用しているが、手袋をしていても発作が起きる。発作の回数・状況・外気温を記録して、主治医に相談したい。',
+      '強皮症（SSc）合併のレイノー現象。指先に潰瘍が繰り返し出来て困っている。プロスタサイクリン点滴を年2回受けている。Ca拮抗薬＋シルデナフィルを内服中。発作と潰瘍の状態を記録して治療効果を評価したい。'
+    ],
     dvt: [
       '下肢の深部静脈血栓症と診断されてリバーロキサバン（イグザレルト）を服用中。右足の腫脹はかなり改善したが、弾性ストッキングをずっと履かないといけない。3ヶ月後まで薬を続ける予定。次の超音波検査まで症状を記録したい。',
       '卵巣がんの治療中にDVTを発症。低分子ヘパリン（クレキサン）を毎日自己注射している。がんが活動している限り抗凝固療法を続けると言われた。注射部位の記録と Dダイマーの値を管理したい。'
@@ -3041,6 +3049,54 @@ var CONFIG = {
       sleepData: [], activityData: [], meals: []
     },
 
+    substance: {
+      diseases: ['アルコール依存症'],
+      profile: { age: 48, gender: 'male', height: 173, weight: 76 },
+      textEntries: [
+        { timestamp: '2026-03-01T09:00:00Z', category: 'symptoms', title: '断酒開始', content: '入院でアルコール離脱を管理（ジアゼパムで安全に断酒）。振戦・発汗・不眠が3日間続いたが病院で管理できた。断酒1日目。今日から記録を続ける。AA のリストを受け取った。' },
+        { timestamp: '2026-03-08T10:00:00Z', category: 'medication', title: 'アカンプロサート開始', content: '退院。アカンプロサート（レグテクト）1998mg/日（3回食後）開始。主治医に「最初の3ヶ月が最もリラプスリスクが高い」と言われた。AA に本日初参加。緊張したが「ここが自分の居場所だ」と感じた。' },
+        { timestamp: '2026-03-20T11:00:00Z', category: 'symptoms', title: '断酒20日目', content: '渇望が強い日：仕事でイライラした後と、週末の夜（一人でいる時）。AA のスポンサー（経験者の支援者）が見つかった。毎日の「渇望スコア（0〜10）」を記録し始めた。今日は4/10。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'symptoms', title: '断酒36日目', content: '睡眠が改善してきた（断酒前：ほぼ毎晩眠れない→今週は6時間以上眠れる日が5日）。渇望は週に1〜2回、スコア 5〜6/10。スリップ（再飲酒）なし。家族との会話が増えてきた。AA は週3回参加。' },
+        { timestamp: '2026-05-01T10:00:00Z', category: 'symptoms', title: '断酒60日目', content: '断酒2ヶ月到達。AAの60日チップをもらった。渇望は週に1回以下・スコア 3/10 程度。体重 2kg 減（アルコールカロリーが消えた分）。肝機能検査：AST 28・ALT 32（正常化）。アカンプロサートを継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 8, pain_level: 4, sleep_quality: 2 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 4 },
+        { timestamp: '2026-04-05T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-05-01T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: '入院時採血', findings: 'AST 88・ALT 102・γ-GTP 245（高値）・MCV 102fl（大球性）・アルコール性肝障害の所見' },
+        { timestamp: '2026-05-01T09:00:00Z', name: '断酒60日後採血', findings: 'AST 28・ALT 32・γ-GTP 45（改善）。肝機能は著明改善。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'アカンプロサート（レグテクト）1998mg/日', notes: '毎食後3回。断酒補助薬（グルタミン酸系正常化）。自己中断しないこと。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    raynauds: {
+      diseases: ['レイノー症候群（原発性）'],
+      profile: { age: 32, gender: 'female', height: 160, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'symptoms', title: '受診記録', content: '毎年冬に両手指が白→青→赤に変わる発作が頻繁。今シーズンは1日5〜8回。血液検査・爪郭毛細血管顕微鏡では異常なし→原発性レイノー病と診断。ニフェジピン徐放製剤 20mg を開始。' },
+        { timestamp: '2026-03-12T10:00:00Z', category: 'medication', title: 'ニフェジピン1週間後', content: 'ニフェジピン開始7日。発作回数 5〜8回→3〜4回/日に減少（約40%改善）。頭痛・ほてりの副作用があるが、1週間で慣れてきた。手袋（電熱タイプ）を購入して外出時に着用。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'symptoms', title: '寒波後の状況', content: '先週の寒波（最低気温 -4℃）で発作が増悪。ニフェジピン増量（30mg）を主治医に相談→承認。寒冷刺激と発作の記録を記録することで「-2℃以下で特に悪化」のパターンを発見。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'symptoms', title: '暖かくなってきた', content: '4月以降、発作が著明に減少（0〜1回/日）。気温上昇がはっきりと影響している。ニフェジピンを20mgに戻した。来冬に向けて電熱手袋・マフラー・カイロを準備しておく予定。ANA 再検査: 陰性（膠原病の合併除外確認）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 3, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-03-12T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 3, pain_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T09:00:00Z', name: '初診時採血', findings: 'ANA 陰性・抗Scl-70抗体 陰性・抗セントロメア抗体 陰性・SS-A/B 陰性・甲状腺正常→原発性レイノー病と確定' }
+      ],
+      medications: [
+        { timestamp: '2026-03-05T08:00:00Z', name: 'ニフェジピン徐放製剤 20〜30mg', notes: '毎朝。冬季は30mgに増量。副作用：頭痛・ほてり（徐々に慣れる）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
     dvt: {
       diseases: ['深部静脈血栓症（DVT）'],
       profile: { age: 56, gender: 'female', height: 160, weight: 68 },
