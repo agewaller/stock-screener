@@ -1261,6 +1261,10 @@ var CONFIG = {
       '些細なことで感情が爆発してしまう。仕事でちょっと強めに言われただけでフラッシュバックが来る。昨夜も悪夢で目が覚めた。EMDRを始めたが、セッション後に疲弊する。記録を続けたい。',
       '人を信頼できない。少し親しくなると突然怖くなって距離を置いてしまう。「自分は壊れている」という気持ちが消えない。グラウンディングを練習中。感情の波のパターンを記録したい。'
     ],
+    als: [
+      'ALSFRS-R 今月 38点（先月 41点）。右手の筋力低下が進み、箸からスプーンに変えた。リルゾールを服用中。FVC 74%。来月の受診前に症状の変化を整理して主治医に伝えたい。',
+      '球麻痺型。発話が聞き取りにくくなってきた。音声銀行の録音を急いでいる。嚥下はまだ問題ない。VOCA の練習を始めた。エダラボン点滴を月1回受けている。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2651,6 +2655,32 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    als: {
+      diseases: ['ALS（筋萎縮性側索硬化症）'],
+      profile: { age: 61, gender: 'male', height: 171, weight: 67 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'symptoms', title: 'ALSFRS-R 記録（3月）', content: 'ALSFRS-R 合計 42点。言語 4、唾液 4、嚥下 4、筆記 3、切る 3、食事 4、着替え 4、歩行 3、階段 3、呼吸補助 4、臥位呼吸 4、呼吸不全 4。右手の筋力が更に低下。' },
+        { timestamp: '2026-03-12T09:00:00Z', category: 'medication', title: 'リルゾール継続', content: 'リルゾール 50mg×2回/日継続中。副作用なし。肝機能（ALT/AST）は正常範囲内。エダラボン点滴は来週予定。' },
+        { timestamp: '2026-03-20T10:00:00Z', category: 'symptoms', title: '呼吸機能検査', content: 'FVC 74%（前回 78%）。夜間の息苦しさはまだない。NPPV 導入の目安（50%）まで余裕あり。酸素飽和度 97-98%。' },
+        { timestamp: '2026-03-28T14:00:00Z', category: 'symptoms', title: '音声銀行録音', content: '音声銀行の録音を開始。VOVE に200文章録音済み。発話はまだ聞き取れるが早めに録音しておきたい。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'symptoms', title: 'ALSFRS-R 記録（4月）', content: 'ALSFRS-R 合計 39点（先月比 -3）。筆記 2、切る 2、歩行 2 に低下。補装具（AFO）を左足に装着開始。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'symptoms', title: '視線入力装置導入', content: 'Tobii Dynavox を試用。視線入力でのタイピングを練習中。最初は疲れるが徐々に慣れてきた。' },
+        { timestamp: '2026-04-25T09:00:00Z', category: 'symptoms', title: '次回受診準備', content: 'ALSFRS-R の推移グラフ・FVC・症状変化をまとめた。SOD1遺伝子検査の結果（陰性）を確認。tofersen は対象外。次回受診で胃瘻の時期について相談予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 5, brain_fog: 1, sleep_quality: 6, pain_level: 2 },
+        { timestamp: '2026-04-05T09:00:00Z', fatigue_level: 6, brain_fog: 1, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-04-25T09:00:00Z', fatigue_level: 7, brain_fog: 2, sleep_quality: 5, pain_level: 3 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-12T10:00:00Z', name: '定期血液検査（リルゾール管理）', findings: 'ALT 28 U/L、AST 24 U/L、肝機能正常。CK 320 U/L（筋崩壊マーカー・軽度上昇）。FVC 74%。' }
+      ],
+      medications: [
+        { timestamp: '2026-01-10T08:00:00Z', name: 'リルゾール（リルテック）50mg', notes: '朝夕食前。肝機能を月1回モニタリング。' },
+        { timestamp: '2026-02-01T10:00:00Z', name: 'エダラボン（ラジカット）', notes: '月1回点滴（10日間連続→14日休薬サイクル）。外来点滴。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
