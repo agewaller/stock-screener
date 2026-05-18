@@ -1301,6 +1301,26 @@ var CONFIG = {
       'リウマチ性多発筋痛症（PMR）でプレドニゾロン 15mg から治療開始。肩・首・腰の朝のこわばりが著明に改善した。CRP・ESR を毎回記録して薬の減量タイミングを主治医と相談したい。',
       'PMR と診断されて8ヶ月。プレドニゾロンを 5mg まで減量した段階で症状が再燃した。ステロイドを長期服用しているため骨粗鬆症の予防薬も飲んでいる。症状と薬の記録を続けたい。'
     ],
+    sibo: [
+      'IBS-D と言われて3年。低FODMAP食を試したが改善が不十分で、SIBO の呼気検査（水素型陽性）を受けた。リファキシミン治療を終えて2週間経つが、まだ腹部膨満感とガスが続く。食事と症状を記録して再発パターンを把握したい。',
+      '食後30〜60分で腹が張って痛くなる。硫黄臭のガスも出て恥ずかしい。医師に「過敏性腸症候群」と言われているが、SIBO の検査をしていない。記録を続けて専門医に持っていきたい。'
+    ],
+    gastroparesis: [
+      '1型糖尿病を20年。最近、食後2〜3時間で嘔吐することが増えた。血糖が食後に下がって数時間後に急上昇するパターンが出てきた。胃排出シンチグラフィで「軽度の胃排出遅延」と診断。食事量と嘔気を記録して管理したい。',
+      '胃不全麻痺と診断されてドンペリドンを服用中。少量しか食べられず体重が2ヶ月で4kg減った。嘔吐の頻度と食事内容を記録して、栄養士との相談に役立てたい。'
+    ],
+    arrhythmia: [
+      '心室性期外収縮（VPC）が多発して動悸が辛い。1万回/日以上と言われホルター心電図で確認された。ビソプロロールを服用中だが減量してほしい。動悸の頻度と誘発因子（コーヒー・ストレス・寝不足）を記録したい。',
+      '発作性心房細動（PAF）と診断されてアピキサバン（エリキュース）を服用中。カテーテルアブレーションを半年後に予定している。発作の頻度・持続時間・誘因を記録してアブレーション前の情報として整理したい。'
+    ],
+    ihd: [
+      '昨年、急性心筋梗塞（STEMI）で緊急PCI（ステント留置）を受けた。今はアスピリン＋クロピドグレル＋ロスバスタチン＋ビソプロロール・ラミプリルを服用中。LDL-Cの目標達成と薬の服用を毎日記録して次回の受診に備えたい。',
+      '安定狭心症でニトログリセリンを携帯している。最近、歩くと胸の締め付けが出るようになった。1週間に何回使っているか記録して、主治医に状態の変化を伝えたい。'
+    ],
+    pulmonary_fibrosis: [
+      'IPF（特発性肺線維症）と診断されてニンテダニブを服用中。下痢の副作用が強く服薬が辛い。SpO2を毎日測定しているが、歩くと88%まで下がることがある。呼吸機能の変化を記録して受診時に報告したい。',
+      '膠原病（強皮症）に合併した間質性肺炎。ピルフェニドンを服用中。在宅酸素療法（2L/分）を使い始めた。息切れの程度と酸素使用量を記録して急性増悪の早期発見に役立てたい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -3013,6 +3033,135 @@ var CONFIG = {
       sleepData: [], activityData: [], meals: []
     },
 
+    sibo: {
+      diseases: ['SIBO（小腸内細菌増殖症）'],
+      profile: { age: 35, gender: 'female', height: 162, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-10T08:00:00Z', category: 'symptoms', title: '呼気検査結果', content: 'ラクツロース呼気検査：水素 90分で38ppm上昇（正常<20ppm）。水素型SIBO陽性と診断。IBS-Dと言われて3年だが原因がわかってほっとした。リファキシミン（自費）を処方された。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'medication', title: 'リファキシミン開始', content: '自費でリファキシミン 1,650mg/日（550mg×3回）×14日間開始。副作用は今のところなし。食事は低FODMAP継続。' },
+        { timestamp: '2026-03-25T11:00:00Z', category: 'symptoms', title: '治療後1週間', content: 'リファキシミン終了から1週間。腹部膨満感が 8→4 に大幅改善。ガスの発生が減った。腸の「ゴロゴロ」音も静かになってきた。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'vitals', title: '治療後呼気検査', content: '再検査：水素ガス 90分で8ppm（正常域）。SIBO 根絶確認。低FODMAP食を継続して再発予防に努める。プロキネティクス（モサプリド）を追加処方された。' },
+        { timestamp: '2026-04-20T08:00:00Z', category: 'symptoms', title: '再発？', content: '低FODMAP から通常食に移行した途端に腹部膨満感が戻り始めた。玉ねぎ・豆類を食べた翌日が特に悪い。高FODMAP食品を絞り込んでいる。モサプリドが効いているかどうか判断が難しい。' },
+        { timestamp: '2026-05-10T10:00:00Z', category: 'symptoms', title: '現状', content: 'FODMAPの個人感受性を絞り込み中。玉ねぎ・ニンニク・小麦は明確なトリガー。乳製品・豆類は少量なら許容できる。腹部症状は 4/10程度で安定。プロキネティクスを継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-10T09:00:00Z', fatigue_level: 5, pain_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 4, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-05-10T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-03-15T08:00:00Z', name: 'リファキシミン 1,650mg/日（自費）', notes: '14日間終了。SIBO根絶確認。' },
+        { timestamp: '2026-04-05T08:00:00Z', name: 'モサプリド 15mg/日', notes: '毎食前。腸管運動改善（再発予防）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gastroparesis: {
+      diseases: ['胃不全麻痺（ガストロパレシス）'],
+      profile: { age: 44, gender: 'female', height: 158, weight: 47 },
+      textEntries: [
+        { timestamp: '2026-03-08T09:00:00Z', category: 'symptoms', title: '診断確定', content: '2型糖尿病歴12年。半年前から食後2〜3時間で嘔吐することが続く。胃排出シンチグラフィ：4時間後残留率 42%（重度遅延と診断）。担当医から「糖尿病性胃不全麻痺」と告げられた。体重 2ヶ月で 5kg 減少。' },
+        { timestamp: '2026-03-12T08:00:00Z', category: 'medication', title: 'ドンペリドン開始', content: 'ドンペリドン 30mg/日（食前）開始。少量頻回食（1日5回・1回150mL以下）に切り替え。揚げ物・高脂肪食を除去。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'symptoms', title: '2週間後', content: '嘔吐回数 1日3→1回に減少。食事量が少し増えた。GCSI スコア（自己評価）：4.2→2.8 改善。体重は 47kg で安定し始めた。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'vitals', title: '血糖改善', content: 'CGM データ：食後血糖スパイクが減少。低血糖→遅発性高血糖のパターンが改善。HbA1c 8.6→8.1%（少し改善）。インスリンを食事開始15分後に打つタイミングに変更したことが功を奏した。' },
+        { timestamp: '2026-05-05T11:00:00Z', category: 'symptoms', title: '現状', content: '嘔吐は週1〜2回程度。1日4〜5回の少量食を継続。体重 47.8kg（微増）。栄養士と連携して液体補充食（エンシュアリキッド）を1本/日追加している。経腸栄養は今のところ回避できている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-08T09:00:00Z', fatigue_level: 8, pain_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-05-05T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-08T09:00:00Z', name: '初診時採血', findings: 'HbA1c 8.6%・空腹時血糖 178mg/dL・Alb 3.4g/dL（低栄養傾向）' },
+        { timestamp: '2026-04-10T09:00:00Z', name: '1ヶ月後採血', findings: 'HbA1c 8.1%（改善）・Alb 3.6g/dL（改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-12T08:00:00Z', name: 'ドンペリドン 30mg/日', notes: '毎食前（1日3回）。プロキネティクス。' },
+        { timestamp: '2026-03-12T08:00:00Z', name: 'インスリン グラルギン（基礎）+ アスパルト（速効）', notes: '食事開始15分後投与に変更。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    arrhythmia: {
+      diseases: ['発作性心房細動（PAF）'],
+      profile: { age: 52, gender: 'male', height: 172, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-03-05T22:00:00Z', category: 'symptoms', title: '発作初回記録', content: '夜11時頃、突然の動悸。Apple Watch ECGで「心房細動の可能性」のアラート。心拍数 128bpm。20分後に自然停止。翌朝に循環器内科受診。' },
+        { timestamp: '2026-03-08T10:00:00Z', category: 'medication', title: '抗凝固薬開始', content: 'CHA₂DS₂-VAScスコア 2点（年齢52・高血圧）。アピキサバン（エリキュース）5mg×2/日を開始。「血栓予防が最優先」との説明。抗不整脈薬は様子見。' },
+        { timestamp: '2026-03-20T21:00:00Z', category: 'symptoms', title: '2回目の発作', content: '3時間持続の心房細動。飲酒（ビール350mL×2本）の翌日。心拍数最高148bpm。自然停止。アルコールが誘発因子と確信。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'medication', title: 'フレカイニド開始', content: 'ホルター心電図で発作性AFと確定。フレカイニド 100mg×2/日を追加（器質的心疾患なしを心エコーで確認）。アルコールを禁止。' },
+        { timestamp: '2026-04-20T11:00:00Z', category: 'symptoms', title: '6週間経過', content: 'フレカイニド開始後、発作なし。禁酒を継続。Apple Watch のECGを毎朝記録。睡眠の質を改善（就寝前のカフェイン禁止）。カテーテルアブレーションを10月に予約。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '現在の状況', content: 'アブレーション前評価のため心臓MRI施行。器質的異常なし・左房径 42mm（軽度拡大）。CHA₂DS₂-VAScスコア 2点でアピキサバン継続。禁酒 2ヶ月で体重 2kg 減少も達成。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 4 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-08T09:00:00Z', name: '初診時採血', findings: '甲状腺正常・電解質正常・腎機能正常（クレアチニン 0.9mg/dL）→DOAC適応確認' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'アピキサバン（エリキュース）10mg/日', notes: '朝夕5mgずつ。心房細動の脳梗塞予防（DOAC）。CHA₂DS₂-VAScスコア 2点。' },
+        { timestamp: '2026-04-05T08:00:00Z', name: 'フレカイニド 200mg/日', notes: '朝夕100mgずつ。発作性AF予防（器質的心疾患なし確認済み）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ihd: {
+      diseases: ['陳旧性心筋梗塞（PCI後管理）'],
+      profile: { age: 60, gender: 'male', height: 168, weight: 74 },
+      textEntries: [
+        { timestamp: '2026-03-01T09:00:00Z', category: 'medication', title: '退院後服薬確認', content: 'STEMI（前壁）でDES植込み（LADへ）から3ヶ月経過。退院薬：アスピリン 100mg・チカグレロル 180mg/日・ロスバスタチン 20mg・ラミプリル 5mg・ビソプロロール 2.5mg。副作用として軽い息切れ（β遮断薬か？）がある。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'vitals', title: '外来受診結果', content: 'LDL-C 62mg/dL（目標<70達成）・血圧 125/76・心拍数 62/分。心エコー EF 48%（入院時55%→低下傾向、主治医は経過観察）。心リハ開始を勧められた。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'symptoms', title: '心リハ開始', content: '心臓リハビリテーション外来 開始（週2回）。エルゴメーター 20分・低強度有酸素。最初の回は息切れがあったが、「ターゲット心拍 100bpm」で管理。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'symptoms', title: '心リハ3週目', content: '心リハ3週目。運動耐容能が向上し、歩行20分で息切れが出なくなった。体重も 76→74kg（2kg減）。禁煙継続（3ヶ月目）。ニコチネルパッチ使用中。' },
+        { timestamp: '2026-05-12T10:00:00Z', category: 'vitals', title: '2ヶ月後外来', content: 'LDL-C 58mg/dL（さらに改善）・血圧 122/74・EF 52%（回復傾向）。主治医から「このまま続けてください」との評価。チカグレロル継続（DES後12ヶ月）、12ヶ月後にクロピドグレルへ変更予定。禁煙3ヶ月完全達成。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-12T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T09:00:00Z', name: '外来採血', findings: 'LDL-C 62mg/dL（目標<70達成）・CRP 0.4mg/dL・HbA1c 6.1%・クレアチニン 1.0mg/dL' },
+        { timestamp: '2026-05-12T09:00:00Z', name: '2ヶ月後採血', findings: 'LDL-C 58mg/dL（さらに改善）・CRP 0.2mg/dL・EF 52%（心エコー）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'アスピリン 100mg + チカグレロル 180mg/日（DAPT）', notes: 'DES植込み後12ヶ月継続必須。自己中断禁止。' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'ロスバスタチン 20mg', notes: '夕食後。LDL-C<70mg/dL目標。' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'ラミプリル 5mg + ビソプロロール 2.5mg', notes: '朝。心リモデリング予防・心拍数コントロール。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    pulmonary_fibrosis: {
+      diseases: ['特発性肺線維症（IPF）'],
+      profile: { age: 67, gender: 'male', height: 170, weight: 65 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: 'IPF診断・治療開始', content: 'IPFと確定診断（HRCT でUIPパターン・外科的肺生検）。FVC 74%・DLco 58%・SpO2安静時 96%・歩行後 89%。ニンテダニブ 300mg/日（150mg×2）開始。担当医から「進行を遅らせる薬で完治はないが、有効性は確認されている」と説明された。' },
+        { timestamp: '2026-03-12T08:00:00Z', category: 'medication', title: 'ニンテダニブ副作用', content: '服薬7日目から下痢が毎日（1日3〜4回）。ニンテダニブの最も多い副作用。主治医の指示で一時150mg/日（75mg×2）に減量し、症状が軽減。整腸剤（ビオフェルミン）を追加。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'symptoms', title: '1ヶ月後経過', content: 'ニンテダニブ 150mg→225mgに再増量。下痢は週3〜4回程度に落ち着いた。外出時のSpO2を記録：歩行500m後に SpO2 90%。在宅酸素を検討し始めた。咳は乾性咳嗽が持続（1日10〜15回）。' },
+        { timestamp: '2026-04-15T11:00:00Z', category: 'medication', title: 'HOT 開始', content: '6分間歩行試験でSpO2 83%まで低下。在宅酸素療法（HOT）を開始（2L/分・労作時のみ）。ポータブル酸素ボンベを使って外出できるようになった。心理的な抵抗感はあったが、外出が楽になった。' },
+        { timestamp: '2026-05-10T09:00:00Z', category: 'vitals', title: '3ヶ月後肺機能検査', content: 'FVC 71%（開始時74%、3%低下—IPFの標準的な進行ペース）・DLco 55%（開始時58%）。SpO2安静時 95%。「ニンテダニブが効いている可能性あり—年間で4〜5%低下なら平均的」と主治医のコメント。インフルエンザ・肺炎球菌ワクチン接種済み。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-10T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '診断時検査', findings: 'KL-6 1,850 U/mL（高値）・SP-D 180 ng/mL（高値）・LDH 234 IU/L・ANA 陰性・抗MDA5抗体 陰性（膠原病関連ILD除外）' },
+        { timestamp: '2026-05-10T09:00:00Z', name: '3ヶ月後', findings: 'KL-6 1,720 U/mL（微減）・SP-D 165 ng/mL・肝機能正常（ニンテダニブ副作用モニタリング）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-03T08:00:00Z', name: 'ニンテダニブ 225mg/日（オフェブ）', notes: '朝夕食後（副作用で150→225mgに調整中）。抗線維化薬。下痢副作用に注意。' },
+        { timestamp: '2026-04-15T08:00:00Z', name: '在宅酸素 2L/分（労作時）', notes: 'ポータブルボンベ使用。6分間歩行でSpO2 83%→HOT適応。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
     polymyalgia: {
       diseases: ['リウマチ性多発筋痛症（PMR）'],
       profile: { age: 68, gender: 'female', height: 156, weight: 58 },
