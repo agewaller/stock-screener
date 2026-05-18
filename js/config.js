@@ -1273,6 +1273,26 @@ var CONFIG = {
       '乳がん手術から2年。タモキシフェンを毎日飲んでいる。CEAは正常範囲だが、検査の前後はいつも再発が怖くて眠れない。定期検査の結果を記録して、変化があったらわかるようにしたい。',
       '大腸がん術後1年。抗がん剤後のしびれが残っている。ケモブレインで仕事の集中力が落ちている。次の CT まであと2ヶ月。フォローアップスケジュールと症状を記録したい。'
     ],
+    metabolic_syndrome: [
+      '健診でメタボと言われた。腹囲 91cm・中性脂肪 189mg/dL・血圧 138/88。医師に「生活習慣を改善して」と言われたが、具体的に何から始めていいかわからない。腹囲と血圧を毎日記録して変化を追いたい。',
+      '2型糖尿病の手前（空腹時血糖 107mg/dL）でメタボ判定。GLP-1の注射を開始して1ヶ月。体重が 3kg 減ったが、中性脂肪はまだ高い。血糖・体重・食事をまとめて記録して、次の受診に備えたい。'
+    ],
+    dysautonomia: [
+      '立ち上がると頭がぼーっとして、ひどいときは倒れそうになる。起立性低血圧と言われた。朝は特に症状が強い。フロリネフを服用中だが、血圧の変動を毎日記録して主治医に報告したい。',
+      '自律神経失調症と診断されて3年。動悸・めまい・胃腸の不調・発汗異常が重なって日常生活がつらい。検査では「異常なし」と言われることが多くて悔しい。症状パターンを記録して根拠を持って受診したい。'
+    ],
+    diabetes_t1: [
+      '1型糖尿病で10年。フリースタイルリブレを使っている。低血糖が怖くて夜中に何度も目が覚める。HbA1c 7.2%だが食後血糖スパイクが気になる。CGMデータと食事・インスリン量を記録して次の受診で相談したい。',
+      '先月1型糖尿病と診断された。まだインスリン量の調整に戸惑っている。カーボカウントの練習中。低血糖になるのが怖い。毎日の血糖・食事・インスリン量を記録して主治医に見せたい。'
+    ],
+    obesity: [
+      '肥満症の診断を受けた（BMI 31、高血圧・NAFLD合併）。ウゴービ（セマグルチド）を始めて2ヶ月。4kg減ったが食欲が戻ってきた気がする。体重・食事・活動量を毎日記録して変化を管理したい。',
+      'BMI 38で高度肥満症。2型糖尿病・睡眠時無呼吸を合併。スリーブ胃切除術を検討中。術前の記録として体重・血糖・血圧の変化を残しておきたい。甘いものへの依存をなんとかしたい。'
+    ],
+    adrenal: [
+      '副腎機能不全でヒドロコルチゾン 20mg/日を服用中。発熱のたびにシックデイルールで倍量にするのが不安。副腎クリーゼを1回経験した。ホルモン補充量と症状の記録を続けたい。',
+      'アジソン病と診断されて2年。ヒドロコルチゾン＋フロリネフ服用中。倦怠感と低血圧が続いていて、用量が適切かどうか次の受診で確認したい。シックデイの判断が難しく、記録で証拠を残したい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2820,6 +2840,140 @@ var CONFIG = {
       medications: [
         { timestamp: '2024-03-01T08:00:00Z', name: 'タモキシフェン 20mg', notes: '毎朝。乳がん術後ホルモン療法 5 年間継続中（3年目）。' },
         { timestamp: '2026-04-22T08:00:00Z', name: 'カルシウム + ビタミン D', notes: 'Ca 1,200mg/日 + ビタミン D 1,000IU/日。骨密度低下予防。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    metabolic_syndrome: {
+      diseases: ['メタボリックシンドローム'],
+      profile: { age: 54, gender: 'male', height: 172, weight: 84 },
+      textEntries: [
+        { timestamp: '2026-03-10T07:30:00Z', category: 'vitals', title: 'メタボ健診結果', content: '腹囲 94cm・血圧 142/90・中性脂肪 212mg/dL・HDL 36mg/dL・空腹時血糖 112mg/dL。3 項目すべて該当でメタボ確定。医師から「このままでは 5 年以内に糖尿病になる可能性が高い」と言われた。生活習慣を変えることを決意。' },
+        { timestamp: '2026-03-15T08:00:00Z', category: 'symptoms', title: '食事記録を開始', content: '夕食の炭水化物を減らした（白米 1 杯→ 0.5 杯、ラーメン禁止）。ビール毎日 2 缶→週末のみに。清涼飲料水をやめて水・お茶に変更。' },
+        { timestamp: '2026-03-22T07:30:00Z', category: 'vitals', title: '1週間後の体重', content: '体重 84.0kg→82.6kg（1.4kg 減）。腹囲 94→93cm。血圧 138/86 に少し改善。まだ継続が必要。特定保健指導を申し込んだ。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'symptoms', title: '特定保健指導スタート', content: '保健師との面接で目標設定：①腹囲 88cm 以下（3ヶ月後）②週 150 分ウォーキング③アルコール週 2 日以内。スマートウォッチで歩数 8,000 歩/日を目標にした。' },
+        { timestamp: '2026-04-15T07:00:00Z', category: 'vitals', title: '中間チェック', content: '体重 80.8kg（−3.2kg）。腹囲 91cm。血圧 132/82 に改善。毎朝 30 分のウォーキングが習慣化。昼食を定食→小盛りに変更。中性脂肪はまだ測定していないが受診時に確認予定。' },
+        { timestamp: '2026-04-28T08:00:00Z', category: 'medication', title: 'フェノフィブラート開始', content: 'TG がなかなか下がらないため医師がフェノフィブラート 80mg を処方。「運動と食事は続けて。薬はあくまでサポート」と言われた。EPA 製剤（エパデール）も追加検討中。' },
+        { timestamp: '2026-05-08T08:00:00Z', category: 'vitals', title: '2ヶ月後の血液検査', content: '中性脂肪 212→148mg/dL（基準値内！）。HDL 36→42mg/dL。血糖 112→104mg/dL。血圧 128/80（自宅測定平均）。体重 79.5kg（−4.5kg）。医師から「このまま続けば半年でメタボ脱出できる」と言われた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-10T07:30:00Z', fatigue_level: 4, sleep_quality: 5, pain_level: 1 },
+        { timestamp: '2026-03-22T07:30:00Z', fatigue_level: 3, sleep_quality: 5, pain_level: 1 },
+        { timestamp: '2026-04-15T07:00:00Z', fatigue_level: 2, sleep_quality: 6, pain_level: 1 },
+        { timestamp: '2026-05-08T08:00:00Z', fatigue_level: 2, sleep_quality: 7, pain_level: 1 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T07:30:00Z', name: 'メタボ健診', findings: '中性脂肪 212mg/dL・HDL 36mg/dL・空腹時血糖 112mg/dL・HbA1c 5.9%・γ-GTP 72 IU/L' },
+        { timestamp: '2026-05-08T08:00:00Z', name: '2ヶ月後フォローアップ', findings: '中性脂肪 148mg/dL（改善）・HDL 42mg/dL（改善）・空腹時血糖 104mg/dL（改善）・HbA1c 5.6%・γ-GTP 48 IU/L' }
+      ],
+      medications: [
+        { timestamp: '2026-04-28T08:00:00Z', name: 'フェノフィブラート 80mg', notes: '毎朝。高トリグリセリド血症の治療。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    dysautonomia: {
+      diseases: ['自律神経障害（起立性低血圧）'],
+      profile: { age: 42, gender: 'female', height: 162, weight: 51 },
+      textEntries: [
+        { timestamp: '2026-03-08T09:00:00Z', category: 'symptoms', title: '起立直後の記録', content: '起立時血圧：96/64 mmHg（起立後 3 分）。横臥位 118/74。差が大きい日は頭がくらくらして目の前が暗くなりかける。今日は台所で 10 分立ちっぱなしで限界だった。' },
+        { timestamp: '2026-03-15T08:30:00Z', category: 'medication', title: 'フロリネフ 0.1mg 開始', content: '神経内科でフロリネフ（フルドロコルチゾン）0.1mg を処方。「塩分を少し増やして水分を 2L/日とるように」との指示。弾性ストッキングも購入した。' },
+        { timestamp: '2026-03-22T09:00:00Z', category: 'vitals', title: 'フロリネフ 1 週間後', content: '起立時血圧：108/70（改善！）。浮腫が足首に少し出てきた。朝の頭ふらつきは 7→4 に減少。立位を 15 分保てるようになった。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'symptoms', title: '胃腸の不調が続く', content: '便秘（3日に1回）と食後の膨満感が強い。消化管の自律神経障害も影響しているらしい。食後は横にならないように意識しているが、横になりたくなる。' },
+        { timestamp: '2026-04-12T09:30:00Z', category: 'medication', title: 'ミドドリン追加', content: 'ミドドリン（メカミラミン）2.5mg を午前・午後に追加。血圧が安定してきた。立ちくらみが週 2〜3 回→週 1 回に減少。外出できる機会が増えた。' },
+        { timestamp: '2026-04-25T08:00:00Z', category: 'vitals', title: 'ティルト試験結果', content: 'ティルト試験陽性。起立後 10 分で血圧が 30mmHg 以上低下（起立性低血圧確定）。心拍は 88 bpm まで上昇（POTS 基準の 30bpm 増加には達せず）。診断：神経性起立性低血圧。' },
+        { timestamp: '2026-05-05T09:00:00Z', category: 'symptoms', title: '2ヶ月の変化まとめ', content: '立ちくらみ：週 10 回→週 1 回。家事の立ち作業：5 分→20 分に延長。外出（30 分程度）が週 3 回できるようになった。汗の異常（顔のみ大量発汗）は変わらず。便秘は食物繊維増加で改善傾向。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-08T09:00:00Z', fatigue_level: 7, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-03-22T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-12T09:30:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-05T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-25T08:00:00Z', name: 'ティルト試験・自律神経検査', findings: 'ティルト試験陽性（起立後 10 分で 30mmHg 以上低下）。HRV（心拍変動）低下。血液検査：電解質正常・Na 141 mEq/L・抗核抗体陰性' }
+      ],
+      medications: [
+        { timestamp: '2026-03-15T08:30:00Z', name: 'フルドロコルチゾン 0.1mg', notes: '毎朝。起立性低血圧治療。塩分・水分増量と併用。' },
+        { timestamp: '2026-04-12T09:30:00Z', name: 'ミドドリン 2.5mg', notes: '午前・午後の 2 回。血管収縮薬。就寝前は禁止。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    diabetes_t1: {
+      diseases: ['1型糖尿病'],
+      profile: { age: 28, gender: 'female', height: 158, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-05T07:00:00Z', category: 'vitals', title: 'CGM データ確認', content: 'フリースタイルリブレ（LibreLink）でのデータ：TIR（70-180mg/dL）= 68%、TBR（<70mg/dL）= 8%（夜間低血糖が主因）。医師の目標は TIR >70%。夜間の低血糖を減らすためにグラルギンの量を調整中。' },
+        { timestamp: '2026-03-10T12:30:00Z', category: 'symptoms', title: '低血糖エピソード', content: '昼食前に血糖 52mg/dL で軽い低血糖。ブドウ糖 15g を摂取して 15 分後に 93mg/dL に回復（15-15 ルール）。原因は昼食のカーボカウントのミス（実際のカーボは想定の 1.5 倍だった）。記録を続けてパターンを把握したい。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'medication', title: 'インスリン調整', content: 'グラルギン（基礎インスリン）：18U→16U に減量。夜間低血糖が続いていたため。リスプロ（超速効型）のインスリン感度係数（ISF）を 50→55 に変更。主治医と相談の上で調整した。' },
+        { timestamp: '2026-03-25T08:00:00Z', category: 'vitals', title: '3ヶ月検査結果', content: 'HbA1c 7.1%（前回 7.4%）。C-ペプチド 0.1ng/mL（ほぼゼロ、膵β細胞機能なし確認）。TSH 3.8 mIU/L（橋本病合併、経過観察中）。eGFR 98（腎機能正常）。網膜症スクリーニング：異常なし。' },
+        { timestamp: '2026-04-05T07:30:00Z', category: 'symptoms', title: 'カーボカウント改善', content: 'DAFNE（正常食事のためのインスリン量調整）コースの内容を復習。パスタ・寿司のGI値を意識して食後スパイクを改善。フリースタイルリブレで食後 1h・2h の血糖を確認しながら調整。食後 2h 血糖を 180mg/dL 以下に抑えられるようになってきた。' },
+        { timestamp: '2026-04-20T07:00:00Z', category: 'vitals', title: '月次 CGM レポート', content: 'TIR 74%（目標達成！）、TBR（低血糖）5%（改善）、TAR（高血糖）21%。グラルギン調整が効いた。運動（週 3 回ジョギング）後の低血糖リスクに備えて、運動前に炭水化物 10〜15g を補食するようにした。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T07:00:00Z', fatigue_level: 4, sleep_quality: 5, pain_level: 1 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 3, sleep_quality: 6, pain_level: 1 },
+        { timestamp: '2026-04-20T07:00:00Z', fatigue_level: 2, sleep_quality: 7, pain_level: 1 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-25T08:00:00Z', name: '糖尿病定期検査', findings: 'HbA1c 7.1%（改善）、C-ペプチド 0.1ng/mL（内因性インスリン枯渇）、TSH 3.8 mIU/L（橋本病経過観察）、抗GAD抗体 陽性確認済み、eGFR 98、尿中アルブミン陰性' }
+      ],
+      medications: [
+        { timestamp: '2025-01-01T08:00:00Z', name: 'グラルギン（トレシーバ）16U', notes: '就寝前。基礎インスリン。' },
+        { timestamp: '2025-01-01T08:00:00Z', name: 'リスプロ（ヒューマログ）食直前', notes: '食事ごとに炭水化物量に応じて調整（IC比 1:10）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    obesity: {
+      diseases: ['肥満症（高度肥満・合併症あり）'],
+      profile: { age: 45, gender: 'female', height: 158, weight: 86 },
+      textEntries: [
+        { timestamp: '2026-03-01T08:00:00Z', category: 'vitals', title: '肥満症診断・治療開始', content: '体重 86kg・BMI 34.5・腹囲 97cm。血圧 148/94・睡眠時無呼吸（AHI 18）合併。主治医からウゴービ（セマグルチド 0.25mg/週）を処方。食事記録アプリも始めた。カロリー目標 1,400kcal/日。' },
+        { timestamp: '2026-03-15T08:00:00Z', category: 'symptoms', title: 'ウゴービ 2 週間後', content: '食欲が確実に減った。以前は夕食後にお菓子を食べずにいられなかったが、今は食べたいと思わない。吐き気が最初の 3〜4 日あったが今は消えた。体重 84.2kg（−1.8kg）。' },
+        { timestamp: '2026-04-01T08:00:00Z', category: 'vitals', title: '1ヶ月後の計測', content: '体重 81.5kg（−4.5kg）。腹囲 93cm（−4cm）。血圧 138/88（改善）。歩数：5,000→8,000歩/日に自然に増えた。1,400kcal をほぼ達成できている（たんぱく質 80g 目標）。' },
+        { timestamp: '2026-04-08T08:00:00Z', category: 'medication', title: 'セマグルチド 0.5mg に増量', content: '主治医の指示で 0.5mg/週 に増量。吐き気はなかった。体重減少のプラトー（停滞期）が来たときに 1.0mg→1.7mg→2.4mg と段階的に増量する計画。' },
+        { timestamp: '2026-04-20T08:00:00Z', category: 'symptoms', title: '睡眠の改善', content: 'CPAP の AHI が 18→9 に改善（体重減少の効果？）。日中の眠気が減ってきた。午後の倦怠感が少なくなり仕事の集中力が戻ってきた。ウォーキング 30 分を朝晩に追加した。' },
+        { timestamp: '2026-05-05T08:00:00Z', category: 'vitals', title: '2ヶ月まとめ', content: '体重 78.9kg（−7.1kg・−8.3%）。BMI 31.6。腹囲 90cm（−7cm）。血圧 132/84（改善継続）。HbA1c 検査待ち。睡眠の質スコアが向上。「体が軽くなった」実感あり。目標：あと 10kg 減でメタボ脱出・肥満症改善。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T08:00:00Z', fatigue_level: 6, sleep_quality: 4, pain_level: 3 },
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-05-05T08:00:00Z', fatigue_level: 3, sleep_quality: 6, pain_level: 2 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T08:00:00Z', name: '肥満症検査', findings: 'BMI 34.5・腹囲 97cm・血圧 148/94・TG 198mg/dL・HDL 38mg/dL・HbA1c 6.2%（糖尿病予備群）・ALT 52 IU/L・γ-GTP 68 IU/L（脂肪肝傾向）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'セマグルチド（ウゴービ）0.5mg', notes: '週1回皮下注射。0.25mg から増量中。GLP-1受容体作動薬。' },
+        { timestamp: '2025-06-01T08:00:00Z', name: 'アムロジピン 5mg', notes: '毎朝。高血圧治療。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+
+    adrenal: {
+      diseases: ['副腎機能不全（アジソン病）'],
+      profile: { age: 38, gender: 'female', height: 163, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-05T08:00:00Z', category: 'vitals', title: '朝の血圧・症状', content: '血圧 88/56（起立後 84/52）。疲労度 7/10。ヒドロコルチゾン 10mg を 8時・5mg を 12時・5mg を 17時 に服用。今日は曇りで気分がさらに重い。塩分を意識してとった（塩飴1個）。' },
+        { timestamp: '2026-03-12T09:00:00Z', category: 'symptoms', title: 'シックデイ実施', content: '喉の痛みと 37.8℃の発熱。シックデイルールでヒドロコルチゾンを倍量（20+10+10mg）に増量。症状が軽快したら元に戻す予定。医師から「38℃以上・嘔吐・外傷時は ER へ」と言われているので注意している。' },
+        { timestamp: '2026-03-20T08:00:00Z', category: 'vitals', title: '定期検査', content: 'Na 137 mEq/L（低め）・K 4.2 mEq/L（正常）・コルチゾール ACTH 刺激後 15μg/dL（低値、副腎機能不全確認）。フロリネフ 0.1mg で血圧は改善傾向。体重 55kg（安定）。電解質バランスに注意を続ける。' },
+        { timestamp: '2026-04-03T07:30:00Z', category: 'symptoms', title: '好調期', content: 'ヒドロコルチゾンの用量調整（朝 15mg に増量）で、午前中の倦怠感がかなり改善した。血圧 98/64 に改善。外出が週 3 回できるようになった。ただし昼以降は疲れが出る。' },
+        { timestamp: '2026-04-18T08:00:00Z', category: 'symptoms', title: '低血糖エピソード', content: '朝食を遅らせたら血糖が 62mg/dL（冷汗・動悸）。ブドウ糖を摂取して回復。副腎機能不全では低血糖が起こりやすい。朝食を遅らせないよう注意。副腎クリーゼのリスクが低血糖と重なると危険。' },
+        { timestamp: '2026-05-02T09:00:00Z', category: 'vitals', title: '2ヶ月まとめ', content: '血圧：平均 96/62（改善）。倦怠感：7→4（改善）。シックデイ：1回（適切に対応できた）。副腎クリーゼ：なし。夏に向けて脱水・熱中症リスクが上がるため、塩分・水分管理を強化する予定。アジソン病患者向けの緊急カードをいつも財布に入れている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T08:00:00Z', fatigue_level: 7, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-03T07:30:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-05-02T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T08:00:00Z', name: '副腎機能検査', findings: 'Na 137 mEq/L・K 4.2 mEq/L・コルチゾール基礎値 3.2μg/dL（低値）・ACTH 刺激後ピーク 15μg/dL（低値）・ACTH 162 pg/mL（高値、原発性確認）・抗21-水酸化酵素抗体 陽性（自己免疫性確認）' }
+      ],
+      medications: [
+        { timestamp: '2024-01-01T08:00:00Z', name: 'ヒドロコルチゾン 15mg/5mg/5mg', notes: '8時・12時・17時に分割服用。シックデイ時は倍量。' },
+        { timestamp: '2024-01-01T08:00:00Z', name: 'フルドロコルチゾン 0.1mg', notes: '毎朝。鉱質コルチコイド補充（原発性のため必要）。塩分増量と併用。' }
       ],
       sleepData: [], activityData: [], meals: []
     }

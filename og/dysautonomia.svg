@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#3b82f6" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="58" font-weight="900" fill="#1e3a8a">自律神経障害</text>
+    <text x="0" y="158" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="36" font-weight="800" fill="#1e40af">（自律神経失調症・起立性低血圧）</text>
+    <text x="0" y="218" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">血圧・心拍・発汗・消化管の自律神経症状を AI で記録・管理</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="360" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">主な病型</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e3a8a">起立性低血圧・POTS・MSA</text>
+    <rect x="380" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="400" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">診断</text>
+    <text x="400" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e3a8a">ティルト試験・HRV</text>
+    <rect x="680" y="0" width="240" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="700" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">ICD-11 分類</text>
+    <text x="700" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="700" fill="#4338ca">8D40</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#1e3a8a">📝  完全無料  ・  広告なし  ・  AI 分析</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#3b82f6">cares.advisers.jp/dysautonomia.html</text>
+  </g>
+</svg>
