@@ -1249,6 +1249,10 @@ var CONFIG = {
       '夕食後1時間ほどで胸焼けが始まる。横になると逆流感がひどく、昨夜も寝付けなかった。PPI（ラベプラゾール）を飲んでいるが、食後に飲んでいた。',
       '朝起きたときに口の中が酸っぱい。のどに何か引っかかる感じが続いている。食後すぐ横になるのが癖になっていた。食事と就寝の間隔を記録したい。'
     ],
+    thyroid_hypo: [
+      'チラージン（レボチロキシン）50μgを服用中。TSHは1.8で正常範囲内だが、まだ疲労感と冷えが取れない。朝起きるのが特につらく、体重が増え続けている。FT3も測ってほしいと思っている。',
+      '甲状腺摘出後から毎日チラージンを飲んでいる。最近便秘がひどくなってきた。薬の飲み忘れを防ぐために記録したい。髪の毛も抜けやすくなってきた気がする。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2639,6 +2643,32 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    thyroid_hypo: {
+      diseases: ['甲状腺機能低下症'],
+      profile: { age: 54, gender: 'female', height: 157, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-15T08:00:00Z', category: 'symptoms', title: 'チラージン開始から3ヶ月', content: 'TSH 3.2 → 1.8に改善。しかし倦怠感・冷え・便秘は継続中。体重は54→62kg（8ヶ月で+8kg）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'チラージン服用タイミング変更', content: '朝食前30分→起床直後（空腹時）に変更。カルシウム・鉄剤との服用間隔を4時間空けることを確認。' },
+        { timestamp: '2026-03-28T21:00:00Z', category: 'symptoms', title: 'FT3測定依頼', content: 'TSHは1.8で正常範囲だが、FT3が低い可能性を主治医に相談。T3/T4併用療法について聞いてみたい。' },
+        { timestamp: '2026-04-05T08:00:00Z', category: 'vitals', title: '体温記録開始', content: '朝の基礎体温 36.0℃。低体温が続いている。冷え性・手足の冷たさが慢性的。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'nutrition', title: 'ヨウ素・セレン管理', content: '昆布など過剰なヨウ素摂取を控える。セレンを含むブラジルナッツ（1-2粒/日）を追加。グルテンフリーを試験中。' },
+        { timestamp: '2026-04-18T08:00:00Z', category: 'symptoms', title: '若干の改善', content: '服用タイミング変更から4週間。便秘が少し改善（週2→4回）。朝の倦怠感は7/10→5/10に。体重は変わらず。' },
+        { timestamp: '2026-04-25T09:00:00Z', category: 'medication', title: 'チラージン増量相談', content: 'FT3 2.8 pg/mL（基準値 2.3-4.0）下限付近。主治医にチラージン75μgへの増量を相談予定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-15T08:00:00Z', fatigue_level: 8, brain_fog: 6, sleep_quality: 4, pain_level: 3 },
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 7, brain_fog: 5, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-04-25T08:00:00Z', fatigue_level: 4, brain_fog: 3, sleep_quality: 6, pain_level: 1 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T10:00:00Z', name: '甲状腺機能検査', findings: 'TSH 1.8 mIU/L（基準 0.5-4.0）、FT4 1.1 ng/dL（正常下限）、FT3 2.8 pg/mL（低め）、抗TPO抗体 820 IU/mL（高値）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-15T08:00:00Z', name: 'レボチロキシン（チラージン）50μg', notes: '起床直後（空腹時）に服用。カルシウム・鉄剤との間隔4時間以上。' }
       ],
       sleepData: [], activityData: [], meals: []
     }
