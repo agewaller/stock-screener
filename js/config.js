@@ -1301,6 +1301,14 @@ var CONFIG = {
       'リウマチ性多発筋痛症（PMR）でプレドニゾロン 15mg から治療開始。肩・首・腰の朝のこわばりが著明に改善した。CRP・ESR を毎回記録して薬の減量タイミングを主治医と相談したい。',
       'PMR と診断されて8ヶ月。プレドニゾロンを 5mg まで減量した段階で症状が再燃した。ステロイドを長期服用しているため骨粗鬆症の予防薬も飲んでいる。症状と薬の記録を続けたい。'
     ],
+    dvt: [
+      '下肢の深部静脈血栓症と診断されてリバーロキサバン（イグザレルト）を服用中。右足の腫脹はかなり改善したが、弾性ストッキングをずっと履かないといけない。3ヶ月後まで薬を続ける予定。次の超音波検査まで症状を記録したい。',
+      '卵巣がんの治療中にDVTを発症。低分子ヘパリン（クレキサン）を毎日自己注射している。がんが活動している限り抗凝固療法を続けると言われた。注射部位の記録と Dダイマーの値を管理したい。'
+    ],
+    eating: [
+      '神経性過食症（BN）の治療中。CBT-Eを週1回受けている。過食→嘔吐のサイクルを記録して、主治医と治療の効果を確認したい。誘因（ストレス・孤独感）と気分を記録することが治療の一環。記録は回復のため、制限のためではない。',
+      '拒食症から回復中。再栄養後、体重は安定してきたが、食事への恐怖はまだある。治療チームとの共有用に食事と気分を記録したい。食べられた記録を残すことが回復の証明になる。'
+    ],
     sibo: [
       'IBS-D と言われて3年。低FODMAP食を試したが改善が不十分で、SIBO の呼気検査（水素型陽性）を受けた。リファキシミン治療を終えて2週間経つが、まだ腹部膨満感とガスが続く。食事と症状を記録して再発パターンを把握したい。',
       '食後30〜60分で腹が張って痛くなる。硫黄臭のガスも出て恥ずかしい。医師に「過敏性腸症候群」と言われているが、SIBO の検査をしていない。記録を続けて専門医に持っていきたい。'
@@ -3033,6 +3041,55 @@ var CONFIG = {
       sleepData: [], activityData: [], meals: []
     },
 
+    dvt: {
+      diseases: ['深部静脈血栓症（DVT）'],
+      profile: { age: 56, gender: 'female', height: 160, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-03-12T14:00:00Z', category: 'symptoms', title: 'DVT発症', content: '右足のふくらはぎが昨日から腫れて痛い。下肢静脈エコーで右膝窩静脈〜大腿静脈に血栓を確認。Dダイマー 3.8 μg/mL（高値）。ウェルズスコア 3点（高確率）。原因は骨折後の3週間の安静と考えられる。リバーロキサバン15mg×2/日を開始。' },
+        { timestamp: '2026-03-16T10:00:00Z', category: 'symptoms', title: '1週間後', content: '右足の腫脹が8→5に改善。歩行時の痛みも軽減。弾性ストッキング（30〜40mmHg）を起床から就寝まで着用。リバーロキサバンの内服を食後に合わせて継続（食事と共に服用が吸収を高める）。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'vitals', title: '1ヶ月後エコー', content: '下肢静脈エコー：血栓はやや縮小傾向。大腿静脈に残遺血栓あり。Dダイマー 1.2 μg/mL（改善）。リバーロキサバン 20mg×1/日に移行（21日目以降）。3ヶ月間の治療継続決定。' },
+        { timestamp: '2026-05-05T10:00:00Z', category: 'vitals', title: '血栓性素因検査', content: 'プロテインC活性：78%（正常）・プロテインS抗原：65%（境界域）・抗リン脂質抗体：陰性。今回は骨折後という誘因があったため、血栓性素因は積極的な問題なしとの判断。3ヶ月で抗凝固療法終了予定。弾性ストッキングは2年継続を指示された。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-12T09:00:00Z', fatigue_level: 4, pain_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 3, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 2, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-05-05T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-12T09:00:00Z', name: '発症時', findings: 'Dダイマー 3.8μg/mL（高値）・PT-INR 1.0（正常）・血算正常' },
+        { timestamp: '2026-04-10T09:00:00Z', name: '1ヶ月後', findings: 'Dダイマー 1.2μg/mL（改善）・腎機能正常（DOAC継続適応確認）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-12T08:00:00Z', name: 'リバーロキサバン（イグザレルト）', notes: '初期15mg×2/日（21日間）→20mg×1/日（食後）。3ヶ月治療。自己中断厳禁。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    eating: {
+      diseases: ['神経性過食症（BN）'],
+      profile: { age: 24, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-10T11:00:00Z', category: 'symptoms', title: 'CBT-E 開始', content: '心療内科でCBT-E（認知行動療法-摂食障害強化版）を週1回開始。過去3ヶ月は週3〜4回の過食と嘔吐のサイクル。担当医の勧めで「過食の前の感情・状況」を記録することから始める。カロリー制限のための記録ではなく、回復のための記録と位置づけている。' },
+        { timestamp: '2026-03-20T10:00:00Z', category: 'symptoms', title: '記録2週間', content: 'トリガーパターンが見えてきた。仕事でミスをした夜・一人でいる週末の夜に過食が集中している。「孤独感+完璧主義の崩壊」がトリガー。CBTでセラピストに報告した。今週の過食は2回（先週5回→改善）。' },
+        { timestamp: '2026-04-05T12:00:00Z', category: 'medication', title: 'フルオキセチン開始', content: '精神科医よりフルオキセチン（プロザック）60mg/日を処方。BNへの第一選択薬。「過食衝動が少し和らぐことがある」との説明。副作用は今のところ吐き気のみ。' },
+        { timestamp: '2026-04-20T10:00:00Z', category: 'symptoms', title: '6週間後の変化', content: 'フルオキセチン開始6週間。過食の頻度が週1〜2回に減少（初診時5〜6回/週→）。嘔吐はほぼなくなってきた。CBTで「食事の正規化」を練習中。3食を決まった時間に食べる習慣をつけている。' },
+        { timestamp: '2026-05-12T11:00:00Z', category: 'symptoms', title: '2ヶ月後の評価', content: 'EDE-Q（摂食障害評価尺度）スコア：初診時4.8→2.1（回復傾向）。過食は週0〜1回程度。嘔吐はほぼなくなった。歯科を受診したらエナメル質の浸食が見つかった（嘔吐による酸蝕症）。回復は続いている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-10T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 4 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 5, pain_level: 1, sleep_quality: 5 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-05-12T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T09:00:00Z', name: '初診時採血', findings: 'K 3.4 mEq/L（軽度低下・嘔吐による）・歯科所見：エナメル質浸食・Alb 3.8g/dL（境界）' },
+        { timestamp: '2026-05-12T09:00:00Z', name: '2ヶ月後採血', findings: 'K 4.0 mEq/L（正常化）・Alb 4.1g/dL（改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-04-05T08:00:00Z', name: 'フルオキセチン（プロザック同等）60mg', notes: '毎朝。BN への SSRI 第一選択。過食衝動の軽減効果。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
     sibo: {
       diseases: ['SIBO（小腸内細菌増殖症）'],
       profile: { age: 35, gender: 'female', height: 162, weight: 54 },
