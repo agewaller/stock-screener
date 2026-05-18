@@ -1016,6 +1016,24 @@ ME/CFSとの重複症状にも注意して分析してください。
 7. 睡眠衛生チェックリスト`
   },
 
+  // 逆流性食道炎（GERD）
+  gerd_daily: {
+    name: 'GERD 日次分析',
+    disease: 'gerd',
+    description: '逆流性食道炎の症状・薬効・食事管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは消化器内科・GERD専門医です。
+
+1. 胸焼け・逆流感の頻度と強度の評価（食前/食後/就寝時別）
+2. PPI/タケキャブの服用タイミングと効果の分析
+3. トリガー食品の特定（高脂肪食・カフェイン・アルコール・柑橘類・チョコレート）
+4. 食事時刻と就寝時刻の間隔の評価（3時間ルール）
+5. 生活習慣改善アドバイス（頭部挙上就寝・左側臥位・体重管理）
+6. 夜間・食道外症状（咳・のどの違和感）の評価
+7. Barrett食道リスク評価と内視鏡フォロー推奨`
+  },
+
   // ---- RESEARCH PROMPTS (all diseases) ----
   bipolar_research: { name: '双極性障害 最新研究', disease: 'bipolar', schedule: 'daily', active: true, description: '双極性障害の最新治療・研究',
     prompt: PROMPT_HEADER + `双極性障害の最新研究を報告してください。重点：リチウム最適用量、バルプロ酸、ラモトリギン、ケタミン、TMS、デジタルフェノタイピング（スマホ行動解析）、概日リズム介入、腸脳軸、炎症マーカー。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
@@ -1033,6 +1051,8 @@ ME/CFSとの重複症状にも注意して分析してください。
     prompt: PROMPT_HEADER + `糖尿病（1型・2型）の最新研究を報告してください。重点：GLP-1受容体作動薬（セマグルチド/チルゼパチド）、SGLT2阻害薬の心腎保護、人工膵臓、幹細胞治療（1型）、糖尿病寛解（2型）、時間制限食、CGM（持続血糖モニタリング）、合併症予防。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   autoimmune_research: { name: '自己免疫疾患 最新研究', disease: 'sle', schedule: 'daily', active: true, description: '自己免疫疾患の最新治療・研究',
     prompt: PROMPT_HEADER + `自己免疫疾患（SLE・関節リウマチ・シェーグレン等）の最新研究を報告してください。重点：CAR-T細胞療法、JAK阻害薬、B細胞標的療法（リツキシマブ・ベリムマブ）、補体阻害薬、腸管透過性とリーキーガット、分子擬態、エピジェネティクス、食事介入（AIP）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
+  gerd_research: { name: 'GERD 最新研究', disease: 'gerd', schedule: 'daily', active: true, description: '逆流性食道炎の最新治療・研究',
+    prompt: PROMPT_HEADER + `逆流性食道炎（GERD）・機能性胸焼けの最新研究を報告してください。重点：ボノプラザン（タケキャブ）P-CABの長期データ、PPI抵抗性GERD機序、Barrett食道の内視鏡的根治治療（RFA/ESD）、腸内細菌叢とGERD、肥満手術後GERD改善、腹腔鏡Nissen術の長期成績、咽喉頭逆流（LPR）診断基準、機能性胸焼けと内臓知覚過敏。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   ibs_research: { name: 'IBS 最新研究', disease: 'ibs', schedule: 'daily', active: true, description: '過敏性腸症候群の最新治療・研究',
     prompt: PROMPT_HEADER + `IBS（過敏性腸症候群）の最新研究を報告してください。重点：Low-FODMAP食の長期データ、FMT（便移植）、SIBO治療（リファキシミン）、腸脳軸と神経伝達物質、プロバイオティクス菌株比較、胆汁酸異常、GI指向催眠療法、新薬（エルキサドリン・リナクロチド等）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   pots_research: { name: 'POTS 最新研究', disease: 'pots', schedule: 'daily', active: true, description: '体位性頻脈症候群の最新治療・研究',
