@@ -190,7 +190,9 @@ var CONFIG = {
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' },
         { id: 'chronic_back_pain', name: '慢性腰痛症', icd: 'ME84' },
         { id: 'behcet', name: 'ベーチェット病', icd: '4A44.00' },
-        { id: 'dermatomyositis', name: '多発性筋炎・皮膚筋炎（IIM）', icd: 'L94.0' }
+        { id: 'dermatomyositis', name: '多発性筋炎・皮膚筋炎（IIM）', icd: 'L94.0' },
+        { id: 'ssc', name: '全身性強皮症（SSc）', icd: 'LD50' },
+        { id: 'nmosd', name: '視神経脊髄炎スペクトラム障害（NMOSD）', icd: '8A42' }
       ]
     },
     {
@@ -424,6 +426,10 @@ var CONFIG = {
                           japan:     20_000, japanLabel: '約 2 万人',              japanSource: '難病情報センター（指定難病第56号）' },
     dermatomyositis:    { world:    150_000, label: '約 15 万人 (推計)',            tier: 2, density: 'medium', source: '10万人に 1〜2 人',
                           japan:      25_000, japanLabel: '約 2.5 万人',            japanSource: '難病情報センター（指定難病第50・51号）' },
+    ssc:                { world:  2_500_000, label: '約 250 万人 (推計)',           tier: 2, density: 'medium', source: '10万人に 24〜300 人',
+                          japan:     50_000, japanLabel: '約 5 万人',              japanSource: '難病情報センター（指定難病第51号）' },
+    nmosd:              { world:    350_000, label: '約 35 万人 (推計)',            tier: 2, density: 'medium', source: '10万人に 0.52〜4.4 人',
+                          japan:       4_500, japanLabel: '約 4,500 人',            japanSource: '難病情報センター（指定難病第131号）' },
   },
 
   // ============================================================
@@ -1357,6 +1363,14 @@ var CONFIG = {
     dermatomyositis: [
       '皮膚筋炎（DM）と診断されて1年。ヘリオトロープ疹・ゴットロン徴候・近位筋力低下が主な症状。プレドニゾロン + タクロリムスで治療中。間質性肺炎の合併も指摘されている。筋力・皮膚症状・SpO2を記録したい。',
       '抗MDA5抗体陽性の皮膚筋炎。急速進行性間質性肺炎のリスクが高いと言われた。シクロホスファミドパルスを受けている。呼吸状態と皮膚症状の変化を毎日記録して、急性増悪の早期発見に役立てたい。'
+    ],
+    ssc: [
+      '全身性強皮症（SSc）の診断を受けて3年。レイノー症候群から始まり、指先の皮膚が硬くなってきた。肺の間質性肺炎も合併。ボセンタンとニフェジピンを服用している。指先の潰瘍とSpO2を毎日記録して変化を把握したい。',
+      '抗セントロメア抗体陽性の限局性強皮症（ISSc）。主にレイノー現象と手指の硬化が症状。肺高血圧症の合併が心配。毎年の肺機能検査・右心カテーテルを受けている。症状の変化を記録して年1回の検査に備えたい。'
+    ],
+    nmosd: [
+      '視神経脊髄炎スペクトラム障害（NMOSD）と診断されてイネビリズマブを月1回投与している。以前多発性硬化症と誤診されていた。再発の早期発見のために、視力変化・脊髄症状（手足のしびれ・排尿障害）を毎日記録したい。',
+      '抗AQP4抗体陽性のNMOSD。視神経炎を2回経験して左眼の視力が低下した。現在サトラリズマブで再発予防中。再発の前触れとなる症状（Uhthoff現象・Lhermitte徴候）を日記に記録している。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -3433,6 +3447,60 @@ var CONFIG = {
         { timestamp: '2026-03-05T08:00:00Z', name: 'TC療法（ドセタキセル+シクロホスファミド）3週ごと×4', notes: '全4サイクル完了。前投薬：デキサメタゾン・グラニセトロン・オランザピン。' },
         { timestamp: '2026-03-12T08:00:00Z', name: 'フィルグラスチム（G-CSF）自己注射', notes: 'Day 3〜5（または医師指示）。骨痛の副作用あり→アセトアミノフェンで対処。' },
         { timestamp: '2026-05-12T08:00:00Z', name: 'アナストロゾール 1mg/日（ホルモン療法）', notes: '術後補助ホルモン療法。5〜10年継続予定。ホットフラッシュ・骨密度低下に注意。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ssc: {
+      diseases: ['全身性強皮症（びまん皮膚硬化型：dcSSc）'],
+      profile: { age: 48, gender: 'female', height: 158, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-02T10:00:00Z', category: 'symptoms', title: 'SSc診断・治療開始', content: '2年前からレイノー現象、半年前から手指・前腕の皮膚硬化・腫脹が出現。抗Scl-70（トポイソメラーゼI）抗体陽性。高分解能CT：両下肺野に蜂巣肺（UIPパターン）。FVC 72%・DLco 62%。びまん皮膚硬化型SSc（dcSSc）確定診断。指定難病（第51号）申請済み。ニフェジピン + ボセンタン + ミコフェノール酸モフェチル（MMF）開始。' },
+        { timestamp: '2026-03-12T09:00:00Z', category: 'symptoms', title: 'レイノー発作記録', content: '冬はほぼ毎日レイノー発作（白→青→赤、両手10指）。ニフェジピン40mgで1日2〜3回に減少（治療前は5〜8回）。電熱手袋を購入して外出時に着用。指先の潰瘍が右示指に出現（直径5mm）。皮膚硬化スコア（mRSS）：18点（活動性あり）。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'vitals', title: 'SpO2モニタリング', content: 'SpO2 安静時 96%・階段昇降後 91%（間質性肺炎の影響）。KL-6 1,200 U/mL（高値）・SP-D 180 ng/mL。MMF 2g/日（500mg×4）が間質性肺炎の安定化に寄与している可能性。皮膚硬化は顔面・口周囲にも及んできた（開口制限：最大開口 35mm）。' },
+        { timestamp: '2026-04-15T10:00:00Z', category: 'medication', title: 'ニンテダニブ追加', content: 'SSc-ILD（強皮症合併間質性肺炎）に対してニンテダニブ（INBUILD試験適応）300mg/日を追加。下痢副作用（1日2〜3回）が始まったが整腸剤で対処。デジタル潰瘍（右示指）が治癒（4週間で上皮化）。ボセンタン継続（デジタル潰瘍予防）。' },
+        { timestamp: '2026-05-14T09:00:00Z', category: 'vitals', title: '3ヶ月後評価', content: 'FVC 71%（開始時72%、ほぼ安定）・DLco 60%（わずかに低下）。KL-6 1,100 U/mL（改善傾向）。皮膚硬化スコア（mRSS）18→15点（わずかに改善）。レイノー発作回数 2〜3→1〜2回/日（安定）。ニンテダニブの下痢は4週目から減少した。自覚症状は「少し安定してきた」実感。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-02T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-03-25T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-05-14T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-02T09:00:00Z', name: '確定診断時採血', findings: '抗Scl-70抗体 強陽性・ANA 1:640（核小体型）・KL-6 1,200 U/mL・SP-D 180 ng/mL・BNP 28pg/mL（正常）・BNP正常（肺高血圧なし）' },
+        { timestamp: '2026-05-14T09:00:00Z', name: '3ヶ月後採血', findings: 'KL-6 1,100 U/mL（改善）・BNP 32pg/mL（正常）・肝機能正常（ニンテダニブモニタリング）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-02T08:00:00Z', name: 'ニフェジピン徐放製剤 40mg', notes: '毎朝。レイノー現象・デジタル潰瘍予防。副作用：頭痛・ほてり。' },
+        { timestamp: '2026-03-02T08:00:00Z', name: 'ボセンタン 250mg/日', notes: 'エンドセリン受容体拮抗薬。デジタル潰瘍予防・肺高血圧予防。肝機能モニタリング月1回。' },
+        { timestamp: '2026-03-02T08:00:00Z', name: 'ミコフェノール酸モフェチル（MMF）2g/日', notes: 'SSc-ILDの免疫抑制。腎機能・血球モニタリング。' },
+        { timestamp: '2026-04-15T08:00:00Z', name: 'ニンテダニブ 300mg/日', notes: 'SSc-ILDの抗線維化薬。下痢副作用→整腸剤と食後服用で対処。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    nmosd: {
+      diseases: ['視神経脊髄炎スペクトラム障害（NMOSD・抗AQP4抗体陽性）'],
+      profile: { age: 36, gender: 'female', height: 163, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: 'NMOSD 2回目再発後', content: '3年前に視神経炎（右眼：急性視力低下）でMSと診断されたが、抗AQP4抗体陽性・NMO-IgG陽性で再診断→NMOSD確定。β-インターフェロン（MS治療）から中止。イネビリズマブ（ウプリジナ）静注を月1回（初回・2週後、以後月1回）開始。右眼視力 0.5（完全回復せず）。今回初めて記録をつけ始めた。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'symptoms', title: '視神経炎後の変化記録', content: 'Uhthoff現象（体温上昇で視力が一時的に悪化）：入浴後・運動後に右眼が霞む→30分で回復。Lhermitte徴候（頸部前屈で電撃痛）：朝の着替え時に出現→脊髄症状モニタリング要。排尿障害（残尿感）：残尿65mL（膀胱機能障害）→泌尿器科紹介。イネビリズマブ初回投与後：副作用なし。' },
+        { timestamp: '2026-03-28T11:00:00Z', category: 'medication', title: 'ステロイドパルス後評価', content: '2回目再発（左眼視神経炎）に対するメチルプレドニゾロンパルス（1g×5日）後3週間。左眼視力 0.1→0.6（部分回復）。色覚障害（赤色が鮮明でない）は残存。再発予防薬変更：イネビリズマブ → サトラリズマブ（皮下注射・月1回・自己注射可）に変更検討中。' },
+        { timestamp: '2026-04-20T10:00:00Z', category: 'symptoms', title: '再発なし3週間', content: 'サトラリズマブに切り替えて1ヶ月。再発なし（再発間隔が延びている）。脊髄MRI：前回病変の縮小確認。排尿障害：ソリフェナシン（膀胱訓練）で改善（残尿30mL）。Uhthoff現象：運動後も出現するが5分で回復→運動を継続（適度な有酸素運動は許容と指示）。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '5ヶ月後評価', content: '再発なし5ヶ月（治療変更後）。右眼視力 0.5（安定）・左眼視力 0.7（回復中）。EDSS（障害度スコア）：2.0（軽度障害）。サトラリズマブ継続（副作用なし）。排尿障害：残尿20mL（ほぼ正常化）。日記記録が「再発の前触れ症状」の早期検出に役立っている実感がある。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-03-28T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: '確定診断時採血', findings: '抗AQP4抗体（NMO-IgG）陽性（高力価）・ANA 1:80（境界）・CSF（腰椎穿刺）：オリゴクローナルバンド 陰性（MSとの鑑別）・IL-6 高値（NMOSD の特徴）' },
+        { timestamp: '2026-05-15T09:00:00Z', name: '5ヶ月後採血', findings: '抗AQP4抗体：低下傾向（治療効果）。リンパ球数：正常（イネビリズマブ/サトラリズマブのモニタリング）。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-03T09:00:00Z', name: 'サトラリズマブ（エンスプリング）120mg/4週 皮下注射', notes: '抗IL-6受容体抗体。NMOSD再発予防。自己注射可能（冷蔵保存）。' },
+        { timestamp: '2026-03-03T08:00:00Z', name: 'ソリフェナシン（ベシケア）5mg', notes: '過活動膀胱・排尿障害（NMOSD合併）。残尿測定を定期的に実施。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
