@@ -1253,6 +1253,10 @@ var CONFIG = {
       'チラージン（レボチロキシン）50μgを服用中。TSHは1.8で正常範囲内だが、まだ疲労感と冷えが取れない。朝起きるのが特につらく、体重が増え続けている。FT3も測ってほしいと思っている。',
       '甲状腺摘出後から毎日チラージンを飲んでいる。最近便秘がひどくなってきた。薬の飲み忘れを防ぐために記録したい。髪の毛も抜けやすくなってきた気がする。'
     ],
+    nafld: [
+      '健診でALTが68、γ-GTPが82と高く「脂肪肝」と言われた。BMI 27、お腹まわりが気になっている。食事改善を始めたいが何から手をつけていいかわからない。FIB-4スコアを記録したい。',
+      '脂肪肝と診断されて3ヶ月。体重を4kg落としたらALTが68→42に改善してきた。地中海食を試している。清涼飲料水をやめて効果があった気がする。次の採血まで記録を続けたい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2644,6 +2648,31 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
       ],
+      sleepData: [], activityData: [], meals: []
+    },
+    nafld: {
+      diseases: ['NAFLD（非アルコール性脂肪肝）'],
+      profile: { age: 48, gender: 'male', height: 172, weight: 82 },
+      textEntries: [
+        { timestamp: '2026-03-10T08:00:00Z', category: 'symptoms', title: '健診で脂肪肝指摘', content: 'ALT 68, AST 42, γ-GTP 95。BMI 27.6。腹囲 92cm。超音波で脂肪肝（中等度）。FIB-4: 1.45（グレーゾーン）。生活改善を始める。' },
+        { timestamp: '2026-03-15T08:00:00Z', category: 'nutrition', title: '食事記録開始', content: '清涼飲料水・ジュース類を完全にやめた。昼食をコンビニ弁当→サラダ+鯖缶に変更。夜のビールも控えている。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'vitals', title: '体重記録', content: '体重 82.0→79.8kg（-2.2kg/2週間）。同じ条件（朝食前・起床後）での計測を継続。' },
+        { timestamp: '2026-04-05T08:00:00Z', category: 'nutrition', title: '地中海食試行', content: 'サバ・イワシを週3回。オリーブオイルに変更。白米を半分に減らし、大豆・豆腐を増やした。コーヒー（ブラック）を毎朝2杯。' },
+        { timestamp: '2026-04-12T09:00:00Z', category: 'vitals', title: '体重継続', content: '体重 78.6kg（開始比 -3.4kg）。腹囲 89cm（-3cm）。倦怠感がやや改善。朝起きやすくなった。' },
+        { timestamp: '2026-04-20T08:00:00Z', category: 'symptoms', title: '運動追加', content: '週3回の速歩（30分/回）を開始。血糖値への意識も高まってきた。右脇腹のだるさは感じなくなった。' },
+        { timestamp: '2026-04-28T10:00:00Z', category: 'vitals', title: '採血結果（中間）', content: 'ALT 68→44、γ-GTP 95→61。FIB-4: 1.45→1.18（低リスク域に改善）。体重 77.8kg（-4.2kg、目標の5%達成）。次の目標は-7%。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-10T08:00:00Z', fatigue_level: 6, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 4, sleep_quality: 6, pain_level: 1 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, sleep_quality: 7, pain_level: 1 },
+        { timestamp: '2026-04-28T08:00:00Z', fatigue_level: 2, sleep_quality: 7, pain_level: 0 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T10:00:00Z', name: '肝機能検査（初回）', findings: 'ALT 68 U/L, AST 42 U/L, γ-GTP 95 U/L, 血小板 18万, 中性脂肪 210 mg/dL, HDL 42 mg/dL, 血糖 108 mg/dL, HbA1c 5.9%' },
+        { timestamp: '2026-04-28T10:00:00Z', name: '肝機能検査（6週後）', findings: 'ALT 44 U/L, AST 30 U/L, γ-GTP 61 U/L, 中性脂肪 158 mg/dL, 体重 77.8kg' }
+      ],
+      medications: [],
       sleepData: [], activityData: [], meals: []
     },
     thyroid_hypo: {

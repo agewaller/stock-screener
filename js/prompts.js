@@ -1072,6 +1072,26 @@ ME/CFSとの重複症状にも注意して分析してください。
     prompt: PROMPT_HEADER + `糖尿病（1型・2型）の最新研究を報告してください。重点：GLP-1受容体作動薬（セマグルチド/チルゼパチド）、SGLT2阻害薬の心腎保護、人工膵臓、幹細胞治療（1型）、糖尿病寛解（2型）、時間制限食、CGM（持続血糖モニタリング）、合併症予防。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   autoimmune_research: { name: '自己免疫疾患 最新研究', disease: 'sle', schedule: 'daily', active: true, description: '自己免疫疾患の最新治療・研究',
     prompt: PROMPT_HEADER + `自己免疫疾患（SLE・関節リウマチ・シェーグレン等）の最新研究を報告してください。重点：CAR-T細胞療法、JAK阻害薬、B細胞標的療法（リツキシマブ・ベリムマブ）、補体阻害薬、腸管透過性とリーキーガット、分子擬態、エピジェネティクス、食事介入（AIP）。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
+  nafld_daily: {
+    name: 'NAFLD 日次分析',
+    disease: 'nafld',
+    description: '非アルコール性脂肪肝・肝機能・FIB-4 管理',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは消化器内科・肝臓専門医です。
+
+1. ALT/AST/γ-GTP のトレンド評価と FIB-4 スコア計算（データがある場合）
+2. 体重・BMI の推移と減量目標達成状況（5% / 7-10% / 10%+）
+3. 食事記録の分析（果糖・飽和脂肪・カロリー過剰・アルコール）
+4. 地中海食遵守度とオメガ3摂取の評価
+5. 運動量（有酸素 150-300 分/週）と肝臓脂肪への効果
+6. 合併疾患（糖尿病・脂質異常症・高血圧）の管理状況
+7. NASH 進行リスクの評価と専門医受診のタイミング提案`
+  },
+
+  nafld_research: { name: 'NAFLD 最新研究', disease: 'nafld', schedule: 'daily', active: true, description: '非アルコール性脂肪肝の最新治療・研究',
+    prompt: PROMPT_HEADER + `NAFLD/NASH/MASLD の最新研究を報告してください。重点：resmetirom（Rezdiffra）の長期安全性・日本承認動向、MASLD 新概念と診断基準改訂、FIB-4 代替マーカー（ELF・Pro-C3・MRE）、腸内細菌叢と NASH（FMT・プロバイオティクス）、GLP-1 受容体作動薬のNASH改善機序、SGLT2 阻害薬の肝線維化抑制、地中海食 RCT の長期データ、de novo 肝細胞がん予測バイオマーカー、日本肝臓学会ガイドライン改訂。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。URL付きで提示すること。` },
+
   gerd_research: { name: 'GERD 最新研究', disease: 'gerd', schedule: 'daily', active: true, description: '逆流性食道炎の最新治療・研究',
     prompt: PROMPT_HEADER + `逆流性食道炎（GERD）・機能性胸焼けの最新研究を報告してください。重点：ボノプラザン（タケキャブ）P-CABの長期データ、PPI抵抗性GERD機序、Barrett食道の内視鏡的根治治療（RFA/ESD）、腸内細菌叢とGERD、肥満手術後GERD改善、腹腔鏡Nissen術の長期成績、咽喉頭逆流（LPR）診断基準、機能性胸焼けと内臓知覚過敏。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 学会・カンファレンス・イベント情報\n今後予定されている関連学会・患者向けカンファレンス・ワークショップを報告。Peatix/Eventbrite/Meetup等のイベントプラットフォームでの関連イベントも検索し、URL付きで提示すること。` },
   ibs_research: { name: 'IBS 最新研究', disease: 'ibs', schedule: 'daily', active: true, description: '過敏性腸症候群の最新治療・研究',
