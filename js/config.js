@@ -1245,6 +1245,10 @@ var CONFIG = {
       '23時に布団に入っても1時間以上眠れない。夜中に2〜3回目が覚め、そのたびに30分以上眠れない。',
       '日中に強い眠気があるのに夜は眠れない。カフェインは控えているつもり。'
     ],
+    gerd: [
+      '夕食後1時間ほどで胸焼けが始まる。横になると逆流感がひどく、昨夜も寝付けなかった。PPI（ラベプラゾール）を飲んでいるが、食後に飲んでいた。',
+      '朝起きたときに口の中が酸っぱい。のどに何か引っかかる感じが続いている。食後すぐ横になるのが癖になっていた。食事と就寝の間隔を記録したい。'
+    ],
     default: [
       '最近体調が優れず、朝から疲れている。食欲もいつもほどなく、眠りも浅い。何から手をつけていいか分からない。'
     ]
@@ -2608,6 +2612,33 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-15T10:00:00Z', name: 'メトホルミン塩酸塩500mg', notes: '1日2回 食直後（インスリン抵抗性改善・消化器症状軽減のため食後服用）' },
         { timestamp: '2026-01-15T10:00:00Z', name: '低用量エストロゲン・プロゲスチン配合薬（LEP）', notes: '毎日1錠（月経調整・アンドロゲン抑制・子宮内膜保護）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gerd: {
+      diseases: ['逆流性食道炎（GERD）'],
+      profile: { age: 51, gender: 'male', height: 170, weight: 78 },
+      textEntries: [
+        { timestamp: '2026-03-18T21:00:00Z', category: 'symptoms', title: '胸焼け記録開始', content: '夕食（天ぷら定食）の約1時間後から胸焼けがひどい。逆流感もある。PPI（ネキシウム20mg）は食後に飲んでいた。' },
+        { timestamp: '2026-03-20T08:00:00Z', category: 'medication', title: 'PPI服用タイミング変更', content: '医師に相談しPPIを食前30分前に変更。今日の朝は食前に服用。' },
+        { timestamp: '2026-03-23T21:30:00Z', category: 'symptoms', title: '', content: '食前PPI3日目。昨夜の胸焼けは弱くなってきた気がする。食事は天ぷらを避け、脂肪少なめにした。' },
+        { timestamp: '2026-03-27T09:00:00Z', category: 'nutrition', title: 'トリガー特定', content: 'コーヒーを2杯飲んだ後に逆流感が増した。チョコレートも気になっていた。カフェインを減らしてみる。' },
+        { timestamp: '2026-04-02T22:00:00Z', category: 'symptoms', title: '夜間症状', content: 'のどの異物感（梅核気）が続いている。夜中3時頃に胸焼けで目が覚めた。枕を高くしてみる。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'vitals', title: '頭部挙上就寝開始', content: '楔型枕を購入。頭部を15cm高くして就寝。夜間覚醒が減った。' },
+        { timestamp: '2026-04-10T21:00:00Z', category: 'symptoms', title: '改善実感', content: '胸焼け頻度: 毎日 → 週2-3回に減少。食後3時間の就寝禁止ルールを守っている。体重も1kg減った。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'nutrition', title: '食事記録継続', content: '高脂肪食・コーヒー・アルコールを控えたところ症状がかなり安定。医師提出用に記録を整理したい。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-18T08:00:00Z', fatigue_level: 3, sleep_quality: 4, pain_level: 3 },
+        { timestamp: '2026-03-25T08:00:00Z', fatigue_level: 3, sleep_quality: 5, pain_level: 2 },
+        { timestamp: '2026-04-01T08:00:00Z', fatigue_level: 2, sleep_quality: 6, pain_level: 1 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 2, sleep_quality: 7, pain_level: 1 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T10:00:00Z', name: '上部消化管内視鏡検査', findings: 'びらん性GERD（LA分類 grade B）。Barrett食道なし。H. pylori 陰性。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-18T08:00:00Z', name: 'エソメプラゾール（ネキシウム）20mg', notes: '食前30分に服用に変更。毎朝継続中。' }
       ],
       sleepData: [], activityData: [], meals: []
     }
