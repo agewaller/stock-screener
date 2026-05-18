@@ -52,7 +52,8 @@ var CONFIG = {
         { id: 'pots', name: 'POTS（体位性頻脈症候群）', icd: '8D40' },
         { id: 'tbi', name: '外傷性脳損傷後遺症', icd: '8B20' },
         { id: 'chronic_pain', name: '慢性疼痛症候群', icd: 'MG30' },
-        { id: 'narcolepsy', name: 'ナルコレプシー・特発性過眠症', icd: 'G47.4' }
+        { id: 'narcolepsy', name: 'ナルコレプシー・特発性過眠症', icd: 'G47.4' },
+        { id: 'phn', name: '帯状疱疹後神経痛（PHN）', icd: '8B11' }
       ]
     },
     {
@@ -97,7 +98,8 @@ var CONFIG = {
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
-        { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' }
+        { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' },
+        { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'EE40' }
       ]
     },
     {
@@ -176,7 +178,8 @@ var CONFIG = {
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
-        { id: 'functional_dyspepsia', name: '機能性ディスペプシア（FD）', icd: 'DA45' }
+        { id: 'functional_dyspepsia', name: '機能性ディスペプシア（FD）', icd: 'DA45' },
+        { id: 'chronic_pancreatitis', name: '慢性膵炎（慢性膵臓炎）', icd: 'DC31' }
       ]
     },
     {
@@ -207,7 +210,8 @@ var CONFIG = {
       diseases: [
         { id: 'cancer_survivor', name: 'がんサバイバー（治療後管理）', icd: '02' },
         { id: 'cancer_fatigue', name: 'がん関連疲労', icd: 'MG22' },
-        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' }
+        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' },
+        { id: 'lymphedema', name: 'リンパ浮腫（続発性・がん治療後）', icd: 'BA96' }
       ]
     },
     {
@@ -442,6 +446,14 @@ var CONFIG = {
                           japan:      50_000, japanLabel: '約 5 万人',              japanSource: '厚労省推計' },
     loh:                { world:  200_000_000, label: '約 2 億人 (推計)',            tier: 2, density: 'medium', source: '40歳以上男性の 20〜30%',
                           japan:   6_000_000, japanLabel: '約 600 万人',            japanSource: '日本Men\'s Health医学会推計' },
+    alopecia:           { world:  200_000_000, label: '約 2 億人 (推計)',            tier: 2, density: 'medium', source: '生涯有病率 約 2% (世界人口比)',
+                          japan:   2_000_000, japanLabel: '約 200 万人',            japanSource: '日本皮膚科学会推計（生涯有病率 2%）' },
+    phn:                { world:  100_000_000, label: '約 1 億人 (推計)',            tier: 2, density: 'high',   source: '帯状疱疹患者の 20〜30% が PHN 移行',
+                          japan:     500_000, japanLabel: '年間約 50 万人発症',    japanSource: '帯状疱疹：年間100万人・PHN移行率20〜30%' },
+    chronic_pancreatitis: { world: 10_000_000, label: '約 1,000 万人 (推計)',       tier: 2, density: 'high',   source: '人口 10 万人に 10〜50 人',
+                          japan:      66_000, japanLabel: '約 6.6 万人',            japanSource: '日本膵臓学会全国調査' },
+    lymphedema:         { world:  250_000_000, label: '約 2.5 億人 (推計)',          tier: 2, density: 'high',   source: 'がん治療後・フィラリア等含む世界推計',
+                          japan:     300_000, japanLabel: '約 30 万人以上',         japanSource: '日本リンパ浮腫学会推計' },
   },
 
   // ============================================================
@@ -1399,6 +1411,22 @@ var CONFIG = {
     loh: [
       '50代から倦怠感・気力の低下・性欲の減退が続いている。テストステロン検査で「低値」と言われた。LOH症候群（男性更年期障害）と診断。テストステロン補充療法（筋注）を始めて2ヶ月経つ。AMSスコアと体力の変化を記録して治療効果を確かめたい。',
       '45歳・男性。仕事のストレスが増えてからイライラ・不眠・集中力の低下が続く。うつかと思ったが、テストステロンが低かった。生活習慣改善（筋トレ・禁酒・睡眠改善）を始めたところ。気力・睡眠・体力の変化を毎日記録している。'
+    ],
+    alopecia: [
+      '半年前から頭頂部に500円玉大の円形脱毛が3ヶ所できた。皮膚科でステロイド局注（3ヶ月）を受けたが改善が不十分。バリシチニブ（JAK阻害薬）を開始して1ヶ月経つ。脱毛範囲の変化と新しい産毛の出現を写真記録で管理したい。',
+      '全頭型の円形脱毛症（AA）で全頭の毛が抜けている。橋本病も合併している。ウィッグを使いながら治療を続けている。DNCB（接触免疫療法）を月1回受けている。精神的に辛いが記録をつけることで治療を継続できている。'
+    ],
+    phn: [
+      '帯状疱疹が治ってから3ヶ月以上経つが、左胸部の灼熱痛が消えない。服が皮膚に触れただけで激痛（アロディニア）があり、外出がつらい。プレガバリンとデュロキセチンを服用中。痛みの強さをNRSで毎日記録して主治医に見せている。',
+      '71歳。帯状疱疹が右顔面に出た後、顔の痛みが半年以上続いている。眼帯状疱疹だったので右眼の視力が少し低下した。リドカインテープと三環系抗うつ薬を使用中。朝の痛みと夕方の痛みの違いを記録して薬の効果を確認している。'
+    ],
+    chronic_pancreatitis: [
+      '10年間の多量飲酒が原因の慢性膵炎。禁酒して2年経つ。今でも食後に上腹部〜背中の痛みが出る。膵消化酵素薬（リパーゼ）とプレガバリンを服用中。脂肪便の有無・腹痛の記録を毎日つけて定期受診時に見せている。',
+      '自己免疫性膵炎（IgG4関連）と診断されてステロイドを服用中。現在は膵炎の活動は落ち着いているが、膵外分泌不全が残っていて脂肪便が続く。体重が減りやすいので食事量・体重・血糖を毎日記録している。'
+    ],
+    lymphedema: [
+      '乳がん手術（右乳房切除術＋腋窩リンパ節郭清）から1年。右腕がむくんでリンパ浮腫と診断された。弾性スリーブを毎日使用し、用手リンパドレナージを週2回受けている。腕の周径を毎週測定して浮腫の変化を記録している。',
+      '子宮頸がんの治療（手術＋放射線）後に両足のリンパ浮腫が出た。弾性ストッキングが欠かせない。蜂窩織炎を2回経験したので感染の早期サインに注意している。浮腫の変化と皮膚の状態を毎日記録してセラピストとの連携に役立てている。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -3634,6 +3662,105 @@ var CONFIG = {
       ],
       medications: [
         { timestamp: '2026-03-05T10:00:00Z', name: 'エナント酸テストステロン 250mg 4週毎筋注', notes: 'TRT（テストステロン補充療法）。泌尿器科で実施。PSA・Hct 定期モニタリング必須。前立腺肥大症・前立腺癌に禁忌。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    alopecia: {
+      diseases: ['円形脱毛症（汎発性・全頭型）'],
+      profile: { age: 32, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-01T10:00:00Z', category: 'symptoms', title: 'バリシチニブ開始', content: '円形脱毛症で3年以上悩んでいる。ステロイド局注を10回以上受けたが脱毛が進行して全頭型になった。今月からバリシチニブ（JAK阻害薬・4mg/日）を開始。帽子とウィッグで日常生活は送れているが、精神的なダメージが大きい。橋本病も合併している。脱毛範囲と新しい産毛の出現を毎週記録する。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'treatment', title: 'バリシチニブ3週間', content: 'バリシチニブ開始3週間。頭部の後頭部エリアに細い産毛が出始めた（！）。SALTスコア：98→93（僅かだが改善の兆し）。副作用：軽度の倦怠感（最初の2週間）・ニキビ様皮疹が額に少し出た。甲状腺（TSH）は安定。血球・肝機能モニタリング異常なし。主治医：「6ヶ月で効果を判定する。継続しましょう」。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'symptoms', title: '2ヶ月目の評価', content: '後頭部から頭頂部にかけて産毛が増えてきた。直径 1cm 以上の産毛ゾーンが6ヶ所確認できた（写真記録）。SALTスコア：93→78（明らかな改善！）。まつ毛・眉毛も少し戻ってきた。精神的に「少しずつ回復している」実感があって、気持ちが前向きになってきた。副作用は落ち着いた（ニキビ様皮疹が消退）。' },
+        { timestamp: '2026-05-10T10:00:00Z', category: 'symptoms', title: '3ヶ月まとめ', content: 'SALTスコア：78→52（著明改善・50%以上の発毛回復）。頭部全体に薄く産毛が広がっている。色は薄いが均一な発毛が続いている。バリシチニブ継続（用量を検討中・減量するか維持か）。PSA：女性なので測定なし。橋本病の甲状腺機能：安定（TSH 2.1）。精神状態：大幅改善。ウィッグを外でして出歩ける回数が増えた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 5 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-05-10T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-01T09:00:00Z', name: 'バリシチニブ開始前採血', findings: 'TSH 2.3（橋本病：安定）・抗TPO抗体 高値・ANA 1:80（弱陽性）・血球：正常・肝機能：正常・脂質：正常。バリシチニブ適応確認（感染症スクリーニング陰性・帯状疱疹ワクチン接種済み）。' },
+        { timestamp: '2026-05-10T09:00:00Z', name: '3ヶ月後フォローアップ採血', findings: 'TSH 2.1（安定）・血球：正常・肝機能：正常・LDL-C：正常・帯状疱疹再活性化なし。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T08:00:00Z', name: 'バリシチニブ（オルミエント）4mg/日', notes: 'JAK阻害薬。重症円形脱毛症に2023年承認。6ヶ月で治療効果を評価。感染症・血栓・帯状疱疹に注意。' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'チラーヂンS 50μg/日', notes: '橋本病（甲状腺機能低下症）の補充療法。TSHモニタリング3〜6ヶ月毎。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    phn: {
+      diseases: ['帯状疱疹後神経痛（PHN・左胸部）'],
+      profile: { age: 72, gender: 'female', height: 154, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-03-05T10:00:00Z', category: 'symptoms', title: 'PHN 6ヶ月目', content: '帯状疱疹（左胸部）を昨年9月に発症。抗ウイルス薬（バラシクロビル）で治療し皮疹は治ったが、痛みだけが続いている（PHN）。左胸部に灼熱痛（NRS 7/10）と、衣服が触れると激痛（アロディニア）がある。プレガバリン 150mg/日とアミトリプチリン 10mg（就寝前）を服用中。毎日の痛みを記録してペインクリニックに報告している。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'symptoms', title: '痛みの記録2週間', content: '朝の痛み平均 NRS 5/10。夕方〜夜に悪化（NRS 7〜8）。アロディニア：コットンの服は比較的OK。ナイロン系・ウール系は激痛。就寝時に左側を下にできないため睡眠の質が著しく低下（中途覚醒 3〜4回/夜）。プレガバリンの眠気が強い（日中もぼーっとする）→主治医に相談したい。' },
+        { timestamp: '2026-04-08T11:00:00Z', category: 'treatment', title: '硬膜外ブロック', content: 'ペインクリニックで硬膜外神経ブロック（T5-6 レベル、ステロイド＋局所麻酔）を実施。施術後3時間：痛みがNRS 0になった（感動！）。翌日から徐々に再発したが、ピーク時 NRS 7→4 に改善。夜の中途覚醒が3〜4回→1回に減った。プレガバリンを 150→75mg に減量しても効果が保たれている（眠気が軽減）。' },
+        { timestamp: '2026-05-02T10:00:00Z', category: 'symptoms', title: '2ヶ月評価', content: 'ブロック後1ヶ月。痛みは NRS 4/10（朝）・5/10（夜）に安定。アロディニアは改善（ウール以外はほぼ我慢できる）。睡眠：中途覚醒 1〜2回に減少。「6ヶ月前の半分の痛みになった」実感。2回目のブロック注射を来月予定。プレガバリン 75mg + アミトリプチリン 10mg を継続。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-05T09:00:00Z', fatigue_level: 7, pain_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-03-20T09:00:00Z', fatigue_level: 6, pain_level: 7, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-05-02T09:00:00Z', fatigue_level: 4, pain_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-05T09:00:00Z', name: 'ペインクリニック初診時採血', findings: '血糖 HbA1c 5.5%（正常）・甲状腺正常・腎機能正常（プレガバリン用量調整に必要）・帯状疱疹（VZV）抗体価：高値（6ヶ月前の帯状疱疹後）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-05T08:00:00Z', name: 'プレガバリン（リリカ）75mg/日（減量後）', notes: '神経障害性疼痛の第一選択薬。腎機能に合わせて用量調整。眠気・ふらつきに注意（高齢者では転倒リスク）。' },
+        { timestamp: '2026-03-05T22:00:00Z', name: 'アミトリプチリン（トリプタノール）10mg 就寝前', notes: '三環系抗うつ薬。PHNの疼痛軽減・睡眠改善。口渇・便秘・眠気の副作用。' },
+        { timestamp: '2026-04-08T10:00:00Z', name: 'リドカインテープ（ペンレス）', notes: 'アロディニアのある部位に貼付。局所麻酔作用。服着用前に貼付するとアロディニアが軽減。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chronic_pancreatitis: {
+      diseases: ['慢性膵炎（アルコール性・非代償期）'],
+      profile: { age: 55, gender: 'male', height: 170, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-02T10:00:00Z', category: 'symptoms', title: '禁酒2年後の状態', content: '慢性膵炎の診断から5年。最初の3年は断酒に失敗して増悪を繰り返したが、2年前からようやく完全禁酒できている。今は腹痛の急性増悪は年1回程度に減った。しかし膵外分泌不全（脂肪便・栄養吸収不全）と膵性糖尿病（HbA1c 8.2%）が続いている。体重が5年前より10kg減っている（62kg→52kgを目指しているが...逆に減りすぎ）。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'symptoms', title: '食事記録と症状', content: '低脂肪食（1食あたり脂質 10〜15g以内）を続けている。揚げ物・バター・マーガリンを完全除去。脂肪便（白っぽい・油っぽい便）：週3〜4回出ている（膵消化酵素薬を使っているが完全に抑えられない）。食後の腹痛：NRS 4/10（以前の8/10から大幅改善）。体重：62kg → 61.5kg（微減・栄養吸収不全が続いている）。' },
+        { timestamp: '2026-04-05T11:00:00Z', category: 'medication', title: '消化酵素増量効果', content: '膵消化酵素薬（パンクレリパーゼ）を食事ごとに 25,000→40,000 単位に増量。脂肪便：週3〜4回→週1〜2回（大幅改善！）。腹部膨満感の軽減。体重：61.5kg→62.5kg（1kg増加）。脂溶性ビタミン補充（ビタミンD・E・K）を追加した。HbA1c：8.2%→7.5%（インスリン増量の効果）。' },
+        { timestamp: '2026-05-15T10:00:00Z', category: 'vitals', title: '3ヶ月まとめ', content: '禁酒継続（2年2ヶ月）。急性増悪：この3ヶ月は0回（！）。脂肪便：週1回以下。体重：62.5kg（安定）。HbA1c：7.2%（目標の7.5%以下を達成）。血清アミラーゼ：60 U/L（正常）。腹部CT（年1回）：膵石の増大なし・膵管拡張安定。次のCTを半年後に予定。毎日の食事記録が「何を食べると脂肪便が出るか」の特定に役立っている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-02T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-05T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-05-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-02T09:00:00Z', name: '定期採血', findings: 'アミラーゼ 85 U/L（軽度高値）・リパーゼ 95 U/L（高値）・HbA1c 8.2%・空腹時血糖 178mg/dL・アルブミン 3.5g/dL（低値〜境界）・脂溶性VIT（25-OH ビタミンD）：14 ng/mL（低値）' },
+        { timestamp: '2026-05-15T09:00:00Z', name: '3ヶ月後採血', findings: 'アミラーゼ 60 U/L（正常化）・HbA1c 7.2%（改善）・アルブミン 3.8g/dL（改善）・25-OH ビタミンD：22 ng/mL（補充効果）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-02T08:00:00Z', name: 'パンクレリパーゼ（クレオン）40,000単位/食', notes: '膵消化酵素補充。食事と同時に服用。脂肪便・栄養吸収不全を改善。胃酸で失活するためPPIと併用。' },
+        { timestamp: '2026-03-02T08:00:00Z', name: 'インスリングラルギン（ランタス）20単位/就寝前', notes: '膵性糖尿病の治療。膵インスリン産生能低下に対する補充。血糖測定毎日。' },
+        { timestamp: '2026-03-02T08:00:00Z', name: 'プレガバリン（リリカ）75mg/日', notes: '慢性膵炎の神経障害性疼痛。腹痛・背部痛の管理。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    lymphedema: {
+      diseases: ['リンパ浮腫（乳がん術後・続発性・右上肢）'],
+      profile: { age: 56, gender: 'female', height: 158, weight: 60 },
+      textEntries: [
+        { timestamp: '2026-03-03T10:00:00Z', category: 'symptoms', title: 'リンパ浮腫1年目', content: '乳がん手術（右乳房切除＋腋窩リンパ節郭清 15個）から1年。術後3ヶ月から右腕がむくみ始め、リンパ浮腫 ISL Stage 2 と診断。弾性スリーブ（mmHg 20〜30）を毎日着用し、週2回の用手リンパドレナージ（MLD）をリンパ浮腫セラピスト（CLT）から受けている。右上肢周径（肘上10cm）：健側 28cm、患側 32cm（＋4cm）。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'symptoms', title: '周径測定週次記録', content: '右上肢周径（肘上10cm）：先週 32.0cm → 今週 31.5cm（-0.5cm 改善）。右手首：先週 17.5cm → 17.2cm（改善）。朝（弾性スリーブ着用前）の測定。夕方は 32.5〜33cm になることが多い（立位・活動後に増大）。皮膚：乾燥なし・発赤なし・熱感なし（蜂窩織炎の早期サインなし）。弾性スリーブ装着後の圧迫感は慣れてきた。' },
+        { timestamp: '2026-04-10T11:00:00Z', category: 'treatment', title: 'MLD自己施行を習得', content: 'リンパ浮腫セラピストから自己 MLD（簡易版）の指導を受けた。首・腋窩・腹部のリンパ節への誘導が主目標。毎朝 15 分の自己 MLD を開始。週2回のプロによる MLD と組み合わせることで効果が維持しやすくなった。周径（肘上10cm）：32.0→30.8cm（2週間で -1.2cm！）。セラピスト：「日々のセルフケアが最も大切」。' },
+        { timestamp: '2026-05-08T10:00:00Z', category: 'symptoms', title: '2ヶ月まとめ', content: '周径（肘上10cm）：入院時32.0cm → 現在 30.2cm（-1.8cm）。LVA（リンパ管静脈吻合術）を行う形成外科への紹介を主治医と相談中。蜂窩織炎：今月はなし（発赤・熱感があればすぐセラピストか主治医に連絡する約束）。水中ウォーキングを週2回追加。「動くことで浮腫が減る」実感がある。毎週の周径記録グラフが治療モチベーションになっている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-03T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-03-18T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-05-08T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-03T09:00:00Z', name: 'リンパ浮腫外来初診時採血', findings: '血清アルブミン 4.0g/dL（正常）・CRP 0.1（感染なし）・甲状腺正常・腎機能正常。リンパシンチグラフィ：右腋窩のドレナージ欠損（腋窩郭清後の変化）を確認。' }
+      ],
+      medications: [
+        { timestamp: '2026-03-03T08:00:00Z', name: 'ヒルドイドローション（ヘパリン類似物質）患側腕に塗布', notes: '保湿・皮膚バリア維持。感染リスクを下げるために毎日塗布。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
