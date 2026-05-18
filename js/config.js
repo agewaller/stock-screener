@@ -47,6 +47,7 @@ var CONFIG = {
         { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
         { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
         { id: 'alzheimers', name: 'アルツハイマー型認知症（AD・MCI）', icd: '8A20' },
+        { id: 'epilepsy', name: 'てんかん', icd: '8A60' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
@@ -156,7 +157,7 @@ var CONFIG = {
       diseases: [
         { id: 'hypertension', name: '高血圧症', icd: 'BA00' },
         { id: 'hyperlipidemia', name: '脂質異常症', icd: 'E78' },
-        { id: 'heart_failure', name: '心不全', icd: 'BD10' },
+        { id: 'heart_failure', name: '心不全（HFrEF・HFpEF）', icd: 'BD10' },
         { id: 'arrhythmia', name: '不整脈', icd: 'BC6' },
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
         { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
@@ -172,7 +173,7 @@ var CONFIG = {
       icd: 'ICD-11: 12',
       diseases: [
         { id: 'asthma', name: '喘息', icd: 'CA23' },
-        { id: 'copd', name: 'COPD（慢性閉塞性肺疾患）', icd: 'CA22' },
+        { id: 'copd', name: 'COPD（慢性閉塞性肺疾患・肺気腫）', icd: 'CA22' },
         { id: 'sleep_apnea', name: '睡眠時無呼吸症候群', icd: '7A40' },
         { id: 'pulmonary_fibrosis', name: '肺線維症', icd: 'CB03' }
       ]
@@ -490,6 +491,10 @@ var CONFIG = {
                           japan:  14_800_000, japanLabel: '約 1,480 万人',           japanSource: '日本腎臓学会 2023 年推計' },
     atopic_dermatitis:  { world: 223_000_000, label: '約 2.23 億人 (推計)',           tier: 2, density: 'medium', source: '世界有病率約 2.7%（成人）',
                           japan:   8_000_000, japanLabel: '約 800 万人',             japanSource: '日本皮膚科学会推計（成人・小児含む）' },
+    epilepsy:           { world:  50_000_000, label: '約 5,000 万人',                tier: 2, density: 'high',   source: 'WHO',
+                          japan:   1_000_000, japanLabel: '約 100 万人',             japanSource: '日本てんかん学会' },
+    heart_failure:      { world:  64_000_000, label: '6,400 万人',                   tier: 2, density: 'high',   source: 'グローバル推計',
+                          japan:   1_300_000, japanLabel: '約 130 万人',             japanSource: '日本循環器学会' },
   },
 
   // ============================================================
@@ -1495,6 +1500,22 @@ var CONFIG = {
     herpes_zoster: [
       '帯状疱疹が右側胸部に出た。抗ウイルス薬（バラシクロビル）を3日前から飲んでいる。水疱が多く痛みが強い（NRS 8/10）。痂皮化の進行と痛みの変化を毎日記録して主治医に報告したい。',
       '帯状疱疹後神経痛（PHN）への移行が心配。皮疹は治ったが3ヶ月経っても痛みが続いている。プレガバリンを開始。痛みのスコアと薬の効果を記録して次のペインクリニック受診に備えたい。'
+    ],
+    parkinsons: [
+      'パーキンソン病でレボドパを服用中。薬が効いているときと切れているときの差が大きくなってきた（Wearing off）。薬の効果時間と「オフ」の症状（振戦・歩きにくさ）を時系列で記録して主治医に報告したい。',
+      'パーキンソン病 Hoehn-Yahr 3度。歩行に不安定感があり転倒を2回経験した。ドパミンアゴニスト（プラミペキソール）とレボドパを服用中。毎日の運動記録と転倒状況を記録してリハビリの効果を確認したい。'
+    ],
+    epilepsy: [
+      'てんかんで焦点意識消失発作が月3〜5回ある。レベチラセタム 1000mg/日を服用中。発作前の前兆（眩暈・既視感）も記録したい。発作の日時・持続時間・前兆を記録して主治医との受診に活かしたい。',
+      '若年性ミオクロニーてんかんでバルプロ酸を服用中。バルプロ酸の血中濃度が安定しない。睡眠不足や飲酒が発作のトリガーになっている。トリガーと発作の関係を記録して生活改善に役立てたい。'
+    ],
+    copd: [
+      'COPD GOLD 3（重症）。在宅酸素療法（1.5L/分）を始めた。ウメクリジニウム+ビランテロール（アノーロ）を吸入中。SpO2と息切れNRSを毎日記録して急性増悪の早期発見に役立てたい。',
+      'COPD GOLD 2（中等症）。禁煙して1年経つ。スピリーバ（チオトロピウム）を吸入中。最近、風邪をひいてから息切れが悪化した（急性増悪の可能性）。症状の変化と吸入薬の使用を記録したい。'
+    ],
+    heart_failure: [
+      '心不全（HFrEF、EF 30%）でカルベジロール・エナラプリル・スピロノラクトン・エンパグリフロジンを服用中。毎朝の体重測定が欠かせない。2日で1.5kg増えたら利尿剤を追加するよう指示されている。体重・むくみを毎日記録したい。',
+      '心不全で1ヶ月前に入院した。退院後はフロセミドを追加されて自宅で管理中。NYHA II度。塩分制限（6g/日）と水分管理をしているが、外食すると翌朝体重が増える。食事と体重の記録で再入院を防ぎたい。'
     ],
     alzheimers: [
       '（娘が記録）母が同じことを何度も繰り返して聞く。先週の孫の誕生日も覚えていない。もの忘れ外来でMMSE 22点・アルツハイマー型と診断。ドネペジルを始めた。日々の変化を記録して主治医に報告したい。',
@@ -4242,6 +4263,120 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-03-01T08:00:00Z', name: 'バラシクロビル 3000mg/日（7日間）', notes: '1000mg 朝昼夕 7日間。抗ウイルス薬。腎機能に応じて減量が必要（今回は正常のためフル量）。' },
         { timestamp: '2026-03-12T08:00:00Z', name: 'プレガバリン（リリカ）150mg/日', notes: 'PHN 予防・治療。朝夕75mg。眠気の副作用あり（夜の服用で対処）。急に中断しない。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    parkinsons: {
+      diseases: ['パーキンソン病（Hoehn-Yahr III度・Wearing off管理）'],
+      profile: { age: 71, gender: 'male', height: 166, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-03-05T09:00:00Z', category: 'medication', title: 'レボドパ増量・服薬タイミング調整', content: 'レボドパ/カルビドパ 100mg を1日4回→5回に増量。「薬の効き目の波（Wearing off）」が強くなってきた。薬が切れると振戦が強くなり歩きにくい（オフ期 NRS 7/10）。薬が効いていると普通に歩ける（オン期）。服薬タイミングを30分ずらして調整中。' },
+        { timestamp: '2026-03-12T10:00:00Z', category: 'activity', title: 'リハビリ開始', content: 'PT（理学療法士）週2回リハビリ開始。ターゲット：歩行の自動化・すくみ足対策（メトロノーム・床テープ）・バランス訓練。OT（作業療法士）は細かい手指作業（ボタン掛け・箸）に重点。「1日30分の散歩を維持するように」との指導。' },
+        { timestamp: '2026-03-19T09:00:00Z', category: 'symptoms', title: 'ジスキネジア出現', content: '午前10時頃（レボドパ服用1時間後・オンピーク時）に顔や首が不随意に動く（ジスキネジア）。ピーク用量ジスキネジアの可能性。主治医に相談→「アマンタジン 50mg 朝昼追加」の指示。翌週再評価予定。' },
+        { timestamp: '2026-03-26T08:00:00Z', category: 'vitals', title: '転倒記録', content: '入浴後の起き上がりで転倒（2回目）。ケガなし。起立性低血圧（臥位 120/75 → 立位 95/60、症状あり）が原因の可能性。弾性ストッキングを試すことに。浴室に手すりを追加設置した。' },
+        { timestamp: '2026-04-02T09:00:00Z', category: 'medication', title: 'アマンタジン効果確認', content: 'アマンタジン追加2週間。ジスキネジアが目立って改善した（不随意運動が50%以上減少）。Wearing offはまだあるが、オン時の質が改善。便秘がひどくなった（アマンタジンの副作用）。酸化マグネシウム追加。' },
+        { timestamp: '2026-04-09T10:00:00Z', category: 'activity', title: '嚥下評価', content: '飲み込みにくくなってきた（特に薬を飲むとき）。主治医に相談→言語聴覚士（ST）の嚥下評価を紹介。評価結果：軽度の嚥下障害。「食べるときは正座で首を少し前に傾ける」「とろみをつける必要はまだない」との指示。' },
+        { timestamp: '2026-04-16T09:00:00Z', category: 'vitals', title: '定期受診・DBS相談', content: 'UPDRS（統一パーキンソン病評価スケール）: 運動スコア 42（前回 35→増悪）。Wearing offとジスキネジアの両方がある→DBS（脳深部刺激療法）の適応を専門施設で相談することになった。「薬で限界が来たら手術を考える段階」との説明。DBS外来予約を入れた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 4, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-16T09:00:00Z', name: '定期採血', findings: 'WBC 5,800, CRP 0.2, Hb 13.5, Cr 0.82, eGFR 78, ビタミンB12 380（正常）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'レボドパ/カルビドパ（ネオドパストン）', notes: '100mg 1日5回（7時・10時・13時・16時・19時）。食事と時間をあわせる必要あり。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'プラミペキソール（ミラペックス）', notes: '0.5mg 1日3回。ドパミンアゴニスト。むずむず脚症状に注意。' },
+        { timestamp: '2026-03-19T08:00:00Z', name: 'アマンタジン（シンメトレル）', notes: '50mg 朝昼。ジスキネジア軽減目的。便秘の副作用あり。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    epilepsy: {
+      diseases: ['てんかん（焦点意識消失発作・難治性）'],
+      profile: { age: 26, gender: 'female', height: 161, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-08T12:00:00Z', category: 'symptoms', title: '発作記録（焦点意識消失）', content: '12:03頃、意識が飛んだ（目撃者によると30秒ほど口をもぐもぐさせてぼーっとしていた）。前兆：既視感（デジャヴ）5秒ほどあり。今月3回目。バルプロ酸 800mg/日・ラモトリジン 100mg/日・クロナゼパム 0.5mg 就寝前を服用中だが発作が続いている。' },
+        { timestamp: '2026-03-15T10:00:00Z', category: 'consultation', title: 'てんかん専門外来受診', content: 'MRI再撮影：右海馬硬化あり（側頭葉てんかんの原因）。長時間ビデオ脳波モニタリング（入院）を勧められた。薬の調整：ラコサミド 100mg（1日2回）を追加。「3剤でも効果不十分なら外科手術（焦点切除術）を検討する段階」との説明。' },
+        { timestamp: '2026-03-22T20:00:00Z', category: 'symptoms', title: '発作記録（夜間）', content: '23:45 夜間発作。二次性全般化（強直間代発作）に移行したようで、翌朝舌を噛んでいた。睡眠不足（前日4時間睡眠）と月経前（ホルモン変動）が重なったのが誘因か。ラコサミド追加後初の発作だがまだ2週間しか経っていない。' },
+        { timestamp: '2026-03-29T09:00:00Z', category: 'medication', title: 'ラコサミド 増量', content: 'ラコサミド 100mg×2→200mg×2（400mg/日）に増量。入院ビデオ脳波モニタリング：右側頭葉から発作起始を確認。外科手術（右前側頭葉切除術）の適応と判断された。専門施設への紹介状作成予定。' },
+        { timestamp: '2026-04-05T10:00:00Z', category: 'activity', title: '生活上の制限', content: '運転禁止が続いている（発作が止まらない限り継続）。職場には「てんかんの発作記録を上司に渡す」ことで理解を得ている。水場・高所の危険を意識して、入浴はシャワーのみ・一人で入らない。家族に発作時の対応（FIRST AID）を再確認した。' },
+        { timestamp: '2026-04-12T09:00:00Z', category: 'consultation', title: '外科相談', content: '専門施設てんかん外科外来受診。「右前側頭葉切除術で発作消失率 70〜80%」の説明。手術後の記憶への影響・Wada テストについて説明を受けた。家族と相談して手術の方向で検討することにした。術前評価（PET・SPECT・神経心理検査）の予約を入れた。' },
+        { timestamp: '2026-04-19T10:00:00Z', category: 'symptoms', title: '発作頻度（4月）', content: '4月の発作回数：4回（前月6回から改善）。ラコサミド増量の効果か。最後の発作から10日間発作なし。「最近の最長無発作期間」を更新中。睡眠を7時間以上確保・飲酒禁止・月経前の睡眠管理が功を奏している可能性。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-29T09:00:00Z', name: '抗てんかん薬血中濃度', findings: 'バルプロ酸 68 μg/mL（目標 50〜100）, ラモトリジン 4.2 μg/mL（目標 3〜15）, ラコサミド血中濃度 測定中。肝機能・血算：正常範囲内。' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'バルプロ酸（デパケン）800mg/日', notes: '朝夕。血中濃度モニタリング必要。妊娠時は奇形リスクで禁忌。体重増加・脱毛に注意。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'ラモトリジン（ラミクタール）100mg/日', notes: '朝夕。皮疹（SJS）注意→急な増量禁止。バルプロ酸との相互作用で血中濃度上昇。' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'ラコサミド（ビムパット）400mg/日', notes: '朝夕200mg。新規抗てんかん薬。QTc延長に注意。心電図確認済。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    copd: {
+      diseases: ['COPD（重症・GOLD 3・在宅酸素療法）'],
+      profile: { age: 69, gender: 'male', height: 168, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-03-10T09:00:00Z', category: 'consultation', title: 'COPD 年次評価', content: 'FEV1 38%予測値（GOLD 3：重症）。mMRC 3（平地をゆっくり歩いても息切れ）。CAT 24点（高影響）。昨年より1回急性増悪入院（肺炎球菌感染）あり。ウメクリジニウム+ビランテロール（アノーロ DPI）＋ブデソニド/ホルモテロール（シムビコート）を使用中。「三重療法への変更と、HOT導入を検討する段階」との説明。' },
+        { timestamp: '2026-03-17T08:00:00Z', category: 'vitals', title: 'HOT（在宅酸素療法）導入', content: '6分間歩行試験：SpO2 88%まで低下（歩行開始3分後）。安静時 93%。PaO2 54 mmHg。HOT適応と判断。1.5L/分（安静時）・3L/分（労作時）で処方。酸素濃縮器が自宅に届いた。外出用の携帯ボンベも申請中。' },
+        { timestamp: '2026-03-24T10:00:00Z', category: 'symptoms', title: 'HOT 1週間後の評価', content: 'HOT開始1週間。酸素使用時のSpO2：安静 96%・歩行 93%（改善）。息切れNRS：5→3に改善。夜間の睡眠が改善（以前は夜中に息苦しくて目が覚めていた）。酸素チューブで転倒しないよう注意が必要。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'medication', title: '吸入薬の使い方確認', content: '薬剤師に吸入手技を再確認。DPI（乾燥粉末吸入器）は息が弱いと薬が届かない可能性あり。「息をゆっくり深く吸い込む」→「10秒止める」手技を練習。ソフトミスト吸入器（スピリーバレスピマット）への変更を次回受診で相談することに。' },
+        { timestamp: '2026-04-07T09:00:00Z', category: 'symptoms', title: '急性増悪の兆候', content: '3日前から咳・痰（黄色）が増加。SpO2 91%（通常時 93%）。息切れNRS 6（通常 3）。体温 37.8℃。主治医に連絡→「急性増悪の可能性あり。アジスロマイシン 500mg 3日分とプレドニゾロン 30mg 5日分を処方するので来院」の指示。増悪の早期サインを捉えられた。' },
+        { timestamp: '2026-04-14T10:00:00Z', category: 'symptoms', title: '急性増悪 回復', content: '抗菌薬・ステロイドで1週間かけて改善。SpO2 93%（基準値）に戻った。今回は入院せずに済んだ。「急性増悪の早期発見・早期治療で入院を回避できた」と主治医に評価された。インフルエンザワクチン・肺炎球菌ワクチン（PPV23）の接種を翌月に予定。' },
+        { timestamp: '2026-04-21T09:00:00Z', category: 'activity', title: '呼吸リハビリ開始', content: '地域の外来呼吸リハビリプログラム（週2回）に参加開始。内容：自転車エルゴメーター20分・上肢運動10分・呼吸筋ストレッチ。初回は途中で休んだが、「段階的に増やせばよい」との指導。「運動すると少し楽になる感じがする」という実感あり。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, pain_level: 2, sleep_quality: 4 },
+        { timestamp: '2026-04-07T09:00:00Z', fatigue_level: 8, pain_level: 3, sleep_quality: 3 },
+        { timestamp: '2026-04-14T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-21T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T09:00:00Z', name: 'COPD年次評価採血', findings: 'Hb 14.2, CRP 0.4, α1AT 正常, SpO2 安静時93%（HOT適応評価）, FEV1 38%予測値, PaO2 54mmHg' }
+      ],
+      medications: [
+        { timestamp: '2026-01-01T08:00:00Z', name: 'ウメクリジニウム+ビランテロール（アノーロ）', notes: '1吸入/朝。LAMA+LABA。DPI。吸入手技の確認が重要。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'ブデソニド/ホルモテロール（シムビコート）', notes: '2吸入×2回/日。ICS+LABA。吸入後うがい必須（口腔カンジダ予防）。' },
+        { timestamp: '2026-03-17T08:00:00Z', name: '在宅酸素（HOT）', notes: '1.5L/分（安静時）・3L/分（労作時）。携帯ボンベで外出可能。禁煙厳守（酸素火災）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    heart_failure: {
+      diseases: ['心不全（HFrEF・EF 30%・NYHA III度）'],
+      profile: { age: 74, gender: 'male', height: 168, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-03-08T08:00:00Z', category: 'vitals', title: '体重急増・緊急受診', content: '2日前から下肢のむくみが悪化。体重が3日で3kg増加（65→68kg）。夜間の息苦しさで目が覚めた。朝のSpO2 91%。主治医に連絡→即日受診。BNP 850 pg/mL（前回 230）→急性増悪。フロセミド静注40mgを受けて利尿。翌日から経口フロセミド40mgに増量した。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'medication', title: 'GDMT 強化', content: '退院後の薬：カルベジロール 10mg（β遮断薬）・サクビトリルバルサルタン（エンレスト）100mg（ARNI）・スピロノラクトン 25mg（MRA）・エンパグリフロジン（ジャディアンス）10mg（SGLT2阻害薬）・フロセミド 40mg（利尿剤）の4本柱＋利尿剤。「GDMT（ガイドライン推奨薬物療法）をフルに使う」との説明。' },
+        { timestamp: '2026-03-22T08:00:00Z', category: 'vitals', title: '毎朝の体重記録', content: '体重 66.5kg（退院時67kg→1.5kg減）。「毎朝同じ時間に空腹で測定」のルーティンを確立。むくみは大分改善（足首の圧痕なし）。息苦しさは安静時にはない。階段1フロアで息切れ（NYHA II-III度）。塩分6g/日・水分1.5L/日制限継続。' },
+        { timestamp: '2026-03-29T10:00:00Z', category: 'consultation', title: '心エコー・BNP確認', content: '心エコー：EF 32%（3ヶ月前 28%→わずかに改善）。BNP 280 pg/mL（急性増悪時 850→大幅改善）。「エンレストの効果が出始めている可能性」との説明。カルベジロールを25mgに増量（次の1ヶ月で慎重に）。ICD（植え込み型除細動器）の適応を半年後に再評価予定。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'activity', title: '心臓リハビリ開始', content: '外来心臓リハビリ（週2回）開始。心拍数モニタリング下で自転車エルゴメーター20分・歩行練習。目標心拍数 90〜100 bpm（安静時 68 bpm）。初回は15分でやめたが次第に20分できるようになってきた。「呼吸困難感が減った」という実感。6分間歩行距離 280m（前月230m）。' },
+        { timestamp: '2026-04-12T09:00:00Z', category: 'vitals', title: '体重管理成功', content: '4月の体重：66.0〜67.2kgで安定（目標 ±1.5kg以内）。BNP 195 pg/mL（前回280→さらに改善）。「先生、BNPが200を切りました！」と報告。「薬が効いています。このまま続けてください」との言葉。エンパグリフロジンの効果（体液利尿・心保護）が出ていると思われる。' },
+        { timestamp: '2026-04-19T10:00:00Z', category: 'activity', title: '塩分管理の工夫', content: '管理栄養士との面談。「外食でラーメンを食べると翌日体重が2kg増える」ことが判明。外食時の対策：スープを飲まない・ラーメンは控える・定食ならご飯と野菜が多い店を選ぶ。コンビニのナトリウム表示の見方を学んだ（ナトリウム400mg=塩分約1g）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-08T09:00:00Z', name: '急性増悪時採血', findings: 'BNP 850 pg/mL（高値）, Cr 1.45, Na 136, K 4.2, Hb 11.8, CRP 0.6（感染なし）, SpO2 91%' },
+        { timestamp: '2026-04-12T09:00:00Z', name: '定期採血', findings: 'BNP 195 pg/mL（大幅改善）, Cr 1.38（安定）, K 4.8（スピロノラクトン影響・要注意）, HbA1c 6.8（エンパグリフロジン効果）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-15T08:00:00Z', name: 'サクビトリルバルサルタン（エンレスト）100mg', notes: '朝夕。ARNI。血圧に注意（目標収縮期 100〜130 mmHg）。' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'カルベジロール 25mg', notes: '朝夕。β遮断薬。徐脈・低血圧注意。急な中断禁止。' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'エンパグリフロジン（ジャディアンス）10mg', notes: '朝。SGLT2阻害薬。心不全に対する腎保護・体液管理。脱水注意。' },
+        { timestamp: '2026-03-15T08:00:00Z', name: 'フロセミド 40mg', notes: '朝。ループ利尿剤。体重が1.5kg以上増えたら追加服用するよう指示あり。カリウム低下注意。' }
       ],
       sleepData: [], activityData: [], meals: []
     },
