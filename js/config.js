@@ -2795,6 +2795,33 @@ var CONFIG = {
         { timestamp: '2026-03-15T08:00:00Z', name: 'レボチロキシン（チラージン）50μg', notes: '起床直後（空腹時）に服用。カルシウム・鉄剤との間隔4時間以上。' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    cancer_survivor: {
+      diseases: ['乳がん（術後ホルモン療法中）'],
+      profile: { age: 52, gender: 'female', height: 160, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-03-10T08:00:00Z', category: 'symptoms', title: 'FCR（再発不安）記録', content: '次の CT まで3週間。なんとなく体の各部が気になって「再発では？」と考えてしまう。睡眠が浅い。CBTの先生に言われた通り、症状を具体的に記録してみることにした。' },
+        { timestamp: '2026-03-18T09:00:00Z', category: 'medication', title: 'タモキシフェン3年目', content: 'タモキシフェン 20mg 継続中。ホットフラッシュが気になるが耐えている。骨密度検査の予約を取った。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'vitals', title: 'フォローアップ受診', content: 'CEA 1.8 ng/mL（正常）。胸部 CT：異常なし。主治医から「問題ない」と言われて少し安心した。次回は6ヶ月後。マンモグラフィも予約した。' },
+        { timestamp: '2026-04-02T08:00:00Z', category: 'symptoms', title: 'ケモブレイン', content: '会議で言葉が出てこないことが増えた。メモを取っても忘れる。化学療法後1年半経っても続いている。有酸素運動（週3回・30分）を始めてみた。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'symptoms', title: '認知機能の変化', content: '有酸素運動を2週間続けたら、少し集中力が戻った気がする。仕事でのミスが減った。運動の継続が大事だと実感。' },
+        { timestamp: '2026-04-22T08:00:00Z', category: 'vitals', title: '骨密度検査（DEXA）', content: 'T スコア -1.3（骨減少症の範囲）。アロマターゼ阻害薬ではなくタモキシフェンなので影響は少ないが、カルシウム 1,200mg/日 + ビタミン D 1,000IU/日 を追加。' },
+        { timestamp: '2026-04-28T09:00:00Z', category: 'symptoms', title: '1ヶ月の振り返り', content: '再発不安：「受診日に記録→安心のサイクル」が少しできてきた。ケモブレインは運動で改善傾向。体重管理（BMI 22）を目標に食事改善も継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-10T08:00:00Z', fatigue_level: 5, brain_fog: 6, sleep_quality: 4, pain_level: 2 },
+        { timestamp: '2026-03-25T08:00:00Z', fatigue_level: 4, brain_fog: 5, sleep_quality: 5, pain_level: 1 },
+        { timestamp: '2026-04-15T08:00:00Z', fatigue_level: 3, brain_fog: 4, sleep_quality: 6, pain_level: 1 },
+        { timestamp: '2026-04-28T08:00:00Z', fatigue_level: 3, brain_fog: 3, sleep_quality: 6, pain_level: 1 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-25T10:00:00Z', name: 'がんフォローアップ検査', findings: 'CEA 1.8 ng/mL（正常）、CA15-3 12 U/mL（正常）、胸部 CT：異常なし、骨密度 T スコア -1.3（骨減少症）' }
+      ],
+      medications: [
+        { timestamp: '2024-03-01T08:00:00Z', name: 'タモキシフェン 20mg', notes: '毎朝。乳がん術後ホルモン療法 5 年間継続中（3年目）。' },
+        { timestamp: '2026-04-22T08:00:00Z', name: 'カルシウム + ビタミン D', notes: 'Ca 1,200mg/日 + ビタミン D 1,000IU/日。骨密度低下予防。' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };

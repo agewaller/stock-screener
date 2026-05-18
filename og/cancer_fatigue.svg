@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf4ff"/>
+      <stop offset="100%" stop-color="#f5d0fe"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d946ef"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#d946ef" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="56" font-weight="900" fill="#701a75">がん治療中の</text>
+    <text x="0" y="158" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="52" font-weight="900" fill="#701a75">副作用・倦怠感管理</text>
+    <text x="0" y="215" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">化学療法・放射線・免疫療法の副作用を AI で記録・報告</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="520" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">対象</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#701a75">抗がん剤・放射線・免疫チェックポイント阻害薬</text>
+    <rect x="540" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="560" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">主な記録項目</text>
+    <text x="560" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#701a75">副作用・CRF・QOL</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#701a75">📝  完全無料  ・  広告なし  ・  AI 分析</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#d946ef">cares.advisers.jp/cancer_fatigue.html</text>
+  </g>
+</svg>
