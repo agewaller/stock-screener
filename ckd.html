@@ -3,144 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>慢性腎臓病（CKD）の記録日誌 | eGFR・尿タンパク・食事を管理 — 健康日記</title>
-<meta name="description" content="慢性腎臓病（CKD）のeGFR・尿タンパク・血圧・食事制限の経過を毎日記録。SGLT2阻害薬（フォシーガ）・降圧薬・減塩食の効果を日誌で可視化。透析予防のための健康日記アプリ（無料）。">
-<meta name="keywords" content="慢性腎臓病 記録 アプリ,eGFR 管理 日誌,CKD 食事制限 記録,腎臓病 透析 予防">
+<title>慢性腎臓病（CKD・慢性腎不全）のeGFR管理と食事記録｜健康日記</title>
+<meta name="description" content="慢性腎臓病（CKD）のeGFR・尿蛋白・血圧・カリウム・リンをAIで記録・分析。CKDステージG1〜G5の管理、透析導入の先送り、腎性貧血・骨ミネラル代謝異常の管理まで、腎臓専門医レベルの情報を完全無料で。">
+<meta name="keywords" content="慢性腎臓病,CKD,eGFR,尿蛋白,腎不全,透析,腎保護,SGLT2阻害薬,ARB,カリウム制限,リン制限,腎性貧血,HIF-PH阻害薬,ダパグリフロジン,腎臓内科">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="https://cares.advisers.jp/ckd.html">
 <link rel="alternate" hreflang="ja" href="https://cares.advisers.jp/ckd.html">
 <link rel="alternate" hreflang="x-default" href="https://cares.advisers.jp/ckd.html">
 <meta property="og:type" content="article">
-<meta property="og:title" content="慢性腎臓病（CKD）の記録日誌 | eGFR・尿タンパク・食事を管理 — 健康日記">
-<meta property="og:description" content="慢性腎臓病（CKD）のeGFR・尿タンパク・血圧・食事制限の経過を毎日記録。SGLT2阻害薬（フォシーガ）・降圧薬・減塩食の効果を日誌で可視化。透析予防のための健康日記アプリ（無料）。">
+<meta property="og:title" content="慢性腎臓病（CKD・慢性腎不全）のeGFR管理と食事記録｜健康日記">
+<meta property="og:description" content="慢性腎臓病（CKD）のeGFR・尿蛋白・血圧・カリウム・リンをAIで記録・分析。CKDステージG1〜G5の管理、透析導入の先送り、腎性貧血の管理まで完全無料で。">
 <meta property="og:url" content="https://cares.advisers.jp/ckd.html">
-<meta property="og:image" content="https://cares.advisers.jp/og/depression.svg">
+<meta property="og:image" content="https://cares.advisers.jp/og/ckd.svg">
 <meta property="og:image:type" content="image/svg+xml">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="健康日記 — 慢性腎臓病（CKD）">
-<meta name="twitter:image" content="https://cares.advisers.jp/og/depression.svg">
+<meta property="og:image:alt" content="健康日記 — 慢性腎臓病（CKD・慢性腎不全・eGFR管理）">
+<meta name="twitter:image" content="https://cares.advisers.jp/og/ckd.svg">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236C63FF'/%3E%3C/svg%3E">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"MedicalCondition","name":"慢性腎臓病","alternateName":["CKD","Chronic Kidney Disease"],"description":"3ヶ月以上持続する腎機能低下（eGFR 60mL/min/1.73m²未満）または腎障害の指標（尿タンパク等）が持続する疾患。進行すると透析・腎移植が必要になる。","code":{"@type":"MedicalCode","codeValue":"N18","codingSystem":"ICD-10"},"relevantSpecialty":"腎臓内科","possibleTreatment":[{"@type":"MedicalTherapy","name":"SGLT2阻害薬（フォシーガ・ジャディアンス）— 腎保護効果"},{"@type":"MedicalTherapy","name":"ACE阻害薬・ARB（腎保護降圧薬）"},{"@type":"MedicalTherapy","name":"フィネレノン（ケレンディア）— 非ステロイド性MRA"},{"@type":"MedicalTherapy","name":"減塩・低タンパク食（1日6g未満塩分・0.6〜0.8g/kg タンパク）"},{"@type":"MedicalTherapy","name":"貧血治療（ESA・HIF-PHD阻害薬）"},{"@type":"MedicalTherapy","name":"腎代替療法（血液透析・腹膜透析・腎移植）"}]}
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {"@type":"FAQPage","@id":"https://cares.advisers.jp/ckd.html#faq","mainEntity":[
+      {"@type":"Question","name":"CKDはどのくらいのペースで悪化しますか？","acceptedAnswer":{"@type":"Answer","text":"CKDの進行速度は原因疾患・血圧コントロール・蛋白尿の量によって大きく異なります。一般的に1年あたりのeGFR低下は1〜3 mL/min/1.73m²が多いですが、蛋白尿が多い・血圧が高い・糖尿病合併のある方は5以上低下することもあります。3ヶ月間でeGFRが10以上低下した場合は速やかに腎臓専門医に紹介することが推奨されます。RAA系阻害薬・SGLT2阻害薬による治療と食事・血圧管理で進行を大幅に遅らせることができます。"}},
+      {"@type":"Question","name":"eGFR が低くても透析は必要ありませんか？","acceptedAnswer":{"@type":"Answer","text":"eGFRの数値だけで透析開始を決めるわけではありません。透析の適応は①eGFR＜15（G5）で尿毒症症状がある場合、②高カリウム血症・代謝性アシドーシス・肺水腫など緊急状態の場合に検討されます。eGFRが10〜15でも無症状なら透析を急がないこともあります。一方、eGFRが20〜25のうちに透析または腎移植の準備（シャント造設・腹膜透析カテーテル挿入など）を始めることが推奨されます。"}},
+      {"@type":"Question","name":"市販の鎮痛薬（ロキソニン）は飲んでも大丈夫ですか？","acceptedAnswer":{"@type":"Answer","text":"NSAIDs（ロキソプロフェン・イブプロフェン・ジクロフェナク等）はCKD患者には原則禁忌です。NSAIDsは腎血流を低下させ、急性腎障害（AKI）を引き起こすリスクがあります。特にeGFR＜30（G4〜G5）の方では1回の服用でも急性腎障害を起こす可能性があります。痛み止めが必要な場合はアセトアミノフェン（カロナール）を使用し、必ず主治医に相談してください。"}},
+      {"@type":"Question","name":"CKD と言われたら食事制限はすぐに必要ですか？","acceptedAnswer":{"@type":"Answer","text":"食事制限の内容はステージによって異なります。G1〜G2では塩分制限（6g/日未満）と適切な血圧管理が主体で、蛋白質・カリウム・リンの厳格な制限は通常不要です。G3から蛋白質制限（0.6〜0.8 g/kg/日）を開始し、必要に応じてカリウム・リン制限も加わります。G4〜G5では蛋白質・カリウム・リン・水分すべてを厳格に管理する必要があります。腎臓病専門の管理栄養士による個別指導を受けることを強くお勧めします。"}},
+      {"@type":"Question","name":"透析はどのような生活になりますか？","acceptedAnswer":{"@type":"Answer","text":"血液透析（HD）の場合、週3回・1回4〜5時間の通院が必要です。透析中は安静にしている時間が長いため、透析前後の時間の使い方を工夫する方が多いです。食事制限（カリウム・リン・水分・塩分）は継続しますが、透析により尿毒症症状が改善し食欲が戻ることが多いです。腹膜透析（PD）は自宅で毎日行うタイプで、通院は月2回程度ですが、バッグ交換の手技習得が必要です。透析を始めても就労を継続している方は多く、生活の質を保ちながら長く生きることが可能です。"}}
+    ]},
+    {"@type":"MedicalWebPage","name":"慢性腎臓病（CKD・慢性腎不全）のeGFR管理と食事記録","url":"https://cares.advisers.jp/ckd.html","inLanguage":"ja","lastReviewed":"2026-05-18"},
+    {"@type":"MedicalCondition","name":"慢性腎臓病","alternateName":["CKD（Chronic Kidney Disease）","慢性腎不全","腎機能低下","eGFR低下"],"code":{"@type":"MedicalCode","code":"GB61","codingSystem":"ICD-11"},"signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"eGFR低下（60 mL/min/1.73m²未満）"},{"@type":"MedicalSignOrSymptom","name":"尿蛋白陽性（0.15 g/gCr以上）"},{"@type":"MedicalSignOrSymptom","name":"浮腫・倦怠感・食欲低下（進行期）"},{"@type":"MedicalSignOrSymptom","name":"高血圧の悪化"},{"@type":"MedicalSignOrSymptom","name":"腎性貧血（Hb低下）"}],"possibleTreatment":[{"@type":"MedicalTherapy","name":"RAA系阻害薬（ACE阻害薬・ARB）による蛋白尿・血圧管理"},{"@type":"MedicalTherapy","name":"SGLT2阻害薬（ダパグリフロジン）による腎保護"},{"@type":"MedicalTherapy","name":"食事制限（蛋白質・カリウム・リン・塩分）"},{"@type":"MedicalTherapy","name":"腎性貧血治療（ESA・HIF-PH阻害薬）"},{"@type":"MedicalTherapy","name":"透析療法（血液透析・腹膜透析）・腎移植"}],"relevantSpecialty":"腎臓内科"}
+  ]
+}
 </script>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-  {"@type":"Question","name":"慢性腎臓病のステージ（G1〜G5）はどのように分類されますか？","acceptedAnswer":{"@type":"Answer","text":"CKD は eGFR（推算糸球体濾過量）とタンパク尿のレベルで G1〜G5 の 5段階に分類されます。G1（eGFR 90以上）・G2（60〜89）は早期で通常無症状。G3a（45〜59）・G3b（30〜44）は中等度低下。G4（15〜29）は高度低下で透析準備が必要。G5（15未満）は腎不全で透析・腎移植の段階です。eGFR を定期的に記録することが進行速度の把握に最も重要です。"}},
-  {"@type":"Question","name":"SGLT2阻害薬が腎臓に良いと聞きましたが、なぜですか？","acceptedAnswer":{"@type":"Answer","text":"ダパグリフロジン（フォシーガ）・エンパグリフロジン（ジャディアンス）などのSGLT2阻害薬は、糖尿病の有無にかかわらず CKD の進行を遅らせる効果があることが大規模試験（DAPA-CKD・EMPA-KIDNEY）で証明されています。作用機序は、腎糸球体内圧の低下（輸入細動脈の収縮）、尿タンパクの減少、炎症・線維化の抑制です。腎機能低下・心不全・糖尿病性腎症を伴う CKD に積極的に使用されます。"}},
-  {"@type":"Question","name":"CKD の食事管理のポイントを教えてください。","acceptedAnswer":{"@type":"Answer","text":"①減塩（1日6g未満）— 血圧管理と腎保護の基本②低タンパク食（0.6〜0.8g/kg/日）— G3b以降で進行を遅らせる可能性③カリウム制限（G3b以降、野菜・果物の茹でこぼし）④リン制限（G4以降、加工食品・乳製品・コーラを控える）⑤水分制限（透析期は医師指示に従う）。ただし制限の程度はステージと個人の状態により異なります。管理栄養士の指導のもとで行うことが推奨されます。"}},
-  {"@type":"Question","name":"慢性腎臓病の進行を遅らせるには何が重要ですか？","acceptedAnswer":{"@type":"Answer","text":"①血圧コントロール（目標: 130/80mmHg 未満。ACE阻害薬・ARBが第一選択）②血糖管理（糖尿病性腎症の場合 HbA1c 7%未満）③タンパク尿の管理（尿タンパク/クレアチニン比を定期的にチェック）④SGLT2阻害薬の使用⑤禁煙・適度な運動⑥NSAIDs（ロキソプロフェン等）・造影剤の慎重使用　が腎機能保護に重要です。毎日の血圧・体重・尿量の記録が早期異常検知に役立ちます。"}},
-  {"@type":"Question","name":"透析の準備はいつ頃から始めますか？","acceptedAnswer":{"@type":"Answer","text":"一般的に eGFR が 15〜20 mL/min/1.73m²（G4後半〜G5）になった頃から腎代替療法（血液透析・腹膜透析・腎移植）の選択と準備を開始します。バスキュラーアクセス（シャント）の作製は透析開始の 6ヶ月〜1年前に行うのが理想です。主治医の腎臓内科医と早めに透析の選択について相談しておくことが重要で、症状日誌で「いつ eGFR が何まで下がったか」を記録しておくと医師との相談がスムーズです。"}}
-]}
-</script>
-<style>*{box-sizing:border-box;margin:0;padding:0}html{font-size:15px;scroll-behavior:smooth}body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f8f9fc;line-height:1.8}.container{max-width:820px;margin:0 auto;padding:20px}header{padding:16px 0;border-bottom:1px solid #e4e7ef;margin-bottom:20px}header a{color:#6366f1;text-decoration:none;font-weight:700;font-size:14px}h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#3730a3}h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #e4e7ef}p{margin-bottom:12px}ul{margin:8px 0 14px 22px}li{margin-bottom:4px}.hero{padding:18px 22px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1.5px solid #6366f1;border-radius:14px;margin-bottom:22px}.cta{display:inline-block;padding:14px 28px;background:#6366f1;color:#fff;border-radius:24px;text-decoration:none;font-weight:700;font-size:14px;margin-top:12px}.box{padding:14px 18px;background:#fafaff;border-left:4px solid #6366f1;border-radius:0 10px 10px 0;margin-bottom:14px}.box-title{font-size:13px;font-weight:700;color:#3730a3;margin-bottom:6px}.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:14px 0}.related a{padding:8px 12px;background:#fff;border:1px solid #e4e7ef;border-radius:8px;text-decoration:none;color:#4338ca;font-size:12px;font-weight:600;text-align:center}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}.stat-card{padding:14px;background:#fff;border:1px solid #e4e7ef;border-radius:10px}.stat-num{font-size:22px;font-weight:800;color:#4338ca}.stat-label{font-size:11px;color:#64748b;margin-top:2px}footer{padding:24px 0;border-top:1px solid #e4e7ef;margin-top:36px;text-align:center;font-size:12px;color:#64748b}footer a{color:#6366f1;text-decoration:none;margin:0 6px}</style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:-apple-system,'Hiragino Sans',sans-serif;color:#1e293b;background:#f0fdfa;line-height:1.8}
+.container{max-width:820px;margin:0 auto;padding:20px}
+header{padding:16px 0;border-bottom:1px solid #99f6e4;margin-bottom:20px}
+header a{color:#0d9488;text-decoration:none;font-weight:700;font-size:14px}
+h1{font-size:26px;font-weight:800;line-height:1.4;margin:16px 0 12px;color:#134e4a}
+h2{font-size:20px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:2px solid #99f6e4;color:#134e4a}
+h3{font-size:17px;font-weight:700;margin:18px 0 8px;color:#0d9488}
+p{margin-bottom:12px}
+ul,ol{padding-left:20px;margin-bottom:12px}
+li{margin-bottom:6px}
+.hero{background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border-radius:12px;padding:24px;margin-bottom:24px;border-left:4px solid #0d9488}
+.hero p{margin-bottom:0}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#0d9488,#134e4a);color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;margin:12px 0;text-align:center}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+.stat-card{background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08);border:1px solid #99f6e4}
+.stat-num{font-size:20px;font-weight:800;color:#0d9488}
+.stat-label{font-size:12px;color:#64748b;margin-top:4px}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th{background:#ccfbf1;padding:10px 12px;text-align:left;font-weight:700;border:1px solid #99f6e4;color:#134e4a}
+td{padding:9px 12px;border:1px solid #99f6e4;vertical-align:top}
+tr:nth-child(even) td{background:#f0fdfa}
+.warn{background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:18px 20px;margin:20px 0;font-size:14px}
+.warn-title{font-weight:800;color:#991b1b;font-size:16px;margin-bottom:10px}
+.box{padding:14px 18px;background:#ccfbf1;border-left:4px solid #0d9488;border-radius:0 10px 10px 0;margin-bottom:14px}
+.box-title{font-size:13px;font-weight:700;color:#134e4a;margin-bottom:6px}
+.tip{background:#fff;border:1px solid #0d9488;border-radius:8px;padding:14px 16px;margin:16px 0;font-size:14px}
+.tip-title{font-weight:700;color:#134e4a;font-size:14px;margin-bottom:8px}
+.faq-item{border:1px solid #99f6e4;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.faq-q{background:#ccfbf1;padding:12px 16px;font-weight:700;color:#134e4a;font-size:15px}
+.faq-a{padding:12px 16px;font-size:14px;background:#fff}
+.related{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.related a{background:#ccfbf1;color:#0d9488;padding:6px 14px;border-radius:20px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #99f6e4}
+.related a:hover{background:#99f6e4}
+footer{margin-top:32px;padding-top:16px;border-top:1px solid #99f6e4;color:#64748b;font-size:12px;text-align:center}
+footer a{color:#0d9488;text-decoration:none;margin:0 6px}
+footer p+p{margin-top:6px}
+@media(max-width:600px){h1{font-size:22px}h2{font-size:18px}.stat-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
-<body data-disease-label="慢性腎臓病" data-app-param="ckd">
+<body data-disease-label="慢性腎臓病（CKD）" data-app-param="ckd">
 <div class="container">
-<header><a href="https://cares.advisers.jp/">← 健康日記トップ</a></header>
+<header>
+  <a href="https://cares.advisers.jp/">← 健康日記トップ</a>
+</header>
+
+<h1>慢性腎臓病（CKD・慢性腎不全）</h1>
+<p style="color:#64748b;font-size:13px">ICD-11: GB61 ／ 更新日: 2026年5月</p>
 
 <div class="hero">
-<h1>慢性腎臓病（CKD）の eGFR・血圧・食事を毎日記録して透析を遠ざける</h1>
-<p style="color:#4338ca;font-size:13px">eGFR の低下・尿タンパク・血圧管理――慢性腎臓病は
-進行をいかに遅らせるかが最大の治療目標です。
-毎日の血圧・体重・食事記録が腎機能保護の最良の武器です。</p>
-<a class="cta" href="https://cares.advisers.jp/?d=ckd">無料で記録を始める →</a>
+  <p>慢性腎臓病（CKD）は、<strong>eGFR の低下または尿蛋白の持続が3ヶ月以上続く状態</strong>の総称です。日本の患者数は約1,480万人と推定され、成人の8人に1人が該当します。自覚症状が乏しいまま進行し、末期腎不全（透析・腎移植）に至るリスクがあります。健康日記は、eGFR・尿蛋白・血圧・食事制限を毎日記録し、<strong>透析を先送りするための管理</strong>を支援します。</p>
 </div>
 
 <div class="stat-grid">
-<div class="stat-card"><div class="stat-num">約1,330万人</div><div class="stat-label">国内CKD患者数（成人の約8人に1人）</div></div>
-<div class="stat-card"><div class="stat-num">eGFR 60未満</div><div class="stat-label">透析リスクが顕著に上昇するステージ</div></div>
-<div class="stat-card"><div class="stat-num">適切管理で進行を数年〜10年遅延</div><div class="stat-label">早期介入の効果</div></div>
+  <div class="stat-card"><div class="stat-num">約1,480万人</div><div class="stat-label">日本の患者数</div></div>
+  <div class="stat-card"><div class="stat-num">eGFR・尿蛋白・血圧・K値</div><div class="stat-label">主な管理指標</div></div>
+  <div class="stat-card"><div class="stat-num">ICD-11 GB61</div><div class="stat-label">国際診断分類</div></div>
 </div>
 
-<h2>記録が役立つ理由</h2>
+<a class="cta-btn" href="https://cares.advisers.jp/?disease=ckd" data-app-param="ckd" data-disease-label="慢性腎臓病（CKD）">eGFR・尿蛋白・血圧・食事を記録・管理する →</a>
+
+<h2>CKDとは（定義・ステージ分類・原因）</h2>
+<p><strong>CKD の定義</strong>: eGFR &lt; 60 mL/min/1.73m² または 尿蛋白 ≥ 0.15 g/gCr が<strong>3ヶ月以上継続</strong>する状態。原因疾患を問わず適用される診断概念です。</p>
+
+<h3>CKDステージ分類（G1〜G5）</h3>
+<table>
+  <tr><th>ステージ</th><th>eGFR (mL/min/1.73m²)</th><th>特徴</th><th>主な管理目標</th></tr>
+  <tr><td><strong>G1</strong></td><td>≥90（蛋白尿などの異常あり）</td><td>ほぼ正常（原因疾患の治療が主）</td><td>生活習慣改善・原疾患治療</td></tr>
+  <tr><td><strong>G2</strong></td><td>60〜89</td><td>軽度低下</td><td>血圧 ≤ 130/80、蛋白尿管理</td></tr>
+  <tr><td><strong>G3a</strong></td><td>45〜59</td><td>軽〜中等度低下</td><td>食事制限開始、合併症管理</td></tr>
+  <tr><td><strong>G3b</strong></td><td>30〜44</td><td>中〜高度低下</td><td>腎臓専門医への紹介推奨</td></tr>
+  <tr><td><strong>G4</strong></td><td>15〜29</td><td>高度低下（透析準備期）</td><td>透析・移植の準備検討開始</td></tr>
+  <tr><td><strong>G5</strong></td><td>&lt;15（末期腎不全）</td><td>腎代替療法が必要</td><td>血液透析・腹膜透析・腎移植</td></tr>
+</table>
+
+<h3>主な原因疾患</h3>
 <div class="box">
-<div class="box-title">記録が役立つ理由</div>
-<p>慢性腎臓病は初期に自覚症状がほとんどなく、eGFR の低下に気付きにくい疾患です。毎日の血圧・体重・浮腫の有無・食事の塩分・タンパク量を記録すると、①血圧コントロールの達成状況が客観的に分かる②減塩・低タンパク食の実践度が把握できる③受診ごとに「前回からの変化」を正確に伝えられる④eGFR の低下速度（年間何 mL/min 低下しているか）の追跡ができる。</p>
+  <ul>
+    <li><strong>糖尿病性腎臓病（DKD）</strong>: 約39%。最多の原因。HbA1c・血圧の厳格管理が腎保護の基本</li>
+    <li><strong>高血圧性腎硬化症</strong>: 約24%。長期高血圧による腎血管の動脈硬化・糸球体硬化</li>
+    <li><strong>慢性糸球体腎炎</strong>: IgA腎症が代表。尿蛋白が持続し進行性に腎機能が低下する</li>
+    <li><strong>多発性嚢胞腎（PKD）</strong>: 遺伝性。嚢胞が増大し腎機能を圧迫。トルバプタンで進行抑制</li>
+    <li><strong>ループス腎炎・血管炎など</strong>: 膠原病による二次性 CKD</li>
+  </ul>
 </div>
 
-<h2>主な治療薬</h2>
+<h2>重要な検査値と記録方法</h2>
+<table>
+  <tr><th>検査値</th><th>目標/基準値</th><th>意味</th><th>変化時の対応</th></tr>
+  <tr><td><strong>eGFR</strong></td><td>ステージ維持または改善</td><td>腎機能の最重要指標</td><td>3ヶ月で10以上低下→専門医へ</td></tr>
+  <tr><td><strong>尿蛋白（尿アルブミン）</strong></td><td>&lt;0.15 g/gCr（正常）</td><td>腎臓のダメージと進行速度</td><td>0.3以上→RAA系阻害薬強化</td></tr>
+  <tr><td><strong>血圧</strong></td><td>&lt;130/80 mmHg</td><td>CKD進行の最大可変的リスク</td><td>家庭血圧を毎日記録</td></tr>
+  <tr><td><strong>カリウム（K）</strong></td><td>3.5〜5.0 mEq/L</td><td>G3以降で高K血症リスク</td><td>&gt;5.5→カリウム制限食強化</td></tr>
+  <tr><td><strong>リン（P）</strong></td><td>2.5〜4.5 mg/dL</td><td>腎性骨ミネラル代謝異常</td><td>高値→リン吸着薬・食事制限</td></tr>
+  <tr><td><strong>ヘモグロビン（Hb）</strong></td><td>10〜13 g/dL</td><td>腎性貧血</td><td>&lt;10→ESAまたはHIF-PH阻害薬</td></tr>
+</table>
+
+<div class="tip">
+  <div class="tip-title">受診前の記録まとめ方</div>
+  「前回受診から今日まで」の期間で、①eGFR・尿蛋白・Hb・K・Pの推移、②家庭血圧の最高値・平均値、③むくみや倦怠感の程度、④食事（塩分・蛋白質・カリウム・リン）の管理状況を一枚にまとめると、短い診察時間で主治医に正確に伝えられます。健康日記アプリはこれを自動でまとめます。
+</div>
+
+<h2>治療の選択肢（腎保護治療）</h2>
+<h3>主な腎保護薬の比較</h3>
+<table>
+  <tr><th>薬剤</th><th>作用機序</th><th>腎保護エビデンス</th><th>注意点</th></tr>
+  <tr><td><strong>ACE 阻害薬</strong>（エナラプリル等）</td><td>RAA系阻害。輸出細動脈拡張→糸球体圧↓</td><td>蛋白尿30〜40%減・CKD進行抑制</td><td>高K血症・空咳・妊婦禁忌</td></tr>
+  <tr><td><strong>ARB</strong>（テルミサルタン・カンデサルタン等）</td><td>RAA系阻害。ACE阻害薬と同等効果</td><td>糖尿病性腎症の腎保護に最高エビデンス</td><td>高K血症・妊婦禁忌</td></tr>
+  <tr><td><strong>SGLT2 阻害薬</strong>（ダパグリフロジン等）</td><td>近位尿細管での糖再吸収阻害</td><td>eGFR保護・心血管リスク低減（DAPA-CKD試験）</td><td>尿路感染・DKA（稀）・脱水</td></tr>
+  <tr><td><strong>フィネレノン</strong>（ケレンディア）</td><td>選択的MRA</td><td>糖尿病性CKDの蛋白尿・心腎保護</td><td>高K血症（モニタリング必要）</td></tr>
+  <tr><td><strong>炭酸水素ナトリウム</strong>（重曹）</td><td>代謝性アシドーシス補正</td><td>CKD 進行抑制効果あり</td><td>むくみ・血圧上昇注意</td></tr>
+</table>
+
+<div class="warn">
+  <div class="warn-title">⚠️ 緊急受診サイン</div>
+  <p>以下の状態は緊急対応が必要です。直ちに担当医または救急を受診してください。</p>
+  <ul style="margin-top:8px">
+    <li>急激な eGFR 低下（数日〜1週間で大幅低下）</li>
+    <li>急激な尿量減少（1日500 mL 未満）</li>
+    <li>全身の浮腫悪化（急激な体重増加を伴う）</li>
+    <li>高カリウム血症（K &gt; 6.0 mEq/L：不整脈リスク）</li>
+    <li>透析中の血液透析量不足の症状（息切れ・意識障害・筋痙攣）</li>
+  </ul>
+</div>
+
+<h2>食事管理の記録</h2>
+<h3>CKD ステージ別食事制限</h3>
+<table>
+  <tr><th>栄養素</th><th>G1〜G2</th><th>G3</th><th>G4〜G5</th></tr>
+  <tr><td><strong>蛋白質</strong></td><td>制限不要（0.8〜1.0 g/kg/日）</td><td>0.6〜0.8 g/kg/日</td><td>0.5〜0.6 g/kg/日</td></tr>
+  <tr><td><strong>カリウム</strong></td><td>制限不要</td><td>2,000 mg/日以下（必要時）</td><td>1,500 mg/日以下</td></tr>
+  <tr><td><strong>リン</strong></td><td>制限不要</td><td>制限開始（食品添加物の多い加工食品を避ける）</td><td>800〜1,000 mg/日</td></tr>
+  <tr><td><strong>塩分</strong></td><td>6 g/日未満</td><td>6 g/日未満</td><td>6 g/日未満</td></tr>
+  <tr><td><strong>水分</strong></td><td>制限なし（基本）</td><td>尿量に応じて</td><td>浮腫があれば制限</td></tr>
+</table>
+
+<h3>カリウムの管理ポイント</h3>
 <div class="box">
-<div class="box-title">主な治療薬</div>
-<p>【腎保護・降圧】ACE阻害薬（エナラプリル・ラミプリル）/ ARB（テルミサルタン・オルメサルタン）/ SGLT2阻害薬（フォシーガ・ジャディアンス）/ フィネレノン（ケレンディア）【貧血治療】ESA（エリスロポエチン製剤: ミルセラ・ネスプ）/ HIF-PHD阻害薬（ダーブロック・エナロイ）【骨・ミネラル管理】活性型ビタミンD（カルシトリオール）/ リン吸着薬（炭酸ランタン・沈降炭酸カルシウム）【透析（G5）】血液透析（週3回・1回4時間）/ 腹膜透析（CAPD・APD）</p>
+  <div class="box-title">カリウムの多い食品と調理のコツ</div>
+  <ul>
+    <li><strong>カリウムが特に多い食品</strong>: バナナ・じゃがいも・さつまいも・ほうれん草・トマト・アボカド・豆類・海藻・ナッツ類</li>
+    <li><strong>ゆでこぼし法</strong>: 野菜を小さく切り、たっぷりの水でゆでてからお湯を捨てる。カリウムを20〜50%減らせる</li>
+    <li><strong>生野菜より加熱野菜</strong>: 水さらし・水煮を活用。果物は缶詰（シロップを捨てる）を活用する</li>
+    <li><strong>市販の野菜ジュース・果物ジュース</strong>はカリウムが非常に多いため注意</li>
+    <li>カリウムの目標値（K 3.5〜5.0 mEq/L）は採血で確認し、主治医と相談して制限レベルを調整する</li>
+  </ul>
 </div>
 
-<h2>健康日記で記録できること</h2>
+<h2>日常生活の注意点</h2>
+<h3>NSAIDs（鎮痛薬）の腎毒性</h3>
 <div class="box">
-<div class="box-title">健康日記で記録できること</div>
-<ul>
-<li>① 毎日の血圧（朝・夕）と体重（浮腫の確認）</li>
-<li>② 食事の塩分量・タンパク量（透析予防のための食事管理）</li>
-<li>③ eGFR・尿タンパク/クレアチニン比（受診ごとに記録）</li>
-<li>④ 服薬状況（ARB/ACE阻害薬・SGLT2阻害薬の飲み忘れ）</li>
-<li>⑤ 倦怠感・むくみ・息苦しさ（腎機能悪化のサイン）</li>
-</ul>
+  <div class="box-title">CKD 患者に禁忌に近い薬剤</div>
+  <ul>
+    <li><strong>NSAIDs</strong>（ロキソプロフェン・イブプロフェン・ジクロフェナク・インドメタシン等）: 腎血流を低下させ急性腎障害（AKI）リスク。G3以上では原則使用禁忌</li>
+    <li>痛み止めが必要な場合は<strong>アセトアミノフェン（カロナール）</strong>を推奨（ただし過量に注意）</li>
+    <li>市販の風邪薬・頭痛薬にも NSAIDs が含まれることがあるため、成分表示を必ず確認する</li>
+  </ul>
 </div>
 
-<h2>よくある質問</h2>
-
+<h3>造影剤使用前の準備（造影剤腎症の予防）</h3>
 <div class="box">
-<div class="box-title">慢性腎臓病のステージ（G1〜G5）はどのように分類されますか？</div>
-<p>CKD は eGFR（推算糸球体濾過量）とタンパク尿のレベルで G1〜G5 の 5段階に分類されます。G1（eGFR 90以上）・G2（60〜89）は早期で通常無症状。G3a（45〜59）・G3b（30〜44）は中等度低下。G4（15〜29）は高度低下で透析準備が必要。G5（15未満）は腎不全で透析・腎移植の段階です。eGFR を定期的に記録することが進行速度の把握に最も重要です。</p>
+  <ul>
+    <li>CT・MRI などで造影剤を使用する前に、必ず<strong>腎機能（eGFR）の確認</strong>を担当科に伝える</li>
+    <li>eGFR &lt; 30 の場合は造影剤の使用を慎重に検討（生理食塩水の点滴前投与・後投与が標準予防策）</li>
+    <li>ガドリニウム造影剤（MRI 用）は重篤な腎性全身性線維症（NSF）リスク: eGFR &lt; 30 では原則禁忌</li>
+    <li>メトホルミン（糖尿病薬）は造影剤使用前後48時間の休薬が必要（乳酸アシドーシス予防）</li>
+  </ul>
 </div>
 
+<h3>脱水予防（シックデイルール）</h3>
 <div class="box">
-<div class="box-title">SGLT2阻害薬が腎臓に良いと聞きましたが、なぜですか？</div>
-<p>ダパグリフロジン（フォシーガ）・エンパグリフロジン（ジャディアンス）などのSGLT2阻害薬は、糖尿病の有無にかかわらず CKD の進行を遅らせる効果があることが大規模試験（DAPA-CKD・EMPA-KIDNEY）で証明されています。作用機序は、腎糸球体内圧の低下（輸入細動脈の収縮）、尿タンパクの減少、炎症・線維化の抑制です。腎機能低下・心不全・糖尿病性腎症を伴う CKD に積極的に使用されます。</p>
+  <ul>
+    <li>夏場の高温・発熱・下痢・嘔吐などで脱水になると急激な腎機能低下（acute on chronic CKD）リスク</li>
+    <li><strong>シックデイ（体調不良時）</strong>の基本: ①ARB/ACE 阻害薬・利尿薬・SGLT2 阻害薬は一時休薬（担当医と事前に相談して判断基準を決めておく）、②水分を補給する、③体重・尿量を確認、③翌日改善しなければ受診</li>
+    <li>経口補水液（OS-1等）はカリウムを含むため、高K血症リスクがある方は主治医に確認</li>
+  </ul>
 </div>
 
+<h3>適度な運動と腎保護</h3>
 <div class="box">
-<div class="box-title">CKD の食事管理のポイントを教えてください。</div>
-<p>①減塩（1日6g未満）— 血圧管理と腎保護の基本②低タンパク食（0.6〜0.8g/kg/日）— G3b以降で進行を遅らせる可能性③カリウム制限（G3b以降、野菜・果物の茹でこぼし）④リン制限（G4以降、加工食品・乳製品・コーラを控える）⑤水分制限（透析期は医師指示に従う）。ただし制限の程度はステージと個人の状態により異なります。管理栄養士の指導のもとで行うことが推奨されます。</p>
+  <ul>
+    <li>透析前（G1〜G4）の CKD 患者では、<strong>有酸素運動（ウォーキング・水中歩行）が腎保護効果</strong>を持つことが示されている</li>
+    <li>週150分の中強度有酸素運動（ウォーキング・軽いジョギング）が目標。息が弾む程度が目安</li>
+    <li>過度な筋力トレーニングは蛋白質代謝産物（BUN・クレアチニン）を増加させることがあるため、主治医に相談</li>
+    <li>透析患者も運動継続が推奨されるが、透析日・非透析日で強度を調整する</li>
+  </ul>
 </div>
 
+<h2>記録のポイント</h2>
 <div class="box">
-<div class="box-title">慢性腎臓病の進行を遅らせるには何が重要ですか？</div>
-<p>①血圧コントロール（目標: 130/80mmHg 未満。ACE阻害薬・ARBが第一選択）②血糖管理（糖尿病性腎症の場合 HbA1c 7%未満）③タンパク尿の管理（尿タンパク/クレアチニン比を定期的にチェック）④SGLT2阻害薬の使用⑤禁煙・適度な運動⑥NSAIDs（ロキソプロフェン等）・造影剤の慎重使用　が腎機能保護に重要です。毎日の血圧・体重・尿量の記録が早期異常検知に役立ちます。</p>
+  <div class="box-title">毎日の記録</div>
+  <ul>
+    <li><strong>朝の血圧</strong>（家庭血圧計）: 起床後1時間以内・排尿後・朝食前に座位で2回測定し平均を記録</li>
+    <li><strong>体重</strong>: 毎朝同じ条件で測定。1日で1kg以上増加は浮腫の悪化サイン</li>
+    <li><strong>むくみの程度</strong>: 足首・すね・まぶたのむくみを朝・夕で確認（指で押して凹む「浮腫」）</li>
+    <li><strong>尿量</strong>（必要時）: G4〜G5 や浮腫がある方は24時間尿量の概算を記録</li>
+  </ul>
 </div>
-
 <div class="box">
-<div class="box-title">透析の準備はいつ頃から始めますか？</div>
-<p>一般的に eGFR が 15〜20 mL/min/1.73m²（G4後半〜G5）になった頃から腎代替療法（血液透析・腹膜透析・腎移植）の選択と準備を開始します。バスキュラーアクセス（シャント）の作製は透析開始の 6ヶ月〜1年前に行うのが理想です。主治医の腎臓内科医と早めに透析の選択について相談しておくことが重要で、症状日誌で「いつ eGFR が何まで下がったか」を記録しておくと医師との相談がスムーズです。</p>
+  <div class="box-title">採血結果の追跡</div>
+  <ul>
+    <li><strong>eGFR</strong>: 3ヶ月ごとの変化を折れ線グラフで可視化。前回比で10以上低下なら要注意</li>
+    <li><strong>Hb（ヘモグロビン）</strong>: 腎性貧血の管理。10 g/dL を下回ると倦怠感・息切れが強くなる</li>
+    <li><strong>K（カリウム）・P（リン）</strong>: 食事制限の効果確認と薬剤調整の判断材料</li>
+    <li><strong>アルブミン</strong>: 低栄養のモニタリング（低蛋白食の過剰制限に注意）</li>
+    <li><strong>HbA1c</strong>（糖尿病合併時）: 目標 7.0%未満（重症低血糖リスクに注意）</li>
+  </ul>
+</div>
+<div class="box">
+  <div class="box-title">食事記録</div>
+  <ul>
+    <li><strong>塩分</strong>: 食塩相当量 6g/日未満を目標。外食・加工食品のナトリウム表示を確認する習慣を</li>
+    <li><strong>カリウム</strong>: ステージに応じた目標値との比較。高カリウム食品の摂取頻度をチェック</li>
+    <li><strong>リン</strong>: 特に加工食品・清涼飲料・インスタント食品に多い「リン酸塩添加物」に注意</li>
+    <li><strong>蛋白質</strong>: 体重 1kg あたりの蛋白質摂取量を計算し、過剰制限で低栄養にならないよう管理</li>
+  </ul>
 </div>
 
-<div class="hero" style="text-align:center;margin-top:24px">
-<h2 style="border:none;color:#3730a3;margin:0 0 8px">今日から記録を始めましょう</h2>
-<p style="color:#4338ca;font-size:13px">完全無料・本人のみアクセス可能</p>
-<a class="cta" href="https://cares.advisers.jp/?d=ckd">健康日記を開く →</a>
+<a class="cta-btn" href="https://cares.advisers.jp/?disease=ckd" data-app-param="ckd" data-disease-label="慢性腎臓病（CKD）">今日から eGFR・血圧・食事を記録する →</a>
+
+<h2>よくある質問（FAQ）</h2>
+<div id="faq">
+  <div class="faq-item">
+    <div class="faq-q">Q. CKDはどのくらいのペースで悪化しますか？</div>
+    <div class="faq-a">CKDの進行速度は原因疾患・血圧コントロール・蛋白尿の量によって大きく異なります。一般的に1年あたりのeGFR低下は1〜3 mL/min/1.73m²が多いですが、蛋白尿が多い・血圧が高い・糖尿病合併のある方は5以上低下することもあります。3ヶ月間でeGFRが10以上低下した場合は速やかに腎臓専門医に紹介することが推奨されます。RAA系阻害薬・SGLT2阻害薬による治療と食事・血圧管理で進行を大幅に遅らせることができます。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. eGFR が低くても透析は必要ありませんか？</div>
+    <div class="faq-a">eGFRの数値だけで透析開始を決めるわけではありません。透析の適応は①eGFR＜15（G5）で尿毒症症状がある場合、②高カリウム血症・代謝性アシドーシス・肺水腫など緊急状態の場合に検討されます。eGFRが10〜15でも無症状なら透析を急がないこともあります。一方、eGFRが20〜25のうちに透析または腎移植の準備（シャント造設・腹膜透析カテーテル挿入など）を始めることが推奨されます。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 市販の鎮痛薬（ロキソニン）は飲んでも大丈夫ですか？</div>
+    <div class="faq-a">NSAIDs（ロキソプロフェン・イブプロフェン・ジクロフェナク等）はCKD患者には原則禁忌です。NSAIDsは腎血流を低下させ、急性腎障害（AKI）を引き起こすリスクがあります。特にeGFR＜30（G4〜G5）の方では1回の服用でも急性腎障害を起こす可能性があります。痛み止めが必要な場合はアセトアミノフェン（カロナール）を使用し、必ず主治医に相談してください。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. CKD と言われたら食事制限はすぐに必要ですか？</div>
+    <div class="faq-a">食事制限の内容はステージによって異なります。G1〜G2では塩分制限（6g/日未満）と適切な血圧管理が主体で、蛋白質・カリウム・リンの厳格な制限は通常不要です。G3から蛋白質制限（0.6〜0.8 g/kg/日）を開始し、必要に応じてカリウム・リン制限も加わります。G4〜G5では蛋白質・カリウム・リン・水分すべてを厳格に管理する必要があります。腎臓病専門の管理栄養士による個別指導を受けることを強くお勧めします。</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Q. 透析はどのような生活になりますか？</div>
+    <div class="faq-a">血液透析（HD）の場合、週3回・1回4〜5時間の通院が必要です。透析中は安静にしている時間が長いため、透析前後の時間の使い方を工夫する方が多いです。食事制限（カリウム・リン・水分・塩分）は継続しますが、透析により尿毒症症状が改善し食欲が戻ることが多いです。腹膜透析（PD）は自宅で毎日行うタイプで、通院は月2回程度ですが、バッグ交換の手技習得が必要です。透析を始めても就労を継続している方は多く、生活の質を保ちながら長く生きることが可能です。</div>
+  </div>
 </div>
 
-<p style="font-size:12px;color:#64748b;margin-top:20px">本情報は参考情報です。治療法の選択・食事制限の程度は必ず腎臓内科専門医・管理栄養士にご相談ください。</p>
-
-<h2>関連疾患ガイド</h2>
+<h2>関連疾患・ページ</h2>
 <div class="related">
-<a href="/diabetes.html">2型糖尿病</a>
-<a href="/hashimoto.html">橋本病・甲状腺</a>
-<a href="/ra.html">関節リウマチ</a>
-<a href="/sle.html">SLE（全身性エリテマトーデス）</a>
-<a href="/chronic_pain.html">慢性疼痛症候群</a>
-<a href="/insomnia.html">不眠症</a>
-<a href="/depression.html">うつ病</a>
-<a href="/gad.html">全般性不安障害</a>
-<a href="/me-cfs.html">ME/CFS</a>
-<a href="/burnout.html">バーンアウト</a>
-<a href="/hypertension.html">高血圧</a>
-<a href="/hyperlipidemia.html">脂質異常症</a>
+  <a href="https://cares.advisers.jp/diabetes_t2.html">2型糖尿病</a>
+  <a href="https://cares.advisers.jp/hypertension.html">高血圧症</a>
+  <a href="https://cares.advisers.jp/gout.html">痛風・高尿酸血症</a>
+  <a href="https://cares.advisers.jp/heart_failure.html">心不全</a>
+  <a href="https://cares.advisers.jp/anemia.html">鉄欠乏性貧血</a>
+  <a href="https://cares.advisers.jp/obesity.html">肥満症</a>
+  <a href="https://cares.advisers.jp/metabolic_syndrome.html">メタボリックシンドローム</a>
+  <a href="https://cares.advisers.jp/lupus.html">全身性エリテマトーデス</a>
 </div>
 
 <footer>
-<div><a href="https://cares.advisers.jp/">健康日記</a>・<a href="https://cares.advisers.jp/#privacy">プライバシー</a>・<a href="https://note.com/age">note</a>・<a href="mailto:info@bluemarl.in">問い合わせ</a></div>
-<div style="margin-top:8px;font-size:11px">本情報は参考情報です。健康上の判断は必ず医師にご相談ください。<br>© 2026 シェアーズ株式会社</div>
+  <p><a href="https://cares.advisers.jp/">健康日記トップ</a> <a href="https://cares.advisers.jp/#privacy">プライバシーポリシー</a> <a href="https://cares.advisers.jp/#terms">利用規約</a></p>
+  <p style="margin-top:8px">本ページは情報提供を目的としており、医療アドバイスではありません。急激な eGFR 低下・高カリウム血症など重篤な症状が現れた場合は直ちに医師または救急を受診してください。<br>© 2026 シェアーズ株式会社</p>
 </footer>
 </div>
-<script defer src="/js/analytics.js"></script>
-<script defer src="/js/disease-lp-enhancements.js"></script>
-<script defer src="/js/inapp-browser-banner.js"></script>
-<script defer src="/js/social-share.js"></script>
-<script defer src="/js/newsletter-signup.js"></script>
-<script defer src="/js/disease-affiliate-panel.js"></script>
-<script defer src="/js/a11y-enhancements.js"></script>
+
+<script src="js/disease-lp-enhancements.js" defer></script>
+<script src="js/inapp-browser-banner.js" defer></script>
+<script src="js/social-share.js" defer></script>
+<script src="js/newsletter-signup.js" defer></script>
+<script src="js/disease-affiliate-panel.js" defer></script>
+<script src="js/a11y-enhancements.js" defer></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YEHQ7MNRFX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-YEHQ7MNRFX');</script>
 </body>
 </html>

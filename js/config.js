@@ -46,6 +46,7 @@ var CONFIG = {
         { id: 'epilepsy', name: 'てんかん', icd: '8A60' },
         { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
         { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
+        { id: 'alzheimers', name: 'アルツハイマー型認知症（AD・MCI）', icd: '8A20' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
@@ -64,6 +65,7 @@ var CONFIG = {
       diseases: [
         { id: 'depression', name: 'うつ病（大うつ病性障害）', icd: '6A70' },
         { id: 'bipolar', name: '双極性障害', icd: '6A60' },
+        { id: 'schizophrenia', name: '統合失調症', icd: '6A20' },
         { id: 'gad', name: '全般性不安障害（GAD）', icd: '6B00' },
         { id: 'ptsd', name: 'PTSD（心的外傷後ストレス障害）', icd: '6B40' },
         { id: 'cptsd', name: '複雑性PTSD', icd: '6B41' },
@@ -101,6 +103,7 @@ var CONFIG = {
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
         { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' },
         { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'EE40' },
+        { id: 'atopic_dermatitis', name: 'アトピー性皮膚炎（AD・難治性）', icd: 'EA80' },
         { id: 'vitiligo', name: '白斑（尋常性白斑）', icd: 'EE60' },
         { id: 'herpes_zoster', name: '帯状疱疹（急性期・PHN予防）', icd: '1E91' }
       ]
@@ -141,7 +144,8 @@ var CONFIG = {
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
         { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' },
-        { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' }
+        { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' },
+        { id: 'ckd', name: '慢性腎臓病（CKD・慢性腎不全）', icd: 'GB61' }
       ]
     },
     {
@@ -478,6 +482,14 @@ var CONFIG = {
                           japan:     130_000, japanLabel: '年間約 13 万人 (推計)',   japanSource: '日本の出生数×産後うつ有病率 10〜15%' },
     herpes_zoster:      { world:  30_000_000, label: '年間約 3,000 万人 (推計)',      tier: 2, density: 'medium', source: '80歳までの生涯累積有病率 30%（世界推計）',
                           japan:   1_000_000, japanLabel: '年間約 100 万人発症',     japanSource: '国内疫学調査（MHLW）' },
+    alzheimers:         { world:  55_000_000, label: '約 5,500 万人',                tier: 2, density: 'high',   source: 'WHO 2023 認知症全体（うちAD約70%）',
+                          japan:   7_000_000, japanLabel: '約 700 万人（認知症全体）', japanSource: '厚生労働省 2024 年推計' },
+    schizophrenia:      { world:  24_000_000, label: '約 2,400 万人（有病率約0.3%）', tier: 2, density: 'high',   source: 'WHO 2023 推計',
+                          japan:     800_000, japanLabel: '約 80 万人',              japanSource: '精神疾患患者調査（厚生労働省）' },
+    ckd:                { world: 850_000_000, label: '約 8.5 億人',                  tier: 1, density: 'high',   source: 'GBD 2017 CKD有病率',
+                          japan:  14_800_000, japanLabel: '約 1,480 万人',           japanSource: '日本腎臓学会 2023 年推計' },
+    atopic_dermatitis:  { world: 223_000_000, label: '約 2.23 億人 (推計)',           tier: 2, density: 'medium', source: '世界有病率約 2.7%（成人）',
+                          japan:   8_000_000, japanLabel: '約 800 万人',             japanSource: '日本皮膚科学会推計（成人・小児含む）' },
   },
 
   // ============================================================
@@ -1483,6 +1495,22 @@ var CONFIG = {
     herpes_zoster: [
       '帯状疱疹が右側胸部に出た。抗ウイルス薬（バラシクロビル）を3日前から飲んでいる。水疱が多く痛みが強い（NRS 8/10）。痂皮化の進行と痛みの変化を毎日記録して主治医に報告したい。',
       '帯状疱疹後神経痛（PHN）への移行が心配。皮疹は治ったが3ヶ月経っても痛みが続いている。プレガバリンを開始。痛みのスコアと薬の効果を記録して次のペインクリニック受診に備えたい。'
+    ],
+    alzheimers: [
+      '（娘が記録）母が同じことを何度も繰り返して聞く。先週の孫の誕生日も覚えていない。もの忘れ外来でMMSE 22点・アルツハイマー型と診断。ドネペジルを始めた。日々の変化を記録して主治医に報告したい。',
+      '74歳。アリセプトを飲み始めて3ヶ月。デイサービスに週2回通っている。夕方に「家に帰りたい」と言い出す夕暮れ症候群がある。BPSD と認知機能の変化を毎日記録して受診に役立てたい。'
+    ],
+    schizophrenia: [
+      '統合失調症と診断されてオランザピンを服用中。幻聴がまた強くなってきた（「お前はダメだ」という声が1日に何度も聞こえる）。眠れない夜が続いている。服薬・症状・睡眠を記録して主治医に正確に伝えたい。',
+      '統合失調症でアリピプラゾールLAI（月1回注射）に切り替えた。デイケアに週3回通っている。就労移行支援施設の見学を先週した。再発の前兆サインと気分の変化を毎日記録して社会復帰を目指したい。'
+    ],
+    ckd: [
+      'CKD G3b（eGFR 32）と診断されて半年。タンパク尿が続いている（尿たんぱく/クレアチニン比 0.8）。SGLT2阻害薬（ダパグリフロジン）を開始した。eGFRと血圧・体重を毎日記録して腎機能の悪化を防ぎたい。',
+      '糖尿病性腎臓病（DKD）でCKD G4（eGFR 18）。カリウム制限食（野菜は茹でこぼし）を実践中。透析を少しでも遅らせたい。食事内容・血圧・体重・尿量を毎日記録して栄養士との相談に役立てたい。'
+    ],
+    atopic_dermatitis: [
+      '成人型アトピー性皮膚炎でEASIスコア 24（中等症〜重症）。デュピルマブ（デュピクセント）を2週間に1回注射し始めて3ヶ月。痒みが7/10→3/10に改善した。皮膚の状態・かゆみ・睡眠を毎日記録したい。',
+      'アトピー性皮膚炎でステロイド外用薬を5年使い続けている。皮膚が薄くなってきた（皮膚萎縮）。JAK阻害薬（アブロシチニブ）に変更することになった。治療効果と副作用を記録して主治医に報告したい。'
     ],
     mcs: [
       '化学物質過敏症（MCS）と診断されて5年。香水・消臭剤・排気ガスで頭痛・めまい・息苦しさが出る。外出が難しくなり引きこもり気味。曝露した化学物質と症状を記録して、回避する品目を特定したい。',
@@ -4240,6 +4268,65 @@ var CONFIG = {
       medications: [
         { timestamp: '2026-01-15T08:00:00Z', name: 'ドキシサイクリン 200mg/日（終了）', notes: '21日間終了。抗菌薬療法完了。PTLDSに対する追加治療は保留。' },
         { timestamp: '2026-03-25T08:00:00Z', name: 'CoQ10 200mg + マグネシウム 200mg', notes: '朝食後。抗酸化・ミトコンドリアサポート（主治医承認済み補助サプリ）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ckd: {
+      diseases: ['慢性腎臓病（CKD G3b・糖尿病性腎臓病）'],
+      profile: { age: 63, gender: 'male', height: 170, weight: 74 },
+      textEntries: [
+        { timestamp: '2026-03-10T09:00:00Z', category: 'consultation', title: 'CKD G3b 診断', content: 'eGFR 32（前回半年前は 41）。尿蛋白/クレアチニン比 0.85（高値）。糖尿病性腎臓病（DKD）の診断で腎臓内科に紹介された。SGLT2阻害薬（ダパグリフロジン 10mg）を開始。「透析は5年後かもしれないが、生活改善と薬で遅らせられる」と説明を受けた。' },
+        { timestamp: '2026-03-17T08:00:00Z', category: 'nutrition', title: '腎臓食 開始', content: '管理栄養士の指導で腎臓食開始。タンパク質 0.8g/kg/日（63g/日）・塩分 6g/日未満・カリウム 1500mg/日未満。野菜は必ず茹でこぼし。「調理法で50%カリウムが抜ける」と教わった。ほうれん草・バナナ・生ジュースを控えている。' },
+        { timestamp: '2026-03-24T09:00:00Z', category: 'vitals', title: '血圧・体重記録', content: '血圧：朝 138/85 mmHg・夜 132/82 mmHg。目標 130/80 以下。体重 74kg（BMI 25.6）。ダパグリフロジン開始後、尿量が増えた感じがする。むくみが少し改善。' },
+        { timestamp: '2026-03-31T10:00:00Z', category: 'medication', title: 'フィネレノン追加', content: '受診：eGFR 34（前回 32）→若干改善。ダパグリフロジンの腎保護効果が出始めているかもしれない。尿蛋白/クレアチニン比 0.62（前回 0.85 から改善）。フィネレノン（ケレンディア）12.5mgを追加処方。カリウム上昇のモニタリングが必要と言われた。' },
+        { timestamp: '2026-04-07T09:00:00Z', category: 'symptoms', title: '倦怠感・むくみ', content: '足首のむくみが続く（特に夕方）。倦怠感もある。Hb 11.2（やや低め・腎性貧血）。ダルベポエチン（造血薬）の適応を次回受診で相談予定。減塩食を続けているが、外食時が難しい。ラーメンは禁止。' },
+        { timestamp: '2026-04-14T10:00:00Z', category: 'vitals', title: 'カリウム急上昇', content: '採血でカリウム 5.8 mEq/L（基準値上限 5.0）。フィネレノンの影響の可能性。主治医に連絡したところ、フィネレノンを一時中止してカリウムの高い食品（バナナ・じゃがいも・豆類）を更に制限するよう指示。1週間後に再検。' },
+        { timestamp: '2026-04-21T09:00:00Z', category: 'vitals', title: 'カリウム改善', content: 'カリウム 5.1 mEq/L（改善）。フィネレノン 12.5mg 再開。血圧 126/78（目標達成！）。eGFR 35。徐々に腎機能が安定してきている感じ。管理栄養士との相談で「間食はゼリー（カリウム少ない）にする」ことにした。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 6, pain_level: 2, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 },
+        { timestamp: '2026-04-21T09:00:00Z', fatigue_level: 4, pain_level: 1, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-10T09:00:00Z', name: 'CKD 評価検査（初診）', findings: 'eGFR 32, Cr 1.82, BUN 28, K 4.8, P 3.5, Hb 12.1, HbA1c 7.2, 尿蛋白/Cr比 0.85, 血圧 142/88' },
+        { timestamp: '2026-04-14T09:00:00Z', name: '定期採血（フィネレノン開始後）', findings: 'eGFR 34, K 5.8（高値→フィネレノン一時中止）, Hb 11.2, P 3.8, Ca 9.1, HbA1c 7.0' },
+        { timestamp: '2026-04-21T09:00:00Z', name: '再検', findings: 'eGFR 35, K 5.1（改善）, 血圧 126/78（目標達成）, 尿蛋白/Cr比 0.55（大幅改善）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-10T08:00:00Z', name: 'ダパグリフロジン（フォシーガ）10mg', notes: '朝食前。SGLT2阻害薬・腎保護・心保護。尿路感染症に注意。' },
+        { timestamp: '2026-03-31T08:00:00Z', name: 'フィネレノン（ケレンディア）12.5mg', notes: '朝食後。非ステロイド型MRA。カリウム高値時は一時中止。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'テルミサルタン（ミカルディス）40mg', notes: '朝。ARB・降圧・腎保護（タンパク尿軽減）。' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    atopic_dermatitis: {
+      diseases: ['アトピー性皮膚炎（成人型・重症）'],
+      profile: { age: 32, gender: 'female', height: 163, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-03-08T09:00:00Z', category: 'symptoms', title: 'デュピクセント開始前評価', content: 'EASI スコア 31（重症）。かゆみNRS 9/10（夜中にかき壊して眠れない）。ストロングクラスのステロイド外用薬（ベタメタゾン）を5年使い続けてきたが皮膚萎縮が出てきた。皮膚科専門医にデュピルマブ（デュピクセント）の適応と判断され、初回投与（600mg）を受けた。' },
+        { timestamp: '2026-03-22T10:00:00Z', category: 'symptoms', title: 'デュピクセント2週後', content: 'デュピクセント 300mg 2回目注射。かゆみNRS 9→6/10（改善！）。EASI スコア 31→22（まだ重症だが下がっている）。注射部位の発赤が少しあった。夜中のかき壊しが週3〜4回から週1〜2回に減少。睡眠が少し取れるようになった。ステロイド外用は顔のみ弱いランクに変更。' },
+        { timestamp: '2026-04-05T09:00:00Z', category: 'symptoms', title: '1ヶ月評価', content: 'デュピクセント1ヶ月（3回目注射）。かゆみNRS 6→3/10（劇的改善！）。EASI 22→9（中等症→軽症）。顔のステロイドをタクロリムス（プロトピック）に切り替えた。結膜炎が右目に出てきた（デュピクセントの既知の副作用）。眼科受診してヒアルロン酸点眼を処方された。' },
+        { timestamp: '2026-04-12T09:00:00Z', category: 'activity', title: '睡眠改善・仕事復帰', content: 'かゆみが夜間にほぼなくなった。8時間の睡眠が取れるようになった。職場への復帰（週3日→フルタイム）を開始した。皮膚のジュクジュクが消えてドライスキンのみになった。保湿剤（ヘパリン類似物質）を1日2回継続。' },
+        { timestamp: '2026-04-19T10:00:00Z', category: 'vitals', title: '2ヶ月評価・受診', content: 'EASI スコア 6（軽症）。かゆみNRS 2/10（ほぼない日も）。IgE 総合値 3,200→2,800（低下傾向）。好酸球 580→420（改善）。デュピクセントを継続（2週ごと注射）。結膜炎は点眼で改善。ステロイド外用は週2回のプロアクティブ療法のみ。' },
+        { timestamp: '2026-04-26T09:00:00Z', category: 'symptoms', title: 'ストレスによる悪化', content: '仕事の締め切りが重なってストレスが高まった週。かゆみNRS 2→5/10に一時的に上昇。掻破はなし（コントロールできている）。「ストレスは増悪因子」と改めて実感。ステロイドを少し追加して2日で落ち着いた。保湿の頻度を増やした（1日3回）。' },
+        { timestamp: '2026-05-03T09:00:00Z', category: 'symptoms', title: '3ヶ月評価', content: 'EASI スコア 4（軽症維持）。かゆみNRS 2/10（安定）。デュピクセントは2週ごとから4週ごと延長を主治医と検討中（効果が安定しているため）。皮膚はほぼ正常に見えるようになった。「アトピーで受診するたびに悪化一辺倒だったのが、初めて改善の記録が続いた」と実感。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 5, sleep_quality: 3 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-08T09:00:00Z', name: 'アトピー評価（デュピクセント開始前）', findings: 'IgE 3,200 IU/mL（高値）, 好酸球 580（高値）, TARC 2,800 pg/mL（重症マーカー）, Hb 11.8, CRP 0.4' },
+        { timestamp: '2026-04-19T09:00:00Z', name: '2ヶ月後評価', findings: 'IgE 2,800（低下傾向）, 好酸球 420（改善）, TARC 680（大幅改善）, EASI 6（軽症）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-08T08:00:00Z', name: 'デュピルマブ（デュピクセント）300mg', notes: '2週ごと皮下注射。IL-4/IL-13受容体拮抗薬。初回のみ600mg。結膜炎に注意。' },
+        { timestamp: '2026-04-05T08:00:00Z', name: 'タクロリムス（プロトピック）0.1%軟膏', notes: '顔・首に使用。ステロイドフリー。プロアクティブ療法（週2回維持）。' },
+        { timestamp: '2026-01-01T08:00:00Z', name: 'ヘパリン類似物質（ヒルドイド）ローション', notes: '全身に1日2〜3回。保湿の基本。入浴後すぐに塗る。' }
       ],
       sleepData: [], activityData: [], meals: []
     }
