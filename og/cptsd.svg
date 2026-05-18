@@ -21,7 +21,7 @@
   <g transform="translate(80,380)">
     <rect x="0" y="0" width="520" height="80" rx="12" fill="#fff" opacity="0.85"/>
     <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">ICD-11 診断（2019年 WHO 公式認定）</text>
-    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4c1d95">ICD-11 QE84  ・  PTSD + DSO（自己組織化の障害）</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4c1d95">ICD-11 6B41  ・  PTSD + DSO（自己組織化の障害）</text>
     <rect x="540" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
     <text x="560" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">推奨治療</text>
     <text x="560" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4c1d95">EMDR  /  IFS  /  SE</text>
