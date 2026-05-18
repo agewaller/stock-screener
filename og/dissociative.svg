@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ff"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <g transform="translate(80,90)">
+    <text x="0" y="0" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#7c3aed" letter-spacing="2">健康日記  HEALTH DIARY</text>
+    <text x="0" y="100" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="64" font-weight="900" fill="#4c1d95">解離症</text>
+    <text x="0" y="162" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="36" font-weight="800" fill="#5b21b6">（DID・解離性健忘・DPDR）</text>
+    <text x="0" y="218" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="24" font-weight="600" fill="#64748b">解離エピソード・感情状態・トラウマケアを AI で記録・管理</text>
+  </g>
+  <g transform="translate(80,380)">
+    <rect x="0" y="0" width="200" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="20" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">有病率</text>
+    <text x="20" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#4c1d95">約2%</text>
+    <rect x="220" y="0" width="280" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="240" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">主な症状</text>
+    <text x="240" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4c1d95">健忘・離人・同一性混乱</text>
+    <rect x="520" y="0" width="200" height="80" rx="12" fill="#fff" opacity="0.85"/>
+    <text x="540" y="36" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="16" fill="#64748b">ICD-11</text>
+    <text x="540" y="64" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="28" font-weight="800" fill="#4c1d95">6B60</text>
+  </g>
+  <g transform="translate(80,510)">
+    <text x="0" y="28" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="22" font-weight="700" fill="#4c1d95">📝  完全無料  ・  広告なし  ・  AI 分析</text>
+    <text x="0" y="62" font-family="-apple-system, Hiragino Sans, Noto Sans JP, sans-serif" font-size="20" font-weight="600" fill="#7c3aed">cares.advisers.jp/dissociative.html</text>
+  </g>
+</svg>
