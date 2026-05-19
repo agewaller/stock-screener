@@ -18,7 +18,7 @@ App.prototype.render_login = function() {
         <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${cat.name}</span>
         <span style="font-size:10px;color:var(--text-muted)">(${cat.diseases.length})</span>
       </div>
-      <div style="display:none;flex-wrap:wrap;gap:6px;padding-left:22px">
+      <div class="disease-list-panel" style="display:none;flex-wrap:wrap;gap:6px;padding-left:22px">
         ${cat.diseases.map(d => {
           // Surface world/Japan patient counts as a tooltip + a small
           // inline "世界 X・国内 Y" badge. Desktop users see the tooltip
@@ -98,7 +98,7 @@ App.prototype.render_login = function() {
         </div>
         <div id="disease-picker" style="display:${selectedCount > 0 ? 'block' : 'none'};margin-top:10px">
           <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
-            oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
+            oninput="(function(q){var lower=q.toLowerCase();document.querySelectorAll('.disease-checkbox').forEach(function(cb){var label=cb.closest('label');var match=!lower||label.textContent.toLowerCase().includes(lower);label.style.display=match?'':'none';if(match&&lower){var list=label.closest('.disease-list-panel');if(list){list.style.display='flex';var toggle=list.previousElementSibling&&list.previousElementSibling.querySelector('.toggle');if(toggle)toggle.textContent='-';}}});if(!lower)document.querySelectorAll('.disease-list-panel').forEach(function(el){el.style.display='none';var t=el.previousElementSibling&&el.previousElementSibling.querySelector('.toggle');if(t)t.textContent='+';})})(this.value)">
           ${categoryHtml}
           <div id="selected-disease-scale" style="display:none;margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 8px 8px 0"></div>
         </div>
