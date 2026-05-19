@@ -1,0 +1,38 @@
+# JSRM scoring rules (human-readable)
+# This file is documentation. Actual scoring is implemented in lib/scoring.ts.
+
+severity:
+  scale: "0..5"
+  guidelines:
+    0: "通常範囲内の常態的活動（routine）"
+    1: "わずかに通常から逸脱（minor)"
+    2: "明確な逸脱・抗議や警告レベル（notable)"
+    3: "侵入・接近・大規模演習・公的警告（significant)"
+    4: "封鎖・限定的衝突・大規模動員・有事関連法発動準備（serious)"
+    5: "実戦・領域内攻撃・正規兵力交戦（critical)"
+
+confidence:
+  scale: "0..1"
+  notes: |
+    一次情報（政府公表）= 0.9-1.0
+    主要報道機関の確報 = 0.7-0.9
+    複数二次ソース    = 0.5-0.7
+    単一二次ソース    = 0.3-0.5
+    SNS/匿名/未確認   = 0.0-0.3
+
+aggregation:
+  category_score: "0.65 * max(adjusted_severity) + 0.35 * avg(adjusted_severity)"
+  overall_score: "Σ(category_score * category_weight)"
+  level_thresholds:
+    0: "score < 0.5"
+    1: "0.5 <= score < 1.25"
+    2: "1.25 <= score < 2.25"
+    3: "2.25 <= score < 3.25"
+    4: "3.25 <= score < 4.25"
+    5: "score >= 4.25"
+
+ethical_constraints:
+  - "断定表現禁止：『戦争が起きる』とは書かない。『リスク上昇を検知』と記す"
+  - "脆弱性・作戦・攻撃手法の助言を含めない"
+  - "特定民族・国民への憎悪を煽る表現を含めない"
+  - "未確認情報は status=raw のまま、公開スコア計算からは除外可"

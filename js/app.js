@@ -39,8 +39,69 @@ var App = class App {
   }
 
   isAdmin() {
-    const user = store.get('user');
-    return user && this.ADMIN_EMAILS.includes(user.email);
+    // Multi-source admin check. Previously this only read from
+    // store.get('user').email, which silently returned false whenever
+    // the in-memory store was stale or never populated (e.g. right
+    // after a hard refresh before the auth state listener ran). The
+    // user got "管理者権限がない" even though they were signed in as
+    // agewaller@gmail.com. We now consult three sources in order:
+    //   1. store.get('user').email
+    //   2. FirebaseBackend.auth.currentUser.email
+    //   3. firebase.auth().currentUser.email
+    // Any matching one grants admin. The hardcoded owner email is
+    // ALWAYS admin (matches removeAdmin's owner-protect logic).
+    const email = this.currentUserEmail();
+    if (!email) return false;
+    // The owner is ALWAYS admin regardless of stale localStorage /
+    // store state, so agewaller@gmail.com can never be locked out of
+    // /admin or key configuration. Comparison is normalized (lowercase,
+    // trimmed) because Firebase surfaces the address with varying
+    // casing depending on the sign-in path.
+    if (email === 'agewaller@gmail.com') return true;
+    return Array.isArray(this.ADMIN_EMAILS)
+      && this.ADMIN_EMAILS.map(e => String(e || '').trim().toLowerCase()).includes(email);
+  }
+
+  currentUserEmail() {
+    const norm = (e) => {
+      const s = String(e || '').trim().toLowerCase();
+      return s || null;
+    };
+    // Prefer the LIVE Firebase auth user (authoritative) over the
+    // in-memory store, which can be stale right after a hard refresh
+    // before the auth-state listener runs — that staleness is what
+    // previously made the owner silently fail the admin check.
+    try {
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        const fu = firebase.auth().currentUser;
+        if (fu && fu.email) return norm(fu.email);
+      }
+    } catch (_) {}
+    try {
+      if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth
+          && FirebaseBackend.auth.currentUser && FirebaseBackend.auth.currentUser.email) {
+        return norm(FirebaseBackend.auth.currentUser.email);
+      }
+    } catch (_) {}
+    try {
+      const u = store.get('user');
+      if (u && u.email) return norm(u.email);
+    } catch (_) {}
+    return null;
+  }
+
+  // Fetch the signed-in user's Firebase ID token for authenticating
+  // admin-only Worker endpoints (/admin/keys). The Worker verifies the
+  // token server-side and checks the email == owner. Returns '' when
+  // not signed in (the break-glass token path is then required).
+  async getAdminIdToken() {
+    try {
+      let u = null;
+      if (typeof firebase !== 'undefined' && firebase.auth) u = firebase.auth().currentUser;
+      if (!u && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.auth) u = FirebaseBackend.auth.currentUser;
+      if (u && u.getIdToken) return await u.getIdToken(/* forceRefresh */ false);
+    } catch (_) {}
+    return '';
   }
 
   // Boot-time canary: walk through every onclick / on* attribute in
@@ -149,6 +210,17 @@ var App = class App {
       if (ref && /^[a-zA-Z0-9_\-]{3,32}$/.test(ref)) {
         localStorage.setItem('referrer_id', ref);
         console.log('[Referral] captured ref=' + ref);
+      }
+      // ?d= pre-selects a disease from LP CTAs (e.g. /bipolar.html → ?d=bipolar).
+      // Only apply if the user hasn't already chosen diseases, so we don't
+      // clobber an existing selection on return visits.
+      const dParam = params.get('d');
+      if (dParam && !(store.get('selectedDiseases') || []).length) {
+        const allIds = (CONFIG.DISEASE_CATEGORIES || []).flatMap(c => c.diseases.map(d => d.id));
+        if (allIds.includes(dParam)) {
+          store.set('selectedDiseases', [dParam]);
+          console.log('[d-param] pre-selected disease:', dParam);
+        }
       }
     } catch (_) {}
 
@@ -406,10 +478,12 @@ var App = class App {
     for (const [fbKey, storeKey, label] of subs) {
       let cloudCount = 0, oldest = null, newest = null, errMsg = '';
       try {
-        const snap = await FirebaseBackend.userCollection(fbKey).limit(1000).get();
-        cloudCount = snap.size;
-        snap.forEach(d => {
-          const data = d.data() || {};
+        // Full paginated count (no .limit cap) so the diagnosis reflects
+        // the TRUE number of records in Firestore — otherwise a heavy
+        // user would see a misleading ceiling here too.
+        const docs = await FirebaseBackend._fetchAllDocs(FirebaseBackend.userCollection(fbKey));
+        cloudCount = docs.length;
+        docs.forEach(data => {
           const t = data.timestamp || data.createdAt || data.date || data.recordedAt;
           let ms = 0;
           if (t && typeof t === 'object' && typeof t.toMillis === 'function') ms = t.toMillis();
@@ -505,28 +579,54 @@ var App = class App {
     }
   }
 
-  loadApiKeyFields() {
-    // Load proxy URL (show default if not custom-set)
-    const proxyEl = document.getElementById('input-proxy-url');
-    if (proxyEl) {
-      const proxyStored = localStorage.getItem('anthropic_proxy_url');
-      proxyEl.value = proxyStored || 'https://stock-screener.agewaller.workers.dev';
-    }
+  // Build auth headers for admin-only Worker endpoints. Primary path:
+  // the owner's Firebase ID token (verified server-side). Break-glass
+  // path: a manually entered ADMIN_WRITE_TOKEN, so the owner is never
+  // locked out even if Firebase auth itself is unavailable.
+  async _adminAuthHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    const idToken = await this.getAdminIdToken();
+    if (idToken) headers['Authorization'] = 'Bearer ' + idToken;
+    const tokEl = document.getElementById('input-admin-token');
+    const tok = tokEl && tokEl.value.trim();
+    if (tok) headers['x-admin-token'] = tok;
+    return headers;
+  }
 
+  async loadApiKeyFields() {
     const keys = ['anthropic', 'openai', 'google'];
+    // Inputs are always blank: stored key values are NEVER returned to
+    // the browser. We only show whether each provider is configured.
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
-      const stored = localStorage.getItem('apikey_' + k);
-      if (el && stored) {
-        el.value = stored;
-      }
+      if (el) { el.value = ''; el.placeholder = '設定済みの場合も表示されません（再入力で上書き）'; }
     });
-    // Update status badge
     const statusEl = document.getElementById('api-key-status');
     if (statusEl) {
-      const hasAny = keys.some(k => localStorage.getItem('apikey_' + k));
-      statusEl.className = 'tag ' + (hasAny ? 'tag-success' : 'tag-warning');
-      statusEl.textContent = hasAny ? 'APIキー設定済' : 'APIキー未設定';
+      statusEl.className = 'tag';
+      statusEl.textContent = '確認中...';
+      try {
+        const resp = await fetch(AIEngine.PROXY_URL + '/admin/key-status', {
+          method: 'GET',
+          headers: await this._adminAuthHeaders()
+        });
+        if (resp.ok) {
+          const s = await resp.json();
+          const configured = !!(s && (s.anthropic || s.configured));
+          statusEl.className = 'tag ' + (configured ? 'tag-success' : 'tag-warning');
+          const on = [];
+          if (s && s.anthropic) on.push('Claude');
+          if (s && s.openai) on.push('GPT');
+          if (s && s.google) on.push('Gemini');
+          statusEl.textContent = configured ? ('設定済: ' + on.join(' / ')) : 'APIキー未設定';
+        } else {
+          statusEl.className = 'tag tag-warning';
+          statusEl.textContent = (resp.status === 401 || resp.status === 403) ? '管理者ログインが必要' : '状態を取得できません';
+        }
+      } catch (_) {
+        statusEl.className = 'tag tag-warning';
+        statusEl.textContent = '状態を取得できません';
+      }
     }
   }
 
@@ -538,60 +638,53 @@ var App = class App {
 
   async saveApiKeys() {
     if (!this.isAdmin()) {
-      Components.showToast('APIキー設定は管理者専用です', 'error');
+      const seen = this.currentUserEmail() || '(未ログイン)';
+      Components.showToast(
+        'APIキー設定は管理者専用です。現在のログイン: ' + seen
+        + '\n管理者は agewaller@gmail.com です。一度ログアウト → 再ログインしてください。',
+        'error'
+      );
       return;
     }
     const keys = ['anthropic', 'openai', 'google'];
     const keyData = {};
-    let saved = 0;
-    let proxyUrl = '';
-    // Save proxy URL
-    const proxyEl = document.getElementById('input-proxy-url');
-    if (proxyEl && proxyEl.value.trim()) {
-      proxyUrl = proxyEl.value.trim();
-      localStorage.setItem('anthropic_proxy_url', proxyUrl);
-      saved++;
-    }
-
+    let provided = 0;
     keys.forEach(k => {
       const el = document.getElementById('input-apikey-' + k);
-      if (el && el.value.trim()) {
-        localStorage.setItem('apikey_' + k, el.value.trim());
-        keyData[k] = el.value.trim();
-        saved++;
-      }
+      if (el && el.value.trim()) { keyData[k] = el.value.trim(); provided++; }
     });
-    if (saved > 0) {
-      // Save to global admin config so all users inherit these settings
-      if (FirebaseBackend.initialized) {
-        const globalConfig = { apiKeys: keyData };
-        if (proxyUrl) globalConfig.proxyUrl = proxyUrl;
-        // Include the current Anthropic transport mode so other users
-        // inherit the admin's choice (direct vs proxy).
-        const mode = localStorage.getItem('anthropic_mode');
-        if (mode) globalConfig.anthropicMode = mode;
-        await FirebaseBackend.saveGlobalConfig(globalConfig);
-      } else {
-        Components.showToast(saved + '個のAPIキーを保存しました（ローカル）', 'success');
-      }
-      this.loadApiKeyFields();
-    } else {
+    if (provided === 0) {
       Components.showToast('保存するAPIキーがありません', 'error');
+      return;
+    }
+    try {
+      const resp = await fetch(AIEngine.PROXY_URL + '/admin/keys', {
+        method: 'POST',
+        headers: await this._adminAuthHeaders(),
+        body: JSON.stringify({ keys: keyData })
+      });
+      if (resp.ok) {
+        // Wipe the inputs immediately so the raw key never lingers in
+        // the DOM after a successful server-side save.
+        keys.forEach(k => { const el = document.getElementById('input-apikey-' + k); if (el) el.value = ''; });
+        const tokEl = document.getElementById('input-admin-token'); if (tokEl) tokEl.value = '';
+        Components.showToast(provided + '個のAPIキーをサーバーに保存しました', 'success');
+        this.loadApiKeyFields();
+      } else if (resp.status === 401 || resp.status === 403) {
+        Components.showToast('保存できません: 管理者として認証されていません。Google で agewaller@gmail.com でログインし直すか、緊急アクセストークンを入力してください。', 'error');
+      } else {
+        const t = await resp.text().catch(() => '');
+        Components.showToast('保存に失敗しました（' + resp.status + '）: ' + t.slice(0, 120), 'error');
+      }
+    } catch (e) {
+      Components.showToast('保存に失敗しました: ' + (e.message || e), 'error');
     }
   }
 
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-
     const model = store.get('selectedModel') || 'claude-opus-4-6';
-    const apiKey = aiEngine.getApiKey(model);
-
-    if (!apiKey) {
-      if (result) result.innerHTML = '<div style="color:var(--danger);font-size:12px">APIキーが設定されていません。上のフィールドにキーを入力して「保存」してください。</div>';
-      return;
-    }
-
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -605,16 +698,24 @@ var App = class App {
       Components.showToast('APIキー設定は管理者専用です', 'error');
       return;
     }
-    ['anthropic', 'openai', 'google'].forEach(k => {
-      localStorage.removeItem('apikey_' + k);
-      const el = document.getElementById('input-apikey-' + k);
-      if (el) el.value = '';
-    });
-    if (FirebaseBackend.initialized) {
-      await FirebaseBackend.saveGlobalConfig({ apiKeys: {} });
+    try {
+      const resp = await fetch(AIEngine.PROXY_URL + '/admin/keys', {
+        method: 'POST',
+        headers: await this._adminAuthHeaders(),
+        body: JSON.stringify({ clear: true })
+      });
+      if (resp.ok) {
+        ['anthropic', 'openai', 'google'].forEach(k => { const el = document.getElementById('input-apikey-' + k); if (el) el.value = ''; });
+        Components.showToast('サーバー上のすべてのAPIキーを削除しました', 'info');
+        this.loadApiKeyFields();
+      } else if (resp.status === 401 || resp.status === 403) {
+        Components.showToast('削除できません: 管理者として認証されていません。', 'error');
+      } else {
+        Components.showToast('削除に失敗しました（' + resp.status + '）', 'error');
+      }
+    } catch (e) {
+      Components.showToast('削除に失敗しました: ' + (e.message || e), 'error');
     }
-    Components.showToast('すべてのAPIキーを削除しました', 'info');
-    this.loadApiKeyFields();
   }
 
   // ---- Auth ----
@@ -716,10 +817,7 @@ var App = class App {
       }
     }
 
-    // Default to ME/CFS if nothing selected
-    if (!store.get('selectedDisease')) {
-      store.set('selectedDisease', { id: 'mecfs', name: 'ME/CFS', fullName: '筋痛性脳脊髄炎/慢性疲労症候群', icon: '🧠', color: '#6C63FF' });
-    }
+
 
     // Load default prompts
     if (!store.get('customPrompts') || Object.keys(store.get('customPrompts')).length === 0) {
@@ -1283,6 +1381,62 @@ ${recentText || '記録なし'}
       bipolar: { ja: '双極性障害', en: 'bipolar disorder' },
       ptsd: { ja: 'PTSD トラウマ', en: 'PTSD trauma' },
       adhd: { ja: 'ADHD 発達障害', en: 'ADHD' },
+      migraine: { ja: '片頭痛 偏頭痛', en: 'migraine' },
+      mcas: { ja: 'MCAS マスト細胞', en: 'MCAS mast cell' },
+      eds: { ja: 'EDS エーラスダンロス', en: 'Ehlers-Danlos syndrome' },
+      ra: { ja: '関節リウマチ RA', en: 'rheumatoid arthritis' },
+      sle: { ja: '全身性エリテマトーデス SLE ループス', en: 'lupus SLE' },
+      asd: { ja: '自閉スペクトラム症 ASD 発達障害', en: 'autism spectrum disorder' },
+      crohns: { ja: 'クローン病 炎症性腸疾患 IBD', en: "Crohn's disease" },
+      gad: { ja: '全般性不安障害 GAD 不安症', en: 'generalized anxiety disorder' },
+      sjogrens: { ja: 'シェーグレン症候群 ドライアイ ドライマウス', en: "Sjogren's syndrome" },
+      ocd: { ja: '強迫性障害 OCD 強迫症', en: 'OCD obsessive compulsive disorder' },
+      epilepsy: { ja: 'てんかん 発作日誌', en: 'epilepsy seizure' },
+      burnout: { ja: 'バーンアウト症候群 燃え尽き症候群', en: 'burnout syndrome' },
+      parkinsons: { ja: 'パーキンソン病 振戦', en: "Parkinson's disease" },
+      ms: { ja: '多発性硬化症 MS 神経内科', en: 'multiple sclerosis' },
+      chronic_pain: { ja: '慢性疼痛 ペインクリニック 神経障害性疼痛', en: 'chronic pain' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖症', en: 'panic disorder' },
+      endometriosis: { ja: '子宮内膜症 月経痛 ジエノゲスト 婦人科', en: 'endometriosis' },
+      diabetes: { ja: '糖尿病 血糖値 HbA1c 糖尿病内科', en: 'type 2 diabetes' },
+      atopy: { ja: 'アトピー性皮膚炎 かゆみ デュピクセント 皮膚科', en: 'atopic dermatitis' },
+      asthma: { ja: '気管支喘息 発作 吸入ステロイド 呼吸器内科', en: 'asthma' },
+      ckd: { ja: '慢性腎臓病 CKD eGFR 腎臓内科 透析', en: 'chronic kidney disease' },
+      heart_failure: { ja: '心不全 体重管理 息切れ 循環器内科', en: 'heart failure' },
+      gout: { ja: '痛風 高尿酸血症 発作記録 尿酸値', en: 'gout hyperuricemia' },
+      osteoporosis: { ja: '骨粗鬆症 骨密度 整形外科 骨折予防', en: 'osteoporosis' },
+      menopause: { ja: '更年期障害 ホットフラッシュ HRT 婦人科', en: 'menopause syndrome' },
+      schizophrenia: { ja: '統合失調症 幻聴 妄想 精神科 デイケア', en: 'schizophrenia' },
+      alzheimers: { ja: 'アルツハイマー病 認知症 物忘れ 神経内科', en: 'Alzheimer disease' },
+      sad: { ja: '社会不安障害 社交不安症 対人恐怖 精神科 心療内科', en: 'social anxiety disorder' },
+      anorexia: { ja: '摂食障害 拒食症 過食症 心療内科 精神科', en: 'eating disorder anorexia bulimia' },
+      thyroid_cancer: { ja: '甲状腺がん 乳頭がん 術後管理 内分泌外科 チラーヂン', en: 'thyroid cancer' },
+      sleep_apnea: { ja: '睡眠時無呼吸症候群 SAS CPAP いびき 睡眠外来', en: 'sleep apnea syndrome' },
+      copd: { ja: 'COPD 慢性閉塞性肺疾患 息切れ 吸入薬 呼吸器内科', en: 'COPD chronic obstructive pulmonary disease' },
+      liver_disease: { ja: '慢性肝疾患 肝硬変 肝炎 MASH 消化器内科', en: 'chronic liver disease cirrhosis' },
+      cancer_fatigue: { ja: 'がん治療 副作用 倦怠感 化学療法 免疫療法 腫瘍内科', en: 'cancer treatment side effects fatigue' },
+      hypertension: { ja: '高血圧 血圧管理 降圧薬 循環器内科', en: 'hypertension' },
+      hyperlipidemia: { ja: '脂質異常症 高コレステロール スタチン 循環器内科', en: 'hyperlipidemia dyslipidemia' },
+      anemia: { ja: '貧血 鉄欠乏性貧血 フェリチン 鉄剤 血液内科 婦人科', en: 'iron deficiency anemia' },
+      allergic_rhinitis: { ja: 'アレルギー性鼻炎 花粉症 鼻炎 耳鼻咽喉科 舌下免疫療法', en: 'allergic rhinitis hay fever' },
+      psoriasis: { ja: '乾癬 尋常性乾癬 関節症性乾癬 生物学的製剤 皮膚科 リウマチ科', en: 'psoriasis psoriatic arthritis' },
+      chronic_urticaria: { ja: '慢性蕁麻疹 蕁麻疹 皮膚科 アレルギー科 オマリズマブ', en: 'chronic urticaria CSU' },
+      pms_pmdd: { ja: 'PMS 月経前症候群 PMDD 月経前不快気分障害 婦人科 心療内科', en: 'premenstrual syndrome PMDD' },
+      overactive_bladder: { ja: '過活動膀胱 OAB 頻尿 尿失禁 夜間頻尿 泌尿器科', en: 'overactive bladder OAB' },
+      tinnitus: { ja: '耳鳴り 慢性耳鳴 感音性難聴 難聴 耳鼻咽喉科 TRT', en: 'tinnitus hearing loss' },
+      vertigo: { ja: 'めまい BPPV 良性発作性頭位めまい症 メニエール病 耳鼻咽喉科', en: 'vertigo BPPV Menieres disease' },
+      dry_eye: { ja: 'ドライアイ 乾性角結膜炎 眼精疲労 眼科 マイボーム腺 人工涙液', en: 'dry eye disease DED' },
+      chronic_prostatitis: { ja: '慢性前立腺炎 CP/CPPS 慢性骨盤痛 泌尿器科 NIH-CPSI α遮断薬', en: 'chronic prostatitis CPPS pelvic pain' },
+      ulcerative_colitis: { ja: '潰瘍性大腸炎 炎症性腸疾患 IBD 血便 メサラジン 消化器内科', en: 'ulcerative colitis IBD mesalazine' },
+      panic: { ja: 'パニック障害 パニック発作 広場恐怖 SSRI 認知行動療法 心療内科', en: 'panic disorder panic attack CBT' },
+      ankylosing_spondylitis: { ja: '強直性脊椎炎 体軸性脊椎関節炎 axSpA 炎症性腰痛 BASDAI リウマチ科', en: 'ankylosing spondylitis axSpA inflammatory back pain' },
+      hyperthyroidism: { ja: '甲状腺機能亢進症 バセドウ病 Graves病 TSH FT4 チアマゾール 内分泌科', en: 'hyperthyroidism Graves disease thyroid' },
+      narcolepsy: { ja: 'ナルコレプシー 特発性過眠症 過度の眠気 情動脱力発作 ESS モダフィニル 睡眠専門', en: 'narcolepsy excessive daytime sleepiness cataplexy' },
+      osteoarthritis: { ja: '変形性関節症 変形性膝関節症 変形性股関節症 OA WOMAC ヒアルロン酸 整形外科', en: 'osteoarthritis OA knee hip joint pain' },
+      sjogrens: { ja: 'シェーグレン症候群 乾燥症候群 ドライアイ ドライマウス SSA抗体 SSB抗体 リウマチ科', en: 'Sjogrens syndrome dry eye dry mouth SSA antibody' },
+      atrial_fibrillation: { ja: '心房細動 AFib 動悸 脈の乱れ DOAC 抗凝固薬 カテーテルアブレーション 循環器内科', en: 'atrial fibrillation AFib DOAC anticoagulation' },
+      myasthenia: { ja: '重症筋無力症 眼瞼下垂 複視 嚥下障害 AChR抗体 ピリドスチグミン 神経内科', en: 'myasthenia gravis MG ptosis dysphagia AChR antibody' },
+      pcos: { ja: '多嚢胞性卵巣症候群 PCOS 月経不順 多毛 インスリン抵抗性 メトホルミン 婦人科', en: 'polycystic ovary syndrome PCOS ovulation dysfunction' },
     };
     const primaryDisease = diseases[0] || 'mecfs';
     const dt = diseaseTerms[primaryDisease] || diseaseTerms.mecfs;
@@ -1386,6 +1540,61 @@ ${recentText || '記録なし'}
       ibs: 'irritable bowel syndrome treatment',
       pots: 'postural orthostatic tachycardia',
       insomnia: 'insomnia treatment',
+      migraine: 'migraine treatment prevention',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
+      ra: 'rheumatoid arthritis treatment',
+      asd: 'autism spectrum disorder',
+      crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome occupational',
+      parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder treatment anxiety',
+      endometriosis: 'endometriosis treatment pain management',
+      diabetes: 'type 2 diabetes management glycemic control',
+      atopy: 'atopic dermatitis treatment dupilumab',
+      asthma: 'asthma control inhaled corticosteroids treatment',
+      ckd: 'chronic kidney disease progression SGLT2',
+      heart_failure: 'heart failure treatment SGLT2 ARNi mortality',
+      gout: 'gout uric acid management febuxostat',
+      osteoporosis: 'osteoporosis bisphosphonate bone density treatment',
+      menopause: 'menopause hormone replacement therapy HRT',
+      schizophrenia: 'schizophrenia antipsychotic treatment relapse prevention',
+      alzheimers: 'Alzheimer disease lecanemab cholinesterase inhibitor treatment',
+      sad: 'social anxiety disorder CBT SSRI treatment',
+      anorexia: 'eating disorder anorexia nervosa bulimia CBT-E treatment',
+      thyroid_cancer: 'thyroid cancer papillary follicular treatment lenvatinib',
+      sleep_apnea: 'obstructive sleep apnea CPAP cardiovascular outcomes',
+      copd: 'COPD exacerbation LAMA LABA pulmonary rehabilitation',
+      liver_disease: 'liver cirrhosis MASH fibrosis hepatocellular carcinoma',
+      cancer_fatigue: 'cancer related fatigue chemotherapy side effects management',
+      hypertension: 'hypertension blood pressure management antihypertensive treatment',
+      hyperlipidemia: 'hyperlipidemia statin LDL cholesterol cardiovascular prevention',
+      anemia: 'iron deficiency anemia ferritin hemoglobin treatment',
+      allergic_rhinitis: 'allergic rhinitis pollen sublingual immunotherapy antihistamine',
+      psoriasis: 'psoriasis biologics IL-17 IL-23 TNF inhibitor treatment',
+      chronic_urticaria: 'chronic spontaneous urticaria omalizumab antihistamine UAS7',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI hormonal treatment',
+      overactive_bladder: 'overactive bladder pelvic floor training beta-3 agonist',
+      tinnitus: 'tinnitus TRT cognitive behavioral therapy sound therapy',
+      vertigo: 'vertigo BPPV Epley maneuver Meniere disease treatment',
+      dry_eye: 'dry eye disease DED diquafosol artificial tears meibomian gland',
+      chronic_prostatitis: 'chronic prostatitis CPPS alpha blocker pelvic pain treatment',
+      ulcerative_colitis: 'ulcerative colitis mesalazine vedolizumab infliximab remission maintenance',
+      panic: 'panic disorder SSRI CBT exposure therapy panic attack treatment',
+      ankylosing_spondylitis: 'ankylosing spondylitis TNF inhibitor IL-17 BASDAI exercise therapy',
+      hyperthyroidism: 'hyperthyroidism Graves disease methimazole radioiodine thyrotoxicosis',
+      narcolepsy: 'narcolepsy pitolisant modafinil orexin cataplexy treatment',
+      osteoarthritis: 'osteoarthritis knee pain hyaluronic acid duloxetine exercise weight loss',
+      sjogrens: 'Sjogrens syndrome hydroxychloroquine pilocarpine fatigue lymphoma risk',
+      atrial_fibrillation: 'atrial fibrillation DOAC apixaban catheter ablation stroke prevention',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod pyridostigmine thymectomy treatment',
+      pcos: 'polycystic ovary syndrome metformin letrozole insulin resistance treatment fertility',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1508,6 +1717,8 @@ ${titles}`;
     const diseaseTerms = {
       mecfs: 'ME/CFS OR chronic fatigue syndrome',
       depression: 'major depressive disorder',
+      bipolar: 'bipolar disorder treatment',
+      adhd: 'ADHD attention deficit treatment',
       fibromyalgia: 'fibromyalgia',
       long_covid: 'long COVID OR post-COVID',
       pots: 'postural orthostatic tachycardia',
@@ -1515,6 +1726,63 @@ ${titles}`;
       hashimoto: 'Hashimoto thyroiditis',
       ibs: 'irritable bowel syndrome',
       insomnia: 'insomnia treatment',
+      mcas: 'mast cell activation syndrome',
+      eds: 'Ehlers-Danlos syndrome',
+      migraine: 'migraine treatment prevention',
+      ptsd: 'post-traumatic stress disorder treatment',
+      ra: 'rheumatoid arthritis treatment',
+      sle: 'systemic lupus erythematosus treatment',
+      asd: 'autism spectrum disorder',
+      crohns: "Crohn's disease treatment",
+      gad: 'generalized anxiety disorder treatment',
+      sjogrens: "Sjogren's syndrome treatment",
+      ocd: 'obsessive compulsive disorder treatment',
+      epilepsy: 'epilepsy seizure treatment',
+      burnout: 'burnout syndrome work stress',
+      parkinsons: "Parkinson's disease treatment",
+      ms: 'multiple sclerosis disease modifying therapy',
+      chronic_pain: 'chronic pain management treatment',
+      panic: 'panic disorder cognitive behavioral therapy',
+      endometriosis: 'endometriosis treatment hormonal',
+      diabetes: 'type 2 diabetes SGLT2 GLP-1 treatment',
+      atopy: 'atopic dermatitis dupilumab JAK inhibitor',
+      asthma: 'asthma biologics inhaled corticosteroids',
+      ckd: 'chronic kidney disease SGLT2 inhibitor renal protection',
+      heart_failure: 'heart failure quadruple therapy SGLT2 ARNi',
+      gout: 'gout urate lowering therapy prevention',
+      osteoporosis: 'osteoporosis fracture prevention bone mineral density',
+      menopause: 'menopause hormone therapy symptom management',
+      schizophrenia: 'schizophrenia cognitive behavioral therapy psychosis relapse',
+      alzheimers: "Alzheimer disease biomarker amyloid progression",
+      sad: 'social anxiety disorder exposure therapy cognitive behavioral',
+      anorexia: 'anorexia nervosa bulimia nervosa recovery CBT-E',
+      thyroid_cancer: 'thyroid cancer recurrence surveillance Tg monitoring',
+      sleep_apnea: 'sleep apnea CPAP adherence weight loss treatment',
+      copd: 'COPD inhaler therapy smoking cessation lung function',
+      liver_disease: 'liver fibrosis MASH treatment resmetirom cirrhosis',
+      cancer_fatigue: 'cancer related fatigue exercise intervention CIPN',
+      hypertension: 'hypertension blood pressure home measurement cardiovascular risk',
+      hyperlipidemia: 'dyslipidemia statin PCSK9 inhibitor LDL lowering outcomes',
+      anemia: 'iron deficiency anemia IV iron oral iron hemoglobin recovery',
+      allergic_rhinitis: 'allergic rhinitis sublingual immunotherapy pollen season',
+      psoriasis: 'psoriasis biologic therapy PASI skin clearance real world',
+      chronic_urticaria: 'chronic urticaria omalizumab treatment response biomarker',
+      pms_pmdd: 'premenstrual dysphoric disorder SSRI luteal phase treatment',
+      overactive_bladder: 'overactive bladder OAB anticholinergic pelvic floor',
+      tinnitus: 'tinnitus sound therapy habituation THI treatment outcome',
+      vertigo: 'BPPV canalith repositioning Meniere endolymphatic hydrops',
+      dry_eye: 'dry eye disease diquafosol rebamipide meibomian gland dysfunction tear film',
+      chronic_prostatitis: 'chronic pelvic pain syndrome NIH-CPSI alpha blocker pelvic floor therapy',
+      ulcerative_colitis: 'ulcerative colitis biologics vedolizumab ustekinumab mucosal healing',
+      panic: 'panic disorder cognitive behavioral therapy SSRI interoceptive exposure',
+      ankylosing_spondylitis: 'ankylosing spondylitis secukinumab upadacitinib ASDAS MRI sacroiliitis',
+      hyperthyroidism: 'Graves disease methimazole relapse radioiodine thyroid ablation outcome',
+      narcolepsy: 'narcolepsy orexin deficiency MSLT multiple sleep latency cataplexy treatment outcome',
+      osteoarthritis: 'osteoarthritis intraarticular hyaluronic acid duloxetine WOMAC exercise therapy',
+      sjogrens: 'primary Sjogrens syndrome hydroxychloroquine lymphoma sicca symptoms ESSDAI',
+      atrial_fibrillation: 'atrial fibrillation pulmonary vein isolation ablation DOAC stroke recurrence',
+      myasthenia: 'myasthenia gravis eculizumab efgartigimod complement inhibitor FcRn thymectomy outcome',
+      pcos: 'polycystic ovary syndrome PCOS metformin letrozole clomiphene insulin resistance long-term outcome',
     };
     const terms = diseases.map(d => diseaseTerms[d]).filter(Boolean);
     const query = terms.length > 0 ? `(${terms.join(' OR ')})` : 'chronic disease management';
@@ -1524,7 +1792,7 @@ ${titles}`;
   }
 
   async searchPubMedLive() {
-    const query = document.getElementById('pubmed-search-query')?.value || 'ME/CFS';
+    const query = document.getElementById('pubmed-search-query')?.value || 'chronic disease management';
     const days = parseInt(document.getElementById('pubmed-search-days')?.value || '90');
     const resultsArea = document.getElementById('pubmed-results');
     const lang = (store.get('userProfile') || {}).language || 'ja';
@@ -2893,7 +3161,55 @@ ${responseText.substring(0, 3000)}`;
       .replace(/\s+/g, ' ')
       .trim()
       .substring(0, 100);
-    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 #ME_CFS #慢性疾患 #健康日記`;
+    const primaryId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+    const diseaseHashtag = {
+      mecfs: '#ME_CFS', depression: '#うつ病', bipolar: '#双極性障害',
+      adhd: '#ADHD', long_covid: '#LongCOVID', fibromyalgia: '#線維筋痛症',
+      pots: '#POTS', hashimoto: '#橋本病', ibs: '#過敏性腸症候群',
+      insomnia: '#不眠症', mcas: '#MCAS', eds: '#EDS',
+      migraine: '#片頭痛', ptsd: '#PTSD', ra: '#関節リウマチ',
+      sle: '#ループス', asd: '#ASD自閉スペクトラム症', crohns: '#クローン病',
+      gad: '#全般性不安障害', sjogrens: '#シェーグレン症候群',
+      ocd: '#強迫性障害', epilepsy: '#てんかん', burnout: '#バーンアウト', parkinsons: '#パーキンソン病',
+      ms: '#多発性硬化症', chronic_pain: '#慢性疼痛',
+      panic: '#パニック障害', endometriosis: '#子宮内膜症',
+      diabetes: '#糖尿病', atopy: '#アトピー性皮膚炎',
+      asthma: '#気管支喘息', ckd: '#慢性腎臓病',
+      heart_failure: '#心不全', gout: '#痛風',
+      osteoporosis: '#骨粗鬆症', menopause: '#更年期障害',
+      schizophrenia: '#統合失調症',
+      alzheimers: '#アルツハイマー病',
+      sad: '#社会不安障害',
+      anorexia: '#摂食障害',
+      thyroid_cancer: '#甲状腺がん',
+      sleep_apnea: '#睡眠時無呼吸症候群',
+      copd: '#COPD',
+      liver_disease: '#慢性肝疾患',
+      cancer_fatigue: '#がん治療副作用',
+      hypertension: '#高血圧',
+      hyperlipidemia: '#脂質異常症',
+      anemia: '#貧血',
+      allergic_rhinitis: '#アレルギー性鼻炎',
+      psoriasis: '#乾癬',
+      chronic_urticaria: '#慢性蕁麻疹',
+      pms_pmdd: '#PMS月経前症候群',
+      overactive_bladder: '#過活動膀胱',
+      tinnitus: '#耳鳴り',
+      vertigo: '#めまい',
+      dry_eye: '#ドライアイ',
+      chronic_prostatitis: '#慢性前立腺炎',
+      ulcerative_colitis: '#潰瘍性大腸炎',
+      panic: '#パニック障害',
+      ankylosing_spondylitis: '#強直性脊椎炎',
+      hyperthyroidism: '#バセドウ病甲状腺機能亢進症',
+      narcolepsy: '#ナルコレプシー過眠症',
+      osteoarthritis: '#変形性関節症',
+      sjogrens: '#シェーグレン症候群',
+      atrial_fibrillation: '#心房細動',
+      myasthenia: '#重症筋無力症',
+      pcos: '#多嚢胞性卵巣症候群PCOS'
+    }[primaryId] || '#慢性疾患';
+    return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
 
   // Copy share text to clipboard + toast feedback. Used by the 📋
@@ -3260,7 +3576,7 @@ ${responseText.substring(0, 3000)}`;
   }
 
   guestSampleReport() {
-    let diseaseId = 'mecfs';
+    let diseaseId = (store.get('selectedDiseases') || [])[0] || 'mecfs';
     try {
       const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
       if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
@@ -3460,35 +3776,12 @@ ${bloodText || '記録なし'}
     }
   }
 
-  // ---- Manual proxy URL override -------------------------------------
-  // When the hardcoded Worker URL doesn't resolve (e.g. workers.dev
-  // trigger disabled, custom domain used, account subdomain differs)
-  // and admin/config sync hasn't reached the user yet, give them a
-  // way to type the correct URL directly. Stored in localStorage so
-  // it sticks across reloads.
-  // -------------------------------------------------------------------
+  // The AI endpoint is now fixed in code (a single relay URL). Manual
+  // proxy-URL overrides were removed because stale localStorage values
+  // were a root cause of returning users staying broken. This stub
+  // remains only so any cached onclick handler can't throw.
   setProxyUrlFromInput() {
-    const input = document.getElementById('proxy-url-override-input');
-    if (!input) return;
-    const raw = input.value.trim();
-    if (!raw) {
-      try { Components.showToast('URL を入力してください', 'error'); } catch (_) {}
-      return;
-    }
-    // Strip trailing /v1/messages if user pasted the full path
-    let url = raw.replace(/\/v1\/messages\/?$/, '');
-    // Basic URL sanity check
-    if (!/^https?:\/\//.test(url)) {
-      try { Components.showToast('URL は https:// で始まる必要があります', 'error'); } catch (_) {}
-      return;
-    }
-    try {
-      localStorage.setItem('anthropic_proxy_url', url);
-      try { Components.showToast('Proxy URL を保存しました。リロードします…', 'success'); } catch (_) {}
-      setTimeout(() => location.reload(), 800);
-    } catch (e) {
-      try { Components.showToast('保存に失敗しました: ' + e.message, 'error'); } catch (_) {}
-    }
+    try { Components.showToast('この設定は不要になりました（AI接続は自動です）', 'info'); } catch (_) {}
   }
 
   // ---- AI connection diagnostic --------------------------------------
@@ -3504,7 +3797,7 @@ ${bloodText || '記録なし'}
   async diagnoseAiConnection(targetEl) {
     const url = (typeof getAnthropicEndpoint === 'function')
       ? getAnthropicEndpoint(false)
-      : 'https://stock-screener.agewaller.workers.dev/v1/messages';
+      : 'https://ai.cares.advisers.jp/v1/messages';
     const out = (targetEl && targetEl.tagName) ? targetEl : document.getElementById('ai-diag-output');
     if (!out) return;
     out.innerHTML = '<div style="font-size:11px;color:#475569">診断中…（数秒お待ちください）</div>';
@@ -4270,54 +4563,25 @@ ${axisHint}
     // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
 
-    // Simple direct API call — no heavy prompt interpolation, no fallback chain.
+    // Simple analysis via the shared relay → proxy Worker. The browser
+    // holds no key; key-less registered users and guests both work.
     const entryId = entry.id;
-    const apiKey = localStorage.getItem('apikey_anthropic') || '';
-    if (!apiKey) {
-      store.set('isAnalyzing', false);
-      store.set('latestFeedbackError', 'APIキーが設定されていません。管理パネル→APIキーで設定してください。');
-      return;
-    }
-
     const diseases = (store.get('selectedDiseases') || []).join('・');
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 25000);
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: store.get('selectedModel') || 'claude-sonnet-4-6',
-        max_tokens: 800,
-        temperature: 0.4,
-        system: 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。',
-        messages: [{ role: 'user', content: (diseases ? '【疾患: ' + diseases + '】\n' : '') + content }]
-      }),
-      signal: ctrl.signal
+    const sys = 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。';
+    const userMsg = (diseases ? '【疾患: ' + diseases + '】\n' : '') + content;
+    aiEngine.callModel(store.get('selectedModel') || 'claude-sonnet-4-6', userMsg, {
+      maxTokens: 800, temperature: 0.4, systemPrompt: sys, globalTimeoutMs: 30000
     })
-    .then(res => {
-      clearTimeout(tid);
-      if (!res.ok) return res.text().then(t => { throw new Error('API ' + res.status + ': ' + t.substring(0, 200)); });
-      return res.json();
-    })
-    .then(data => {
+    .then(text => {
       store.set('isAnalyzing', false);
-      const text = data?.content?.[0]?.text || '';
-      const result = { summary: '分析結果', findings: text, actions: [], _fromAPI: true };
+      const result = { summary: '分析結果', findings: text || '', actions: [], _fromAPI: true };
       try { const p = this.parseAIResponse(text); if (p && p.summary) Object.assign(result, p); } catch(_){}
       store.set('latestFeedback', result);
       this.saveAIComment(entryId, result);
     })
     .catch(err => {
-      clearTimeout(tid);
       store.set('isAnalyzing', false);
-      const msg = err.name === 'AbortError' ? '25秒以内に応答がありませんでした。もう一度お試しください。' : (err.message || String(err));
-      store.set('latestFeedbackError', msg);
+      store.set('latestFeedbackError', (err && err.message) || String(err));
     });
   }
 
@@ -5010,7 +5274,7 @@ ${axisHint}
       <div class="card" style="margin-bottom:20px">
         <div class="card-header">
           <span class="card-title">最近の 10 件</span>
-          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="if(confirm('使用量ログをクリアしますか？')){store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)}">ログをクリア</button>
+          <button class="btn btn-outline btn-sm" style="font-size:10px" onclick="app.confirmAction(this,'ログをクリア',()=>{store.set('apiUsage',[]);app.navigate('admin');setTimeout(()=>app.switchAdminTab('usage'),50)})">ログをクリア</button>
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table style="width:100%;border-collapse:collapse">
@@ -5656,27 +5920,103 @@ ${axisHint}
       const ruleset = await rulesetRes.json();
       if (!ruleset?.name) throw new Error('ルール作成のレスポンスが不正: ' + JSON.stringify(ruleset).slice(0, 300));
 
-      // Step 3: point the cloud.firestore release at the new ruleset
+      // Step 3: point the cloud.firestore release at the new ruleset.
+      // Firebase Rules API's PATCH endpoint is documented inconsistently
+      // across Google sources. firebase-tools uses unwrapped body +
+      // updateMask=rulesetName; the public REST docs say wrapped body
+      // + updateMask=release.rulesetName. Some accounts accept only
+      // one. We try each variant in sequence and fall through on 400.
+      // The DELETE-then-CREATE path is the ultimate fallback (always
+      // works because there's no PATCH involved).
       if (btn) btn.innerHTML = '⏳ 公開中…';
-      const releaseRes = await fetch(
-        `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore?updateMask=release.rulesetName`,
+      const baseUrl = `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases/cloud.firestore`;
+      const releaseFullName = `projects/${projectId}/releases/cloud.firestore`;
+      const variants = [
         {
+          label: 'unwrapped + mask=rulesetName',
+          url: baseUrl + '?updateMask=rulesetName',
           method: 'PATCH',
-          headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            release: {
-              name: `projects/${projectId}/releases/cloud.firestore`,
-              rulesetName: ruleset.name
-            }
-          })
+          body: { name: releaseFullName, rulesetName: ruleset.name }
+        },
+        {
+          label: 'wrapped + mask=release.rulesetName',
+          url: baseUrl + '?updateMask=release.rulesetName',
+          method: 'PATCH',
+          body: { release: { name: releaseFullName, rulesetName: ruleset.name } }
+        },
+        {
+          label: 'unwrapped, no mask',
+          url: baseUrl,
+          method: 'PATCH',
+          body: { name: releaseFullName, rulesetName: ruleset.name }
+        },
+        {
+          label: 'wrapped, mask in body',
+          url: baseUrl,
+          method: 'PATCH',
+          body: {
+            release: { name: releaseFullName, rulesetName: ruleset.name },
+            updateMask: 'rulesetName'
+          }
         }
-      );
-      if (!releaseRes.ok) {
-        const txt = await releaseRes.text();
-        throw new Error('公開失敗 (HTTP ' + releaseRes.status + '): ' + txt.slice(0, 500));
+      ];
+      let releaseOk = false;
+      let lastErr = '';
+      for (const v of variants) {
+        try {
+          const r = await fetch(v.url, {
+            method: v.method,
+            headers: {
+              'Authorization': 'Bearer ' + accessToken,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(v.body)
+          });
+          if (r.ok) {
+            console.log('[autoDeployRules] variant succeeded:', v.label);
+            releaseOk = true;
+            break;
+          }
+          const t = await r.text();
+          lastErr = 'HTTP ' + r.status + ' [' + v.label + ']: ' + t.slice(0, 400);
+          console.warn('[autoDeployRules] variant failed:', v.label, r.status, t.slice(0, 200));
+        } catch (e) {
+          lastErr = 'network [' + v.label + ']: ' + (e.message || String(e));
+          console.warn('[autoDeployRules] variant network error:', v.label, e);
+        }
+      }
+      // Last resort: DELETE the release, then POST a new one.
+      if (!releaseOk) {
+        console.log('[autoDeployRules] all PATCH variants failed; trying DELETE + POST');
+        try {
+          await fetch(baseUrl, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+          });
+          const createR = await fetch(
+            `https://firebaserules.googleapis.com/v1/projects/${projectId}/releases`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + accessToken,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ name: releaseFullName, rulesetName: ruleset.name })
+            }
+          );
+          if (createR.ok) {
+            releaseOk = true;
+            console.log('[autoDeployRules] DELETE + POST succeeded');
+          } else {
+            const t = await createR.text();
+            lastErr = 'DELETE/POST HTTP ' + createR.status + ': ' + t.slice(0, 400);
+          }
+        } catch (e) {
+          lastErr += ' | DELETE/POST error: ' + (e.message || String(e));
+        }
+      }
+      if (!releaseOk) {
+        throw new Error('公開失敗 (全方式試行): ' + lastErr);
       }
       setStatus('var(--success,#16a34a)', '✓ デプロイ成功。3 秒後に再読込します…');
       Components.showToast?.('Firestore ルールを公開しました', 'success');
@@ -6869,11 +7209,6 @@ ${values._user_name}
       return;
     }
     const model = store.get('selectedModel') || 'claude-opus-4-6';
-    const apiKey = aiEngine.getApiKey(model);
-    if (!apiKey) {
-      Components.showToast('モデルのAPIキーが未設定です（設定ページから登録してください）', 'error');
-      return;
-    }
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
@@ -6968,6 +7303,154 @@ ${joined.substring(0, 8000)}`;
     } catch (err) {
       console.error('Deduplicate error:', err);
       Components.showToast('重複削除に失敗しました', 'error');
+    }
+  }
+
+  // ---- Backup management ----
+  // List existing weekly snapshots stored in Firestore at
+  // users/{uid}/backups. Each one is a single doc keyed by YYYYMMDD
+  // containing arrays of all health subcollections at that point in
+  // time. Restore is "merge" semantics: documents in the backup that
+  // are missing from the live collection get re-created (we do NOT
+  // delete live docs that are absent from the backup, so a restore
+  // never destroys data).
+  async loadBackupList() {
+    const out = document.getElementById('backup-list-result');
+    if (!out) return;
+    if (!FirebaseBackend?.userId) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    out.innerHTML = '<div style="color:var(--text-muted)">⏳ 取得中…</div>';
+    try {
+      const snap = await FirebaseBackend.userDoc().collection('backups').orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(20).get();
+      if (snap.empty) {
+        out.innerHTML = '<div style="color:var(--text-muted)">バックアップはまだありません。「今すぐバックアップ」を押すと初回スナップショットが作成されます。</div>';
+        return;
+      }
+      const rows = [];
+      snap.forEach(d => {
+        const data = d.data() || {};
+        const id = d.id;
+        const niceDate = id.slice(0,4) + '/' + id.slice(4,6) + '/' + id.slice(6,8);
+        let totalDocs = 0;
+        Object.keys(data).forEach(k => {
+          if (Array.isArray(data[k])) totalDocs += data[k].length;
+        });
+        rows.push(`
+          <tr>
+            <td style="padding:6px 8px">${niceDate}</td>
+            <td style="padding:6px 8px;text-align:right;font-weight:600">${totalDocs.toLocaleString()} 件</td>
+            <td style="padding:6px 8px;text-align:right">
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}')">復元</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.downloadBackup('${id}')">📥 JSON</button>
+            </td>
+          </tr>
+        `);
+      });
+      out.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <thead><tr style="background:var(--bg-tertiary)">
+            <th style="padding:8px;text-align:left;font-size:11px;font-weight:600">日付</th>
+            <th style="padding:8px;text-align:right;font-size:11px;font-weight:600">件数</th>
+            <th style="padding:8px;text-align:right;font-size:11px;font-weight:600">操作</th>
+          </tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      `;
+    } catch (err) {
+      out.innerHTML = '<div style="color:var(--danger,#dc2626)">取得エラー: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  async runBackupNow() {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">未ログインです。</div>';
+      return;
+    }
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ バックアップ作成中…</div>';
+    try {
+      // Force-run by clearing the 7-day cooldown logic — call the snapshot directly.
+      const today = new Date();
+      const todayId = today.getFullYear().toString()
+        + String(today.getMonth() + 1).padStart(2, '0')
+        + String(today.getDate()).padStart(2, '0');
+      const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+      const snapshot = { createdAt: firebase.firestore.FieldValue.serverTimestamp(), schemaVersion: 1, manualTrigger: true };
+      let totalDocs = 0;
+      for (const c of collections) {
+        const snap = await FirebaseBackend.userCollection(c).limit(2000).get();
+        const arr = [];
+        snap.forEach(d => arr.push(Object.assign({ id: d.id }, d.data())));
+        if (arr.length) { snapshot[c] = arr; totalDocs += arr.length; }
+      }
+      await FirebaseBackend.userDoc().collection('backups').doc(todayId).set(snapshot);
+      Components.showToast?.(`バックアップ完了 (${totalDocs} 件)`, 'success');
+      await this.loadBackupList();
+    } catch (err) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">バックアップ失敗: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
+    }
+  }
+
+  async downloadBackup(backupId) {
+    if (!FirebaseBackend?.userId) return;
+    try {
+      const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
+      if (!doc.exists) { Components.showToast?.('バックアップが見つかりません', 'error'); return; }
+      const data = doc.data();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `health-diary-backup-${backupId}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      Components.showToast?.('ダウンロード失敗: ' + (err.message || err), 'error');
+    }
+  }
+
+  // Restore: merge each subcollection from the backup into the live
+  // collection. We use the original document id so existing live docs
+  // are overwritten (idempotent), and missing ones are recreated. We
+  // never delete a live doc that's not in the backup, so a restore
+  // is non-destructive.
+  async restoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) return;
+    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
+    if (ok !== '復元') return;
+    if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
+    try {
+      const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
+      if (!doc.exists) { Components.showToast?.('バックアップが見つかりません', 'error'); return; }
+      const data = doc.data();
+      const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+      let restored = 0;
+      for (const c of collections) {
+        const arr = data[c];
+        if (!Array.isArray(arr) || !arr.length) continue;
+        const batch = firebase.firestore().batch();
+        let batchCount = 0;
+        for (const entry of arr) {
+          const id = entry.id || FirebaseBackend.userCollection(c).doc().id;
+          const cleaned = Object.assign({}, entry);
+          delete cleaned.id;
+          batch.set(FirebaseBackend.userCollection(c).doc(id), cleaned, { merge: true });
+          batchCount++;
+          restored++;
+          if (batchCount >= 400) {
+            await batch.commit();
+            batchCount = 0;
+          }
+        }
+        if (batchCount > 0) await batch.commit();
+      }
+      Components.showToast?.(`復元完了 (${restored} 件)。3 秒後にリロードします。`, 'success');
+      setTimeout(() => location.reload(), 3000);
+    } catch (err) {
+      if (out) out.innerHTML = '<div style="color:var(--danger,#dc2626)">復元失敗: ' + Components.escapeHtml(err.message || String(err)) + '</div>';
     }
   }
 

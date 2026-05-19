@@ -1,0 +1,57 @@
+name: Update Risk Data and Send Alerts
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./jsrm
+    env:
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+      ALERT_FROM_NAME: ${{ secrets.ALERT_FROM_NAME }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: jsrm/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Fetch raw events
+        run: npm run fetch
+
+      - name: Recompute daily scores
+        run: npm run score
+
+      - name: Validate data
+        run: npm run validate
+
+      - name: Commit data changes (if any)
+        run: |
+          if [ -n "$(git status --porcelain data/)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/
+            git commit -m "chore(data): hourly risk-data refresh [skip ci]"
+            git push
+          else
+            echo "no data changes"
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Send alerts
+        run: npm run send-alerts

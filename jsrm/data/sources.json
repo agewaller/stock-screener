@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "id": "mnd_tw",
+      "name": "Taiwan MND - PLA activity around Taiwan",
+      "url": "https://www.mnd.gov.tw/",
+      "type": "official_tw",
+      "description": "中華民國國防部による中国軍機・艦艇の台湾周辺活動の日次公表"
+    },
+    {
+      "id": "mofa_jp_senkaku",
+      "name": "外務省 - 尖閣諸島周辺海域における中国公船等の動向",
+      "url": "https://www.mofa.go.jp/mofaj/area/senkaku/",
+      "type": "official_jp",
+      "description": "尖閣周辺海域での中国公船の活動状況"
+    },
+    {
+      "id": "joint_staff_jp",
+      "name": "防衛省 統合幕僚監部 報道発表",
+      "url": "https://www.mod.go.jp/js/",
+      "type": "official_jp",
+      "description": "緊急発進、艦艇動向、共同訓練などの発表"
+    },
+    {
+      "id": "kantei_nk",
+      "name": "首相官邸 - 北朝鮮ミサイル関連発表",
+      "url": "https://www.kantei.go.jp/",
+      "type": "official_jp",
+      "description": "北朝鮮による弾道ミサイル発射等への政府発表"
+    },
+    {
+      "id": "gdelt",
+      "name": "GDELT Project",
+      "url": "https://www.gdeltproject.org/",
+      "type": "dataset",
+      "description": "全世界の報道から抽出した出来事のデータセット（補完情報として使用）"
+    },
+    {
+      "id": "manual",
+      "name": "手動レビュー",
+      "url": "",
+      "type": "media",
+      "description": "管理者が公開報道に基づき手動で記帳した事象"
+    }
+  ]
+}

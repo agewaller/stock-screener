@@ -433,26 +433,15 @@ var FirebaseBackend = {
     }
   },
 
-  // Lightweight version of loadAllData for anonymous guest sessions —
-  // only pulls the global admin config (API keys, selected model,
-  // proxy URL, anthropic mode) and skips all per-user collections.
-  // This is what makes guest mode's "試してみる" box actually reach
-  // the AI instead of hitting the "no API key" fallback every time.
+  // Lightweight version of loadAllData for anonymous guest sessions.
+  // SECURITY: provider API keys are NEVER synced to the browser — they
+  // live only in the Cloudflare Worker (KV / env secret). This only
+  // pulls non-secret global config (selected model, professional
+  // registry, mailer) and skips all per-user collections.
   async _loadGlobalConfigOnly() {
     try {
       const globalConfig = await this.loadGlobalConfig();
-      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
-      if (hasGlobalKeys) {
-        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
-        if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
-        if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
-        console.log('[auth] loaded global API keys for guest session');
-      }
-      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
       if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
-      if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
-        localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
-      }
       // Professional-registry bits (global, read by everyone, written by admin).
       if (Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
       if (typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
@@ -468,22 +457,18 @@ var FirebaseBackend = {
   // available, false if the operation can't complete in time.
   async ensureGuestAuth() {
     if (!this.initialized || !this.auth) return false;
-    const hasKeys = () => !!(localStorage.getItem('apikey_anthropic') ||
-                             localStorage.getItem('apikey_openai') ||
-                             localStorage.getItem('apikey_google'));
+    // AI no longer needs any local key — it routes through the relay →
+    // proxy Worker (server-side key). We still anonymously sign in so
+    // guests can persist their own data and read non-secret global
+    // config, but success no longer depends on keys being present.
     if (this.auth.currentUser) {
-      if (!hasKeys()) await this._loadGlobalConfigOnly();
-      return hasKeys();
+      try { await this._loadGlobalConfigOnly(); } catch (_) {}
+      return true;
     }
     try {
       await this.auth.signInAnonymously();
-      for (let i = 0; i < 16; i++) {
-        await new Promise(r => setTimeout(r, 250));
-        if (hasKeys()) return true;
-      }
-      // Keys still not loaded — Worker env fallback will handle this
-      // but we return false so callers know keys aren't local.
-      return false;
+      try { await this._loadGlobalConfigOnly(); } catch (_) {}
+      return true;
     } catch (err) {
       console.warn('[auth] anonymous sign-in failed:', err.message);
       return false;
@@ -651,24 +636,13 @@ var FirebaseBackend = {
       // connections the user could submit a quick entry before the
       // keys arrived, landing them in the no-api-key fallback branch
       // that returns "ただいま詳細分析をご用意できません".
+      // SECURITY: provider API keys are NEVER synced to the browser.
+      // They live only in the Cloudflare Worker (KV / env secret) and
+      // are injected server-side. Here we only load non-secret global
+      // config (selected model, professional registry, mailer).
       try {
         const globalConfig = await this.loadGlobalConfig();
-        const hasGlobalKeys = globalConfig && globalConfig.apiKeys
-          && Object.values(globalConfig.apiKeys).some(v => v);
-        if (hasGlobalKeys) {
-          if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
-          if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
-          if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
-          console.log('[Firebase] Loaded global API keys (early)');
-        }
-        if (globalConfig && globalConfig.proxyUrl !== undefined) {
-          localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl || '');
-        }
         if (globalConfig && globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
-        if (globalConfig && (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy')) {
-          localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
-        }
-        // Professional-registry bits (global, read by everyone, written by admin).
         if (globalConfig && Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
         if (globalConfig && typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
         if (globalConfig && typeof globalConfig.mailerSenderName === 'string') store.set('mailerSenderName', globalConfig.mailerSenderName);
@@ -699,42 +673,10 @@ var FirebaseBackend = {
       this.subscribeToCollections();
       this.subscribeToSettings();
 
-      // Legacy per-user keys (backward compatibility). Global config
-      // already ran at the top of this function, so re-fetch just for
-      // the hasGlobalKeys check used by the legacy migration branch.
-      const globalConfig = await this.loadGlobalConfig();
-      const hasGlobalKeys = globalConfig && globalConfig.apiKeys
-        && Object.values(globalConfig.apiKeys).some(v => v);
-      const legacyKeys = await this.loadApiKeys();
-      const hasLegacyKeys = legacyKeys && Object.values(legacyKeys).some(v => v);
-
-      if (!hasGlobalKeys && hasLegacyKeys) {
-        // Populate localStorage from legacy keys for this user's own session
-        if (legacyKeys.anthropic) localStorage.setItem('apikey_anthropic', legacyKeys.anthropic);
-        if (legacyKeys.openai) localStorage.setItem('apikey_openai', legacyKeys.openai);
-        if (legacyKeys.google) localStorage.setItem('apikey_google', legacyKeys.google);
-
-        // AUTO-MIGRATION: if current user is admin and global config is empty,
-        // promote their legacy per-user keys to global so all other users inherit them.
-        const userEmail = this.auth.currentUser?.email;
-        const adminList = (typeof app !== 'undefined' && app.ADMIN_EMAILS) || ['agewaller@gmail.com'];
-        const isAdmin = userEmail && adminList.includes(userEmail);
-        if (isAdmin) {
-          console.log('[Firebase] Admin detected with legacy keys — migrating to global config');
-          const migrationConfig = { apiKeys: {} };
-          if (legacyKeys.anthropic) migrationConfig.apiKeys.anthropic = legacyKeys.anthropic;
-          if (legacyKeys.openai) migrationConfig.apiKeys.openai = legacyKeys.openai;
-          if (legacyKeys.google) migrationConfig.apiKeys.google = legacyKeys.google;
-          const proxyUrl = localStorage.getItem('anthropic_proxy_url');
-          if (proxyUrl) migrationConfig.proxyUrl = proxyUrl;
-          try {
-            await firebase.firestore().collection('admin').doc('config').set(migrationConfig, { merge: true });
-            console.log('[Firebase] Migration complete — all users will now inherit these keys on next login');
-          } catch (err) {
-            console.warn('[Firebase] Migration failed:', err.message);
-          }
-        }
-      }
+      // Legacy per-user / Firestore-synced API keys are intentionally
+      // NOT loaded into the browser anymore. Keys live only in the
+      // Cloudflare Worker (KV / env secret) and are injected
+      // server-side, so there is nothing to sync or migrate here.
 
       // Load calendar events (per-user, private)
       try {
@@ -748,12 +690,71 @@ var FirebaseBackend = {
 
       store.calculateHealthScore();
       console.log('All user data loaded from Firestore');
+
+      // Fire-and-forget: weekly snapshot of all user data into a
+      // separate users/{uid}/backups/{YYYYMMDD} document. This is a
+      // safety net against accidental data loss — even if a future
+      // bug clears localStorage AND the live subcollections, the
+      // most recent backup is intact and can be restored from the
+      // admin "データ管理" tab.
+      this._maybeRunWeeklyBackup().catch(e => console.warn('[backup]', e?.message || e));
     } catch (err) {
       console.error('Load all data error:', err);
     } finally {
       // Release the autosync guard. Any store.set() from here on (e.g.
       // a user submitting a new entry) will sync normally.
       this._loading = false;
+    }
+  },
+
+  // ── Weekly auto-backup ──
+  // Snapshot all user subcollections into a single backup document
+  // once a week. The doc id is YYYYMMDD so duplicates within the same
+  // day are overwritten (idempotent). We keep the last 12 backups
+  // (~3 months) and let older ones fall off via a separate cleanup.
+  // Restore is exposed in the admin Data tab as "バックアップから復元".
+  async _maybeRunWeeklyBackup() {
+    if (!this.userId) return;
+    const ref = this.userDoc().collection('backups');
+    let lastBackup = null;
+    try {
+      const recent = await ref.orderBy(firebase.firestore.FieldPath.documentId(), 'desc').limit(1).get();
+      if (!recent.empty) lastBackup = recent.docs[0].id; // YYYYMMDD
+    } catch (e) {
+      // Index missing or rules block — skip
+      console.warn('[backup] could not query last backup:', e.message);
+      return;
+    }
+    const today = new Date();
+    const todayId = today.getFullYear().toString()
+      + String(today.getMonth() + 1).padStart(2, '0')
+      + String(today.getDate()).padStart(2, '0');
+    if (lastBackup) {
+      // Skip if already backed up within last 7 days.
+      const lastY = parseInt(lastBackup.slice(0, 4));
+      const lastM = parseInt(lastBackup.slice(4, 6));
+      const lastD = parseInt(lastBackup.slice(6, 8));
+      const lastDate = new Date(lastY, lastM - 1, lastD);
+      const ageDays = (today - lastDate) / 86400000;
+      if (ageDays < 7) return;
+    }
+    const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+    const snapshot = { createdAt: firebase.firestore.FieldValue.serverTimestamp(), schemaVersion: 1 };
+    for (const c of collections) {
+      try {
+        const snap = await this.userCollection(c).limit(2000).get();
+        const arr = [];
+        snap.forEach(d => arr.push(Object.assign({ id: d.id }, d.data())));
+        if (arr.length) snapshot[c] = arr;
+      } catch (e) {
+        console.warn('[backup] failed to snapshot', c, ':', e.message);
+      }
+    }
+    try {
+      await ref.doc(todayId).set(snapshot);
+      console.log('[backup] weekly snapshot saved as', todayId);
+    } catch (e) {
+      console.warn('[backup] write failed:', e.message);
     }
   },
 
@@ -933,6 +934,11 @@ var FirebaseBackend = {
       conversationHistory: 'conversations'
     };
 
+    // Track whether each collection has received its initial snapshot.
+    // If Firestore is empty on first login but localStorage already has
+    // historical records, avoid wiping local history immediately.
+    if (!this._initialSnapshotSeen) this._initialSnapshotSeen = {};
+
     Object.keys(collections).forEach(function(storeKey) {
       var fbColl = collections[storeKey];
       // NOTE: We deliberately do NOT use .orderBy('createdAt', 'desc')
@@ -964,7 +970,19 @@ var FirebaseBackend = {
               return Number(t) || 0;
             };
             data.sort(function(a, b) { return tsOf(a) - tsOf(b); });
-            store.set(storeKey, data);
+
+            var isFirst = !self._initialSnapshotSeen[storeKey];
+            self._initialSnapshotSeen[storeKey] = true;
+            var localData = store.get(storeKey);
+            var hasLocal = Array.isArray(localData) && localData.length > 0;
+
+            // Do not overwrite existing local history with an empty first
+            // snapshot (common when cloud data is not yet created/migrated).
+            if (isFirst && data.length === 0 && hasLocal) {
+              console.log('[Firebase] keep local data for', storeKey, '(empty initial cloud snapshot)');
+            } else {
+              store.set(storeKey, data);
+            }
           } finally {
             self._loading = prev;
           }

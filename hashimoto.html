@@ -27,7 +27,14 @@
 {
   "@context": "https://schema.org",
   "@graph": [
-    {"@type":"MedicalWebPage","name":"橋本病（慢性甲状腺炎）完全ガイド","url":"https://cares.advisers.jp/hashimoto.html","inLanguage":"ja","lastReviewed":"2026-04-23"},
+    {"@type":"FAQPage","@id":"https://cares.advisers.jp/hashimoto.html#faq","mainEntity":[
+      {"@type":"Question","name":"橋本病とは何ですか？","acceptedAnswer":{"@type":"Answer","text":"橋本病（慢性甲状腺炎）は、免疫系が誤って甲状腺を攻撃する自己免疫疾患です。抗 TPO 抗体・抗 Tg 抗体が産生され、慢性的な甲状腺の炎症・破壊が進みます。日本女性の 10-20% に抗 TPO 抗体陽性が見られ、推定 300-500 万人が甲状腺機能低下症を抱えます。ICD-11 コード 5A03.1 として分類されています。"}},
+      {"@type":"Question","name":"TSH の正常値はいくつですか？橋本病では何を目標にしますか？","acceptedAnswer":{"@type":"Answer","text":"一般的な TSH 正常値は 0.4-4.0 mIU/L ですが、橋本病でレボチロキシン（チラージン S）を服用する場合、多くの専門家は 1.0-2.0 mIU/L を目標とします。妊娠中は 0.1-2.5 mIU/L と厳しく管理します。ただし最適値には個人差があるため、主治医と相談のうえ調整します。"}},
+      {"@type":"Question","name":"橋本病はどのような症状を引き起こしますか？","acceptedAnswer":{"@type":"Answer","text":"甲状腺機能低下症が進むと、慢性疲労・体重増加・冷え・皮膚乾燥・脱毛・便秘・気分の落ち込み・むくみ・徐脈（脈が遅い）などが現れます。症状は軽微で気づきにくいことも多く、TSH 値が正常でも症状が続く場合は Free T4・Free T3 の確認が重要です。"}},
+      {"@type":"Question","name":"セレンは橋本病に効果がありますか？","acceptedAnswer":{"@type":"Answer","text":"複数のランダム化比較試験で、セレン 200μg/日の補充が抗 TPO 抗体価を有意に低下させることが示されています（Gärtner et al. 2002、Meta-analysis 2021）。甲状腺は体内で最もセレン濃度が高い臓器です。ただし、過剰摂取（400μg/日超）は毒性があるため、サプリメントは医師の指導のもとで使用してください。"}},
+      {"@type":"Question","name":"橋本病の記録が治療に役立つ理由は？","acceptedAnswer":{"@type":"Answer","text":"TSH・Free T4・Free T3・抗 TPO 抗体値などの検査結果を日付と症状とともに記録することで、薬の用量調整の判断材料が明確になります。体温・体重・心拍数・症状スコアの継続記録は、治療効果や「値は正常なのに症状が続く」というパターンの把握にも役立ちます。"}}
+    ]},
+    {"@type":"MedicalWebPage","name":"橋本病（慢性甲状腺炎）完全ガイド","url":"https://cares.advisers.jp/hashimoto.html","inLanguage":"ja","lastReviewed":"2026-05-11"},
     {"@type":"MedicalCondition","name":"橋本病（慢性甲状腺炎）","alternateName":["Hashimoto's thyroiditis","慢性リンパ球性甲状腺炎","Chronic Lymphocytic Thyroiditis"],"code":{"@type":"MedicalCode","code":"5A03.1","codingSystem":"ICD-11"},"epidemiology":"日本で抗 TPO 抗体陽性者が女性の 10-20%、推定甲状腺機能低下症患者は 300-500 万人","signOrSymptom":[{"@type":"MedicalSignOrSymptom","name":"慢性疲労"},{"@type":"MedicalSignOrSymptom","name":"体重増加"},{"@type":"MedicalSignOrSymptom","name":"冷え"},{"@type":"MedicalSignOrSymptom","name":"皮膚乾燥"},{"@type":"MedicalSignOrSymptom","name":"脱毛"},{"@type":"MedicalSignOrSymptom","name":"便秘"},{"@type":"MedicalSignOrSymptom","name":"気分の落ち込み"},{"@type":"MedicalSignOrSymptom","name":"徐脈"}],"cause":[{"@type":"MedicalCause","name":"自己免疫機序（抗 TPO 抗体・抗 Tg 抗体）"},{"@type":"MedicalCause","name":"遺伝的素因"},{"@type":"MedicalCause","name":"ヨード過剰摂取"}],"possibleTreatment":[{"@type":"DrugLegalStatus","name":"レボチロキシン（チラージン S）"},{"@type":"DrugLegalStatus","name":"乾燥甲状腺末"},{"@type":"DietarySupplement","name":"セレン 200μg/日"},{"@type":"DietarySupplement","name":"ビタミン D"}]}
   ]
 }
@@ -146,15 +153,19 @@ footer a{color:#6366f1;text-decoration:none;margin:0 6px}
 
 <h2>関連疾患ガイド</h2>
 <div class="related">
+<a href="/sle.html">SLE（ループス）</a>
+<a href="/ra.html">関節リウマチ</a>
 <a href="/me-cfs.html">ME/CFS</a>
 <a href="/long-covid.html">Long COVID</a>
 <a href="/fibromyalgia.html">線維筋痛症</a>
-<a href="/pots.html">POTS</a>
-<a href="/mcas.html">MCAS</a>
-<a href="/eds.html">EDS</a>
-<a href="/ibs.html">IBS</a>
 <a href="/depression.html">うつ病</a>
 <a href="/insomnia.html">不眠症</a>
+<a href="/migraine.html">片頭痛</a>
+<a href="/ibs.html">IBS</a>
+<a href="/adhd.html">ADHD</a>
+<a href="/osteoporosis.html">骨粗鬆症</a>
+<a href="/menopause.html">更年期障害</a>
+<a href="/hyperthyroidism.html">甲状腺機能亢進症</a>
 </div>
 
 <footer>

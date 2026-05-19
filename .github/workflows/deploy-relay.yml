@@ -59,6 +59,24 @@ jobs:
             https://cares-relay.agewaller.workers.dev/ || true
           head -c 1500 /tmp/probe.txt
           echo ""
+          echo "--- HEAD/GET ai.cares.advisers.jp (custom domain) ---"
+          # Custom domain may need a few extra seconds for the Cloudflare
+          # SSL cert + route to propagate on first registration. Retry up
+          # to 6 times with 10s gaps before giving up.
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/probe-custom.txt -w "%{http_code}" -m 10 \
+              -X OPTIONS https://ai.cares.advisers.jp/v1/messages \
+              -H "Origin: https://cares.advisers.jp" \
+              -H "Access-Control-Request-Method: POST" \
+              -H "Access-Control-Request-Headers: content-type" || echo "000")
+            echo "  attempt $i: HTTP $code"
+            if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+              break
+            fi
+            sleep 10
+          done
+          head -c 1500 /tmp/probe-custom.txt 2>/dev/null || true
+          echo ""
 
       - name: Summary
         if: always()
@@ -68,7 +86,26 @@ jobs:
           tail -30 /tmp/deploy.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "(no deploy log)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo '' >> $GITHUB_STEP_SUMMARY
-          echo '## Probe' >> $GITHUB_STEP_SUMMARY
+          echo '## Probe (legacy workers.dev)' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           head -c 1000 /tmp/probe.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "(no probe)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '## Probe (custom domain — ai.cares.advisers.jp)' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -c 1500 /tmp/probe-custom.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "(no probe)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # If wrangler refused to register the custom domain, surface
+          # the most likely cause so the operator knows exactly which
+          # token permission to add — saves a round-trip to docs.
+          if grep -qiE "custom_domain|Authentication error|10000|10006|workers_routes" /tmp/deploy.txt; then
+            {
+              echo ''
+              echo '## ⚠️ カスタムドメイン登録が失敗した可能性'
+              echo ''
+              echo '`ai.cares.advisers.jp` の `custom_domain: true` 登録には'
+              echo '`CLOUDFLARE_API_TOKEN` に **Zone → Workers Routes → Edit** 権限が必要です。'
+              echo '不足している場合は Cloudflare ダッシュボード → My Profile → API Tokens'
+              echo 'で既存トークンを編集し、advisers.jp ゾーンに対する Workers Routes:Edit を追加してください。'
+            } >> $GITHUB_STEP_SUMMARY
+          fi
