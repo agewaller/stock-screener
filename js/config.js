@@ -174,6 +174,7 @@ var CONFIG = {
         { id: 'ibs', name: '過敏性腸症候群（IBS）', icd: 'DD91' },
         { id: 'gerd', name: '逆流性食道炎（GERD）', icd: 'DA22' },
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
+        { id: 'liver_disease', name: '慢性肝疾患・肝硬変（MASH）', icd: 'DB92.1' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
