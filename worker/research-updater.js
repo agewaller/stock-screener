@@ -25,6 +25,20 @@ const DISEASE_QUERIES = {
   ibs: '"irritable bowel syndrome" OR IBS',
   thyroid: '"Hashimoto" OR "hypothyroidism" OR "Graves disease"',
   insomnia: '"insomnia" OR "sleep disorder"',
+  liver_disease: '"chronic liver disease" OR "liver cirrhosis" OR MASH OR "metabolic dysfunction-associated steatohepatitis"',
+  cancer_fatigue: '"cancer related fatigue" OR "cancer-related fatigue" OR "chemotherapy-induced peripheral neuropathy" OR CIPN',
+  ankylosing_spondylitis: '"ankylosing spondylitis" OR "axial spondyloarthritis" OR "nr-axSpA"',
+  hyperthyroidism: '"hyperthyroidism" OR "Graves disease" OR "thyroid storm"',
+  atrial_fibrillation: '"atrial fibrillation" OR AFib OR "stroke prevention" OR NOAC',
+  osteoarthritis: '"osteoarthritis" OR "knee OA" OR "total knee replacement"',
+  parkinsons: '"Parkinson disease" OR "levodopa" OR "deep brain stimulation"',
+  epilepsy: '"epilepsy" OR "anti-seizure medication" OR "SUDEP"',
+  ckd: '"chronic kidney disease" OR CKD OR "SGLT2 inhibitor" OR "eGFR"',
+  copd: '"chronic obstructive pulmonary disease" OR COPD OR "triple inhaler therapy"',
+  sleep_apnea: '"obstructive sleep apnea" OR "CPAP" OR "GLP-1 sleep apnea"',
+  psoriasis: '"psoriasis" OR "biologics psoriasis" OR "IL-17 inhibitor" OR "IL-23 inhibitor"',
+  menopause: '"menopause" OR "hormone therapy" OR "vasomotor symptoms"',
+  migraine: '"migraine" OR "CGRP antagonist" OR "gepant" OR "ditans"',
 };
 
 async function searchPubMed(query, days = 30, max = 10) {
