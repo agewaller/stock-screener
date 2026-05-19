@@ -433,26 +433,15 @@ var FirebaseBackend = {
     }
   },
 
-  // Lightweight version of loadAllData for anonymous guest sessions —
-  // only pulls the global admin config (API keys, selected model,
-  // proxy URL, anthropic mode) and skips all per-user collections.
-  // This is what makes guest mode's "試してみる" box actually reach
-  // the AI instead of hitting the "no API key" fallback every time.
+  // Lightweight version of loadAllData for anonymous guest sessions.
+  // SECURITY: provider API keys are NEVER synced to the browser — they
+  // live only in the Cloudflare Worker (KV / env secret). This only
+  // pulls non-secret global config (selected model, professional
+  // registry, mailer) and skips all per-user collections.
   async _loadGlobalConfigOnly() {
     try {
       const globalConfig = await this.loadGlobalConfig();
-      const hasGlobalKeys = globalConfig.apiKeys && Object.values(globalConfig.apiKeys).some(v => v);
-      if (hasGlobalKeys) {
-        if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
-        if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
-        if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
-        console.log('[auth] loaded global API keys for guest session');
-      }
-      if (globalConfig.proxyUrl) localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl);
       if (globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
-      if (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy') {
-        localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
-      }
       // Professional-registry bits (global, read by everyone, written by admin).
       if (Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
       if (typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
@@ -468,22 +457,18 @@ var FirebaseBackend = {
   // available, false if the operation can't complete in time.
   async ensureGuestAuth() {
     if (!this.initialized || !this.auth) return false;
-    const hasKeys = () => !!(localStorage.getItem('apikey_anthropic') ||
-                             localStorage.getItem('apikey_openai') ||
-                             localStorage.getItem('apikey_google'));
+    // AI no longer needs any local key — it routes through the relay →
+    // proxy Worker (server-side key). We still anonymously sign in so
+    // guests can persist their own data and read non-secret global
+    // config, but success no longer depends on keys being present.
     if (this.auth.currentUser) {
-      if (!hasKeys()) await this._loadGlobalConfigOnly();
-      return hasKeys();
+      try { await this._loadGlobalConfigOnly(); } catch (_) {}
+      return true;
     }
     try {
       await this.auth.signInAnonymously();
-      for (let i = 0; i < 16; i++) {
-        await new Promise(r => setTimeout(r, 250));
-        if (hasKeys()) return true;
-      }
-      // Keys still not loaded — Worker env fallback will handle this
-      // but we return false so callers know keys aren't local.
-      return false;
+      try { await this._loadGlobalConfigOnly(); } catch (_) {}
+      return true;
     } catch (err) {
       console.warn('[auth] anonymous sign-in failed:', err.message);
       return false;
@@ -651,24 +636,13 @@ var FirebaseBackend = {
       // connections the user could submit a quick entry before the
       // keys arrived, landing them in the no-api-key fallback branch
       // that returns "ただいま詳細分析をご用意できません".
+      // SECURITY: provider API keys are NEVER synced to the browser.
+      // They live only in the Cloudflare Worker (KV / env secret) and
+      // are injected server-side. Here we only load non-secret global
+      // config (selected model, professional registry, mailer).
       try {
         const globalConfig = await this.loadGlobalConfig();
-        const hasGlobalKeys = globalConfig && globalConfig.apiKeys
-          && Object.values(globalConfig.apiKeys).some(v => v);
-        if (hasGlobalKeys) {
-          if (globalConfig.apiKeys.anthropic) localStorage.setItem('apikey_anthropic', globalConfig.apiKeys.anthropic);
-          if (globalConfig.apiKeys.openai)    localStorage.setItem('apikey_openai',    globalConfig.apiKeys.openai);
-          if (globalConfig.apiKeys.google)    localStorage.setItem('apikey_google',    globalConfig.apiKeys.google);
-          console.log('[Firebase] Loaded global API keys (early)');
-        }
-        if (globalConfig && globalConfig.proxyUrl !== undefined) {
-          localStorage.setItem('anthropic_proxy_url', globalConfig.proxyUrl || '');
-        }
         if (globalConfig && globalConfig.selectedModel) store.set('selectedModel', globalConfig.selectedModel);
-        if (globalConfig && (globalConfig.anthropicMode === 'direct' || globalConfig.anthropicMode === 'proxy')) {
-          localStorage.setItem('anthropic_mode', globalConfig.anthropicMode);
-        }
-        // Professional-registry bits (global, read by everyone, written by admin).
         if (globalConfig && Array.isArray(globalConfig.professionals)) store.set('globalProfessionals', globalConfig.professionals);
         if (globalConfig && typeof globalConfig.mailerUrl === 'string') store.set('mailerUrl', globalConfig.mailerUrl);
         if (globalConfig && typeof globalConfig.mailerSenderName === 'string') store.set('mailerSenderName', globalConfig.mailerSenderName);
@@ -699,42 +673,10 @@ var FirebaseBackend = {
       this.subscribeToCollections();
       this.subscribeToSettings();
 
-      // Legacy per-user keys (backward compatibility). Global config
-      // already ran at the top of this function, so re-fetch just for
-      // the hasGlobalKeys check used by the legacy migration branch.
-      const globalConfig = await this.loadGlobalConfig();
-      const hasGlobalKeys = globalConfig && globalConfig.apiKeys
-        && Object.values(globalConfig.apiKeys).some(v => v);
-      const legacyKeys = await this.loadApiKeys();
-      const hasLegacyKeys = legacyKeys && Object.values(legacyKeys).some(v => v);
-
-      if (!hasGlobalKeys && hasLegacyKeys) {
-        // Populate localStorage from legacy keys for this user's own session
-        if (legacyKeys.anthropic) localStorage.setItem('apikey_anthropic', legacyKeys.anthropic);
-        if (legacyKeys.openai) localStorage.setItem('apikey_openai', legacyKeys.openai);
-        if (legacyKeys.google) localStorage.setItem('apikey_google', legacyKeys.google);
-
-        // AUTO-MIGRATION: if current user is admin and global config is empty,
-        // promote their legacy per-user keys to global so all other users inherit them.
-        const userEmail = this.auth.currentUser?.email;
-        const adminList = (typeof app !== 'undefined' && app.ADMIN_EMAILS) || ['agewaller@gmail.com'];
-        const isAdmin = userEmail && adminList.includes(userEmail);
-        if (isAdmin) {
-          console.log('[Firebase] Admin detected with legacy keys — migrating to global config');
-          const migrationConfig = { apiKeys: {} };
-          if (legacyKeys.anthropic) migrationConfig.apiKeys.anthropic = legacyKeys.anthropic;
-          if (legacyKeys.openai) migrationConfig.apiKeys.openai = legacyKeys.openai;
-          if (legacyKeys.google) migrationConfig.apiKeys.google = legacyKeys.google;
-          const proxyUrl = localStorage.getItem('anthropic_proxy_url');
-          if (proxyUrl) migrationConfig.proxyUrl = proxyUrl;
-          try {
-            await firebase.firestore().collection('admin').doc('config').set(migrationConfig, { merge: true });
-            console.log('[Firebase] Migration complete — all users will now inherit these keys on next login');
-          } catch (err) {
-            console.warn('[Firebase] Migration failed:', err.message);
-          }
-        }
-      }
+      // Legacy per-user / Firestore-synced API keys are intentionally
+      // NOT loaded into the browser anymore. Keys live only in the
+      // Cloudflare Worker (KV / env secret) and are injected
+      // server-side, so there is nothing to sync or migrate here.
 
       // Load calendar events (per-user, private)
       try {

@@ -4,6 +4,12 @@
    Handles AI model integration and prompt execution
    ============================================================ */
 var AIEngine = class AIEngine {
+  // Single relay endpoint for ALL AI traffic. The browser never holds
+  // or sends a provider key; the relay forwards to the proxy Worker
+  // which injects the server-side key. Fixed in code (no localStorage)
+  // so a returning user with stale state behaves like a fresh visitor.
+  static PROXY_URL = 'https://cares-relay.agewaller.workers.dev';
+
   constructor() {
     this.apiEndpoints = {
       'claude-sonnet-4-6': '/api/anthropic',
@@ -426,15 +432,12 @@ ${avoidBlock}
         console.warn('[AI Engine] Global deadline approaching, skipping remaining providers');
         break;
       }
-      const key = this.getApiKey(model);
-      const canUseSharedProxy = model.startsWith('claude-') && this.canUseSharedProxy();
-      if (!key && !canUseSharedProxy) {
-        errors.push(`${model}: no API key`);
-        continue;
-      }
+      // The browser never holds an API key. Every provider is reached
+      // through the relay → proxy Worker, which injects the server-side
+      // key. No per-user key gate (it stranded key-less users before).
       try {
         console.log('[AI Engine] Trying', model, `(${Math.round(timeRemaining()/1000)}s remaining)`);
-        const result = await callFn.call(this, model, prompt, key, perCallOptions(timeRemaining()));
+        const result = await callFn.call(this, model, prompt, '', perCallOptions(timeRemaining()));
 
         if (model !== modelId) {
           console.warn(`[AI Engine] Fell back from ${modelId} to ${model}`);
@@ -538,34 +541,15 @@ ${avoidBlock}
     };
     const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
 
-    // Same routing policy as the inline callClaude in index.html:
-    // direct to api.anthropic.com when caller has a key, Worker proxy
-    // otherwise. The proxy URL is read from localStorage (synced from
-    // admin/config.proxyUrl) so the admin can configure the correct
-    // workers.dev hostname for their Cloudflare account — the
-    // hardcoded fallback may be wrong if the account's workers_dev
-    // subdomain isn't `agewaller`.
-    let url;
-    if (apiKey) {
-      url = 'https://api.anthropic.com/v1/messages';
-    } else {
-      let proxy = '';
-      try { proxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-      // Custom-domain hostname on our own Cloudflare zone — survives the
-      // account-level workers.dev disable that previously killed every
-      // *.agewaller.workers.dev URL at once. See wrangler.relay.jsonc
-      // "routes" for the custom_domain registration.
-      if (!proxy) proxy = 'https://ai.cares.advisers.jp';
-      url = proxy.replace(/\/+$/, '') + '/v1/messages';
-    }
+    // Single fixed endpoint for everyone. The browser never sends a
+    // key — the relay forwards to the proxy Worker which injects the
+    // server-side key. No localStorage, no per-user branch, no
+    // fallback chain (that complexity broke existing users/admin).
+    const url = AIEngine.PROXY_URL + '/v1/messages';
     const headers = {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
     };
-    if (apiKey) {
-      headers['x-api-key'] = apiKey;
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    }
 
     // Vision / Documents: when options.imageBase64 or options.pdfBase64
     // is supplied, wrap the prompt and file in a content array per the
@@ -635,39 +619,10 @@ ${avoidBlock}
       // opaque Safari message "Load failed"; surface an actionable
       // hint instead of the raw string so users know what to try.
       const em = String(fetchErr && fetchErr.message ? fetchErr.message : fetchErr);
-      // Try Gemini fallback before throwing (same pattern as the inline
-      // callAI in index.html). If admin has saved a Gemini key in
-      // admin/config, Cloudflare Worker outages no longer break AI for
-      // logged-in users either.
-      const gemKey = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
-      if (gemKey && /Load failed|Failed to fetch|NetworkError|TypeError|host_not_allowed/i.test(em)) {
-        console.warn('[Anthropic] network failure, falling back to Gemini:', em.slice(0, 80));
-        try {
-          return await this.callGoogle('gemini-2.5-flash', prompt, gemKey, options || {});
-        } catch (gErr) {
-          console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
-        }
-      }
       if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
-        // Differentiate host_not_allowed (Cloudflare workers.dev disabled
-        // → CORS-less 403, browser collapses to TypeError) from real
-        // network unreachability. A successful no-cors probe means the
-        // host is alive — it's a CORS / Worker-disable problem the
-        // operator can fix, not the user's browser.
-        let reachable = false;
-        if (/workers\.dev/.test(url)) {
-          try {
-            await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
-            reachable = true;
-          } catch (_) { reachable = false; }
-        }
-        if (reachable) {
-          throw new Error('AI 機能が一時停止しています（Cloudflare ワーカー設定）。'
-            + '管理者は GitHub の Actions タブから "Cloudflare Workers 診断 / 自動修復" を実行してください。');
-        }
-        throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。');
+        throw new Error('接続できませんでした。外部ブラウザ（Safari / Chrome）で開いていただくと改善することがあります。少し待ってから再試行してください。');
       }
-      throw new Error(`Anthropic API 接続失敗: ${em}`);
+      throw new Error(`AI 接続失敗: ${em}`);
     } finally {
       clearTimeout(tid);
     }
@@ -676,122 +631,72 @@ ${avoidBlock}
       const errBody = await response.text().catch(() => '');
       let errMsg = response.statusText;
       try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch(e) {}
-      // 5xx / 403 host_not_allowed → try Gemini fallback before giving up.
-      const gemKey2 = (typeof localStorage !== 'undefined') ? (localStorage.getItem('apikey_google') || '').trim() : '';
-      const denyReason = response.headers.get('x-deny-reason') || '';
-      const isInfra = response.status >= 500 || denyReason === 'host_not_allowed' || /Host not in allowlist/.test(errBody);
-      if (gemKey2 && isInfra) {
-        console.warn('[Anthropic] HTTP', response.status, 'falling back to Gemini');
-        try {
-          return await this.callGoogle('gemini-2.5-flash', prompt, gemKey2, options || {});
-        } catch (gErr) {
-          console.warn('[Anthropic] Gemini fallback also failed:', gErr.message);
-        }
-      }
-      throw new Error(`Anthropic ${response.status}: ${errMsg}`);
+      if (response.status === 401) errMsg = '共有 AI キーが認証エラーです。管理者にお知らせください。';
+      else if (response.status >= 500) errMsg = 'AI 機能が一時的に利用できません。しばらく待ってから再試行してください。';
+      throw new Error(`AI ${response.status}: ${errMsg}`);
     }
 
     const data = await response.json();
     console.log('[Anthropic] Success');
     try {
       const u = data.usage || {};
-      store.recordApiUsage(modelId, u.input_tokens || 0, u.output_tokens || 0, apiKey ? 'auth' : 'guest');
+      store.recordApiUsage(modelId, u.input_tokens || 0, u.output_tokens || 0, 'shared');
     } catch (e) {}
     return data.content?.[0]?.text || JSON.stringify(data);
   }
 
-  // OpenAI GPT API (with Vision support for images)
-  async callOpenAI(modelId, prompt, apiKey, options) {
-    // Build messages - support image content
-    const userContent = options.imageBase64
-      ? [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: options.imageBase64, detail: 'high' } }
-        ]
-      : prompt;
-
-    const systemPrompt = options.systemPrompt || 'You are a health diary companion.';
-
-    // 30s per-call timeout (same as callAnthropic) to prevent hangs.
-    const openAiController = new AbortController();
-    const openAiTimeoutId = setTimeout(() => openAiController.abort(), options.perCallTimeoutMs || 30000);
+  // Non-Anthropic providers (OpenAI / Google) are reached through the
+  // SAME relay → proxy Worker, which holds the server-side key. The
+  // browser never sends a provider key. The Worker normalizes the
+  // upstream response to { text }.
+  async _callViaProxy(provider, modelId, prompt, options) {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), options.perCallTimeoutMs || 30000);
     let response;
     try {
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userContent }
-          ],
-          max_tokens: options.maxTokens || 4096,
-          temperature: options.temperature || 0.3
-        }),
-        signal: openAiController.signal
-      });
-    } catch (fe) {
-      if (fe.name === 'AbortError') throw new Error('OpenAI API timeout (30s)');
-      throw fe;
-    } finally {
-      clearTimeout(openAiTimeoutId);
-    }
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API ${response.status}: ${err.error?.message || response.statusText}`);
-    }
-
-    const data = await response.json();
-    try {
-      const u = data.usage || {};
-      store.recordApiUsage(modelId, u.prompt_tokens, u.completion_tokens, 'auth');
-    } catch (e) { console.warn('[usage track]', e.message); }
-    return data.choices?.[0]?.message?.content || JSON.stringify(data);
-  }
-
-  // Google Gemini API
-  async callGoogle(modelId, prompt, apiKey, options) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-    const googleController = new AbortController();
-    const googleTimeoutId = setTimeout(() => googleController.abort(), options.perCallTimeoutMs || 30000);
-    let response;
-    try {
-      response = await fetch(url, {
+      response = await fetch(AIEngine.PROXY_URL + '/v1/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: options.temperature || 0.3,
-            maxOutputTokens: options.maxTokens || 4096
-          },
-          systemInstruction: { parts: [{ text: options.systemPrompt || 'You are a health diary companion.' }] }
+          provider,
+          model: modelId,
+          system: options.systemPrompt || 'You are a health diary companion.',
+          prompt: String(prompt || '').substring(0, 100000),
+          maxTokens: options.maxTokens || 4096,
+          temperature: options.temperature || 0.3,
+          imageBase64: options.imageBase64 || null
         }),
-        signal: googleController.signal
+        signal: controller.signal
       });
     } catch (fe) {
-      if (fe.name === 'AbortError') throw new Error('Google API timeout (30s)');
-      throw fe;
+      if (fe.name === 'AbortError') throw new Error('AI タイムアウト（30秒）。もう一度お試しください。');
+      const em = String(fe && fe.message ? fe.message : fe);
+      if (/Load failed|Failed to fetch|NetworkError|TypeError/.test(em)) {
+        throw new Error('接続できませんでした。少し待ってから再試行してください。');
+      }
+      throw new Error(`AI 接続失敗: ${em}`);
     } finally {
-      clearTimeout(googleTimeoutId);
+      clearTimeout(tid);
     }
-
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(`Google API ${response.status}: ${err.error?.message || response.statusText}`);
+      const errBody = await response.text().catch(() => '');
+      let errMsg = response.statusText;
+      try { const j = JSON.parse(errBody); errMsg = j.error?.message || j.message || errMsg; } catch (e) {}
+      if (response.status === 401) errMsg = '共有 AI キーが認証エラーです。管理者にお知らせください。';
+      else if (response.status >= 500) errMsg = 'AI 機能が一時的に利用できません。しばらく待ってから再試行してください。';
+      throw new Error(`AI ${response.status}: ${errMsg}`);
     }
-
     const data = await response.json();
-    try {
-      const u = data.usageMetadata || {};
-      store.recordApiUsage(modelId, u.promptTokenCount, u.candidatesTokenCount, 'auth');
-    } catch (e) { console.warn('[usage track]', e.message); }
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+    try { const u = data.usage || {}; store.recordApiUsage(modelId, u.input_tokens || 0, u.output_tokens || 0, 'shared'); } catch (e) {}
+    return (typeof data.text === 'string' && data.text) || (data.content?.[0]?.text) || JSON.stringify(data);
+  }
+
+  async callOpenAI(modelId, prompt, apiKey, options) {
+    return this._callViaProxy('openai', modelId, prompt, options || {});
+  }
+
+  async callGoogle(modelId, prompt, apiKey, options) {
+    return this._callViaProxy('google', modelId, prompt, options || {});
   }
 
   // PubMed real search
@@ -856,18 +761,10 @@ ${avoidBlock}
   }
 
   getApiKey(modelId) {
-    // Guard against undefined / null: callers sometimes pass an
-    // un-initialized selectedModel early in the bootstrap, and the
-    // template literal + startsWith() would throw TypeError.
+    // The browser never holds a provider key. All AI traffic routes
+    // through the relay → proxy Worker which injects the server-side
+    // key. Kept as a stub (always '') so existing callers keep working.
     if (!modelId) return '';
-    // Check all possible key storage patterns
-    const directKey = localStorage.getItem(`apikey_${modelId}`);
-    if (directKey) return directKey;
-
-    // Fallback to provider-level keys
-    if (modelId.startsWith('claude-')) return localStorage.getItem('apikey_anthropic') || '';
-    if (modelId.startsWith('gpt-')) return localStorage.getItem('apikey_openai') || '';
-    if (modelId.startsWith('gemini-')) return localStorage.getItem('apikey_google') || '';
     return '';
   }
 

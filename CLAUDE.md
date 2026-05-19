@@ -158,3 +158,65 @@ git config core.hooksPath .githooks
 - **Supabase (PostgreSQL)**: Firestore で足りている。SQL による複雑分析が必要になるまで見送り
 - **shadcn/ui**: React 依存のため vanilla JS プロジェクトには直接使えない。原則（アクセシビリティ・CSS 変数・コピペ可能）のみ採用
 - **Algolia**: 10 万件未満なら Firestore クライアントフィルタで十分。それを超えたら検討
+
+## サービスのキモ（プロダクト原則・全ジャーナリング系で共通）
+
+このサービスの本質は **「ユーザーが対話しながらデータを溜め、その蓄積データを使って
+より最適・最新・something new な結果を返し、ユーザーの認知を変えてアクションを促す」**
+ことにある。健康に限らず、今後のお金・時間・仕事のジャーナリング、AI、管理システムを
+作る時も**同じ設計方針**を適用する。
+
+### データ主権（ユーザーデータ・ライフサイクル）原則
+
+1. **すべて格納する**: カレンダー・健康/数値データ・写真・会話ログなど、ユーザーが
+   生成したあらゆるデータは Firestore に uid 単位で確実に永続化する（localStorage は
+   キャッシュであって正本ではない）。
+2. **いつでも個別に編集・削除できる**: どのデータ種別も、ユーザーが UI から 1 件単位で
+   閲覧・編集・削除できる導線を必ず用意する。「全消し」しかない状態は不可。
+3. **要約して使える（3 つの受け手）**: 蓄積データから用途別サマリーを生成できる:
+   - **医師向け**: カルテ風・事実ベース・経過と質問事項を構造化
+   - **SNS 向け**: 個人特定情報を伏せ、前向き・共有可能なトーン
+   - **近親者向け**: 専門用語を避け、状態と必要な支援を平易に
+4. **認知を変える出力**: 単なる記録の反復ではなく、蓄積データを根拠に「最新・最適・
+   新しい視点（something new）」を返し、次の具体的アクションを 1 つ提示する。
+5. **エクスポート/ポータビリティ**: ユーザーは自分の全データをいつでも書き出せる
+   （ベンダーロックインしない）。
+
+### 鍵・秘密情報の絶対原則（データ漏洩ゼロ）
+
+- プロバイダ API 鍵（Anthropic/OpenAI/Google 等）は **サーバ（Cloudflare Worker の
+  KV / env secret）にのみ**置く。**ブラウザ・localStorage・Firestore に鍵を同期しない**。
+  AI 呼び出しは必ず relay → proxy Worker 経由（ブラウザは鍵を送らない・受け取らない）。
+- ブラウザの単一 AI エンドポイントはコードに固定（`AIEngine.PROXY_URL` /
+  `getAnthropicEndpoint()`）。**localStorage の proxy 上書きは廃止**。古い壊れた
+  localStorage を持つ再訪ユーザーも常に「新規アクセス」と同じ新コードで動くこと。
+- 個人ごとの API 鍵前提を作らない（持っている人はほぼいない）。全ユーザー共有鍵を
+  サーバ側で注入する。Origin 許可リストで共有鍵の他オリジン濫用を防ぐ。
+
+### 管理者（agewaller@gmail.com）を絶対にロックアウトしない
+
+- `app.isAdmin()` は **live Firebase Auth の email を正規化（lowercase/trim）**して判定。
+  stale な store/localStorage に依存しない。owner email は常に管理者。
+- 管理画面からの鍵保存は Worker の `/admin/keys` に対し **(a) Firebase ID トークン
+  検証（email==owner）または (b) break-glass `x-admin-token`** のいずれかで認証。
+  どちらか一方が壊れても owner は設定できる。鍵値は `/admin/key-status` でも
+  **絶対に返さない**（設定済み true/false のみ）。
+
+### 複雑化・退行の禁止（過去の失敗の明文化）
+
+「最初に使えなかった人」を直そうとした多段フォールバック・proxy 自動切替・
+localStorage 同期が、既存ユーザーや管理者を壊してきた。**単一の正しい経路**を
+保ち、フォールバック連鎖を足さない。エンドポイントの可用性はインフラ（デプロイ）
+側で担保し、クライアントで小細工しない。
+
+### デプロイ時のサーバ設定（stock-screener Worker）
+
+- Secret: `ANTHROPIC_API_KEY`（フォールバック）, `ADMIN_WRITE_TOKEN`（緊急用）
+- Var: `FIREBASE_PROJECT_ID`（ID トークン検証用）, `ALLOWED_ORIGINS`（省略可）
+- KV: `RESEARCH_KV`（research context と `admin:key:*` を共用。ダッシュボードで
+  バインド済みであること）
+- 通常運用では管理画面 `/admin` → API キー で鍵を保存（→ KV `admin:key:<provider>`）
+
+> 上記「データ主権原則」は `.claude/skills/data-sovereignty-journaling/SKILL.md`
+> にスキルとして言語化済み。健康以外（お金・時間・仕事）の新ジャーナリング/AI/
+> 管理システムを設計する時は必ずこのスキルを参照すること。
