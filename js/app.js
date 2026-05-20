@@ -194,6 +194,43 @@ var App = class App {
     ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
+    // Auto-refresh the timeline/records page when Firestore onSnapshot
+    // delivers data while the user is already viewing that page.
+    // Without this, navigating to "記録" before the initial snapshot
+    // fires shows an empty list with no way to recover except a manual
+    // page reload — the leading cause of "履歴が消えた" reports.
+    let timelineTimer = null;
+    const scheduleTimelineRefresh = () => {
+      if (this.currentPage !== 'timeline') return;
+      if (timelineTimer) return;
+      timelineTimer = setTimeout(() => {
+        timelineTimer = null;
+        if (this.currentPage !== 'timeline') return;
+        try {
+          const content = document.getElementById('page-content');
+          if (!content) return;
+          const newHtml = this.render_timeline();
+          if (typeof morphdom !== 'undefined') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = newHtml;
+            morphdom(content, tmp, {
+              childrenOnly: true,
+              onBeforeElUpdated: (from, to) => {
+                if ((from.tagName === 'INPUT' || from.tagName === 'TEXTAREA' || from.tagName === 'SELECT')
+                    && from === document.activeElement) return false;
+                return true;
+              }
+            });
+            if (typeof this.afterRender === 'function') this.afterRender('timeline');
+          } else {
+            this.navigate('timeline');
+          }
+        } catch (e) { console.warn('timeline refresh:', e); }
+      }, 200);
+    };
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory']
+      .forEach(key => store.on(key, scheduleTimelineRefresh));
+
     // Start the auto-sync scheduler so connected integrations
     // (Fitbit, Google Calendar) refresh automatically while the
     // app is open — set up once, update forever.
