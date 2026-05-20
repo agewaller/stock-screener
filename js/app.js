@@ -281,6 +281,15 @@ var App = class App {
     setInterval(() => store.calculateHealthScore(), 60000);
     store.calculateHealthScore();
 
+    // PWA install prompt — capture the browser event so we can trigger
+    // it at a better moment (after first entry) rather than the default
+    // Chrome banner which fires too early and gets dismissed.
+    this._pwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._pwaPrompt = e;
+    });
+
     // Calendar events are loaded per-user from Firestore (users/{uid}/calendarEvents).
     // Never hardcode personal schedule data in source — the built index.html is
     // publicly served, so any hardcoded events would be exposed to anyone who
@@ -4620,6 +4629,47 @@ ${axisHint}
       store.set('isAnalyzing', false);
       store.set('latestFeedbackError', (err && err.message) || String(err));
     });
+
+    // After the first-ever entry, offer to add to home screen so the
+    // user can return easily without remembering the URL. Delayed to
+    // avoid interrupting the first analysis result.
+    if (textEntries.length === 1) {
+      setTimeout(() => this._maybeShowInstallBanner(), 8000);
+    }
+  }
+
+  _maybeShowInstallBanner() {
+    // Only show if: browser supports install, not already installed,
+    // not dismissed before, and the deferred prompt is available.
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (localStorage.getItem('pwa_install_dismissed')) return;
+    if (!this._pwaPrompt) return;
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border:1.5px solid #c7d2fe;border-radius:14px;box-shadow:0 4px 24px rgba(99,102,241,0.15);padding:12px 16px;display:flex;align-items:center;gap:10px;max-width:340px;width:calc(100% - 32px)';
+    banner.innerHTML = `
+      <div style="font-size:22px">📱</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:#3730a3">ホーム画面に追加</div>
+        <div style="font-size:11px;color:#6366f1;margin-top:2px">毎日開きやすくなります</div>
+      </div>
+      <button id="pwa-install-ok" style="padding:6px 12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">追加する</button>
+      <button id="pwa-install-no" style="padding:6px 8px;background:transparent;color:#94a3b8;border:none;font-size:14px;cursor:pointer">✕</button>
+    `;
+    document.body.appendChild(banner);
+    document.getElementById('pwa-install-ok').onclick = async () => {
+      banner.remove();
+      if (this._pwaPrompt) {
+        this._pwaPrompt.prompt();
+        const { outcome } = await this._pwaPrompt.userChoice;
+        this._pwaPrompt = null;
+        if (outcome === 'accepted') localStorage.setItem('pwa_install_dismissed', '1');
+      }
+    };
+    document.getElementById('pwa-install-no').onclick = () => {
+      banner.remove();
+      localStorage.setItem('pwa_install_dismissed', '1');
+    };
   }
 
   // Deep structured analysis of any user input

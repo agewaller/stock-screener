@@ -449,6 +449,16 @@ App.prototype.render_dashboard = function() {
   const totalEntries = textEntries.length;
   const totalSymptoms = symptoms.length;
   const lastEntry = textEntries[textEntries.length - 1];
+
+  // Check if the user has logged anything today (JST midnight boundary)
+  const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const loggedToday = textEntries.some(e => {
+    if (!e.timestamp) return false;
+    return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+  }) || symptoms.some(e => {
+    if (!e.timestamp) return false;
+    return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+  });
   const lastUpdate = lastEntry ? new Date(lastEntry.timestamp).toLocaleString('ja-JP') : (symptoms.length ? new Date(latest.timestamp).toLocaleString('ja-JP') : '未記録');
 
   // Calculate real stats from symptom data
@@ -515,8 +525,24 @@ App.prototype.render_dashboard = function() {
 
   // Welcome message for new users (minimal)
   const welcomeHtml = !hasData ? `
-    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
-      上の入力欄に体調を書いてみてください
+    <div class="card" style="margin-bottom:16px;border:2px dashed #c7d2fe;background:#fafbff">
+      <div class="card-body" style="padding:18px 20px;text-align:center">
+        <div style="font-size:22px;margin-bottom:6px">🌱</div>
+        <div style="font-size:15px;font-weight:700;color:#3730a3;margin-bottom:4px">はじめての記録</div>
+        <div style="font-size:12px;color:#6366f1;margin-bottom:14px;line-height:1.6">
+          今日の体調・薬・食事・検査結果など、何でもそのまま書いてください。<br>
+          記録が増えるほど、個別分析の精度が上がります。
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px">
+          ${[
+            '今日はだるくて頭が重い',
+            '昨日の睡眠は5時間、寝つきが悪かった',
+            '朝から吐き気があり薬を飲んだ',
+            '体重 52kg、血圧 110/70'
+          ].map(s => `<button onclick="var el=document.getElementById('dash-quick-input');if(el){el.value=${JSON.stringify(s)};el.focus();}" style="padding:6px 12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:20px;font-size:12px;color:#4338ca;cursor:pointer">${Components.escapeHtml(s)}</button>`).join('')}
+        </div>
+        <div style="font-size:11px;color:#94a3b8">↑ サンプルをタップして書き方を確認、または上の入力欄に自由に書いてください</div>
+      </div>
     </div>` : '';
 
   // Today's rotating prescription axis — shown on the dashboard as a
@@ -651,6 +677,15 @@ App.prototype.render_dashboard = function() {
       try { return app.renderAnalysisCard(fb); } catch(e) { return ''; }
     })()}
   </div>
+
+  <!-- Today's logging reminder — shown only when the user has past data
+       but hasn't logged anything today, to reinforce the daily habit -->
+  ${hasData && !loggedToday && !store.get('isAnalyzing') ? `
+  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:18px">📝</div>
+    <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
+    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+  </div>` : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
