@@ -8,7 +8,10 @@ var AIEngine = class AIEngine {
   // or sends a provider key; the relay forwards to the proxy Worker
   // which injects the server-side key. Fixed in code (no localStorage)
   // so a returning user with stale state behaves like a fresh visitor.
-  static PROXY_URL = 'https://cares-relay.agewaller.workers.dev';
+  // MUST be the custom domain. *.workers.dev is disabled at the account
+  // level (Cloudflare account setting); hitting it returns
+  // ECONNREFUSED / "Load failed" in the browser.
+  static PROXY_URL = 'https://ai.cares.advisers.jp';
 
   constructor() {
     this.apiEndpoints = {
