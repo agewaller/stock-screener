@@ -1,4 +1,5 @@
 {
+  // redeploy trigger: re-register ai.cares.advisers.jp custom domain
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
