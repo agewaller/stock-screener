@@ -3277,6 +3277,38 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Share / Referral -->
+  ${(() => {
+    const uid = (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) || '';
+    const refId = uid ? uid.substring(0, 8) : '';
+    const refUrl = 'https://cares.advisers.jp/' + (refId ? '?ref=' + encodeURIComponent(refId) : '');
+    const shareText = '慢性疾患の体調管理に健康日記を使っています。無料で使えるのでよかったら試してみてください。';
+    const tweetUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(refUrl) + '&hashtags=' + encodeURIComponent('健康日記,ME_CFS,慢性疾患');
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(refUrl) + '&text=' + encodeURIComponent(shareText);
+    return `
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%);border:1px solid #bbf7d0">
+    <div class="card-header" style="background:transparent"><span class="card-title">友達に紹介する</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:#166534;margin-bottom:10px;line-height:1.7">
+        同じ疾患で悩む方にシェアすると、一緒に記録を続けられます。
+      </div>
+      <div style="background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;font-size:11px;color:#15803d;word-break:break-all;margin-bottom:10px;font-family:monospace">
+        ${Components.escapeHtml(refUrl)}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(refUrl)}).then(()=>Components.showToast('招待リンクをコピーしました','success'))"
+          style="padding:8px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">📋 リンクをコピー</button>
+        <a href="${Components.escapeHtml(tweetUrl)}" target="_blank" rel="noopener"
+          style="padding:8px 14px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">𝕏 ポストする</a>
+        <a href="${Components.escapeHtml(lineUrl)}" target="_blank" rel="noopener"
+          style="padding:8px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">LINE</a>
+        <button onclick="navigator.share&&navigator.share({title:'健康日記',text:${JSON.stringify(shareText)},url:${JSON.stringify(refUrl)}})"
+          style="padding:8px 14px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">📤 共有</button>
+      </div>
+    </div>
+  </div>`;
+  })()}
+
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">データ管理</span></div>
