@@ -9,10 +9,10 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // Service binding: cares-relay → stock-screener (internal call,
-  // bypasses Cloudflare Access protecting stock-screener's public URL).
+  // Service binding: cares-relay → cares-ai-proxy (internal call,
+  // bypasses Cloudflare Access protecting cares-ai-proxy's public URL).
   "services": [
-    { "binding": "PROXY", "service": "stock-screener" }
+    { "binding": "PROXY", "service": "cares-ai-proxy" }
   ],
   // Custom domain — pins the AI proxy URL to a Cloudflare zone we
   // control instead of *.workers.dev. The workers.dev subdomain is an
