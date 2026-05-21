@@ -4554,6 +4554,14 @@ ${axisHint}
     textEntries.push(entry);
     store.set('textEntries', textEntries);
 
+    // Celebrate streak milestones immediately after saving so the user
+    // doesn't have to wait for the AI response to see the achievement.
+    const newStreak = this._computeStreak().streak;
+    this._checkMilestoneShare(newStreak);
+
+    // Signal PWA install prompt on first entry.
+    window.dispatchEvent(new Event('health-diary:first-entry'));
+
     const history = store.get('conversationHistory') || [];
     history.push({ role: 'user', content: content, timestamp: entry.timestamp, type: 'data_entry' });
     store.set('conversationHistory', history);

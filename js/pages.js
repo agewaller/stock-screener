@@ -432,6 +432,52 @@ App.prototype._getEarnedBadges = function(stats) {
   return badges;
 };
 
+// Show a milestone celebration modal with X/LINE share buttons when the user
+// crosses a streak threshold. Called from dashQuickSubmit after saving entry.
+// Uses localStorage to avoid showing the same milestone twice.
+App.prototype._checkMilestoneShare = function(streak) {
+  const milestones = { 7: { label: '1週間', icon: '⚡' }, 14: { label: '2週間', icon: '🌊' }, 30: { label: '1ヶ月', icon: '🏔' }, 60: { label: '2ヶ月', icon: '🌟' }, 100: { label: '100日', icon: '🏆' }, 365: { label: '1年', icon: '🎉' } };
+  const m = milestones[streak];
+  if (!m) return;
+  const shownKey = 'milestone_shown_' + streak;
+  try { if (localStorage.getItem(shownKey)) return; localStorage.setItem(shownKey, '1'); } catch(_){}
+
+  const diseases = store.get('selectedDiseases') || [];
+  let diseaseName = '慢性疾患';
+  for (const cat of CONFIG.DISEASE_CATEGORIES) {
+    const found = cat.diseases.find(d => diseases.includes(d.id));
+    if (found) { diseaseName = found.name; break; }
+  }
+
+  const shareText = `健康日記で${diseaseName}の体調記録を${m.label}続けました！${m.icon}\n記録を続けることが、寛解への一番の近道。\nhttps://cares.advisers.jp #健康日記 #慢性疾患`;
+  const xUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(shareText);
+  const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent('https://cares.advisers.jp') + '&text=' + encodeURIComponent(shareText);
+
+  const overlay = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  if (!overlay || !body || !title) return;
+  title.textContent = '';
+  body.innerHTML = `
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:48px;margin-bottom:8px">${m.icon}</div>
+      <div style="font-size:19px;font-weight:800;color:#4338ca;margin-bottom:8px">${m.label}達成！🎉</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:18px;line-height:1.6">${streak}日連続で記録を続けました。<br>この継続力が寛解への道です。</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+        <a href="${xUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;background:#000;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
+          𝕏 でシェア
+        </a>
+        <a href="${lineUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:6px;padding:11px 20px;background:#06c755;color:#fff;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none">
+          LINE でシェア
+        </a>
+      </div>
+      <button onclick="app.closeModal()" style="background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer">後で</button>
+    </div>`;
+  overlay.classList.add('active');
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
@@ -688,6 +734,29 @@ App.prototype.render_dashboard = function() {
       </div>` : ''}
     </div>
   </div>` : ''}
+
+  <!-- Streak "at risk" nudge: shown after 17:00 JST when streak >= 3 and today is unrecorded -->
+  ${(() => {
+    if (streakStats.streak < 3) return '';
+    const todayStr = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const todayHasEntry = (store.get('textEntries') || []).some(e => {
+      if (!e.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) === todayStr;
+    });
+    if (todayHasEntry) return '';
+    const jstHour = parseInt(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', hour: 'numeric', hour12: false }), 10);
+    if (jstHour < 17) return '';
+    return `
+    <div style="margin-bottom:16px;padding:12px 16px;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:var(--radius);display:flex;align-items:center;gap:12px">
+      <div style="font-size:22px;flex:0 0 auto">🔥</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:#92400e">${streakStats.streak}日連続のストリークが途切れそうです</div>
+        <div style="font-size:11px;color:#b45309;margin-top:2px">今日まだ記録していません。一言でも書くと継続できます。</div>
+      </div>
+      <button onclick="document.getElementById('dash-quick-input').focus();document.getElementById('dash-quick-input').scrollIntoView({behavior:'smooth',block:'center'})"
+        style="background:#f59e0b;color:#fff;border:none;font-size:11px;padding:7px 12px;border-radius:8px;cursor:pointer;flex:0 0 auto;font-weight:700">記録する</button>
+    </div>`;
+  })()}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
