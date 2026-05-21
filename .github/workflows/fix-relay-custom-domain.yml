@@ -5,12 +5,9 @@ name: Fix relay custom domain (ai.cares.advisers.jp)
 # 登録が DNS/attach 系統で未完 or エラーのまま success 扱いになる)。
 #
 # この WF は Cloudflare API で custom domain を明示的に (再)アタッチする。
-#   1. account / zone を解決
-#   2. 現在の worker custom domains と DNS レコードを表示（読み取り）
-#   3. PUT /workers/domains で ai.cares.advisers.jp → cares-relay を attach
-#      (冪等。既に正しければ no-op。DNS は Cloudflare が自動作成)
-#   4. wrangler で relay を再デプロイ
-#   5. OPTIONS でプローブして応答コードを確認
+# どのステップでも job を止めず（continue-on-error）、最後に必ず
+# 「日本語の判定 1 行」を Summary に出す。ログを開かなくても
+# Actions タブの Summary だけで原因と次の手が分かるようにする。
 #
 # 非破壊: DNS レコードの削除はしない。競合があれば検出して報告のみ。
 #
@@ -24,9 +21,10 @@ on:
   workflow_dispatch:
 
 env:
-  HOSTNAME: ai.cares.advisers.jp
+  TARGET_HOST: ai.cares.advisers.jp
   SERVICE: cares-relay
   ZONE_NAME: advisers.jp
+  ACCOUNT_FALLBACK: e479bf26646b0349928aed8505418638
 
 jobs:
   fix:
@@ -37,100 +35,134 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Verify CLOUDFLARE_API_TOKEN
+      - name: Verify token + list scopes
+        id: token
+        continue-on-error: true
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           if [ -z "$T" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN secret missing."
-            exit 1
+            echo "TOKEN_OK=missing" >> $GITHUB_OUTPUT
+            exit 0
           fi
-          echo "✓ token present"
+          RESP=$(curl -s -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/user/tokens/verify || echo '{}')
+          STATUS=$(echo "$RESP" | python3 -c "import sys,json;print((json.load(sys.stdin).get('result') or {}).get('status',''))" 2>/dev/null || echo "")
+          echo "TOKEN_OK=$STATUS" >> $GITHUB_OUTPUT
+          {
+            echo "## トークン検証"
+            echo '```json'
+            echo "$RESP" | python3 -m json.tool 2>/dev/null || echo "$RESP"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
 
       - name: Discover account ID
         id: acct
+        continue-on-error: true
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          ACC=$(curl -fsS -H "Authorization: Bearer $T" \
-            https://api.cloudflare.com/client/v4/accounts)
-          ACCOUNT_ID=$(echo "$ACC" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('result',[{}])[0].get('id',''))")
+          ACC=$(curl -s -H "Authorization: Bearer $T" \
+            https://api.cloudflare.com/client/v4/accounts || echo '{}')
+          ACCOUNT_ID=$(echo "$ACC" | python3 -c "import sys,json;d=json.load(sys.stdin);r=d.get('result') or [];print(r[0]['id'] if r else '')" 2>/dev/null || echo "")
           if [ -z "$ACCOUNT_ID" ]; then
-            echo "::error::could not resolve account id"; exit 1
+            ACCOUNT_ID="$ACCOUNT_FALLBACK"
+            echo "account list failed/empty → using fallback $ACCOUNT_ID"
           fi
           echo "ACCOUNT_ID=$ACCOUNT_ID" >> $GITHUB_OUTPUT
           echo "✓ account=$ACCOUNT_ID"
 
       - name: Resolve zone ID
         id: zone
+        continue-on-error: true
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          ZID=""
+          ZID=""; ZUSED=""; ERR=""
           for z in "$ZONE_NAME" "cares.advisers.jp"; do
-            RESP=$(curl -fsS -H "Authorization: Bearer $T" \
-              "https://api.cloudflare.com/client/v4/zones?name=$z")
-            ID=$(echo "$RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);r=d.get('result') or [];print(r[0]['id'] if r else '')")
-            if [ -n "$ID" ]; then ZID="$ID"; echo "✓ zone $z → $ZID"; echo "ZONE_USED=$z" >> $GITHUB_OUTPUT; break; fi
+            RESP=$(curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/zones?name=$z" || echo '{}')
+            ID=$(echo "$RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);r=d.get('result') or [];print(r[0]['id'] if r else '')" 2>/dev/null || echo "")
+            if [ -z "$ID" ]; then
+              ERR=$(echo "$RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);print((d.get('errors') or [{}])[0].get('message',''))" 2>/dev/null || echo "")
+            fi
+            if [ -n "$ID" ]; then ZID="$ID"; ZUSED="$z"; break; fi
           done
-          if [ -z "$ZID" ]; then
-            echo "::error::could not resolve zone id for $ZONE_NAME — token may lack Zone:Read on the zone"
-            exit 1
-          fi
           echo "ZONE_ID=$ZID" >> $GITHUB_OUTPUT
+          echo "ZONE_USED=$ZUSED" >> $GITHUB_OUTPUT
+          echo "ZONE_ERR=$ERR" >> $GITHUB_OUTPUT
+          if [ -n "$ZID" ]; then echo "✓ zone $ZUSED → $ZID"; else echo "✗ zone resolve failed: $ERR"; fi
 
       - name: Show current state (worker domains + DNS) [read-only]
+        continue-on-error: true
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
           ZONE_ID: ${{ steps.zone.outputs.ZONE_ID }}
         run: |
           {
+            echo ""
             echo "## 修復前の状態"
             echo ""
-            echo "### worker custom domains（$HOSTNAME 該当行）"
+            echo "### worker custom domains（$TARGET_HOST 該当行）"
             echo '```json'
           } >> $GITHUB_STEP_SUMMARY
           curl -s -H "Authorization: Bearer $T" \
             "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/domains" \
             | python3 -c "
-import sys, json
+import sys, json, os
+host = os.environ['TARGET_HOST']
 d = json.load(sys.stdin)
-rows = [r for r in (d.get('result') or []) if r.get('hostname','').endswith('$HOSTNAME')]
+if not d.get('success', True):
+    print(json.dumps(d.get('errors'), indent=2, ensure_ascii=False)); raise SystemExit
+rows = [r for r in (d.get('result') or []) if r.get('hostname','').endswith(host)]
 print(json.dumps(rows or '(no matching custom domain attached)', indent=2, ensure_ascii=False))
 " >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(workers/domains GET failed — token may need Workers Routes:Edit)" >> $GITHUB_STEP_SUMMARY
           {
             echo '```'
             echo ""
-            echo "### DNS records for $HOSTNAME"
+            echo "### DNS records for $TARGET_HOST"
             echo '```json'
           } >> $GITHUB_STEP_SUMMARY
-          curl -s -H "Authorization: Bearer $T" \
-            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=$HOSTNAME" \
-            | python3 -c "
+          if [ -n "$ZONE_ID" ]; then
+            curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=$TARGET_HOST" \
+              | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
+if not d.get('success', True):
+    print(json.dumps(d.get('errors'), indent=2, ensure_ascii=False)); raise SystemExit
 rows = [{'type':r.get('type'),'name':r.get('name'),'content':r.get('content'),'proxied':r.get('proxied')} for r in (d.get('result') or [])]
 print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on attach)', indent=2, ensure_ascii=False))
 " >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(dns_records GET failed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "(zone unresolved — skipped)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: AUTO-FIX — attach custom domain to cares-relay
         id: attach
+        continue-on-error: true
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
           ZONE_ID: ${{ steps.zone.outputs.ZONE_ID }}
         run: |
-          BODY=$(python3 -c "import json,os;print(json.dumps({'environment':'production','hostname':os.environ['HOSTNAME'],'service':os.environ['SERVICE'],'zone_id':os.environ['ZONE_ID']}))")
+          if [ -z "$ZONE_ID" ]; then
+            echo "ATTACH_OK=skipped-no-zone" >> $GITHUB_OUTPUT
+            echo "skip attach — zone unresolved"; exit 0
+          fi
+          BODY=$(python3 -c "import json,os;print(json.dumps({'environment':'production','hostname':os.environ['TARGET_HOST'],'service':os.environ['SERVICE'],'zone_id':os.environ['ZONE_ID']}))")
           echo "PUT /workers/domains body: $BODY"
           RESP=$(curl -s -X PUT \
             -H "Authorization: Bearer $T" \
             -H "Content-Type: application/json" \
             -d "$BODY" \
-            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/domains")
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/domains" || echo '{}')
           echo "$RESP" > /tmp/attach.json
           OK=$(echo "$RESP" | python3 -c "import sys,json;print(json.load(sys.stdin).get('success'))" 2>/dev/null || echo "False")
+          ERRMSG=$(echo "$RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);print((d.get('errors') or [{}])[0].get('message',''))" 2>/dev/null || echo "")
           {
             echo ""
             echo "## custom domain attach 結果"
@@ -139,11 +171,10 @@ print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on 
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
           echo "ATTACH_OK=$OK" >> $GITHUB_OUTPUT
-          if [ "$OK" != "True" ]; then
-            echo "::warning::attach API did not return success — see summary (likely token perm: Zone→Workers Routes:Edit + DNS:Edit, or a conflicting DNS record)"
-          fi
+          echo "ATTACH_ERR=$ERRMSG" >> $GITHUB_OUTPUT
 
       - name: Redeploy cares-relay (idempotent)
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
@@ -152,12 +183,13 @@ print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on 
 
       - name: Probe ai.cares.advisers.jp
         id: probe
+        continue-on-error: true
         run: |
           echo "Waiting 15s for DNS/cert propagation..."; sleep 15
           FINAL="000"
           for i in 1 2 3 4 5 6 7 8; do
             code=$(curl -s -o /tmp/probe.txt -w "%{http_code}" -m 10 \
-              -X OPTIONS "https://$HOSTNAME/v1/messages" \
+              -X OPTIONS "https://$TARGET_HOST/v1/messages" \
               -H "Origin: https://cares.advisers.jp" \
               -H "Access-Control-Request-Method: POST" \
               -H "Access-Control-Request-Headers: content-type" || echo "000")
@@ -168,33 +200,62 @@ print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on 
           done
           echo "FINAL=$FINAL" >> $GITHUB_OUTPUT
 
-      - name: Summary
+      - name: Verdict (plain Japanese, always)
         if: always()
         env:
-          FINAL: ${{ steps.probe.outputs.FINAL }}
+          TOKEN_OK: ${{ steps.token.outputs.TOKEN_OK }}
+          ZONE_ID: ${{ steps.zone.outputs.ZONE_ID }}
+          ZONE_ERR: ${{ steps.zone.outputs.ZONE_ERR }}
           ATTACH_OK: ${{ steps.attach.outputs.ATTACH_OK }}
+          ATTACH_ERR: ${{ steps.attach.outputs.ATTACH_ERR }}
+          FINAL: ${{ steps.probe.outputs.FINAL }}
         run: |
           {
             echo ""
-            echo "## 結果サマリー"
+            echo "## 判定（これだけ読めば OK）"
             echo ""
-            echo "- attach success: \`${ATTACH_OK:-?}\`"
-            echo "- 最終 probe (OPTIONS https://$HOSTNAME/v1/messages): \`HTTP ${FINAL:-?}\`"
+            echo "- token status: \`${TOKEN_OK:-?}\`"
+            echo "- zone 解決: \`${ZONE_ID:+OK}${ZONE_ID:-NG}\` ${ZONE_ERR:+（$ZONE_ERR）}"
+            echo "- attach: \`${ATTACH_OK:-?}\` ${ATTACH_ERR:+（$ATTACH_ERR）}"
+            echo "- 最終 probe (OPTIONS https://$TARGET_HOST/v1/messages): \`HTTP ${FINAL:-?}\`"
             echo ""
-            if [ "$FINAL" = "204" ] || [ "$FINAL" = "200" ]; then
-              echo "✅ **復旧** — ai.cares.advisers.jp が CORS preflight に応答しました。"
+          } >> $GITHUB_STEP_SUMMARY
+          if [ "$FINAL" = "204" ] || [ "$FINAL" = "200" ]; then
+            {
+              echo "### ✅ 復旧しました"
               echo "iPhone で cares.advisers.jp を開き直し（プライベートタブ推奨）、"
               echo "管理画面で API キー保存 → 接続テストを再実行してください。"
-            else
-              echo "❌ まだ応答しません（HTTP ${FINAL:-?}）。"
+            } >> $GITHUB_STEP_SUMMARY
+          elif [ -z "$ZONE_ID" ] || [ "$TOKEN_OK" != "active" ]; then
+            {
+              echo "### ❌ トークンに advisers.jp ゾーンの権限が無い（最有力）"
               echo ""
-              echo "考えられる原因と対処:"
-              echo "1. **トークン権限不足** — CLOUDFLARE_API_TOKEN に"
-              echo "   \`Zone → Workers Routes → Edit\` と \`Zone → DNS → Edit\`（advisers.jp ゾーン）が必要。"
-              echo "   dash.cloudflare.com → My Profile → API Tokens で編集。"
-              echo "2. **競合 DNS レコード** — 上の「DNS records」に ai.cares.advisers.jp の"
-              echo "   既存レコード（古い A/CNAME 等）があれば、それが attach を妨げている。"
-              echo "   その場合は Cloudflare ダッシュボードで該当レコードを削除してから再実行。"
-              echo "3. **cert プロビジョニング待ち** — 初回 attach 直後は数分かかることがある。数分後に再実行。"
-            fi
-          } >> $GITHUB_STEP_SUMMARY
+              echo "custom domain のアタッチには、API トークンに以下が必要です:"
+              echo "- **Zone → Zone → Read**（advisers.jp）"
+              echo "- **Zone → Workers Routes → Edit**（advisers.jp）"
+              echo "- **Zone → DNS → Edit**（advisers.jp）"
+              echo ""
+              echo "**対処（iPhone でも可・3 分）:**"
+              echo "1. dash.cloudflare.com → 右上アイコン → **My Profile** → **API Tokens**"
+              echo "2. 既存の \`CLOUDFLARE_API_TOKEN\` に使っているトークンを **Edit**"
+              echo "3. **Permissions** に上記 3 つを追加（Zone resources は advisers.jp を含める）"
+              echo "4. 保存後、この WF を **Re-run** する"
+            } >> $GITHUB_STEP_SUMMARY
+          elif [ "$ATTACH_OK" != "True" ]; then
+            {
+              echo "### ❌ attach が失敗（DNS 競合 or 権限）"
+              echo ""
+              echo "エラー: \`${ATTACH_ERR:-不明}\`"
+              echo ""
+              echo "上の「DNS records」に ai.cares.advisers.jp の既存レコードがある場合、"
+              echo "それが attach を妨げています。Cloudflare ダッシュボードで該当レコードを"
+              echo "削除してから、この WF を Re-run してください。"
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            {
+              echo "### ⏳ attach は成功したが、まだ応答しません"
+              echo ""
+              echo "初回 attach 直後は cert プロビジョニングに数分かかります。"
+              echo "5 分ほど待ってから、この WF を Re-run してください。"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
