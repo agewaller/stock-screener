@@ -2309,7 +2309,14 @@ App.prototype.render_timeline = function() {
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
+    ${allEntries.length > 0 ? dateGroups : `
+      ${Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
+      <div style="margin-top:16px;padding:14px;background:var(--bg-tertiary);border-radius:8px;font-size:12px;color:var(--text-muted);text-align:center;line-height:1.7">
+        過去に記録した覚えがあるのに表示されない場合は、<br>
+        <a href="diag.html" style="color:var(--accent);font-weight:600">📊 データ診断ページ</a> で
+        クラウド保存状況を確認できます。
+      </div>
+    `}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">

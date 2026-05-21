@@ -66,6 +66,12 @@ var FirebaseBackend = {
           this.handleSignedInUser(user);
         } else {
           this.userId = null;
+          // Reset per-session caches so a future sign-in re-attaches
+          // its own collection listeners cleanly (e.g. auth token
+          // expiry → silent sign-out → sign back in).
+          this._loading = false;
+          this._initialSnapshotSeen = {};
+          this.cleanupListeners();
           // Only force login if not already authenticated via localStorage
           if (!store.get('isAuthenticated')) {
             store.update({ user: null, isAuthenticated: false });
@@ -272,6 +278,13 @@ var FirebaseBackend = {
   async signOut() {
     try {
       this.cleanupListeners();
+      // Reset per-session state so a fresh sign-in (possibly a
+      // different user in the same tab) re-runs loadAllData /
+      // subscribeToCollections from scratch instead of inheriting
+      // the previous user's flags / snapshot bookkeeping.
+      this._loading = false;
+      this._initialSnapshotSeen = {};
+      this.userId = null;
       await this.auth.signOut();
       store.clearAll();
       Components.showToast('ログアウトしました', 'info');
