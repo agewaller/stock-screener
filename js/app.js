@@ -937,6 +937,30 @@ var App = class App {
       }
       if (primaryDisease) store.set('selectedDisease', primaryDisease);
     }
+
+    // Update the guest input area to show selected diseases as chips.
+    try { this._updateGuestDiseaseChips(selected); } catch (_) {}
+  }
+
+  // Render selected disease chips inside the guest input area so users
+  // can see at a glance which diseases they've selected. Called after
+  // every disease toggle so the guest area stays in sync.
+  _updateGuestDiseaseChips(selected) {
+    const tagRow = document.getElementById('guest-disease-tag-row');
+    if (!tagRow) return;
+    if (!selected || selected.length === 0) {
+      tagRow.style.display = 'none';
+      tagRow.innerHTML = '';
+      return;
+    }
+    const nameMap = {};
+    (CONFIG.DISEASE_CATEGORIES || []).forEach(cat => cat.diseases.forEach(d => { nameMap[d.id] = d.name; }));
+    const chips = selected.slice(0, 5).map(id =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:20px;font-size:11px;color:#3730a3;font-weight:600">${Components.escapeHtml(nameMap[id] || id)}</span>`
+    ).join('');
+    const overflow = selected.length > 5 ? `<span style="font-size:11px;color:#94a3b8">+${selected.length - 5}</span>` : '';
+    tagRow.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px 0 4px;align-items:center"><span style="font-size:11px;color:#64748b;margin-right:2px">選択中:</span>${chips}${overflow}</div>`;
+    tagRow.style.display = '';
   }
 
   selectDisease(diseaseId) {
@@ -3556,6 +3580,10 @@ ${responseText.substring(0, 3000)}`;
       const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
       if (selectedTags.length > 0 && selectedTags[0].dataset && selectedTags[0].dataset.id) {
         firstId = selectedTags[0].dataset.id;
+      } else {
+        // Fall back to disease picker selection
+        const stored = store.get('selectedDiseases') || [];
+        if (stored.length > 0) firstId = stored[0];
       }
     } catch (_) { /* DOM not ready — fall through to default pool */ }
     const samples = (typeof CONFIG !== 'undefined' && CONFIG.GUEST_SAMPLES) || {};
@@ -4282,11 +4310,20 @@ ${bloodText || '記録なし'}
       console.warn('[guestAnalyze] ensureGuestAuth returned false — proceeding with Worker env fallback');
     }
 
-    // Collect selected diseases from guest tags
+    // Collect selected diseases — prefer inline tags (future feature),
+    // fall back to disease picker selection so guests who chose a
+    // disease in the picker always get disease-specific analysis.
     const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
-    const diseases = Array.from(selectedTags).map(t => t.dataset.id);
-    const prevDiseases = store.get('selectedDiseases');
-    if (diseases.length > 0) store.set('selectedDiseases', diseases);
+    const tagDiseases = Array.from(selectedTags).map(t => t.dataset.id);
+    const storedDiseases = store.get('selectedDiseases') || [];
+    const diseases = tagDiseases.length > 0 ? tagDiseases : storedDiseases;
+    const prevDiseases = storedDiseases;
+    if (tagDiseases.length > 0) store.set('selectedDiseases', tagDiseases);
+
+    // Resolve human-readable disease names from IDs for the prompt.
+    const _diseaseNameMap = {};
+    (CONFIG.DISEASE_CATEGORIES || []).forEach(cat => cat.diseases.forEach(d => { _diseaseNameMap[d.id] = d.name; }));
+    const _diseaseNames = diseases.map(id => _diseaseNameMap[id] || id);
 
     try {
       // Speed/empathy balance: use Claude Haiku 4.5 (2-3x faster than
@@ -4295,7 +4332,7 @@ ${bloodText || '記録なし'}
       // response in ~5-10 seconds. This satisfies both:
       //   "簡易分析に戻して" (fast)
       //   "寄り添い分析できるように" (empathetic)
-      const diseaseLabel = diseases.length > 0 ? diseases.join('・') : '';
+      const diseaseLabel = _diseaseNames.length > 0 ? _diseaseNames.join('・') : '';
       const profile = store.get('userProfile') || {};
       const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
       // Guest mode uses a compact prompt (no full PROMPT_HEADER) to
@@ -7419,8 +7456,26 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    // Mobile-safe confirmation: show inline prompt instead of window.prompt.
+    if (!out) return;
+    const confirmId = 'restore-confirm-' + backupId.replace(/[^a-z0-9]/gi, '_');
+    if (!document.getElementById(confirmId)) {
+      out.insertAdjacentHTML('afterbegin', `
+        <div id="${confirmId}" style="margin-bottom:10px;padding:12px 14px;background:#fff7ed;border:1.5px solid #f97316;border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:#9a3412;margin-bottom:6px">「${Components.escapeHtml(backupId)}」から復元しますか？</div>
+          <div style="font-size:11px;color:#7c2d12;margin-bottom:10px">本日のデータは残ります（マージ動作）。復元後は自動でリロードします。</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="app._doRestoreFromBackup('${Components.escapeHtml(backupId)}')" style="padding:8px 16px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">復元する</button>
+            <button onclick="document.getElementById('${confirmId}').remove()" style="padding:8px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer">キャンセル</button>
+          </div>
+        </div>`);
+      return;
+    }
+  }
+
+  async _doRestoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) return;
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
