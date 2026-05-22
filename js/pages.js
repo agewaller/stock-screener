@@ -527,11 +527,28 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users (minimal)
+  // Today's entry check — show a streak-at-risk badge when the user
+  // has a streak but hasn't logged yet today (JST). Only shown after
+  // the first record exists so new users see the simpler prompt.
+  const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const hasLoggedToday = uniqueTextEntries.some(e => {
+    if (!e || !e.timestamp) return false;
+    const d = new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    return d === todayJst;
+  });
+  const streakAtRisk = hasData && streakStats.streak >= 3 && !hasLoggedToday;
   const welcomeHtml = !hasData ? `
     <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
       上の入力欄に体調を書いてみてください
-    </div>` : '';
+    </div>`
+  : (streakAtRisk ? `
+    <div style="margin:-4px 0 12px;padding:10px 14px;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fb923c;border-radius:12px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🔥</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:#9a3412">${streakStats.streak}日連続記録中 — 今日まだ記録していません</div>
+        <div style="font-size:11px;color:#c2410c;margin-top:2px">上の入力欄に一言書くだけで継続できます！</div>
+      </div>
+    </div>` : '');
 
   // Today's rotating prescription axis — shown on the dashboard as a
   // curiosity-driving widget. Repeat visitors see "today's focus"
@@ -3255,6 +3272,41 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Share / Invite -->
+  ${(() => {
+    const uid = (store.get('user') || {}).uid || '';
+    if (!uid) return '';
+    const shortRef = uid.substring(0, 8);
+    const refUrl = 'https://cares.advisers.jp/?ref=' + encodeURIComponent(shortRef);
+    const refUrlEnc = encodeURIComponent(refUrl);
+    const shareText = encodeURIComponent('慢性疾患の体調管理・医師へのレポート作成に健康日記を使っています。無料で試せます。\n#健康日記 #慢性疾患');
+    return `
+  <div class="card" style="margin-bottom:16px;border:1.5px solid #c7d2fe">
+    <div class="card-header" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff)">
+      <span class="card-title" style="color:#3730a3">🤝 友人・家族に紹介する</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:#475569;line-height:1.7;margin-bottom:10px">
+        あなたの紹介リンクを使って登録した方がいると、あなたが紹介者として記録されます。
+        同じ病気で悩む方に届けてください。
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+        <input id="referral-url-input" type="text" value="${Components.escapeHtml(refUrl)}" readonly
+          style="flex:1;font-size:11px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#475569;outline:none"
+          onclick="this.select()">
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${Components.escapeHtml(refUrl)}').then(()=>Components.showToast('紹介リンクをコピーしました','success'))"
+          style="padding:8px 12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">コピー</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://x.com/intent/tweet?text=${shareText}&url=${refUrlEnc}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;padding:7px 12px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">𝕏 でシェア</a>
+        <a href="https://social-plugins.line.me/lineit/share?url=${refUrlEnc}&text=${shareText}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;padding:7px 12px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">LINE で送る</a>
+      </div>
+    </div>
+  </div>`;
+  })()}
 
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">
