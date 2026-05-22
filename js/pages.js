@@ -617,7 +617,7 @@ App.prototype.render_dashboard = function() {
         const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
         let currentProxy = '';
         try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = 'https://ai.cares.advisers.jp';
+        if (!currentProxy) currentProxy = (typeof AIEngine !== 'undefined' && AIEngine.PROXY_URL) ? AIEngine.PROXY_URL : 'https://cares-relay.agewaller.workers.dev';
         const safeProxy = Components.escapeHtml(currentProxy);
         const escapeHatches = isConnFail
           ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">

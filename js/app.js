@@ -3797,7 +3797,7 @@ ${bloodText || '記録なし'}
   async diagnoseAiConnection(targetEl) {
     const url = (typeof getAnthropicEndpoint === 'function')
       ? getAnthropicEndpoint(false)
-      : 'https://ai.cares.advisers.jp/v1/messages';
+      : AIEngine.PROXY_URL + '/v1/messages';
     const out = (targetEl && targetEl.tagName) ? targetEl : document.getElementById('ai-diag-output');
     if (!out) return;
     out.innerHTML = '<div style="font-size:11px;color:#475569">診断中…（数秒お待ちください）</div>';
