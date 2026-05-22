@@ -4171,6 +4171,46 @@ ${bloodText || '記録なし'}
     }
   }
 
+  // Newsletter signup from within the main SPA login page.
+  // Uses the same Firestore collection as the LP-page newsletter-signup.js.
+  async submitLoginNewsletter(e) {
+    e.preventDefault();
+    const emailEl = document.getElementById('login-newsletter-email');
+    const msgEl = document.getElementById('login-newsletter-msg');
+    const btn = e.target.querySelector('button[type=submit]');
+    if (!emailEl || !msgEl) return;
+    const email = (emailEl.value || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      msgEl.style.color = '#b91c1c';
+      msgEl.textContent = '正しいメールアドレスを入力してください。';
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '登録中...'; }
+    msgEl.textContent = '';
+    try {
+      const db = firebase.firestore();
+      // 8-char base36 hash of email used as stable doc ID (no duplicates).
+      let h = 5381;
+      for (let i = 0; i < email.length; i++) h = ((h << 5) + h + email.charCodeAt(i)) | 0;
+      const docId = ((h >>> 0).toString(36) + email.length.toString(36)).substring(0, 12);
+      await db.collection('newsletter_subscribers').doc(docId).set({
+        email,
+        subscribedAt: new Date().toISOString(),
+        consent: true,
+        source: '/',
+        disease: (store.get('selectedDiseases') || [])[0] || ''
+      }, { merge: true });
+      const form = document.getElementById('login-newsletter-form');
+      if (form) form.style.display = 'none';
+      msgEl.style.color = '#166534';
+      msgEl.innerHTML = '✅ 登録ありがとうございます！次回の更新でお届けします。';
+    } catch (err) {
+      msgEl.style.color = '#b91c1c';
+      msgEl.textContent = '登録に失敗しました。後でもう一度お試しください。';
+      if (btn) { btn.disabled = false; btn.textContent = '登録'; }
+    }
+  }
+
   // Show a 3-step onboarding widget to users with 0 records. This
   // is the single best moment to guide them into their first
   // action. Removes itself after the first record is posted.
@@ -4394,11 +4434,32 @@ ${axisHint}
       }
       result._fromAPI = true;
       if (resultEl) {
+        // Build X share text from analysis result
+        const shareBase = 'https://cares.advisers.jp/';
+        const diseaseHashtag = _diseaseNames.length > 0 ? _diseaseNames[0].replace(/[（(）)\s]/g, '').substring(0, 20) : '慢性疾患';
+        const shareTweet = encodeURIComponent(
+          (result.summary ? '「' + result.summary + '」\n' : '') +
+          '健康日記で体調を記録・分析してみました。同じ症状で悩む方に届いてほしい。\n#健康日記 #' + diseaseHashtag
+        );
+        const shareUrl = encodeURIComponent(shareBase + (_diseaseNames.length > 0 ? '?d=' + diseases[0] : ''));
+        const lineShareUrl = 'https://social-plugins.line.me/lineit/share?url=' + shareUrl;
+        const xShareUrl = 'https://x.com/intent/tweet?text=' + shareTweet + '&url=' + shareUrl;
+
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:14px;background:#f0fdf4;border-radius:12px">
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">記録を続けると、さらに詳しい分析ができます</div>
+            <div style="font-size:11px;color:#15803d;margin-bottom:12px">毎日の変化を追跡し、あなたに合った情報をお届けします（無料）</div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">無料で登録する ↓</button>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <a href="${xShareUrl}" target="_blank" rel="noopener"
+                style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">
+                𝕏 でシェア
+              </a>
+              <a href="${lineShareUrl}" target="_blank" rel="noopener"
+                style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">
+                LINE で送る
+              </a>
+            </div>
           </div>`;
       }
     } catch (err) {

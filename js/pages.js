@@ -321,6 +321,20 @@ App.prototype.render_login = function() {
         <div style="font-size:10px;color:#6366f1;margin-top:6px;text-decoration:underline">詳しくはプライバシーと安全のページへ →</div>
       </div>
 
+      <!-- Newsletter signup — captures email before registration.
+           Stores to newsletter_subscribers (same as LP pages). -->
+      <div style="margin-bottom:20px;padding:16px 18px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px">
+        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">✉️ 最新研究・アップデートをメールで受け取る</div>
+        <div style="font-size:11px;color:#15803d;line-height:1.7;margin-bottom:10px">月 1-2 通。新機能・疾患別研究情報。<strong>いつでも 1 タップで解除</strong>可能。</div>
+        <form id="login-newsletter-form" onsubmit="app.submitLoginNewsletter(event)" style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="login-newsletter-email" type="email" required autocomplete="email"
+            placeholder="you@example.com"
+            style="flex:1;min-width:180px;padding:10px 12px;border:1.5px solid #86efac;border-radius:10px;font-size:13px;background:#fff;outline:none">
+          <button type="submit" style="padding:10px 16px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">登録</button>
+        </form>
+        <div id="login-newsletter-msg" style="margin-top:6px;font-size:11px;color:#166534;min-height:16px" aria-live="polite"></div>
+      </div>
+
       <!-- Legal Links -->
       <div style="margin-bottom:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a href="#" onclick="app.navigate('privacy');return false" style="font-size:11px;color:#6366f1;text-decoration:none">プライバシーと安全</a>
