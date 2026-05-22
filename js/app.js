@@ -4582,10 +4582,23 @@ ${axisHint}
         );
 
         if (resultEl) {
+          const _faDiseases = store.get('selectedDiseases') || [];
+          const _faNameMap = {};
+          (CONFIG.DISEASE_CATEGORIES || []).forEach(cat => cat.diseases.forEach(d => { _faNameMap[d.id] = d.name; }));
+          const _faDiseaseName = _faDiseases.length > 0 ? (_faNameMap[_faDiseases[0]] || _faDiseases[0]).replace(/[（(）)\s]/g, '').substring(0, 20) : '慢性疾患';
+          const _faShareUrl = encodeURIComponent('https://cares.advisers.jp/' + (_faDiseases.length > 0 ? '?d=' + _faDiseases[0] : ''));
+          const _faShareTweet = encodeURIComponent('写真・ファイルを健康日記に読み込んで記録してみました。\n#健康日記 #' + _faDiseaseName);
           resultEl.innerHTML = this.renderAnalysisCard(result) +
-            `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-              <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">この分析を保存して続けませんか？</div>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+            `<div style="margin-top:12px;padding:14px;background:#f0fdf4;border-radius:12px">
+              <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">この分析を保存して続けませんか？</div>
+              <div style="font-size:11px;color:#15803d;margin-bottom:12px">登録すれば毎日の変化をずっと記録・追跡できます（無料）</div>
+              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px">無料で登録する ↓</button>
+              <div style="display:flex;gap:8px;justify-content:center">
+                <a href="https://x.com/intent/tweet?text=${_faShareTweet}&url=${_faShareUrl}" target="_blank" rel="noopener"
+                  style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">𝕏 でシェア</a>
+                <a href="https://social-plugins.line.me/lineit/share?url=${_faShareUrl}&text=${_faShareTweet}" target="_blank" rel="noopener"
+                  style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">LINE で送る</a>
+              </div>
             </div>`;
         }
       } catch (err) {
