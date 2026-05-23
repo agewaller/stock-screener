@@ -513,10 +513,43 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users (minimal)
+  // Welcome card for brand-new users — shown once until the first entry
   const welcomeHtml = !hasData ? `
-    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
-      上の入力欄に体調を書いてみてください
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%);border:1px solid #86efac">
+      <div class="card-body" style="padding:18px 20px">
+        <div style="font-size:15px;font-weight:700;color:#14532d;margin-bottom:8px">🌱 はじめての記録を残してみましょう</div>
+        <div style="font-size:12px;color:#166534;line-height:1.8;margin-bottom:14px">
+          上の入力欄に今日の体調を自由に書くだけでOKです。<br>
+          AIが自動で分析し、医師への相談に役立つコメントを返します。
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="document.getElementById('dash-quick-input').value='今日の体調：';document.getElementById('dash-quick-input').focus()"
+            style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📝 体調を入力</button>
+          <button onclick="document.getElementById('dash-quick-input').value='今日の食事：';document.getElementById('dash-quick-input').focus()"
+            style="padding:6px 14px;background:#fff;border:1px solid #86efac;color:#166534;border-radius:8px;cursor:pointer;font-size:12px">🍽 食事を入力</button>
+          <button onclick="document.getElementById('dash-quick-input').value='今日飲んだ薬：';document.getElementById('dash-quick-input').focus()"
+            style="padding:6px 14px;background:#fff;border:1px solid #86efac;color:#166534;border-radius:8px;cursor:pointer;font-size:12px">💊 薬を入力</button>
+        </div>
+      </div>
+    </div>` : '';
+
+  // "今日まだ記録していません" nudge — shown only when user has past data
+  // but no entry yet today. Drives daily retention without being pushy
+  // (it disappears as soon as they submit something).
+  const todayJstStr = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const hasEntryToday = (store.get('textEntries') || []).some(e => {
+    if (!e.timestamp) return false;
+    return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJstStr;
+  });
+  const todayNudgeHtml = hasData && !hasEntryToday ? `
+    <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px;cursor:pointer"
+      onclick="document.getElementById('dash-quick-input').focus()">
+      <span style="font-size:20px">📅</span>
+      <div style="flex:1;font-size:12px;color:#92400e">
+        <strong>今日はまだ記録がありません</strong><br>
+        <span style="font-size:11px">入力欄に体調を書くと、AIがコメントします</span>
+      </div>
+      <span style="font-size:11px;color:#b45309;font-weight:600">入力 →</span>
     </div>` : '';
 
   // Today's rotating prescription axis — shown on the dashboard as a
@@ -678,14 +711,24 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
-      </div>` : ''}
+        <button onclick="app.shareApp()"
+          style="margin-left:auto;padding:4px 12px;background:#4f46e5;color:#fff;border:none;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+          🔗 友達に紹介
+        </button>
+      </div>` : `
+      <div style="margin-top:8px;text-align:right">
+        <button onclick="app.shareApp()"
+          style="padding:4px 12px;background:transparent;color:#6366f1;border:1px solid #c7d2fe;border-radius:14px;cursor:pointer;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+          🔗 友達に紹介
+        </button>
+      </div>`}
     </div>
   </div>` : ''}
 
@@ -847,8 +890,9 @@ App.prototype.render_dashboard = function() {
   <!-- AI Instant Feedback moved up right under the input + deep-analysis
        button (see block earlier in this template). -->
 
-  <!-- 3. Welcome for new users OR Enriched Data Feed -->
+  <!-- 3. Welcome for new users OR today nudge OR Enriched Data Feed -->
   ${welcomeHtml}
+  ${todayNudgeHtml}
 
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
@@ -3239,6 +3283,45 @@ App.prototype.render_settings = function() {
           </div>
         </div>
       </label>
+    </div>
+  </div>
+
+  <!-- Notification Settings -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 記録リマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7">
+        毎日決まった時間に「今日の記録を忘れずに」と通知を受け取れます。<br>
+        通知はこのブラウザにのみ届きます（端末にインストールすると確実に受け取れます）。
+      </div>
+      <div id="notif-settings-area">
+        ${(() => {
+          if (typeof Notification === 'undefined') {
+            return '<div style="font-size:12px;color:var(--text-muted)">このブラウザは通知に対応していません。</div>';
+          }
+          const perm = Notification.permission;
+          const savedTime = localStorage.getItem('reminder_time') || '20:00';
+          if (perm === 'granted') {
+            return `
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:12px;color:#16a34a;font-weight:600">✓ 通知が有効です</span>
+                <input type="time" value="${savedTime}" id="reminder-time-input"
+                  style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px"
+                  onchange="localStorage.setItem('reminder_time',this.value);app.scheduleReminderNotification();Components.showToast('通知時刻を変更しました','success')">
+                <button class="btn btn-outline btn-sm" onclick="localStorage.removeItem('reminder_enabled');Components.showToast('通知を無効にしました','info');app.navigate('settings')">無効にする</button>
+              </div>`;
+          }
+          if (perm === 'denied') {
+            return '<div style="font-size:12px;color:var(--danger)">通知がブロックされています。ブラウザの設定からサイトの通知を許可してください。</div>';
+          }
+          return `
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <input type="time" value="${savedTime}" id="reminder-time-input"
+                style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <button class="btn btn-primary btn-sm" onclick="app.enableReminders()">🔔 リマインダーを有効にする</button>
+            </div>`;
+        })()}
+      </div>
     </div>
   </div>
 

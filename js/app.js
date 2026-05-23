@@ -899,14 +899,11 @@ var App = class App {
     const selected = store.get('selectedDiseases') || [];
     const id = checkbox.value;
 
-    if (checkbox.checked) {
-      if (!selected.includes(id)) selected.push(id);
-    } else {
-      const idx = selected.indexOf(id);
-      if (idx >= 0) selected.splice(idx, 1);
-    }
+    const newSelected = checkbox.checked
+      ? (selected.includes(id) ? selected : [...selected, id])
+      : selected.filter(x => x !== id);
 
-    store.set('selectedDiseases', selected);
+    store.set('selectedDiseases', newSelected);
 
     // Invalidate disease-dependent caches (research/actions/feedback)
     store.set('cachedResearch', null);
@@ -915,7 +912,7 @@ var App = class App {
 
     // Update count badge
     const countEl = document.getElementById('disease-count');
-    if (countEl) countEl.textContent = selected.length + '件選択中';
+    if (countEl) countEl.textContent = newSelected.length + '件選択中';
 
     // Show/hide custom input
     if (id === 'custom') {
@@ -924,8 +921,8 @@ var App = class App {
     }
 
     // Also set primary disease for backward compat
-    if (selected.length > 0) {
-      const primaryId = selected[0];
+    if (newSelected.length > 0) {
+      const primaryId = newSelected[0];
       // Find disease name from categories
       let primaryDisease = null;
       for (const cat of CONFIG.DISEASE_CATEGORIES) {
@@ -993,6 +990,10 @@ var App = class App {
       if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
 
       const reader = new FileReader();
+      reader.onerror = () => {
+        if (resultEl) resultEl.innerHTML = '';
+        Components.showToast('写真の読み込みに失敗しました', 'error');
+      };
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target.result;
         const compressed = await Components.compressImage(rawDataUrl);
@@ -1008,9 +1009,7 @@ var App = class App {
           previewImage: compressed,
           source: 'photo_modal'
         };
-        const textEntries = store.get('textEntries') || [];
-        textEntries.push(entry);
-        store.set('textEntries', textEntries);
+        store.set('textEntries', [...(store.get('textEntries') || []), entry]);
 
         store.addHealthData('photos', {
           filename: file.name,
@@ -1137,19 +1136,18 @@ var App = class App {
     };
 
     // Store in conversation history for AI context
-    const history = store.get('conversationHistory') || [];
-    history.push({
-      role: 'user',
-      content: `[${category}] ${title ? title + ': ' : ''}${content}`,
-      timestamp: entry.timestamp,
-      type: 'data_entry'
-    });
-    store.set('conversationHistory', history);
+    store.set('conversationHistory', [
+      ...(store.get('conversationHistory') || []),
+      {
+        role: 'user',
+        content: `[${category}] ${title ? title + ': ' : ''}${content}`,
+        timestamp: entry.timestamp,
+        type: 'data_entry'
+      }
+    ]);
 
     // Always store in textEntries for AI analysis
-    const textEntries = store.get('textEntries') || [];
-    textEntries.push(entry);
-    store.set('textEntries', textEntries);
+    store.set('textEntries', [...(store.get('textEntries') || []), entry]);
 
     // Kick off the 5-minute post-comment timer so the セルフケア panel
     // (loadActionRecommendations) re-evaluates its gate once the user
@@ -1168,8 +1166,10 @@ var App = class App {
     }
 
     // Clear form
-    document.getElementById('text-input-content').value = '';
-    document.getElementById('text-input-title').value = '';
+    const contentEl = document.getElementById('text-input-content');
+    const titleEl = document.getElementById('text-input-title');
+    if (contentEl) contentEl.value = '';
+    if (titleEl) titleEl.value = '';
 
     // Flip analyzing/feedback flags BEFORE navigating so the
     // dashboard renders the loading spinner rather than the stale
@@ -2502,6 +2502,90 @@ ${titles}`;
     // Sort by relevance and pick top 6
     items.sort((a, b) => b.relevance - a.relevance);
     return items.slice(0, 6);
+  }
+
+  // ---- Reminder Notifications ----
+  async enableReminders() {
+    if (typeof Notification === 'undefined') return;
+    const timeInput = document.getElementById('reminder-time-input');
+    const time = timeInput ? timeInput.value : '20:00';
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        localStorage.setItem('reminder_enabled', '1');
+        localStorage.setItem('reminder_time', time);
+        this.scheduleReminderNotification();
+        Components.showToast(`${time} にリマインダーを設定しました`, 'success');
+        this.navigate('settings');
+      } else {
+        Components.showToast('通知が許可されませんでした。ブラウザ設定から許可してください。', 'error');
+      }
+    } catch (e) {
+      Components.showToast('通知の設定に失敗しました', 'error');
+    }
+  }
+
+  scheduleReminderNotification() {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!localStorage.getItem('reminder_enabled')) return;
+    clearTimeout(this._reminderTimer);
+    const timeStr = localStorage.getItem('reminder_time') || '20:00';
+    const [h, m] = timeStr.split(':').map(Number);
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    const delay = target - now;
+    this._reminderTimer = setTimeout(() => {
+      const todayEntries = (store.get('textEntries') || []).filter(e => {
+        if (!e.timestamp) return false;
+        const d = new Date(e.timestamp);
+        const t = new Date();
+        return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
+      });
+      if (todayEntries.length === 0) {
+        new Notification('健康日記 📔', {
+          body: '今日の体調をまだ記録していません。記録すると AI がコメントします。',
+          icon: '/icon-192.png',
+          tag: 'daily-reminder'
+        });
+      }
+      this.scheduleReminderNotification();
+    }, delay);
+  }
+
+  // ---- Share / Referral ----
+  async shareApp() {
+    const streakStats = this._computeStreak ? this._computeStreak() : { streak: 0, totalDays: 0 };
+    const streak = streakStats.streak;
+    const totalDays = streakStats.totalDays;
+
+    let text = '体調をAIで記録・分析できるアプリ「健康日記」を使っています。慢性疾患の日々の管理にとても役立っています。';
+    if (streak >= 3) text = `${streak}日連続で体調を記録中！AIが分析してくれる「健康日記」、慢性疾患の管理に役立っています。`;
+    else if (totalDays >= 1) text = `「健康日記」で体調記録を始めました。AIが記録を分析して、医師への相談にも使えます。`;
+
+    const shareData = {
+      title: '健康日記 – 慢性疾患の体調管理アプリ',
+      text: text,
+      url: 'https://cares.advisers.jp'
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+
+    // Fallback: copy link to clipboard
+    try {
+      await navigator.clipboard.writeText('https://cares.advisers.jp');
+      Components.showToast('リンクをコピーしました。友達に送ってください！', 'success');
+    } catch (_) {
+      Components.showToast('https://cares.advisers.jp をコピーして友達に送ってください', 'info');
+    }
   }
 
   // ---- Timeline ----
@@ -4447,6 +4531,9 @@ ${axisHint}
     await FirebaseBackend.ensureGuestAuth();
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      Components.showToast('写真の読み込みに失敗しました', 'error');
+    };
     reader.onload = async (ev) => {
       try {
         const isImage = file.type.startsWith('image/');
@@ -4630,6 +4717,9 @@ ${axisHint}
       }
 
       const reader = new FileReader();
+      reader.onerror = () => {
+        Components.showToast(`${file.name} の読み込みに失敗しました`, 'error');
+      };
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target.result;
         const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
@@ -4641,26 +4731,25 @@ ${axisHint}
           category: category
         });
 
-        const textEntries = store.get('textEntries') || [];
-        textEntries.push({
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-          timestamp: new Date().toISOString(),
-          category: category,
-          type: 'file_upload',
-          photoId: isImage ? photoId : '',
-          previewImage: compressed,
-          title: `📎 ${file.name}`,
-          content: `${category}をアップロードしました（${(file.size/1024).toFixed(0)}KB）`
-        });
-        store.set('textEntries', textEntries);
+        store.set('textEntries', [
+          ...(store.get('textEntries') || []),
+          {
+            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+            timestamp: new Date().toISOString(),
+            category: category,
+            type: 'file_upload',
+            photoId: isImage ? photoId : '',
+            previewImage: compressed,
+            title: `📎 ${file.name}`,
+            content: `${category}をアップロードしました（${(file.size/1024).toFixed(0)}KB）`
+          }
+        ]);
 
         // Add to conversation history
-        const history = store.get('conversationHistory') || [];
-        history.push({
-          role: 'user', content: analysisPrompt,
-          timestamp: new Date().toISOString(), type: 'file_upload'
-        });
-        store.set('conversationHistory', history);
+        store.set('conversationHistory', [
+          ...(store.get('conversationHistory') || []),
+          { role: 'user', content: analysisPrompt, timestamp: new Date().toISOString(), type: 'file_upload' }
+        ]);
 
         Components.showToast(`${file.name} を認識中...`, 'info');
 
@@ -4737,6 +4826,9 @@ ${axisHint}
       }
 
       const reader = new FileReader();
+      reader.onerror = () => {
+        Components.showToast(`${file.name} の読み込みに失敗しました`, 'error');
+      };
       reader.onload = async (ev) => {
         const rawDataUrl = ev.target.result;
         const compressed = isImage ? await Components.compressImage(rawDataUrl) : '';
@@ -4749,23 +4841,25 @@ ${axisHint}
         });
 
         const entryId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        const textEntries = store.get('textEntries') || [];
-        textEntries.push({
-          id: entryId,
-          timestamp: new Date().toISOString(),
-          category: isImage ? '写真' : 'ファイル',
-          type: 'file_upload',
-          photoId: isImage ? photoId : '',
-          previewImage: compressed,
-          title: `📎 ${file.name}`,
-          content: `${isImage ? '写真' : 'ファイル'}をアップロード（${(file.size/1024).toFixed(0)}KB）`
-        });
-        store.set('textEntries', textEntries);
+        store.set('textEntries', [
+          ...(store.get('textEntries') || []),
+          {
+            id: entryId,
+            timestamp: new Date().toISOString(),
+            category: isImage ? '写真' : 'ファイル',
+            type: 'file_upload',
+            photoId: isImage ? photoId : '',
+            previewImage: compressed,
+            title: `📎 ${file.name}`,
+            content: `${isImage ? '写真' : 'ファイル'}をアップロード（${(file.size/1024).toFixed(0)}KB）`
+          }
+        ]);
 
         // Add to conversation history
-        const history = store.get('conversationHistory') || [];
-        history.push({ role: 'user', content: `[ファイル: ${file.name}]`, timestamp: new Date().toISOString(), type: 'file_upload' });
-        store.set('conversationHistory', history);
+        store.set('conversationHistory', [
+          ...(store.get('conversationHistory') || []),
+          { role: 'user', content: `[ファイル: ${file.name}]`, timestamp: new Date().toISOString(), type: 'file_upload' }
+        ]);
 
         Components.showToast(`${file.name} を認識中...`, 'info');
 
@@ -7485,5 +7579,12 @@ ${joined.substring(0, 8000)}`;
 };
 
 var app = new App();
+
+// Schedule daily reminder notification if the user previously opted in.
+// Runs once on page load; re-schedules itself for the next day.
+if (typeof Notification !== 'undefined' && Notification.permission === 'granted'
+    && localStorage.getItem('reminder_enabled')) {
+  setTimeout(() => { if (app && app.scheduleReminderNotification) app.scheduleReminderNotification(); }, 2000);
+}
 
 
