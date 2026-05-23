@@ -3514,12 +3514,10 @@ ${responseText.substring(0, 3000)}`;
 
   // Save AI analysis comment linked to a text entry
   saveAIComment(entryId, result) {
-    const comments = store.get('aiComments') || {};
-    comments[entryId] = {
-      timestamp: new Date().toISOString(),
-      result: result
-    };
-    store.set('aiComments', comments);
+    store.set('aiComments', {
+      ...(store.get('aiComments') || {}),
+      [entryId]: { timestamp: new Date().toISOString(), result }
+    });
   }
 
   // Get AI comment for a specific entry
@@ -4021,8 +4019,8 @@ ${bloodText || '記録なし'}
     // Remove linked AI comment so it doesn't appear without an entry
     const comments = store.get('aiComments') || {};
     if (comments[id]) {
-      delete comments[id];
-      store.set('aiComments', comments);
+      const { [id]: _removed, ...restComments } = comments;
+      store.set('aiComments', restComments);
     }
 
     // If this was a photo / file upload, also remove the photo blob
@@ -4116,14 +4114,13 @@ ${bloodText || '記録なし'}
       }
       return false;
     };
-    for (const k of keys) {
-      const c = comments[k];
-      if (c && isLegacy(c.result)) {
-        delete comments[k];
-        removed++;
-      }
-    }
-    store.set('aiComments', comments);
+    const cleaned = Object.fromEntries(
+      Object.entries(comments).filter(([, c]) => {
+        if (c && isLegacy(c.result)) { removed++; return false; }
+        return true;
+      })
+    );
+    store.set('aiComments', cleaned);
     const fb = store.get('latestFeedback');
     if (isLegacy(fb)) {
       store.set('latestFeedback', null);

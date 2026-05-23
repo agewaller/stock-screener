@@ -348,17 +348,12 @@ var Store = class Store {
     const rates = Store.COSTS_PER_MTOKEN_USD[model] || { input: 5, output: 25 };
     const costUsd = (inT * rates.input + outT * rates.output) / 1_000_000;
     const costJpy = Math.round(costUsd * Store.USD_JPY * 100) / 100;
-    const log = this.state.apiUsage || [];
-    log.push({
-      ts: new Date().toISOString(),
-      model,
-      input: inT,
-      output: outT,
-      costJpy,
-      source: source || 'auth'
-    });
+    let log = [
+      ...(this.state.apiUsage || []),
+      { ts: new Date().toISOString(), model, input: inT, output: outT, costJpy, source: source || 'auth' }
+    ];
     // Cap the log at 5000 entries (~3 months of typical usage)
-    if (log.length > 5000) log.splice(0, log.length - 5000);
+    if (log.length > 5000) log = log.slice(log.length - 5000);
     this.set('apiUsage', log);
   }
 
