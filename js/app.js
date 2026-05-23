@@ -2826,9 +2826,7 @@ ${titles}`;
                 _raw: deepText,
                 _specializedBy: specialized
               };
-              const history = store.get('analysisHistory') || [];
-              history.push(analysis);
-              store.set('analysisHistory', history);
+              store.set('analysisHistory', [...(store.get('analysisHistory') || []), analysis]);
               store.set('latestAnalysis', analysis);
 
               // Auto-route structured results into the matching health
@@ -3085,19 +3083,21 @@ ${responseText.substring(0, 3000)}`;
     // Persist the analysis in a dedicated collection so the dashboard
     // widget can read the most recent analysis plus a trend history
     // for graphing (conscious_focus, net value, calorie balance, etc.).
-    const analyses = store.get('plaudAnalyses') || [];
-    analyses.push({
-      id: 'plaud_' + Date.now().toString(36),
-      entryId: entry.id,
-      timestamp: entry.timestamp,
-      dateLabel,
-      title: entry.title,
-      fullText: fullText || rawText,
-      json: json || null,
-      _raw: rawText.length > 20000 ? null : rawText
-    });
+    let analyses = [
+      ...(store.get('plaudAnalyses') || []),
+      {
+        id: 'plaud_' + Date.now().toString(36),
+        entryId: entry.id,
+        timestamp: entry.timestamp,
+        dateLabel,
+        title: entry.title,
+        fullText: fullText || rawText,
+        json: json || null,
+        _raw: rawText.length > 20000 ? null : rawText
+      }
+    ];
     // Cap history at 90 entries so localStorage doesn't blow up
-    if (analyses.length > 90) analyses.splice(0, analyses.length - 90);
+    if (analyses.length > 90) analyses = analyses.slice(analyses.length - 90);
     store.set('plaudAnalyses', analyses);
 
     // Also save an AI comment linked to the entry so it shows in the
@@ -3618,9 +3618,7 @@ ${responseText.substring(0, 3000)}`;
         _deepAnalysis: true,
         sourceContent: last.content
       };
-      const archive = (store.get('deepAnalyses') || []).slice();
-      archive.push(analysis);
-      store.set('deepAnalyses', archive);
+      store.set('deepAnalyses', [...(store.get('deepAnalyses') || []), analysis]);
       store.set('latestFeedback', Object.assign({}, parsed || { findings: text }, { _deepAnalysis: true }));
       const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
       store.set('deepAnalysisLastRun', todayJst);
@@ -4634,13 +4632,11 @@ ${axisHint}
     // messages ("...認識中" → "組み立て中" → "分析中" → "時間がかかっています")
     store.set('analyzeStartedAt', Date.now());
 
-    const textEntries = store.get('textEntries') || [];
-    textEntries.push(entry);
-    store.set('textEntries', textEntries);
-
-    const history = store.get('conversationHistory') || [];
-    history.push({ role: 'user', content: content, timestamp: entry.timestamp, type: 'data_entry' });
-    store.set('conversationHistory', history);
+    store.set('textEntries', [...(store.get('textEntries') || []), entry]);
+    store.set('conversationHistory', [
+      ...(store.get('conversationHistory') || []),
+      { role: 'user', content: content, timestamp: entry.timestamp, type: 'data_entry' }
+    ]);
 
     // Re-render the dashboard so the new text entry appears in the
     // feed and dash-ai-feedback shows the loading spinner via the
@@ -6291,7 +6287,7 @@ ${axisHint}
       Components.showToast('既に管理者です', 'error');
       return;
     }
-    this.ADMIN_EMAILS.push(email);
+    this.ADMIN_EMAILS = [...this.ADMIN_EMAILS, email];
     localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
     if (FirebaseBackend.initialized) {
       FirebaseBackend.saveProfile({ adminEmails: this.ADMIN_EMAILS });
@@ -6852,9 +6848,7 @@ ${contactDetails}
           .set(auditEntry);
       } else {
         // Fallback to localStorage audit log
-        const log = store.get('applicationLog') || [];
-        log.push(auditEntry);
-        store.set('applicationLog', log);
+        store.set('applicationLog', [...(store.get('applicationLog') || []), auditEntry]);
       }
     } catch (e) {
       console.warn('[financial] audit log save failed:', e.message);
