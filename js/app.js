@@ -148,6 +148,7 @@ var App = class App {
     // Defensive: log any onclick handler that resolves to undefined
     // before the user has a chance to tap it.
     setTimeout(() => this._verifyHandlerBindings(), 1500);
+    setTimeout(() => this._checkDailyReminderTrigger(), 3000);
 
     // Auto-refresh the dashboard whenever new data lands in any of the
     // user-visible collections. This makes Plaud / Apple Health / Fitbit
@@ -3247,6 +3248,88 @@ ${responseText.substring(0, 3000)}`;
       }
     }
     this.copyAnalysisShare(null, text);
+  }
+
+  // ── 毎日リマインダー ──────────────────────────────────────────
+  // ブラウザ Notification API で毎日の記録を促す通知を設定する。
+  // Push API（サーバーサイド送信）ではなく、アプリを開いた瞬間に
+  // 指定時刻を過ぎていたら通知を出す「ソフトリマインダー」方式。
+  async requestDailyReminder() {
+    if (typeof Notification === 'undefined') {
+      Components.showToast('このブラウザは通知に対応していません', 'error');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      Components.showToast('通知を許可しました。毎日の記録をお知らせします ✅', 'success');
+      localStorage.setItem('cc_reminder_enabled', '1');
+      this.navigate('settings');
+    } else {
+      Components.showToast('通知が拒否されました。ブラウザの設定から変更できます。', 'error');
+    }
+  }
+
+  cancelDailyReminder() {
+    localStorage.removeItem('cc_reminder_enabled');
+    Components.showToast('毎日のリマインダーを解除しました', 'info');
+    this.navigate('settings');
+  }
+
+  // アプリ起動時に呼ぶ — 今日の記録がなく、指定時刻を過ぎていたら通知する
+  _checkDailyReminderTrigger() {
+    try {
+      if (typeof Notification === 'undefined') return;
+      if (Notification.permission !== 'granted') return;
+      if (!localStorage.getItem('cc_reminder_enabled')) return;
+      const reminderTime = localStorage.getItem('cc_reminder_time') || '20:00';
+      const [rh, rm] = reminderTime.split(':').map(Number);
+      const now = new Date();
+      if (now.getHours() < rh || (now.getHours() === rh && now.getMinutes() < rm)) return;
+      const todayJst = now.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      const lastNotified = localStorage.getItem('cc_reminder_notified');
+      if (lastNotified === todayJst) return;
+      const textEntries = store.get('textEntries') || [];
+      const recordedToday = textEntries.some(e => {
+        try { return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) === todayJst; }
+        catch { return false; }
+      });
+      if (recordedToday) return;
+      localStorage.setItem('cc_reminder_notified', todayJst);
+      const diseases = (store.get('selectedDiseases') || []);
+      const hint = diseases.length > 0 ? '今日の体調や症状を記録しましょう' : '今日の体調を記録しましょう';
+      new Notification('健康日記 📝', {
+        body: hint,
+        icon: '/og-image.png',
+        badge: '/og-image.png',
+        tag: 'daily-reminder'
+      });
+    } catch (e) { /* ignore — notification errors must not crash the app */ }
+  }
+
+  // ── 友達紹介リンク ───────────────────────────────────────────
+  copyReferralLink() {
+    const input = document.getElementById('referral-link-input');
+    const url = input ? input.value : 'https://cares.advisers.jp/';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        Components.showToast('紹介リンクをコピーしました！SNS で共有してみてください 🎉', 'success');
+      }).catch(() => Components.showToast('コピーに失敗しました', 'error'));
+    } else {
+      try { window.prompt('以下のURLをコピーしてください:', url); } catch (_) {}
+    }
+  }
+
+  async shareReferralLink() {
+    const input = document.getElementById('referral-link-input');
+    const url = input ? input.value : 'https://cares.advisers.jp/';
+    const text = '慢性疾患の症状記録に「健康日記」を使っています。無料で使えるのでぜひ試してみてください 📝';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '健康日記', text, url });
+        return;
+      } catch (_) {}
+    }
+    this.copyReferralLink();
   }
 
   renderAnalysisCard(result) {

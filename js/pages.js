@@ -689,6 +689,39 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- 今日の記録バナー: 今日まだ記録がない場合にのみ表示。
+       記録した直後は store の textEntries が更新されるので自動で消える。
+       "✕" で1日中非表示にする (localStorage に今日の日付を保存)。 -->
+  ${(() => {
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const dismissed = (() => {
+      try { return localStorage.getItem('cc_today_banner_dismissed') === todayJst; } catch { return false; }
+    })();
+    if (dismissed) return '';
+    const textEntries = store.get('textEntries') || [];
+    const recordedToday = textEntries.some(e => {
+      try { return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }) === todayJst; }
+      catch { return false; }
+    });
+    if (recordedToday) return '';
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'おはようございます ☀️' : hour < 18 ? 'こんにちは 🌤' : 'こんばんは 🌙';
+    return `
+    <div id="today-record-banner" style="margin-bottom:16px;padding:12px 14px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1.5px solid #86efac;border-radius:14px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:24px;flex-shrink:0">📝</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:2px">${greeting}今日の記録をつけましょう</div>
+        <div style="font-size:11px;color:#15803d">1行でも OK。続けると体調パターンが見えてきます。</div>
+      </div>
+      <button onclick="document.getElementById('dash-quick-input').focus();document.getElementById('today-record-banner').style.display='none'"
+        style="flex-shrink:0;padding:8px 14px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">
+        記録する
+      </button>
+      <button onclick="try{localStorage.setItem('cc_today_banner_dismissed','${todayJst}')}catch(e){}document.getElementById('today-record-banner').style.display='none'"
+        style="flex-shrink:0;background:none;border:none;color:#15803d;font-size:18px;cursor:pointer;padding:4px;line-height:1" title="今日は非表示にする">✕</button>
+    </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
@@ -3217,6 +3250,66 @@ App.prototype.render_settings = function() {
       <div class="form-group"><label class="form-label">備考</label><textarea class="form-textarea" id="profile-notes" rows="2" placeholder="アレルギー、既往歴、家族歴..." style="padding:8px 10px"></textarea></div>
 
       <button class="btn btn-primary btn-sm" onclick="app.saveProfile()">プロフィールを保存</button>
+    </div>
+  </div>
+
+  <!-- 🔔 毎日リマインダー設定 -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔔 毎日のリマインダー</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      ${(() => {
+        const notifStatus = (typeof Notification !== 'undefined') ? Notification.permission : 'unavailable';
+        const savedTime = (() => { try { return localStorage.getItem('cc_reminder_time') || '20:00'; } catch { return '20:00'; } })();
+        if (notifStatus === 'unavailable') {
+          return '<div style="font-size:12px;color:var(--text-muted)">このブラウザでは通知がサポートされていません。</div>';
+        }
+        if (notifStatus === 'denied') {
+          return '<div style="font-size:12px;color:#b91c1c;line-height:1.7">ブラウザの通知がブロックされています。<br>ブラウザの設定 → サイト → cares.advisers.jp → 通知を許可してください。</div>';
+        }
+        return `
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">
+            毎日指定した時刻にブラウザ通知で「今日の記録をつけましょう」とお知らせします。<br>
+            アプリを開いていない場合は通知されません（PWA インストール後に改善予定）。
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <label style="font-size:13px;font-weight:600;color:var(--text-primary)">リマインダー時刻:</label>
+            <input type="time" id="reminder-time-input" value="${savedTime}"
+              style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary)"
+              onchange="try{localStorage.setItem('cc_reminder_time',this.value)}catch(e){}">
+            ${notifStatus === 'granted'
+              ? `<button class="btn btn-secondary btn-sm" onclick="app.cancelDailyReminder()" style="color:var(--danger);border-color:var(--danger)">通知を解除する</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="app.requestDailyReminder()">通知を許可して設定する</button>`
+            }
+          </div>
+          ${notifStatus === 'granted' ? '<div style="margin-top:8px;font-size:11px;color:#16a34a">✅ 通知が許可されています。アプリを開いた時に指定時刻を過ぎていると通知が届きます。</div>' : ''}
+        `;
+      })()}
+    </div>
+  </div>
+
+  <!-- 🔗 友達に紹介する -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">🔗 友達に紹介する</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">
+        同じ症状で悩む方に健康日記を紹介しましょう。あなた専用の紹介リンクをコピーして共有できます。
+      </div>
+      <div id="referral-link-box" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="text" readonly id="referral-link-input"
+          value="${(() => {
+            const user = store.get('user') || {};
+            const uid = (user.uid || '').substring(0, 8);
+            return 'https://cares.advisers.jp/?ref=' + (uid || 'share');
+          })()}"
+          style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary)">
+        <button class="btn btn-primary btn-sm" onclick="app.copyReferralLink()">コピー</button>
+        <button class="btn btn-secondary btn-sm" onclick="app.shareReferralLink()">共有</button>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">同じ症状を持つ方に届けることが、患者コミュニティ全体の助けになります。</div>
     </div>
   </div>
 
