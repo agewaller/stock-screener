@@ -101,7 +101,7 @@ App.prototype.render_login = function() {
         </div>
         <div id="disease-picker" style="display:${selectedCount > 0 ? 'block' : 'none'};margin-top:10px">
           <input type="text" class="form-input" placeholder="検索..." style="border-radius:10px;padding:9px 12px;margin-bottom:10px;border:1.5px solid #e2e8f0;font-size:12px"
-            oninput="document.querySelectorAll('.disease-checkbox').forEach(cb=>{const label=cb.closest('label');const match=label.textContent.toLowerCase().includes(this.value.toLowerCase());label.style.display=match?'':'none'})">
+            oninput="(function(q){var lower=q.toLowerCase();document.querySelectorAll('#disease-picker>div').forEach(function(catDiv){var labels=catDiv.querySelectorAll('label');var listDiv=catDiv.querySelector('div[style*=flex-wrap]');var matches=0;labels.forEach(function(label){var match=!q||label.textContent.toLowerCase().includes(lower);label.style.display=match?'':'none';if(match)matches++;});if(q&&listDiv){listDiv.style.display=matches?'flex':'none';var tog=catDiv.querySelector('.toggle');if(tog)tog.textContent=matches?'-':'+';catDiv.style.display=matches?'':'none';}else if(!q){catDiv.style.display='';labels.forEach(function(l){l.style.display='';});}});})(this.value)">
           ${categoryHtml}
           <div id="selected-disease-scale" style="display:none;margin-top:12px;padding:10px 12px;background:#eef2ff;border-left:3px solid #6366f1;border-radius:0 8px 8px 0"></div>
         </div>
