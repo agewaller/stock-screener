@@ -552,6 +552,36 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://cares.advisers.jp/cptsd.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/dissociative.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/immunodeficiency.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/cancer_survivor.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/mcs.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://cares.advisers.jp/diseases.html</loc>
     <lastmod>2026-05-24</lastmod>
     <changefreq>monthly</changefreq>
