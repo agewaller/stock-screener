@@ -414,6 +414,10 @@ var CONFIG = {
                           japan: null, japanLabel: '国内推計策定中' },
     substance:          { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
                           japan: null, japanLabel: '国内推計策定中' },
+    nafld:              { world: 1_000_000_000, label: '約 10 億人 (GBD 2019)', tier: 1, density: 'medium', source: 'GBD 2019',
+                          japan:  30_000_000, japanLabel: '約 3,000 万人',       japanSource: '成人の約 25%' },
+    pulmonary_fibrosis: { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
+                          japan:     60_000, japanLabel: '約 5〜6 万人',          japanSource: '指定難病 85 号' },
   },
 
   // ============================================================

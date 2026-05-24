@@ -9,16 +9,18 @@ App.prototype.render_login = function() {
   const selected = store.get('selectedDiseases') || [];
   const selectedCount = selected.length;
 
-  const categoryHtml = cats.map(cat => `
+  const categoryHtml = cats.map(cat => {
+    const catHasSelected = cat.diseases.some(d => selected.includes(d.id));
+    return `
     <div style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer"
         onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'flex':'none';this.querySelector('.toggle').textContent=this.nextElementSibling.style.display==='none'?'+':'-'">
-        <span class="toggle" style="font-size:14px;color:var(--accent);font-weight:700;width:16px;text-align:center">+</span>
+        <span class="toggle" style="font-size:14px;color:var(--accent);font-weight:700;width:16px;text-align:center">${catHasSelected ? '-' : '+'}</span>
         <span style="font-size:16px">${cat.icon}</span>
         <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${cat.name}</span>
         <span style="font-size:10px;color:var(--text-muted)">(${cat.diseases.length})</span>
       </div>
-      <div style="display:none;flex-wrap:wrap;gap:6px;padding-left:22px">
+      <div style="display:${catHasSelected ? 'flex' : 'none'};flex-wrap:wrap;gap:6px;padding-left:22px">
         ${cat.diseases.map(d => {
           // Surface world/Japan patient counts as a tooltip + a small
           // inline "世界 X・国内 Y" badge. Desktop users see the tooltip
@@ -52,7 +54,8 @@ App.prototype.render_login = function() {
         }).join('')}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   return `
   <div class="login-page" style="align-items:flex-start;padding:0;background:#fff;min-height:100vh">
