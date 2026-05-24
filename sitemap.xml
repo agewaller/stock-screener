@@ -528,6 +528,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://cares.advisers.jp/gastroparesis.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/dysautonomia.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://cares.advisers.jp/.well-known/security.txt</loc>
     <lastmod>2026-05-24</lastmod>
     <changefreq>yearly</changefreq>
