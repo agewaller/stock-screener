@@ -76,6 +76,25 @@
     document.head.appendChild(style);
     document.body.appendChild(bar);
 
+    // --- Related-diseases nav (diseases.html hub link) -------------
+    // Inject a compact "全疾患ガイド一覧" link before the footer so
+    // users can discover other condition guides, improving internal
+    // linking and time-on-site.
+    try {
+      var footer = document.querySelector('footer');
+      if (footer && footer.parentNode) {
+        var navStrip = document.createElement('div');
+        navStrip.style.cssText =
+          'text-align:center;padding:12px 8px;border-top:1px solid #e4e7ef;'
+          + 'margin-top:8px;font-size:12px;color:#64748b';
+        navStrip.innerHTML =
+          '<a href="https://cares.advisers.jp/diseases.html" '
+          + 'style="color:#6366f1;text-decoration:none;font-weight:600">'
+          + '📋 全疾患ガイド一覧（85+）を見る →</a>';
+        footer.parentNode.insertBefore(navStrip, footer);
+      }
+    } catch (_) { /* ignore */ }
+
     var lastShown = false;
     var onScroll = function () {
       var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
