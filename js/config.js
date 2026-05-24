@@ -47,6 +47,7 @@ var CONFIG = {
         { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
         { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
+        { id: 'alzheimers', name: 'アルツハイマー病・認知症', icd: '8A20' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
         { id: 'pots', name: 'POTS（体位性頻脈症候群）', icd: '8D40' },
@@ -74,7 +75,10 @@ var CONFIG = {
         { id: 'substance', name: '物質依存症', icd: '6C4' },
         { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
         { id: 'dissociative', name: '解離性障害', icd: '6B6' },
-        { id: 'panic', name: 'パニック障害', icd: 'F41.0' }
+        { id: 'panic', name: 'パニック障害', icd: 'F41.0' },
+        { id: 'schizophrenia', name: '統合失調症', icd: '6A20' },
+        { id: 'sad', name: '社会不安障害（SAD）', icd: '6B04' },
+        { id: 'anorexia', name: '摂食障害（拒食症・過食症）', icd: '6B80' }
       ]
     },
     {
@@ -94,6 +98,7 @@ var CONFIG = {
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'EA90' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
+        { id: 'atopy', name: 'アトピー性皮膚炎', icd: 'EA80' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
@@ -122,6 +127,7 @@ var CONFIG = {
       icon: '⚗️',
       icd: 'ICD-11: 05',
       diseases: [
+        { id: 'diabetes', name: '糖尿病（2型）', icd: '5A11' },
         { id: 'diabetes_t1', name: '1型糖尿病', icd: '5A10' },
         { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
         { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
@@ -147,7 +153,8 @@ var CONFIG = {
         { id: 'ihd', name: '虚血性心疾患', icd: 'BA80' },
         { id: 'dvt', name: '深部静脈血栓症', icd: 'BD40' },
         { id: 'raynauds', name: 'レイノー症候群', icd: 'BD30' },
-        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' }
+        { id: 'atrial_fibrillation', name: '心房細動（AFib）', icd: 'I48' },
+        { id: 'ckd', name: '慢性腎臓病（CKD）', icd: 'GB61' }
       ]
     },
     {
@@ -168,6 +175,7 @@ var CONFIG = {
       icon: '🫃',
       icd: 'ICD-11: 13',
       diseases: [
+        { id: 'liver_disease', name: '慢性肝疾患・肝硬変', icd: 'DB92' },
         { id: 'ibs', name: '過敏性腸症候群（IBS）', icd: 'DD91' },
         { id: 'gerd', name: '逆流性食道炎（GERD）', icd: 'DA22' },
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
@@ -198,6 +206,7 @@ var CONFIG = {
       diseases: [
         { id: 'cancer_survivor', name: 'がんサバイバー（治療後管理）', icd: '02' },
         { id: 'cancer_fatigue', name: 'がん関連疲労', icd: 'MG22' },
+        { id: 'thyroid_cancer', name: '甲状腺がん（術後・経過観察）', icd: '2D10' },
         { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' }
       ]
     },
