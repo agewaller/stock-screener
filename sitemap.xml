@@ -504,6 +504,30 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://cares.advisers.jp/als.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/celiac.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/polymyalgia.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/adrenal.html</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://cares.advisers.jp/.well-known/security.txt</loc>
     <lastmod>2026-05-24</lastmod>
     <changefreq>yearly</changefreq>
