@@ -1,5 +1,5 @@
 {
-  // redeploy trigger: re-register ai.cares.advisers.jp custom domain
+  // redeploy trigger: restore cares-relay public front (workers.dev)
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
@@ -14,18 +14,13 @@
   // bypasses Cloudflare Access protecting stock-screener's public URL).
   "services": [
     { "binding": "PROXY", "service": "stock-screener" }
-  ],
-  // Custom domain — pins the AI proxy URL to a Cloudflare zone we
-  // control instead of *.workers.dev. The workers.dev subdomain is an
-  // account-level toggle: when an operator (or Cloudflare) flips it
-  // off, every *.agewaller.workers.dev URL starts returning 403
-  // host_not_allowed without CORS headers, which the browser collapses
-  // into "Failed to fetch" and kills AI for everyone.
-  // ai.cares.advisers.jp is on our own zone, so the toggle no longer
-  // affects us. custom_domain:true tells wrangler to register the
-  // hostname as a Worker Custom Domain on deploy (DNS + cert handled
-  // by Cloudflare automatically — no extra DNS records needed).
-  "routes": [
-    { "pattern": "ai.cares.advisers.jp", "custom_domain": true }
   ]
+  // NOTE: ai.cares.advisers.jp は現在 stock-screener 側に誤付けされており
+  // (かつ公開 DNS で未解決) のため、ここで custom_domain 登録すると所有権が
+  // 衝突して deploy が失敗する。一時的に route を外し、公開玄関は
+  // cares-relay.agewaller.workers.dev のみで復旧する（client の
+  // AIEngine.PROXY_URL がこの workers.dev を指しているので即復旧する）。
+  // ドメインを stock-screener から外して DNS が解決する状態に直したら、
+  // 下記 routes を戻して relay 側へ再登録すること:
+  //   "routes": [{ "pattern": "ai.cares.advisers.jp", "custom_domain": true }]
 }
