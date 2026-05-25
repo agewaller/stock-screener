@@ -696,6 +696,10 @@ App.prototype.render_dashboard = function() {
           <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:2px">🔥 連続記録</div>
           <div style="font-size:24px;font-weight:800;color:#4338ca;line-height:1">${streakStats.streak}</div>
           <div style="font-size:10px;color:#6366f1">日</div>
+        </div>` : streakStats.totalDays > 0 ? `
+        <div style="flex:0 0 auto;text-align:center;padding:4px 12px;background:#fff3cd;border-radius:10px;min-width:80px">
+          <div style="font-size:10px;color:#b45309;font-weight:700;margin-bottom:2px">💪 再スタート</div>
+          <div style="font-size:12px;font-weight:700;color:#92400e;line-height:1.3">最長<br>${streakStats.longest}日</div>
         </div>` : ''}
         ${streakStats.totalDays > 0 ? `
         <div style="flex:0 0 auto;text-align:center;padding:4px 12px;background:#fff;border-radius:10px;min-width:80px">
