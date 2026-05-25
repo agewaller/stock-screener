@@ -1,0 +1,88 @@
+%% デプロイ構成図: GCP プロジェクト構造、VPC、ネットワーキング
+%% ADR-0005 と整合
+
+flowchart TB
+    subgraph User["インターネット"]
+        Client["ユーザー Web Browser"]
+        DNS["Cloud DNS<br/>cares.advisers.jp 他"]
+    end
+
+    subgraph SharedP["GCP Project: shared"]
+        AR["Artifact Registry<br/>コンテナイメージ"]
+        BillingMon["請求・集約監視"]
+    end
+
+    subgraph CaresProd["GCP Project: cares-prod (asia-northeast1)"]
+        direction TB
+        subgraph CaresVPC["VPC: cares-prod-vpc"]
+            FELB["HTTPS LB<br/>(Cloud Run FE)"]
+            BELB["HTTPS LB<br/>(Cloud Run BE)"]
+            VPCConn["Serverless<br/>VPC Access"]
+            CaresSQL[("Cloud SQL<br/>PostgreSQL<br/>Private IP")]
+        end
+        CaresFE["Cloud Run<br/>Next.js FE"]
+        CaresBE["Cloud Run<br/>Hono BE"]
+        CaresGCS["Cloud Storage<br/>cares-prod-media"]
+        CaresSec["Secret Manager<br/>(AI keys 等)"]
+    end
+
+    subgraph CaresStg["GCP Project: cares-staging"]
+        StgPlaceholder["同型を縮小構成で複製<br/>(Terraform で生成)"]
+    end
+
+    subgraph CaresDev["GCP Project: cares-dev"]
+        DevPlaceholder["同型を最小構成で複製"]
+    end
+
+    subgraph IdentityProd["GCP Project: identity-prod (asia-northeast1)"]
+        direction TB
+        subgraph IdentityVPC["VPC: identity-prod-vpc"]
+            KCLB["HTTPS LB<br/>(Cloud Run Keycloak)"]
+            KCVPCConn["Serverless<br/>VPC Access"]
+            KCSQL[("Cloud SQL<br/>Keycloak 専用")]
+        end
+        KC["Cloud Run<br/>Keycloak"]
+    end
+
+    subgraph IdentityStg["GCP Project: identity-staging"]
+        IdStgPlaceholder["同型複製"]
+    end
+
+    subgraph IdentityDev["GCP Project: identity-dev"]
+        IdDevPlaceholder["同型複製"]
+    end
+
+    %% クライアント → DNS → LB
+    Client -->|cares.advisers.jp| DNS
+    Client -->|identity.advisers.jp| DNS
+    DNS --> FELB
+    DNS --> KCLB
+
+    FELB --> CaresFE
+    BELB --> CaresBE
+    KCLB --> KC
+
+    %% Cloud Run → Private DB (via VPC Connector)
+    CaresFE -.->|内部 HTTPS| CaresBE
+    CaresBE -->|via VPC| VPCConn
+    VPCConn --> CaresSQL
+    CaresBE --> CaresGCS
+    CaresBE -.->|鍵取得| CaresSec
+
+    KC -->|via VPC| KCVPCConn
+    KCVPCConn --> KCSQL
+
+    %% Artifact Registry
+    AR -.->|pull image| CaresFE
+    AR -.->|pull image| CaresBE
+    AR -.->|pull image| KC
+
+    %% スタイル
+    classDef prod fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef stg fill:#fff9c4,stroke:#f57c00
+    classDef dev fill:#f3e5f5,stroke:#7b1fa2
+    classDef shared fill:#e8f5e9,stroke:#2e7d32
+    class CaresProd,IdentityProd prod
+    class CaresStg,IdentityStg stg
+    class CaresDev,IdentityDev dev
+    class SharedP shared

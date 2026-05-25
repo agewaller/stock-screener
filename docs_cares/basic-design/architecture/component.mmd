@@ -1,0 +1,86 @@
+%% コンポーネント図: cares 新仕様の全体構成
+%% ADR-0001〜0012 と整合
+
+flowchart TB
+    subgraph User["ユーザーデバイス"]
+        Browser["Web Browser<br/>(Next.js PWA)"]
+    end
+
+    subgraph CaresProd["GCP Project: cares-prod"]
+        direction TB
+        subgraph CaresRun["Cloud Run"]
+            FE["Next.js FE<br/>(App Router, RSC, BFF)"]
+            BE["Hono BE API<br/>(REST + OpenAPI + SSE)"]
+        end
+        CaresDB[("Cloud SQL<br/>PostgreSQL<br/>+ Prisma")]
+        CaresStorage["Cloud Storage<br/>(写真・添付)"]
+        CaresSecrets["Secret Manager<br/>(AI API keys, OAuth tokens)"]
+        CaresLog["Cloud Logging<br/>Cloud Monitoring"]
+    end
+
+    subgraph IdentityProd["GCP Project: identity-prod"]
+        direction TB
+        Keycloak["Keycloak<br/>on Cloud Run<br/>(中央 IdP, OIDC)"]
+        KeycloakDB[("Cloud SQL<br/>Keycloak 専用")]
+    end
+
+    subgraph SharedProj["GCP Project: shared"]
+        Artifact["Artifact Registry<br/>(コンテナイメージ)"]
+    end
+
+    subgraph External["外部 SaaS"]
+        Anthropic[/"Anthropic API<br/>(Claude)"/]
+        OpenAI[/"OpenAI API<br/>(GPT)"/]
+        Gemini[/"Gemini API"/]
+        GoogleIdP[/"Google OAuth<br/>(via Keycloak)"/]
+        GCal[/"Google Calendar API"/]
+        Mail[/"メール送信<br/>(SendGrid 等)"/]
+    end
+
+    subgraph OtherSvc["将来の他サービス (SSO 連携)"]
+        VM["ValuationMatrix<br/>(OIDC RP)"]
+        ZT["zen-track<br/>(OIDC RP, 未実装)"]
+    end
+
+    %% ブラウザ通信
+    Browser -->|HTTPS| FE
+    Browser -->|OIDC redirect| Keycloak
+
+    %% FE/BE 経路
+    FE -->|内部 REST/SSE| BE
+    FE -.->|OIDC ID token 検証| Keycloak
+
+    %% BE → データ
+    BE --> CaresDB
+    BE --> CaresStorage
+    BE -.->|鍵取得| CaresSecrets
+    BE --> CaresLog
+
+    %% BE → AI Provider
+    BE -->|API + 鍵| Anthropic
+    BE -->|API + 鍵| OpenAI
+    BE -->|API + 鍵| Gemini
+
+    %% BE → 連携サービス
+    BE --> GCal
+    BE --> Mail
+
+    %% Keycloak の構成
+    Keycloak --> KeycloakDB
+    Keycloak -.->|フェデレーション| GoogleIdP
+
+    %% SSO で繋がる他サービス
+    VM -.->|OIDC| Keycloak
+    ZT -.->|OIDC| Keycloak
+
+    %% コンテナイメージ
+    Artifact -.->|pull| CaresRun
+    Artifact -.->|pull| Keycloak
+
+    %% スタイル
+    classDef gcp fill:#e3f2fd,stroke:#1976d2
+    classDef extsaas fill:#fff3e0,stroke:#f57c00
+    classDef user fill:#f1f8e9,stroke:#558b2f
+    class CaresProd,IdentityProd,SharedProj gcp
+    class External extsaas
+    class User user

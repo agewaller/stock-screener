@@ -1,0 +1,46 @@
+%% シーケンス図: OIDC ログイン + IndexedDB 鍵払い出し
+%% ADR-0002, 0007 と整合
+
+sequenceDiagram
+    autonumber
+    actor U as ユーザー
+    participant B as Browser<br/>(Next.js)
+    participant FE as cares FE<br/>(Cloud Run)
+    participant BE as cares BE<br/>(Cloud Run)
+    participant K as Keycloak<br/>(identity-prod)
+    participant G as Google OAuth
+
+    Note over U,G: 初回ログイン (Google アカウント)
+    U->>B: cares.advisers.jp にアクセス
+    B->>FE: GET /
+    FE-->>B: ログインページ (未認証)
+    U->>B: "Google でログイン"
+    B->>K: GET /realms/cares/protocol/openid-connect/auth<br/>(redirect_uri=cares.advisers.jp/oidc/callback)
+    K->>G: OAuth 認可リクエスト (フェデレーション)
+    G-->>U: Google 認可画面
+    U->>G: 認可
+    G-->>K: 認可コード
+    K-->>B: 302 redirect (cares 側 callback へ、code 付き)
+    B->>FE: GET /oidc/callback?code=...
+    FE->>K: POST /token (code → ID/access token)
+    K-->>FE: ID token + access token + refresh token
+    FE-->>B: HttpOnly Cookie (session) + redirect /home
+
+    Note over B,BE: IndexedDB 暗号鍵の払い出し
+    B->>FE: GET /home
+    FE-->>B: HTML (RSC で初期データ含む)
+    B->>BE: POST /api/cache-key (Cookie 付き)
+    BE->>BE: セッション検証<br/>global_uid 確認
+    BE->>BE: ランダムな AES-256 鍵生成
+    BE-->>B: { key: base64(...) }
+    B->>B: 鍵をメモリと IndexedDB メタ<br/>に保持
+    Note over B: 以降の API レスポンスを<br/>必要に応じて IndexedDB に<br/>AES-GCM で暗号化キャッシュ
+
+    Note over U,K: ログアウト
+    U->>B: ログアウトボタン
+    B->>FE: POST /api/logout
+    FE->>K: POST /logout (Backchannel)
+    K-->>FE: 200 OK
+    FE-->>B: Set-Cookie で session 削除
+    B->>B: IndexedDB 全削除<br/>メモリ鍵破棄
+    B-->>U: トップページ表示

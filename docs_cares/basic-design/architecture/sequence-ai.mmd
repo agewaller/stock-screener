@@ -1,0 +1,53 @@
+%% シーケンス図: AI 呼び出し（ストリーミング）
+%% ADR-0006 と整合
+
+sequenceDiagram
+    autonumber
+    actor U as ユーザー
+    participant B as Browser
+    participant FE as cares FE
+    participant BE as cares BE
+    participant DB as Cloud SQL
+    participant SM as Secret Manager
+    participant AI as AI Provider<br/>(Anthropic 等)
+
+    Note over U,AI: AI への質問送信
+    U->>B: AI に質問入力 → 送信
+    B->>BE: POST /api/ai/chat<br/>(prompt, modelId, Cookie)
+
+    Note over BE: 認可
+    BE->>BE: セッション検証<br/>global_uid 確認
+    BE->>DB: SELECT user_quota_status<br/>(月次トークン使用量)
+    DB-->>BE: 残量・上限
+    alt 残量不足
+        BE-->>B: 429 Too Many Requests
+        B-->>U: 「今月の上限に達しました」
+    end
+
+    Note over BE: 監査ログ前
+    BE->>DB: INSERT ai_usage_logs (start)
+    BE->>SM: 鍵取得 (キャッシュ済みなら不要)
+    SM-->>BE: ANTHROPIC_API_KEY 等
+    BE->>BE: MODEL_MAP で API model id 解決<br/>PII マスキング前処理
+    BE->>BE: プロンプト合成<br/>(共通システムプロンプト<br/>= prompt cache 対象)
+
+    Note over BE,AI: AI へストリーミング呼び出し
+    BE->>AI: POST /v1/messages<br/>(stream=true, cache_control 付与)
+    AI-->>BE: stream chunk 1
+    BE-->>FE: SSE chunk 1
+    FE-->>B: SSE 転送
+    B-->>U: 表示更新
+    AI-->>BE: stream chunk 2
+    BE-->>FE: SSE chunk 2
+    FE-->>B: SSE 転送
+    B-->>U: 表示更新
+    Note over AI,B: ... 完了まで繰り返し ...
+    AI-->>BE: stream end + usage (tokens)
+
+    Note over BE: 使用量集計と保存
+    BE->>BE: input/output tokens から JPY 換算
+    BE->>DB: UPDATE ai_usage_logs (完了, tokens, cost)
+    BE->>DB: 会話履歴を ai_conversations に保存<br/>(暗号化必要なら BE 側で)
+    BE-->>FE: stream end
+    FE-->>B: 完了
+    B-->>U: AI 応答完了表示

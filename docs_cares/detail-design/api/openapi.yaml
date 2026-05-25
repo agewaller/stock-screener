@@ -1,0 +1,582 @@
+openapi: 3.1.0
+info:
+  title: cares API
+  version: 0.1.0
+  description: |
+    健康日記 (cares) BE API。Hono + Zod + OpenAPI 3.1 で実装。
+    詳細は api-list.md を参照。
+  contact:
+    name: cares team
+servers:
+  - url: https://api.cares.advisers.jp
+    description: prod
+  - url: https://staging-api.cares.advisers.jp
+    description: staging
+  - url: https://dev-api.cares.advisers.jp
+    description: dev
+
+tags:
+  - name: meta
+    description: ヘルスチェック・メタ情報
+  - name: auth
+    description: 認証・セッション
+  - name: users
+    description: ユーザープロファイル
+  - name: health-data
+    description: 健康データ 9 カテゴリ CRUD
+  - name: ai
+    description: AI 解析・会話
+  - name: research
+    description: PubMed 検索
+  - name: integrations
+    description: 外部サービス連携
+  - name: export
+    description: データエクスポート
+  - name: audit-logs
+    description: 監査ログ（ユーザー可視化）
+  - name: drafts
+    description: フォーム autosave
+  - name: admin
+    description: 管理者専用
+
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [meta]
+      summary: ヘルスチェック
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: 現在のユーザー情報
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cache-key:
+    post:
+      tags: [auth]
+      summary: IndexedDB 暗号化キャッシュ用のセッションバウンド鍵を払い出し
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [key, validUntil]
+                properties:
+                  key:
+                    type: string
+                    format: base64
+                    description: AES-256 鍵 (base64)
+                  validUntil:
+                    type: string
+                    format: date-time
+
+  /api/users/me/profile:
+    get:
+      tags: [users]
+      summary: 自分のプロファイル取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+    put:
+      tags: [users]
+      summary: プロファイル更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /api/symptoms:
+    get:
+      tags: [health-data]
+      summary: 症状記録の一覧取得
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Symptom'
+                  nextCursor:
+                    type: string
+                    nullable: true
+    post:
+      tags: [health-data]
+      summary: 症状記録の新規作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SymptomInput'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Symptom'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/symptoms/{id}:
+    get:
+      tags: [health-data]
+      summary: 1 件取得
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Symptom'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [health-data]
+      summary: 更新
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SymptomInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Symptom'
+    delete:
+      tags: [health-data]
+      summary: ソフト削除
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '204':
+          description: 削除成功
+
+  /api/ai/chat:
+    post:
+      tags: [ai]
+      summary: 会話型相談（SSE ストリーミング）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                conversationId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                message:
+                  type: string
+                modelId:
+                  type: string
+                  example: anthropic-opus-4-7
+      responses:
+        '200':
+          description: ストリーミング応答
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  SSE 形式。イベント:
+                  - message_start: {conversationId}
+                  - content_delta: {delta}
+                  - message_stop: {inputTokens, outputTokens, costJpy}
+        '422':
+          description: コストキャップ超過
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/ai/analyze/deep:
+    post:
+      tags: [ai]
+      summary: 本格的な深堀解析（1 日 1 回）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                modelId:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: 既に本日実行済み
+
+  /api/ai/quota:
+    get:
+      tags: [ai]
+      summary: 自分の今期コスト使用状況
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  month: { type: string, example: "2026-05" }
+                  usedJpy: { type: number }
+                  capJpy: { type: number }
+                  remainingJpy: { type: number }
+                  isBlocked: { type: boolean }
+
+  /api/export/json:
+    get:
+      tags: [export]
+      summary: 全データを JSON でエクスポート
+      responses:
+        '200':
+          description: ダウンロード
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/audit-logs/me:
+    get:
+      tags: [audit-logs]
+      summary: 自分のデータへのアクセス履歴
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogEntry'
+                  nextCursor:
+                    type: string
+                    nullable: true
+
+  /api/drafts/{formKind}:
+    parameters:
+      - name: formKind
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [symptom, vital, blood_test, medication, meal, sleep_record, text_entry, mood]
+    get:
+      tags: [drafts]
+      summary: フォームドラフト取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [drafts]
+      summary: ドラフト保存（autosave）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payload]
+              properties:
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags: [drafts]
+      summary: ドラフト破棄
+      responses:
+        '204':
+          description: 削除成功
+
+  /api/admin/key-status:
+    get:
+      tags: [admin]
+      summary: API 鍵の設定状況（鍵値は返さない）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: boolean
+
+  /api/admin/keys:
+    post:
+      tags: [admin]
+      summary: API 鍵を Secret Manager に保存
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [keys]
+                  properties:
+                    keys:
+                      type: object
+                      additionalProperties:
+                        type: string
+                - type: object
+                  required: [clear]
+                  properties:
+                    clear:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak OIDC ID Token
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: HttpOnly セッションクッキー
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: 未認証
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 認可なし
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: リソース未存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Me:
+      type: object
+      required: [userId, globalUid]
+      properties:
+        userId: { type: string, format: uuid }
+        globalUid: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        roles:
+          type: array
+          items: { type: string }
+        isAnonymous: { type: boolean }
+        isAdmin: { type: boolean }
+
+    UserProfile:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+        age: { type: integer, minimum: 0, maximum: 120 }
+        gender: { type: string }
+        currentMedications:
+          type: array
+          items: { type: string }
+        allergies:
+          type: array
+          items: { type: string }
+
+    UserProfileInput:
+      type: object
+      properties:
+        displayName: { type: string }
+        age: { type: integer, minimum: 0, maximum: 120 }
+        gender: { type: string }
+        currentMedications:
+          type: array
+          items: { type: string }
+        allergies:
+          type: array
+          items: { type: string }
+
+    Symptom:
+      type: object
+      required: [id, recordedAt, conditionLevel]
+      properties:
+        id: { type: string, format: uuid }
+        recordedAt: { type: string, format: date-time }
+        conditionLevel: { type: integer, minimum: 1, maximum: 10 }
+        sleepQuality: { type: integer, minimum: 1, maximum: 10, nullable: true }
+        memo: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SymptomInput:
+      type: object
+      required: [recordedAt, conditionLevel]
+      properties:
+        recordedAt: { type: string, format: date-time }
+        conditionLevel: { type: integer, minimum: 1, maximum: 10 }
+        sleepQuality: { type: integer, minimum: 1, maximum: 10, nullable: true }
+        memo: { type: string, nullable: true }
+
+    Draft:
+      type: object
+      properties:
+        formKind: { type: string }
+        payload: { type: object }
+        updatedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        eventAt: { type: string, format: date-time }
+        actorType:
+          type: string
+          enum: [self, admin, system, integration]
+        actorDisplay: { type: string }
+        action:
+          type: string
+          enum: [read, write, delete, export]
+        targetTable: { type: string }
+        targetIdShort: { type: string }
+        details:
+          type: object
+          nullable: true
+
+    Error:
+      type: object
+      required: [error, requestId]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - CONFLICT
+                - QUOTA_EXCEEDED
+                - RATE_LIMITED
+                - INTERNAL
+            message:
+              type: string
+            details:
+              type: object
+              nullable: true
+        requestId:
+          type: string
+          format: uuid
