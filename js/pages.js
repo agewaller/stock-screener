@@ -678,13 +678,22 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
+        <button onclick="app.shareStreak()" style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#6366f1;color:#fff;border:none;border-radius:14px;font-size:10px;font-weight:700;cursor:pointer">
+          シェア
+        </button>
+      </div>` : ''}
+      ${streakStats.streak >= 3 && earnedBadges.length === 0 ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;text-align:right">
+        <button onclick="app.shareStreak()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:#6366f1;color:#fff;border:none;border-radius:14px;font-size:10px;font-weight:700;cursor:pointer">
+          シェア
+        </button>
       </div>` : ''}
     </div>
   </div>` : ''}
@@ -1199,6 +1208,27 @@ App.prototype.render_dashboard = function() {
       </div>
     </div>`;
   })() : ''}
+
+  <!-- Referral card — shown to logged-in non-anonymous users -->
+  ${(() => {
+    const user = store.get('user');
+    if (!user || !user.uid || user.isAnonymous) return '';
+    const refCode = user.uid.substring(0, 10);
+    const refUrl = 'https://cares.advisers.jp/?ref=' + refCode;
+    return `
+  <div class="card" style="margin-bottom:12px;background:#f0fdf4;border:1px solid #bbf7d0">
+    <div class="card-body" style="padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:2px">同じ症状の方に教えてあげませんか？</div>
+        <div style="font-size:10px;color:#166534">紹介リンクをコピーして、患者仲間とシェアを</div>
+      </div>
+      <button onclick="app.copyReferralLink('${Components.escapeHtml(refUrl)}')"
+        style="display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">
+        リンクをコピー
+      </button>
+    </div>
+  </div>`;
+  })()}
 
   <div style="display:flex;flex-wrap:wrap;gap:4px">${diseaseTagsHtml}</div>`;
   } catch(err) {
@@ -3306,6 +3336,66 @@ App.prototype.copyCurrentUrl = function() {
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
       Components.showToast('URLをコピーしました。Safari/Chromeのアドレスバーに貼り付けてください', 'success');
+    }).catch(fallback);
+  } else {
+    fallback();
+  }
+};
+
+App.prototype.shareStreak = function() {
+  const streakStats = this._computeStreak();
+  const earnedBadges = this._getEarnedBadges(streakStats);
+  const badgeLine = earnedBadges.map(b => b.icon + b.name).join(' ');
+  const streakLine = streakStats.streak > 0
+    ? `🔥 ${streakStats.streak}日連続記録中！通算${streakStats.totalDays}日`
+    : `📚 通算${streakStats.totalDays}日記録しました`;
+  const disease = store.get('selectedDisease') || {};
+  const diseaseName = disease.name || '慢性疾患';
+  const text = `${diseaseName}の健康日記、${streakLine}\n${badgeLine}\n#健康日記 #慢性疾患 #cares_advisers\nhttps://cares.advisers.jp/`;
+
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    navigator.share({ text, url: 'https://cares.advisers.jp/' }).catch(() => {
+      this._shareStreakFallback(text);
+    });
+  } else {
+    this._shareStreakFallback(text);
+  }
+};
+
+App.prototype._shareStreakFallback = function(text) {
+  const encoded = encodeURIComponent(text);
+  const xUrl = 'https://x.com/intent/tweet?text=' + encoded;
+  const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent('https://cares.advisers.jp/') + '&text=' + encoded;
+  const overlay = document.getElementById('modal-overlay');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  if (!overlay || !body) {
+    window.open(xUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  if (title) title.textContent = '達成をシェア';
+  body.innerHTML = `
+    <div style="padding:4px 0">
+      <a href="${xUrl}" target="_blank" rel="noopener noreferrer"
+        style="display:block;padding:12px;background:#000;color:#fff;border-radius:8px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;margin-bottom:10px">
+        X (Twitter)
+      </a>
+      <a href="${lineUrl}" target="_blank" rel="noopener noreferrer"
+        style="display:block;padding:12px;background:#06c755;color:#fff;border-radius:8px;text-align:center;font-size:13px;font-weight:700;text-decoration:none">
+        LINE
+      </a>
+    </div>`;
+  overlay.classList.add('active');
+};
+
+App.prototype.copyReferralLink = function(url) {
+  const fallback = () => {
+    try { window.prompt('以下のリンクをコピーしてください:', url); }
+    catch (_) { Components.showToast('コピーに失敗しました', 'error'); }
+  };
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      Components.showToast('紹介リンクをコピーしました！', 'success');
     }).catch(fallback);
   } else {
     fallback();
