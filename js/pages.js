@@ -513,10 +513,30 @@ App.prototype.render_dashboard = function() {
     return { ...e, _insight: insight };
   });
 
-  // Welcome message for new users (minimal)
+  // Welcome card for brand-new users — shown until the first entry.
+  // Focuses on "first action" rather than feature explanation.
   const welcomeHtml = !hasData ? `
-    <div style="text-align:center;padding:12px 0;font-size:13px;color:var(--text-muted)">
-      上の入力欄に体調を書いてみてください
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f8f9ff 0%,#fdf4ff 100%);border:1.5px solid #c7d2fe">
+      <div class="card-body" style="padding:16px 18px">
+        <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:4px">ようこそ！まず今日の体調を書いてみてください</div>
+        <div style="font-size:11px;color:#4338ca;margin-bottom:12px;line-height:1.7">
+          1行でも大丈夫です。書くだけで AI がやさしく分析してくれます。
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今日は疲れがひどくて、頭もぼんやりしています。昨夜は6時間寝ましたが熟睡感がありません。';t.focus();}"
+            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
+            例：疲れ・睡眠
+          </button>
+          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今朝の体温は37.1℃、血圧は128/82でした。関節の痛みは昨日より少し楽です。';t.focus();}"
+            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
+            例：バイタル
+          </button>
+          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今日から新しい薬を飲み始めました。主治医から処方してもらったメトホルミン500mgを朝食後に。';t.focus();}"
+            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
+            例：服薬
+          </button>
+        </div>
+      </div>
     </div>` : '';
 
   // Today's rotating prescription axis — shown on the dashboard as a
