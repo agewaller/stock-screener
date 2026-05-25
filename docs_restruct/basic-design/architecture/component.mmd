@@ -1,0 +1,81 @@
+%% 健康日記（Health Diary）コンポーネント図
+%% Mermaid C4-like component diagram
+
+graph TB
+    User([👤 利用者ブラウザ])
+    Admin([👤 管理者ブラウザ])
+    Email([📧 受信メール])
+
+    subgraph GHPages[GitHub Pages cares.advisers.jp]
+        SPA[健康日記 SPA<br/>index.html + js/*.js 13モジュール]
+        Landing[65疾患 SEOランディング<br/>*.html 静的ページ]
+        SW[Service Worker<br/>sw.js]
+    end
+
+    subgraph CFWorkers[Cloudflare Workers]
+        Relay[cares-relay Worker<br/>ai.cares.advisers.jp]
+        Proxy[stock-screener Worker<br/>anthropic-proxy.js]
+        Plaud[plaud-inbox Worker<br/>Email Routing]
+        Mailer[professional-mailer Worker]
+        Research[research-updater Worker<br/>cron]
+    end
+
+    subgraph Firebase[Firebase asia-northeast1]
+        FAuth[Firebase Auth<br/>Google/Email/Anonymous]
+        FStore[(Firestore<br/>care-14c31)]
+    end
+
+    subgraph CFStorage[Cloudflare Storage]
+        KV[KV Namespace<br/>admin:key:* / research:*]
+    end
+
+    subgraph AIProviders[AI プロバイダ]
+        Anthropic[Anthropic Claude<br/>Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
+        OpenAI[OpenAI GPT-4o]
+        Gemini[Google Gemini 2.5 Pro]
+    end
+
+    subgraph External[外部 API]
+        PubMed[NCBI PubMed E-utilities]
+        Fitbit[Fitbit API]
+        GCal[Google Calendar API]
+    end
+
+    User --> SPA
+    User --> Landing
+    Landing -- "?d=disease_id" --> SPA
+    Admin --> SPA
+    SPA --- SW
+
+    SPA --> FAuth
+    SPA --> FStore
+    SPA --> Relay
+    SPA --> PubMed
+    SPA --> Fitbit
+    SPA --> GCal
+    SPA --> Mailer
+
+    Relay -. "service binding<br/>(Access bypass)" .-> Proxy
+
+    Proxy --> KV
+    Proxy --> Anthropic
+    Proxy --> OpenAI
+    Proxy --> Gemini
+
+    Email --> Plaud
+    Plaud --> FStore
+    FStore -. "onSnapshot listener<br/>inbox/{hash}/plaud" .-> SPA
+
+    Research -- "cron" --> KV
+
+    classDef gh fill:#fff5b1,stroke:#333
+    classDef cf fill:#f48120,stroke:#333,color:#fff
+    classDef fb fill:#ffca28,stroke:#333
+    classDef ai fill:#cdb4db,stroke:#333
+    classDef ext fill:#a8dadc,stroke:#333
+
+    class SPA,Landing,SW gh
+    class Relay,Proxy,Plaud,Mailer,Research,KV cf
+    class FAuth,FStore fb
+    class Anthropic,OpenAI,Gemini ai
+    class PubMed,Fitbit,GCal ext

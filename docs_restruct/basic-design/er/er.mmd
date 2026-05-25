@@ -1,0 +1,202 @@
+%% 健康日記 Firestore 論理 ER 図
+%% Mermaid erDiagram
+
+erDiagram
+    USER ||--o{ SYMPTOM : "has"
+    USER ||--o{ VITAL : "has"
+    USER ||--o{ BLOOD_TEST : "has"
+    USER ||--o{ MEDICATION : "has"
+    USER ||--o{ MEAL : "has"
+    USER ||--o{ SLEEP_DATA : "has"
+    USER ||--o{ PHOTO : "has"
+    USER ||--o{ TEXT_ENTRY : "has"
+    USER ||--o{ ANALYSIS_HISTORY : "has"
+    USER ||--o{ DEEP_ANALYSIS : "has"
+    USER ||--o{ DOCTOR_REPORT : "has"
+    USER ||--o{ CONVERSATION_MESSAGE : "has"
+    USER ||--o{ PLAUD_ANALYSIS : "has"
+    USER ||--o{ API_USAGE : "has"
+    USER ||--o{ CACHED_RESEARCH : "has"
+    USER ||--o| PROFILE : "embedded"
+
+    INBOX_MESSAGE }o..|| USER : "hash references"
+    PROMPT ||--o{ PROMPT_VERSION : "versioned"
+
+    USER {
+        string uid PK "Firebase Auth uid"
+        string email
+        string displayName
+        timestamp createdAt
+        array selectedDiseases "65疾患IDの配列"
+        string selectedModel "AI モデル ID"
+        object userProfile "年齢・性別・薬等"
+    }
+
+    PROFILE {
+        string displayName
+        number age
+        string gender
+        array currentMedications
+        array allergies
+    }
+
+    SYMPTOM {
+        string id PK
+        timestamp createdAt
+        number condition_level "1-10"
+        number sleep_quality
+        string memo
+    }
+
+    VITAL {
+        string id PK
+        timestamp createdAt
+        number heart_rate
+        string blood_pressure "120/80 形式"
+        number temperature
+        number spo2
+    }
+
+    BLOOD_TEST {
+        string id PK
+        timestamp testDate
+        number wbc
+        number rbc
+        number hemoglobin
+        number crp
+        object extraValues
+    }
+
+    MEDICATION {
+        string id PK
+        timestamp takenAt
+        string name
+        string dosage
+    }
+
+    MEAL {
+        string id PK
+        timestamp eatenAt
+        string description
+        array photoIds
+    }
+
+    SLEEP_DATA {
+        string id PK
+        date date
+        number duration "時間"
+        number quality
+    }
+
+    PHOTO {
+        string id PK
+        timestamp createdAt
+        string type "food/blood_test/prescription/supplement/etc"
+        string base64Data "or URL"
+        string aiClassification
+    }
+
+    TEXT_ENTRY {
+        string id PK
+        timestamp createdAt
+        string content
+    }
+
+    ANALYSIS_HISTORY {
+        string id PK
+        timestamp createdAt
+        string model
+        string promptKey
+        string result
+        number inputTokens
+        number outputTokens
+    }
+
+    DEEP_ANALYSIS {
+        string id PK
+        timestamp createdAt
+        string result
+        date runDate "JST 日付（1日1回制約用）"
+    }
+
+    DOCTOR_REPORT {
+        string id PK
+        timestamp createdAt
+        string format "carte/sns/relative"
+        string result
+    }
+
+    CONVERSATION_MESSAGE {
+        string id PK
+        timestamp createdAt
+        string role "user/assistant"
+        string content
+    }
+
+    PLAUD_ANALYSIS {
+        string id PK
+        timestamp createdAt
+        string sourceMessageId "inbox 由来"
+        string transcription
+        string aiAnalysis
+    }
+
+    API_USAGE {
+        string id PK
+        timestamp ts
+        string model
+        number inputTokens
+        number outputTokens
+        number costJpy
+        string source "shared/auth"
+    }
+
+    CACHED_RESEARCH {
+        string id PK
+        string query
+        timestamp cachedAt
+        array results
+    }
+
+    INBOX_MESSAGE {
+        string messageId PK
+        string hash FK "djb2(email/uid) base36 8文字"
+        string kind "plaud/data"
+        string text "メール本文 ≤ 200KB"
+        boolean processed
+        timestamp receivedAt
+    }
+
+    PROMPT {
+        string key PK
+        string description
+        string currentVersion
+        timestamp updatedAt
+    }
+
+    PROMPT_VERSION {
+        string version PK
+        string template
+        timestamp createdAt
+        string updatedBy
+    }
+
+    ADMIN_CONFIG {
+        string docId PK
+        object keyStatus "anthropic:bool, openai:bool, google:bool"
+    }
+
+    AUDIT_LOG {
+        string id PK
+        timestamp ts
+        string actor
+        string action
+        object details
+    }
+
+    SAFETY_EVENT {
+        string id PK
+        timestamp ts
+        string type "refusal/error/quota"
+        string details
+    }
