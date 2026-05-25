@@ -515,29 +515,43 @@ App.prototype.render_dashboard = function() {
 
   // Welcome card for brand-new users — shown until the first entry.
   // Focuses on "first action" rather than feature explanation.
-  const welcomeHtml = !hasData ? `
+  // Disease-specific quick-fill buttons reduce time-to-first-entry.
+  const welcomeHtml = !hasData ? (() => {
+    const primaryDisease = (store.get('selectedDiseases') || [])[0] || 'mecfs';
+    const diseaseExamples = {
+      mecfs:        ['今日は起きたら PEM が出ていて、ベッドから動けませんでした。昨日少し外出したのが原因かもしれません。','睡眠は8時間取ったのに全然回復感がなく、ブレインフォグがひどい状態です。'],
+      fibromyalgia: ['今朝は全身のこわばりがひどく、特に腰と肩が7/10くらいの痛みです。天気が悪いせいかもしれません。','服薬記録：プレガバリン75mg×2回、効果は昨日より少し弱め。'],
+      long_covid:   ['今日は息切れが強く、少し歩くだけで疲れました。PEM ではなく酸素不足の感覚に近いです。','ブレインフォグが強い日。集中力が続かず、読んでいた文章を何度も読み直す。'],
+      depression:   ['今日の気分は4/10。朝から億劫で、何もする気になれない。横になっていることが多かった。','服薬記録：エスシタロプラム10mg、起床後に服用。副作用の吐き気は薄れてきた。'],
+      pots:         ['立ち上がったとき心拍が150まで上がり、めまいがしました。塩分と水分を多めに補給中。','今日の運動：15分のハーフリクライニング自転車。立位は5分が限界でした。'],
+      diabetes:     ['今日の血糖：朝食前 112mg/dL、昼食後2時間 158mg/dL。食事内容は玄米・野菜中心。','体重：68.2kg（昨日比-0.1kg）。メトホルミン500mg 朝食後に服用。'],
+      hashimoto:    ['疲れと冷えがひどく、体温が35.8℃しかありませんでした。TSH 先週の検査では 4.2 でした。','レボチロキシン50mcg 今朝服用。体調は普通〜やや悪め、眠気が強い。'],
+      ra:           ['今朝の朝のこわばりは45分続きました。両手の指関節に腫れあり。MTX 8mg 今週服用済み。','炎症マーカー先週の血液検査：CRP 0.8mg/dL、ESR 28mm/h。'],
+      migraine:     ['今日は前兆あり（視野にジグザグ模様）、30分後に片頭痛発症。NRS 8/10。スマトリプタン服用。','トリガー記録：昨夜の睡眠不足（5時間）+ カフェイン過多が重なった可能性。'],
+    };
+    const examples = diseaseExamples[primaryDisease] || [
+      '今日は疲れがひどくて、頭もぼんやりしています。昨夜は6時間寝ましたが熟睡感がありません。',
+      '今朝の体温は37.1℃、血圧は128/82でした。関節の痛みは昨日より少し楽です。',
+    ];
+    const btns = examples.map((ex, i) => {
+      const label = i === 0 ? '例 1 を入力' : '例 2 を入力';
+      const escaped = ex.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+      return `<button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='${escaped}';t.focus();}"
+        style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer;text-align:left;line-height:1.4;flex:1;min-width:140px">
+        ${label}
+      </button>`;
+    }).join('');
+    return `
     <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#f8f9ff 0%,#fdf4ff 100%);border:1.5px solid #c7d2fe">
       <div class="card-body" style="padding:16px 18px">
         <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:4px">ようこそ！まず今日の体調を書いてみてください</div>
         <div style="font-size:11px;color:#4338ca;margin-bottom:12px;line-height:1.7">
           1行でも大丈夫です。書くだけで AI がやさしく分析してくれます。
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今日は疲れがひどくて、頭もぼんやりしています。昨夜は6時間寝ましたが熟睡感がありません。';t.focus();}"
-            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
-            例：疲れ・睡眠
-          </button>
-          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今朝の体温は37.1℃、血圧は128/82でした。関節の痛みは昨日より少し楽です。';t.focus();}"
-            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
-            例：バイタル
-          </button>
-          <button onclick="var t=document.getElementById('dash-quick-input');if(t){t.value='今日から新しい薬を飲み始めました。主治医から処方してもらったメトホルミン500mgを朝食後に。';t.focus();}"
-            style="padding:6px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:8px;font-size:11px;color:#4338ca;cursor:pointer">
-            例：服薬
-          </button>
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${btns}</div>
       </div>
-    </div>` : '';
+    </div>`;
+  })() : '';
 
   // Today's rotating prescription axis — shown on the dashboard as a
   // curiosity-driving widget. Repeat visitors see "today's focus"
