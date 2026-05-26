@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>データ診断ツール – 健康日記</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 0; }
+  .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 12px 16px; background: #f1f5f9; font-size: 13px; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+  .card-body { padding: 14px 16px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .row:last-child { border-bottom: none; }
+  .label { color: #475569; }
+  .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .value.ok { color: #16a34a; }
+  .value.warn { color: #d97706; }
+  .value.err { color: #dc2626; }
+  .status-box { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.6; margin-top: 12px; }
+  .status-box.good { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+  .status-box.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .status-box.bad { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .status-box.info { background: #f0f9ff; border: 1px solid #bae6fd; color: #0c4a6e; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-outline { background: transparent; color: #6366f1; border: 1px solid #6366f1; }
+  .btn + .btn { margin-left: 8px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: #6366f1; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+  #auth-status { font-size: 12px; color: #64748b; margin-bottom: 16px; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
+  .back-link { font-size: 13px; color: #6366f1; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back-link">← ホームに戻る</a>
+  <h1>データ診断ツール</h1>
+  <p class="subtitle">「記録が消えた」「表示されない」を自己診断できます。</p>
+
+  <div id="auth-status"><span class="spinner"></span>認証状態を確認中…</div>
+
+  <div class="card" id="counts-card">
+    <div class="card-header">記録件数の比較</div>
+    <div class="card-body" id="counts-body">
+      <div style="text-align:center;padding:12px;font-size:13px;color:#64748b">
+        <span class="spinner"></span>Firestoreから件数を取得中…
+      </div>
+    </div>
+  </div>
+
+  <div id="diagnosis-box"></div>
+
+  <div class="card">
+    <div class="card-header">対処法</div>
+    <div class="card-body" id="help-body">
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.9;color:#475569">
+        <li><strong>クラウド &gt; 0 / 端末 = 0</strong>: Firestore からの同期完了前にページを開いた可能性があります。ページをリロードしてください。</li>
+        <li><strong>クラウド = 0 / 端末 &gt; 0</strong>: 端末にデータはありますが、まだクラウドに保存されていません。ログイン状態で記録を追加するとクラウドにも保存されます。</li>
+        <li><strong>クラウド &gt; 0 / 端末 &gt; 0</strong>: データは健在です。表示の問題であれば画面を再読み込みしてください。</li>
+        <li><strong>クラウド = 0 / 端末 = 0</strong>: まだ記録がないか、全削除が実行されています。</li>
+        <li><strong>エラーが出る</strong>: ネットワーク接続またはログイン状態を確認してください。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:8px">
+    <a href="/" class="btn btn-primary">ダッシュボードへ戻る</a>
+    <button class="btn btn-outline" onclick="location.reload()">再診断</button>
+  </div>
+</div>
+
+<!-- Firebase SDK (same version as main app) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Load CONFIG so Firebase credentials come from a single source of truth -->
+<script src="js/config.js?v=44"></script>
+<script>
+(function() {
+  const app = firebase.initializeApp(CONFIG.FIREBASE);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const authEl = document.getElementById('auth-status');
+  const countsBody = document.getElementById('counts-body');
+  const diagBox = document.getElementById('diagnosis-box');
+
+  // Collections to check (same as main app)
+  const COLLECTIONS = [
+    { key: 'textEntries',  label: '日記・テキスト' },
+    { key: 'symptoms',     label: '症状スコア' },
+    { key: 'vitals',       label: 'バイタル' },
+    { key: 'medications',  label: '服薬記録' },
+    { key: 'sleepData',    label: '睡眠' },
+    { key: 'activityData', label: '活動量' },
+    { key: 'photos',       label: '写真' },
+    { key: 'bloodTests',   label: '血液検査' },
+  ];
+
+  function localCount(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return 0;
+      const data = JSON.parse(raw);
+      return Array.isArray(data) ? data.length : 0;
+    } catch (e) { return 0; }
+  }
+
+  async function firestoreCount(uid, colKey) {
+    try {
+      const snap = await db.collection('users').doc(uid).collection(colKey).get();
+      return snap.size;
+    } catch (e) {
+      return -1; // error
+    }
+  }
+
+  async function runDiag(uid) {
+    let html = '<table style="width:100%;border-collapse:collapse">';
+    html += '<tr style="font-size:11px;color:#94a3b8;border-bottom:1px solid #e2e8f0"><th style="text-align:left;padding:6px 0">コレクション</th><th style="text-align:right;padding:6px 0">クラウド</th><th style="text-align:right;padding:6px 0">この端末</th></tr>';
+
+    let totalCloud = 0, totalLocal = 0, errorCols = 0;
+    const results = await Promise.all(COLLECTIONS.map(async c => {
+      const cloud = await firestoreCount(uid, c.key);
+      const local = localCount(c.key);
+      return { ...c, cloud, local };
+    }));
+
+    for (const r of results) {
+      const cloudDisplay = r.cloud === -1 ? '<span style="color:#dc2626">エラー</span>' : r.cloud;
+      const cloudClass = r.cloud === -1 ? 'err' : (r.cloud > 0 ? 'ok' : '');
+      const localClass = r.local > 0 ? 'ok' : '';
+      html += `<tr style="border-bottom:1px solid #f1f5f9">
+        <td style="padding:7px 0;font-size:13px;color:#475569">${r.label}</td>
+        <td style="text-align:right;padding:7px 0;font-size:13px;font-weight:600;color:${r.cloud === -1 ? '#dc2626' : r.cloud > 0 ? '#16a34a' : '#94a3b8'}">${cloudDisplay}</td>
+        <td style="text-align:right;padding:7px 0;font-size:13px;font-weight:600;color:${r.local > 0 ? '#16a34a' : '#94a3b8'}">${r.local}</td>
+      </tr>`;
+      if (r.cloud > 0) totalCloud += r.cloud;
+      if (r.local > 0) totalLocal += r.local;
+      if (r.cloud === -1) errorCols++;
+    }
+    html += `<tr style="border-top:2px solid #e2e8f0">
+      <td style="padding:8px 0;font-size:13px;font-weight:700">合計</td>
+      <td style="text-align:right;padding:8px 0;font-size:14px;font-weight:700;color:${totalCloud > 0 ? '#16a34a' : '#94a3b8'}">${totalCloud}</td>
+      <td style="text-align:right;padding:8px 0;font-size:14px;font-weight:700;color:${totalLocal > 0 ? '#16a34a' : '#94a3b8'}">${totalLocal}</td>
+    </tr>`;
+    html += '</table>';
+
+    countsBody.innerHTML = html;
+
+    // Diagnosis
+    let diagHtml = '';
+    if (errorCols > 0) {
+      diagHtml = '<div class="status-box bad">Firestoreへのアクセス中にエラーが発生しました。ネットワーク接続やログイン状態を確認し、再診断してください。</div>';
+    } else if (totalCloud === 0 && totalLocal === 0) {
+      diagHtml = '<div class="status-box info">まだ記録がありません。ダッシュボードから体調を記録してみましょう。</div>';
+    } else if (totalCloud > 0 && totalLocal === 0) {
+      diagHtml = '<div class="status-box warn">クラウドにデータがありますが、この端末には同期されていません。ページをリロードするか、しばらく待つと表示されます。</div>';
+    } else if (totalCloud === 0 && totalLocal > 0) {
+      diagHtml = '<div class="status-box warn">端末にデータがありますが、クラウドには保存されていません。ログイン状態で記録を追加するとクラウドにも同期されます。</div>';
+    } else {
+      diagHtml = '<div class="status-box good">クラウドと端末の両方にデータがあります。表示されない場合はページをリロードしてください。</div>';
+    }
+    diagBox.innerHTML = diagHtml;
+  }
+
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      authEl.innerHTML = '✅ ログイン中: <strong>' + (user.email || user.uid) + '</strong>';
+      runDiag(user.uid).catch(e => {
+        countsBody.innerHTML = '<div style="color:#dc2626;font-size:13px">診断中にエラーが発生しました: ' + e.message + '</div>';
+      });
+    } else {
+      authEl.innerHTML = '⚠ ログインしていません。<a href="/" style="color:#6366f1;margin-left:6px">ログインページへ →</a>';
+      countsBody.innerHTML = '<div style="font-size:13px;color:#64748b;padding:8px 0">ログイン後に診断できます。</div>';
+      diagBox.innerHTML = '<div class="status-box info">ログインするとFirestoreのデータ件数を確認できます。</div>';
+    }
+  });
+})();
+</script>
+</body>
+</html>

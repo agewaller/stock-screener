@@ -194,6 +194,35 @@ var App = class App {
     ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'integrationSyncs', 'latestFeedback', 'latestFeedbackError', 'isAnalyzing', 'plaudAnalyses']
       .forEach(key => store.on(key, scheduleDashRefresh));
 
+    // Mirror of scheduleDashRefresh for the timeline page. Firestore's
+    // onSnapshot often arrives after the user navigates to 記録, leaving
+    // an empty view until the next manual reload. This catches the store
+    // update and morphdom-patches the timeline-content div in place.
+    let timelineTimer = null;
+    const scheduleTimelineRefresh = () => {
+      if (this.currentPage !== 'timeline') return;
+      if (timelineTimer) return;
+      timelineTimer = setTimeout(() => {
+        timelineTimer = null;
+        if (this.currentPage !== 'timeline') return;
+        try {
+          const content = document.getElementById('timeline-content');
+          if (!content) return;
+          const newHtml = this.render_timeline();
+          if (typeof morphdom !== 'undefined') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = newHtml;
+            const newContent = tmp.querySelector('#timeline-content');
+            if (newContent) morphdom(content, newContent);
+          } else {
+            this.navigate('timeline');
+          }
+        } catch (e) { console.warn('timeline refresh:', e); }
+      }, 300);
+    };
+    ['textEntries', 'symptoms', 'vitals', 'bloodTests', 'medications', 'sleepData', 'activityData', 'photos', 'supplements', 'meals', 'nutritionLog', 'plaudAnalyses', 'calendarEvents']
+      .forEach(key => store.on(key, scheduleTimelineRefresh));
+
     // Start the auto-sync scheduler so connected integrations
     // (Fitbit, Google Calendar) refresh automatically while the
     // app is open — set up once, update forever.

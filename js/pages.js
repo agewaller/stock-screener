@@ -519,6 +519,20 @@ App.prototype.render_dashboard = function() {
       上の入力欄に体調を書いてみてください
     </div>` : '';
 
+  // Today-not-logged reminder: show only when user has past records but
+  // hasn't logged anything today (JST). Encourages daily habit without
+  // being shown to brand-new users who haven't started yet.
+  const todayJstKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const hasTodayEntry = [...(store.get('textEntries') || []), ...(store.get('symptoms') || [])].some(e => {
+    if (!e || !e.timestamp) return false;
+    return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJstKey;
+  });
+  const reminderHtml = (hasData && !hasTodayEntry) ? `
+    <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">📋</span>
+      <div style="flex:1;font-size:13px;color:var(--text-primary)">今日はまだ記録がありません。上の入力欄から体調を記録してみましょう。</div>
+    </div>` : '';
+
   // Today's rotating prescription axis — shown on the dashboard as a
   // curiosity-driving widget. Repeat visitors see "today's focus"
   // changing daily which reinforces the habit of returning.
@@ -527,6 +541,7 @@ App.prototype.render_dashboard = function() {
     : null;
 
   return `
+  ${reminderHtml}
   <!-- 1. Quick Input Area (always top) -->
   <div class="card" style="margin-bottom:16px;border-color:var(--accent-border)">
     <div class="card-body" style="padding:14px 18px">
@@ -2309,7 +2324,25 @@ App.prototype.render_timeline = function() {
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。')}
+    ${allEntries.length > 0 ? dateGroups : `
+    <div style="text-align:center;padding:32px 16px">
+      <div style="font-size:40px;margin-bottom:12px">📅</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px">まだ記録がありません</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">ダッシュボードから体調を記録すると、ここに時系列で表示されます。</div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">こんな一言から始められます</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+          ${['今日はだるくて頭が重い', '睡眠5時間、夜中に2回起きた', '痛みは昨日より少しまし', '薬を飲み忘れた', '散歩10分できた'].map(s =>
+            `<button class="btn btn-outline btn-sm" style="font-size:12px" onclick="app.navigate('dashboard');setTimeout(function(){var el=document.getElementById('dash-quick-input');if(el){el.value=${JSON.stringify(s)};el.focus();}},150)">${Components.escapeHtml(s)}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted)">
+        記録したはずなのに表示されない場合は
+        <a href="diag.html" style="color:var(--accent);text-decoration:underline">データ診断ツール</a>
+        をお試しください。
+      </div>
+    </div>`}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -3241,6 +3274,38 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Referral / Share -->
+  ${(() => {
+    const uid = store.get('user') && store.get('user').uid;
+    if (!uid) return '';
+    const refTag = uid.slice(0, 8);
+    const inviteUrl = 'https://cares.advisers.jp/?ref=' + refTag;
+    const xText = encodeURIComponent('慢性疾患の体調管理に「健康日記」を使っています。無料で記録・AI分析ができます。 ' + inviteUrl + ' #慢性疾患 #健康管理');
+    const lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent('健康日記をおすすめします: ' + inviteUrl);
+    return `
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">友達・家族に紹介する</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.6">
+        同じ疾患を持つ方に紹介することで、互いにサポートし合えます。あなたの招待リンクを共有してください。
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <input type="text" readonly value="${Components.escapeHtml(inviteUrl)}"
+          style="flex:1;font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-tertiary);color:var(--text-muted)"
+          onclick="this.select()">
+        <button class="btn btn-outline btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('${Components.escapeHtml(inviteUrl)}').then(function(){Components.showToast('コピーしました','success')})">コピー</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://twitter.com/intent/tweet?text=${xText}" target="_blank" rel="noopener"
+          class="btn btn-outline btn-sm" style="font-size:12px;text-decoration:none">X でシェア</a>
+        <a href="${Components.escapeHtml(lineUrl)}" target="_blank" rel="noopener"
+          class="btn btn-outline btn-sm" style="font-size:12px;text-decoration:none">LINE で送る</a>
+        ${`<button class="btn btn-outline btn-sm" style="font-size:12px" onclick="navigator.share&&navigator.share({title:'健康日記',text:'体調管理に使っています',url:'${Components.escapeHtml(inviteUrl)}'}).catch(function(){})">その他でシェア</button>`}
+      </div>
+    </div>
+  </div>`;
+  })()}
 
   <!-- Data Export -->
   <div class="card" style="margin-bottom:20px">

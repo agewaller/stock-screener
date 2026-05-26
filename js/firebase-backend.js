@@ -273,6 +273,11 @@ var FirebaseBackend = {
     try {
       this.cleanupListeners();
       await this.auth.signOut();
+      // Reset all session-state flags so a re-login in the same tab
+      // starts clean and doesn't inherit stale snapshot/loading state.
+      this.userId = null;
+      this._loading = false;
+      this._initialSnapshotSeen = {};
       store.clearAll();
       Components.showToast('ログアウトしました', 'info');
     } catch (err) {
