@@ -30,7 +30,11 @@ var App = class App {
     this.pages = {};
     this.currentPage = null;
     this.chartInstances = {};
-    this.ADMIN_EMAILS = ['agewaller@gmail.com'];
+    // Owner accounts are ALWAYS admin (hardcoded, normalized), so they can
+    // never be locked out by stale localStorage / Firebase profile state.
+    // agewaller@gmail.com must never be removed (see CLAUDE.md).
+    this.OWNER_EMAILS = ['agewaller@gmail.com', 'mail@bresson.biz'];
+    this.ADMIN_EMAILS = [...this.OWNER_EMAILS];
     // Load additional admins from localStorage
     try {
       const extra = JSON.parse(localStorage.getItem('admin_emails') || '[]');
@@ -52,14 +56,19 @@ var App = class App {
     // ALWAYS admin (matches removeAdmin's owner-protect logic).
     const email = this.currentUserEmail();
     if (!email) return false;
-    // The owner is ALWAYS admin regardless of stale localStorage /
-    // store state, so agewaller@gmail.com can never be locked out of
-    // /admin or key configuration. Comparison is normalized (lowercase,
-    // trimmed) because Firebase surfaces the address with varying
-    // casing depending on the sign-in path.
-    if (email === 'agewaller@gmail.com') return true;
+    // Owner accounts are ALWAYS admin regardless of stale localStorage /
+    // store state, so they can never be locked out of /admin or key
+    // configuration. Comparison is normalized (lowercase, trimmed)
+    // because Firebase surfaces the address with varying casing
+    // depending on the sign-in path.
+    if (this.isOwnerEmail(email)) return true;
     return Array.isArray(this.ADMIN_EMAILS)
       && this.ADMIN_EMAILS.map(e => String(e || '').trim().toLowerCase()).includes(email);
+  }
+
+  isOwnerEmail(email) {
+    const e = String(email || '').trim().toLowerCase();
+    return Array.isArray(this.OWNER_EMAILS) && this.OWNER_EMAILS.includes(e);
   }
 
   currentUserEmail() {
@@ -6201,7 +6210,7 @@ ${axisHint}
       return;
     }
     this.ADMIN_EMAILS.push(email);
-    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => !this.isOwnerEmail(e))));
     if (FirebaseBackend.initialized) {
       FirebaseBackend.saveProfile({ adminEmails: this.ADMIN_EMAILS });
     }
@@ -6211,12 +6220,12 @@ ${axisHint}
   }
 
   removeAdmin(email) {
-    if (email === 'agewaller@gmail.com') {
+    if (this.isOwnerEmail(email)) {
       Components.showToast('オーナーは削除できません', 'error');
       return;
     }
     this.ADMIN_EMAILS = this.ADMIN_EMAILS.filter(e => e !== email);
-    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => e !== 'agewaller@gmail.com')));
+    localStorage.setItem('admin_emails', JSON.stringify(this.ADMIN_EMAILS.filter(e => !this.isOwnerEmail(e))));
     Components.showToast(`${email} を管理者から削除しました`, 'info');
     this.navigate('admin');
   }
