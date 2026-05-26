@@ -272,6 +272,13 @@ var FirebaseBackend = {
   async signOut() {
     try {
       this.cleanupListeners();
+      // Reset per-session flags so a subsequent sign-in (possibly a
+      // different user in the same tab) reruns loadAllData /
+      // subscribeToCollections from scratch instead of inheriting
+      // the previous user's snapshot bookkeeping.
+      this._loading = false;
+      this._initialSnapshotSeen = {};
+      this.userId = null;
       await this.auth.signOut();
       store.clearAll();
       Components.showToast('ログアウトしました', 'info');

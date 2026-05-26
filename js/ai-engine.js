@@ -539,11 +539,12 @@ ${avoidBlock}
     // "分析サービスに接続できませんでした" error reported in guest mode
     // once that specific snapshot was rotated out on the API.
     const MODEL_MAP = {
+      'claude-opus-4-7':   'claude-opus-4-7',
       'claude-sonnet-4-6': 'claude-sonnet-4-6',
       'claude-opus-4-6':   'claude-opus-4-6',
       'claude-haiku-4-5':  'claude-haiku-4-5',
     };
-    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-6';
+    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-7';
 
     // Single fixed endpoint for everyone. The browser never sends a
     // key — the relay forwards to the proxy Worker which injects the
