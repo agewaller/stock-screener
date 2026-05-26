@@ -51,7 +51,7 @@ function corsHeaders(origin) {
   };
 }
 
-const OWNER_EMAIL = 'agewaller@gmail.com';
+const OWNER_EMAILS = ['agewaller@gmail.com', 'mail@bresson.biz'];
 
 // ────────────────────────────────────────────────
 // Server-side provider key resolution.
@@ -72,8 +72,8 @@ async function resolveProviderKey(env, provider) {
 // ────────────────────────────────────────────────
 // Admin authentication for /admin/* endpoints.
 // Primary: Firebase ID token (Authorization: Bearer) verified against
-// Google's public keys, email must equal the owner.
-// Break-glass: x-admin-token === env.ADMIN_WRITE_TOKEN, so the owner is
+// Google's public keys, email must be one of the owner accounts.
+// Break-glass: x-admin-token === env.ADMIN_WRITE_TOKEN, so an owner is
 // never locked out even if Firebase auth is unavailable.
 // ────────────────────────────────────────────────
 function b64urlToBytes(s) {
@@ -137,7 +137,7 @@ async function isAdminRequest(request, env) {
   if (m) {
     const payload = await verifyFirebaseIdToken(m[1], env);
     if (payload && payload.email_verified !== false
-        && String(payload.email || '').trim().toLowerCase() === OWNER_EMAIL) {
+        && OWNER_EMAILS.includes(String(payload.email || '').trim().toLowerCase())) {
       return true;
     }
   }

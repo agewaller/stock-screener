@@ -662,7 +662,7 @@ var FirebaseBackend = {
         if (profile.settings?.dashboardLayout) store.set('dashboardLayout', profile.settings.dashboardLayout);
         if (profile.userProfile) store.set('userProfile', profile.userProfile);
         if (profile.adminEmails) {
-          try { app.ADMIN_EMAILS = [...new Set(['agewaller@gmail.com', ...profile.adminEmails])]; } catch(e) {}
+          try { app.ADMIN_EMAILS = [...new Set([...(app.OWNER_EMAILS || ['agewaller@gmail.com']), ...profile.adminEmails])]; } catch(e) {}
         }
       }
 
@@ -1015,7 +1015,7 @@ var FirebaseBackend = {
         if (p.userProfile) store.set('userProfile', p.userProfile);
         if (p.latestFeedback) store.set('latestFeedback', p.latestFeedback);
         if (p.adminEmails) {
-          try { app.ADMIN_EMAILS = ['agewaller@gmail.com'].concat(p.adminEmails); } catch(e) {}
+          try { app.ADMIN_EMAILS = [...new Set([...(app.OWNER_EMAILS || ['agewaller@gmail.com']), ...p.adminEmails])]; } catch(e) {}
         }
       } finally {
         self._loading = prev;
