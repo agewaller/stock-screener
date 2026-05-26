@@ -30,7 +30,7 @@ var App = class App {
     this.pages = {};
     this.currentPage = null;
     this.chartInstances = {};
-    this.ADMIN_EMAILS = ['agewaller@gmail.com'];
+    this.ADMIN_EMAILS = ['agewaller@gmail.com', 'yanoshin@bresson.biz', 'mail@bresson.biz'];
     // Load additional admins from localStorage
     try {
       const extra = JSON.parse(localStorage.getItem('admin_emails') || '[]');
