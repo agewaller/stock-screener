@@ -51,7 +51,11 @@ function corsHeaders(origin) {
   };
 }
 
-const OWNER_EMAIL = 'agewaller@gmail.com';
+// Operator accounts allowed to manage server-side keys / prompts via
+// /admin/*. The owner is always first; co-admins are added explicitly.
+// These accounts can set the shared provider API keys, so add entries
+// deliberately. Break-glass via ADMIN_WRITE_TOKEN still works independently.
+const OWNER_EMAILS = ['agewaller@gmail.com', 'yanoshin@bresson.biz', 'mail@bresson.biz'];
 
 // ────────────────────────────────────────────────
 // Server-side provider key resolution.
@@ -137,7 +141,7 @@ async function isAdminRequest(request, env) {
   if (m) {
     const payload = await verifyFirebaseIdToken(m[1], env);
     if (payload && payload.email_verified !== false
-        && String(payload.email || '').trim().toLowerCase() === OWNER_EMAIL) {
+        && OWNER_EMAILS.includes(String(payload.email || '').trim().toLowerCase())) {
       return true;
     }
   }
