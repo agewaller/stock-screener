@@ -1188,7 +1188,7 @@ App.prototype.render_dashboard = function() {
       { done: (store.get('selectedDiseases') || []).length > 0, label: '疾患を選択する', action: "app.navigate('settings')", icon: '🩺' },
       { done: !!(profile.age || profile.gender), label: 'プロフィールを入力する', action: "app.navigate('settings')", icon: '👤' },
       { done: totalEntries > 0, label: '最初の体調を記録する', action: "document.getElementById('dash-quick-input')&&document.getElementById('dash-quick-input').focus()", icon: '✏️' },
-      { done: localStorage.getItem('reminder_enabled') === '1', label: '毎日の通知をオンにする', action: "app.toggleDailyReminder(true)", icon: '🔔' },
+      { done: localStorage.getItem('reminder_enabled') === '1', label: '毎日の通知をオンにする', action: "app.navigate('settings')", icon: '🔔' },
       { done: !!store.get('deepAnalysisLastRun'), label: '本格分析を初めて実行する', action: "app.runDeepAnalysis()", icon: '📊' },
     ];
     const doneCount = steps.filter(s => s.done).length;
