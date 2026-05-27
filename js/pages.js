@@ -2776,8 +2776,82 @@ App.prototype.render_timeline = function() {
     }
   }
 
+  // 90-day activity heatmap (GitHub-style contribution graph)
+  let heatmapHtml = '';
+  if (allEntries.length > 0) {
+    const countByDay = {};
+    allEntries.forEach(e => {
+      if (!e.timestamp) return;
+      const key = new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      countByDay[key] = (countByDay[key] || 0) + 1;
+    });
+    const hmToday = new Date();
+    const HEAT_DAYS = 91;
+    const dayArr = Array.from({ length: HEAT_DAYS }, (_, i) => {
+      const d = new Date(hmToday);
+      d.setDate(d.getDate() - (HEAT_DAYS - 1 - i));
+      const key = d.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      return { d, key, count: countByDay[key] || 0 };
+    });
+    const startDow = dayArr[0].d.getDay();
+    const paddedDays = [...Array(startDow).fill(null), ...dayArr];
+    while (paddedDays.length % 7) paddedDays.push(null);
+    const grid = Array.from({ length: paddedDays.length / 7 }, (_, c) =>
+      Array.from({ length: 7 }, (_, r) => paddedDays[c * 7 + r])
+    );
+    const cellColor = c => c === 0 ? '#e8eaf0' : c <= 2 ? '#c7d2fe' : c <= 4 ? '#818cf8' : '#4338ca';
+    const dowLabels = ['日','月','火','水','木','金','土'];
+    const monthRow = grid.map((week, ci) => {
+      const first = week.find(Boolean);
+      if (!first) return '';
+      if (ci === 0) return `${first.d.getMonth() + 1}月`;
+      const prev = grid[ci - 1] && grid[ci - 1].find(Boolean);
+      return (!prev || prev.d.getMonth() !== first.d.getMonth()) ? `${first.d.getMonth() + 1}月` : '';
+    });
+    const todayStr = hmToday.toDateString();
+    const cellHtml = cell => {
+      if (!cell) return `<div style="width:11px;height:11px"></div>`;
+      const lbl = cell.d.toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
+      return `<div title="${lbl}: ${cell.count}件" style="width:11px;height:11px;border-radius:2px;background:${cellColor(cell.count)};${cell.d.toDateString() === todayStr ? 'box-shadow:0 0 0 2px #6366f1;' : ''}"></div>`;
+    };
+    const activeDays = dayArr.filter(d => d.count > 0).length;
+    const totalHeat = dayArr.reduce((s, d) => s + d.count, 0);
+    heatmapHtml = `
+      <div style="margin-bottom:16px;padding:14px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">記録カレンダー</span>
+          <span style="font-size:11px;color:var(--text-muted)">${activeDays}日記録・計${totalHeat}件 / 過去${HEAT_DAYS}日</span>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <div style="display:inline-flex;gap:2px">
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:18px">
+              ${dowLabels.map((l, i) => i % 2 === 1
+                ? `<div style="width:12px;height:11px;font-size:8px;color:var(--text-muted);display:flex;align-items:center;justify-content:flex-end;padding-right:2px">${l}</div>`
+                : `<div style="width:12px;height:11px"></div>`
+              ).join('')}
+            </div>
+            <div>
+              <div style="display:flex;gap:2px;margin-bottom:2px">
+                ${grid.map((_, ci) => monthRow[ci]
+                  ? `<div style="width:11px;font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:visible;height:16px;display:flex;align-items:flex-end">${monthRow[ci]}</div>`
+                  : `<div style="width:11px;height:16px"></div>`
+                ).join('')}
+              </div>
+              <div style="display:flex;gap:2px">
+                ${grid.map(week => `<div style="display:flex;flex-direction:column;gap:2px">${week.map(cellHtml).join('')}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:8px;font-size:10px;color:var(--text-muted)">
+          少<div style="width:10px;height:10px;border-radius:2px;background:#e8eaf0;margin-left:2px"></div><div style="width:10px;height:10px;border-radius:2px;background:#c7d2fe"></div><div style="width:10px;height:10px;border-radius:2px;background:#818cf8"></div><div style="width:10px;height:10px;border-radius:2px;background:#4338ca"></div>多
+        </div>
+      </div>`;
+  }
+
   return `
   ${timelineStatsHtml}
+  ${heatmapHtml}
 
   <div style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
