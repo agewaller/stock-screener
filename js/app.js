@@ -304,9 +304,13 @@ var App = class App {
     // wait for Firebase to resolve.
     if (hasLocalAuth) {
       this.setupDailyReminder();
+      this.setupMedReminders();
     }
     store.on('isAuthenticated', (val) => {
-      if (val) this.setupDailyReminder();
+      if (val) {
+        this.setupDailyReminder();
+        this.setupMedReminders();
+      }
     });
 
     // Calendar events are loaded per-user from Firestore (users/{uid}/calendarEvents).
@@ -4762,6 +4766,91 @@ ${axisHint}
     } catch (e) {
       return 'denied';
     }
+  }
+
+  // ── Medication reminders ─────────────────────────────────────────────────
+
+  addMedReminder() {
+    const nameEl = document.getElementById('med-name-input');
+    const timeEl = document.getElementById('med-time-input');
+    if (!nameEl || !timeEl) return;
+    const name = nameEl.value.trim();
+    const time = timeEl.value || '08:00';
+    if (!name) { Components.showToast('薬の名前を入力してください', 'error'); return; }
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    reminders.push({ name, time, enabled: true });
+    localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    nameEl.value = '';
+    this.requestNotificationPermission().then(p => {
+      if (p === 'granted') {
+        this.setupMedReminders();
+        Components.showToast(`「${name}」のリマインダーを追加しました`, 'success');
+      } else if (p === 'denied') {
+        Components.showToast('通知がブロックされています。ブラウザの設定で許可してください', 'error');
+      } else {
+        Components.showToast(`「${name}」のリマインダーを追加しました`, 'success');
+        this.setupMedReminders();
+      }
+    });
+    this.navigate('settings');
+  }
+
+  removeMedReminder(index) {
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const removed = reminders.splice(index, 1)[0];
+    localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    if (removed) Components.showToast(`「${removed.name}」を削除しました`, 'info');
+    this.navigate('settings');
+  }
+
+  toggleMedReminder(index, enabled) {
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    if (reminders[index]) {
+      reminders[index].enabled = enabled;
+      localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    }
+    this.setupMedReminders();
+  }
+
+  setupMedReminders() {
+    if (typeof Notification === 'undefined') return;
+    if (this._medReminderInterval) {
+      clearInterval(this._medReminderInterval);
+      this._medReminderInterval = null;
+    }
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const active = reminders.filter(r => r.enabled !== false);
+    if (!active.length) return;
+    this._checkMedReminders();
+    this._medReminderInterval = setInterval(() => this._checkMedReminders(), 60 * 1000);
+  }
+
+  _checkMedReminders() {
+    if (Notification.permission !== 'granted') return;
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    if (!reminders.length) return;
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const nowH = nowJst.getHours();
+    const nowM = nowJst.getMinutes();
+    const todayKey = nowJst.toLocaleDateString('ja-JP');
+    reminders.forEach((r, i) => {
+      if (!r.enabled && r.enabled !== undefined) return;
+      const [rH, rM] = (r.time || '08:00').split(':').map(Number);
+      if (nowH !== rH || nowM !== rM) return;
+      const firedKey = `med_fired_${i}_${todayKey}`;
+      if (localStorage.getItem(firedKey)) return;
+      try {
+        const n = new Notification('💊 服薬リマインダー', {
+          body: `「${r.name}」の服薬時刻です`,
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: 'med-reminder-' + i,
+          renotify: true,
+        });
+        n.onclick = () => { window.focus(); n.close(); };
+        localStorage.setItem(firedKey, '1');
+      } catch (e) { /* silent */ }
+    });
   }
 
   async toggleDailyReminder(checked) {

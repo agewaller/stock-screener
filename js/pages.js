@@ -3421,6 +3421,49 @@ App.prototype.render_settings = function() {
   </div>`;
   })()}
 
+  <!-- Medication Reminders -->
+  ${(() => {
+    const notifSupported = typeof Notification !== 'undefined';
+    if (!notifSupported) return '';
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const permission = Notification.permission;
+    return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">💊 服薬リマインダー</span>
+      <span class="tag tag-accent" style="font-size:10px">${reminders.length}件</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        薬の名前と服薬時刻を登録すると、毎日その時刻に通知します。
+      </div>
+      <div id="med-reminders-list" style="margin-bottom:12px">
+        ${reminders.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);padding:6px 0">まだ登録されていません</div>' : reminders.map((r, i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer">
+              <input type="checkbox" ${r.enabled !== false ? 'checked' : ''} style="accent-color:var(--accent)"
+                onchange="app.toggleMedReminder(${i},this.checked)">
+              <span style="font-size:13px;font-weight:600">${Components.escapeHtml(r.name)}</span>
+            </label>
+            <span style="font-size:12px;color:var(--text-muted);font-family:monospace">${Components.escapeHtml(r.time)}</span>
+            <button onclick="app.removeMedReminder(${i})" style="padding:2px 8px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:6px;font-size:11px;cursor:pointer">削除</button>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input id="med-name-input" type="text" placeholder="薬の名前（例：リリカ 75mg）" class="form-input"
+          style="flex:1;min-width:140px;padding:7px 10px;font-size:12px">
+        <input id="med-time-input" type="time" class="form-input"
+          style="width:100px;padding:7px 10px;font-size:12px" value="08:00">
+        <button onclick="app.addMedReminder()" style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">追加</button>
+      </div>
+      ${permission === 'denied' ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fef2f2;border-radius:8px;font-size:11px;color:#991b1b">
+        ⚠️ 通知がブロックされています。ブラウザの設定から通知を許可してください。
+      </div>` : ''}
+    </div>
+  </div>`;
+  })()}
+
   <!-- Share / Referral -->
   ${(() => {
     const uid = (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) || '';
