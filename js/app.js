@@ -4423,10 +4423,15 @@ ${axisHint}
       result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:16px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:14px;border:1px solid #bbf7d0">
+            <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">📔 記録を続けると、もっと深い分析ができます</div>
+            <div style="display:grid;gap:5px;margin-bottom:12px">
+              <div style="font-size:11px;color:#15803d">✓ 症状の改善・悪化パターンを自動検出</div>
+              <div style="font-size:11px;color:#15803d">✓ 次の受診に持参できる医師提出レポートを自動作成</div>
+              <div style="font-size:11px;color:#15803d">✓ 使える補助金・年金をデータから自動で発見</div>
+              <div style="font-size:11px;color:#15803d">✓ すべて無料・登録 30 秒</div>
+            </div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">無料で登録する（30秒） ↓</button>
           </div>`;
       }
     } catch (err) {

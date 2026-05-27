@@ -147,12 +147,36 @@ App.prototype.render_login = function() {
         <div id="guest-result" style="margin-top:12px"></div>
       </div>
       <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
-        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">このサービスでできること</div>
-        <div style="font-size:12px;color:#475569;line-height:1.8">
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📝</span><span><strong>体調を記録</strong> — テキスト・写真・ファイルで日々の症状、服薬、食事、気分を記録</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📊</span><span><strong>経過を可視化</strong> — 記録データの時系列表示と傾向の整理</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — 最新の研究情報を疾患別に自動取得（参考情報）</span></div>
-          <div style="display:flex;gap:8px"><span style="flex-shrink:0">💡</span><span><strong>情報の整理補助</strong> — 入力内容に基づく参考情報の提示（医療行為ではありません）</span></div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:12px">登録すると使えること（すべて無料）</div>
+        <div style="display:grid;gap:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">🏥</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">医師提出レポートを自動作成</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">30日分の記録を AI が統合し、次の受診に持参できるサマリーを生成</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">📈</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">症状の傾向とトリガーを発見</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">睡眠・天気・食事・薬との相関を記録から自動で分析</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">🔬</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">最新の治療研究を毎日自動取得</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">PubMed から疾患別論文を自動収集。主治医との会話に役立てる</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">💴</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">使える補助金・年金を自動で発見</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">疾患に応じた国・自治体の支援制度を一覧表示。専門家へ相談依頼も可能</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -741,6 +765,34 @@ App.prototype.render_dashboard = function() {
       </div>`}`}
     </div>
   </div>` : ''}
+
+  <!-- Weekly summary nudge — shown on Mondays (or when first opened after a week)
+       to users who have 7+ entries, encouraging them to run the deep analysis. -->
+  ${(() => {
+    if (!hasData) return '';
+    const week7 = textEntries.filter(e => e.timestamp && (Date.now() - new Date(e.timestamp)) < 7 * 86400000);
+    if (week7.length < 3) return '';
+    const lastDeep = store.get('deepAnalysisLastRun');
+    const todayJstKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const deepToday = lastDeep === todayJstKey;
+    if (deepToday) return '';
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const isMonday = nowJst.getDay() === 1;
+    const seenKey = 'weekly_nudge_' + todayJstKey;
+    if (!isMonday && localStorage.getItem(seenKey)) return '';
+    return `
+    <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;border-radius:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:20px">📊</div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;font-weight:700;color:#9a3412">この 7 日間の記録（${week7.length}件）を本格分析しますか？</div>
+        <div style="font-size:10px;color:#c2410c;margin-top:2px">症状パターン・トリガー・改善傾向をまとめて分析</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="app.runDeepAnalysis()" style="padding:6px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">本格分析する</button>
+        <button onclick="localStorage.setItem(${JSON.stringify(seenKey)},'1');this.closest('[style*=background]').remove()" style="padding:6px 10px;background:transparent;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:11px;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+  })()}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
