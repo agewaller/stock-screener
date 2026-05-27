@@ -670,6 +670,61 @@ App.prototype.render_dashboard = function() {
             style="padding:5px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;line-height:1">${b.label}</button>`).join('')}
         <span style="font-size:10px;color:var(--text-muted)">タップで入力</span>
       </div>
+      <!-- Structured 4-dimension check-in accordion — collapses by default
+           so it doesn't overwhelm the main input, but gives a ≤10-second
+           logging path when the user is too fatigued to type free text.
+           Submitting saves directly to the symptoms store (feeds correlation
+           analysis + chart) AND adds a text summary to textEntries. -->
+      <div style="margin-top:8px">
+        <button id="quick-checkin-toggle"
+          onclick="(function(){var c=document.getElementById('quick-checkin-body');var btn=document.getElementById('quick-checkin-toggle');var open=c.style.display!=='none';c.style.display=open?'none':'block';btn.textContent=open?'📊 数値で記録（4項目）▸':'📊 数値で記録（4項目）▾';})()"
+          style="padding:4px 12px;background:transparent;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-muted);cursor:pointer;width:100%;text-align:left">
+          📊 数値で記録（4項目）▸
+        </button>
+        <div id="quick-checkin-body" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg-tertiary);border-radius:10px">
+          ${[
+            { key: 'fatigue_level', label: '疲労', vals: ['😴最重', '😰重い', '😐普通', '🙂軽い', '😄なし'] },
+            { key: 'pain_level',    label: '痛み', vals: ['🔴激痛', '🟠強い', '🟡中程度', '🟢軽い', '⚪なし'] },
+            { key: 'brain_fog',     label: '脳霧', vals: ['🌫️重い', '☁️ある', '🌤️少し', '☀️ほぼなし', '✨なし'] },
+            { key: 'sleep_quality', label: '睡眠', vals: ['😫最悪', '🙁悪い', '😐普通', '🙂良い', '😄熟睡'] },
+          ].map(dim => `
+            <div style="margin-bottom:8px">
+              <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">${dim.label}</div>
+              <div style="display:flex;gap:4px">
+                ${dim.vals.map((v, i) => `
+                  <button data-dim="${dim.key}" data-val="${i + 1}"
+                    onclick="(function(btn){document.querySelectorAll('[data-dim=${JSON.stringify(dim.key)}]').forEach(b=>{b.style.background='var(--bg-primary)';b.style.borderColor='var(--border)';b.style.fontWeight='400'});btn.style.background='#6366f1';btn.style.borderColor='#6366f1';btn.style.color='#fff';btn.style.fontWeight='700';})(this)"
+                    style="flex:1;padding:4px 2px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;font-size:10px;cursor:pointer;text-align:center;line-height:1.3;transition:all .1s">
+                    ${v}
+                  </button>`).join('')}
+              </div>
+            </div>`).join('')}
+          <button onclick="(function(){
+            var dims=['fatigue_level','pain_level','brain_fog','sleep_quality'];
+            var labels=['疲労','痛み','脳霧','睡眠'];
+            var vals=['最重/重い/普通/軽い/なし','激痛/強い/中程度/軽い/なし','重い/ある/少し/ほぼなし/なし','最悪/悪い/普通/良い/熟睡'];
+            var entry={id:Date.now().toString(36)+Math.random().toString(36).substr(2),timestamp:new Date().toISOString()};
+            var parts=[];
+            var hasAny=false;
+            dims.forEach(function(dim,i){
+              var btn=document.querySelector('[data-dim='+JSON.stringify(dim)+'][style*=6366f1]');
+              if(btn){hasAny=true;entry[dim]=parseInt(btn.getAttribute('data-val'));parts.push(labels[i]+':'+entry[dim]+'/5');}
+            });
+            if(!hasAny){Components.showToast('少なくとも1項目を選んでください','error');return;}
+            var symptoms=store.get('symptoms')||[];symptoms.push(entry);store.set('symptoms',symptoms);
+            var textEntries=store.get('textEntries')||[];
+            textEntries.push({id:entry.id+'t',timestamp:entry.timestamp,category:'symptoms',type:'symptom_log',title:'症状スコア',content:'今日の数値記録: '+parts.join(' / ')});
+            store.set('textEntries',textEntries);
+            document.getElementById('quick-checkin-body').style.display='none';
+            document.getElementById('quick-checkin-toggle').textContent='📊 数値で記録（4項目）▸';
+            Components.showToast('記録しました','success');
+            app.navigate('dashboard');
+          })()"
+            style="width:100%;padding:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">
+            ✓ 記録する
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
