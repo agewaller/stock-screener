@@ -873,6 +873,43 @@ App.prototype.render_dashboard = function() {
     </div>`;
   })()}
 
+  <!-- Share milestone card — shown once at 7-day streak and 30-total-day milestones
+       to drive organic growth. Dismissed per milestone via localStorage. -->
+  ${(() => {
+    const milestones = [
+      { key: 'share_7streak', check: () => streakStats.streak >= 7, label: '7日連続記録！', emoji: '⚡' },
+      { key: 'share_30days',  check: () => streakStats.totalDays >= 30, label: '30日分のデータが溜まりました！', emoji: '🎯' },
+    ];
+    const hit = milestones.find(m => m.check() && !localStorage.getItem(m.key + '_dismissed'));
+    if (!hit) return '';
+    const shareText = '健康日記で体調を記録し始めて ' + (hit.key === 'share_7streak' ? '7日連続' : '30日') + 'になりました！慢性疾患の方に使いやすい無料アプリです。';
+    const shareUrl = 'https://cares.advisers.jp';
+    const tweetUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl) + '&hashtags=' + encodeURIComponent('健康日記,慢性疾患');
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(shareText);
+    return `
+    <div id="share-milestone-card" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#fdf4ff 0%,#ede9fe 100%);border:1.5px solid #c4b5fd;border-radius:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:800;color:#5b21b6">${hit.emoji} ${hit.label}</div>
+        <button onclick="localStorage.setItem('${hit.key}_dismissed','1');document.getElementById('share-milestone-card').remove()"
+          style="padding:3px 8px;background:transparent;color:#7c3aed;border:none;cursor:pointer;font-size:11px">閉じる</button>
+      </div>
+      <div style="font-size:12px;color:#4c1d95;margin-bottom:10px;line-height:1.6">
+        同じ疾患で悩む方に使ってもらえると、より多くのパターンを一緒に発見できます。もしよかったらシェアしてください。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${typeof navigator !== 'undefined' && navigator.share ? `
+        <button onclick="navigator.share({title:'健康日記',text:${JSON.stringify(shareText)},url:'${shareUrl}'}).then(()=>localStorage.setItem('${hit.key}_dismissed','1'))"
+          style="padding:7px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📤 共有する</button>` : ''}
+        <a href="${tweetUrl}" target="_blank" rel="noopener"
+          onclick="localStorage.setItem('${hit.key}_dismissed','1')"
+          style="padding:7px 14px;background:#1d9bf0;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block">𝕏 でシェア</a>
+        <a href="${lineUrl}" target="_blank" rel="noopener"
+          onclick="localStorage.setItem('${hit.key}_dismissed','1')"
+          style="padding:7px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block">LINE でシェア</a>
+      </div>
+    </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
@@ -1033,6 +1070,43 @@ App.prototype.render_dashboard = function() {
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
+
+  <!-- Setup progress guide — shown to users who haven't completed all key
+       setup steps. Auto-disappears once all 5 steps are done. -->
+  ${(() => {
+    const profile = store.get('userProfile') || {};
+    const steps = [
+      { done: (store.get('selectedDiseases') || []).length > 0, label: '疾患を選択する', action: "app.navigate('settings')", icon: '🩺' },
+      { done: !!(profile.age || profile.gender), label: 'プロフィールを入力する', action: "app.navigate('settings')", icon: '👤' },
+      { done: totalEntries > 0, label: '最初の体調を記録する', action: "document.getElementById('dash-quick-input')&&document.getElementById('dash-quick-input').focus()", icon: '✏️' },
+      { done: localStorage.getItem('reminder_enabled') === '1', label: '毎日の通知をオンにする', action: "app.toggleDailyReminder(true)", icon: '🔔' },
+      { done: !!store.get('deepAnalysisLastRun'), label: '本格分析を初めて実行する', action: "app.runDeepAnalysis()", icon: '📊' },
+    ];
+    const doneCount = steps.filter(s => s.done).length;
+    if (doneCount === steps.length) return '';
+    const pct = Math.round((doneCount / steps.length) * 100);
+    return `
+    <div class="card" style="margin-bottom:16px;border:1.5px solid #e0e7ff">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:#3730a3">🚀 はじめかたガイド</div>
+          <div style="font-size:11px;color:#6366f1;font-weight:600">${doneCount}/${steps.length} 完了</div>
+        </div>
+        <div style="height:4px;background:#e0e7ff;border-radius:4px;margin-bottom:12px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:4px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${steps.map(s => `
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:${s.done ? '#f0fdf4' : 'var(--bg-tertiary)'};cursor:${s.done ? 'default' : 'pointer'}"
+              ${s.done ? '' : 'onclick="' + s.action + '"'}>
+              <span style="font-size:14px;flex-shrink:0">${s.done ? '✅' : s.icon}</span>
+              <span style="font-size:12px;color:${s.done ? '#15803d' : 'var(--text-primary)'};${s.done ? 'text-decoration:line-through;opacity:.7' : 'font-weight:500'}">${s.label}</span>
+              ${s.done ? '' : '<span style="margin-left:auto;font-size:10px;color:#6366f1;font-weight:600">→</span>'}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  })()}
 
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
@@ -2245,6 +2319,21 @@ App.prototype.render_research = function() {
       </div>
     </div>
   </div>
+
+  <!-- Research cache freshness banner — tells users how old the results are
+       and surfaces a one-click refresh when the cache is ≥3 days stale. -->
+  ${(() => {
+    const cached = store.get('researchResults');
+    if (!cached || !cached.savedAt) return '';
+    const ageDays = Math.floor((Date.now() - cached.savedAt) / 86400000);
+    if (ageDays < 3) return '';
+    const ageLabel = ageDays >= 30 ? `${Math.floor(ageDays / 30)}ヶ月` : `${ageDays}日`;
+    return `
+    <div style="margin-bottom:12px;padding:8px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#78350f">⏰ 検索結果は ${ageLabel}前のものです。</span>
+      <button onclick="app.searchPubMedLive()" style="padding:4px 12px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">今すぐ更新</button>
+    </div>`;
+  })()}
 
   <!-- PubMed Results -->
   <div id="pubmed-results">
