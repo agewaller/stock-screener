@@ -4771,8 +4771,14 @@ ${axisHint}
 
     // Fire the notification.
     try {
+      const streak = (typeof this._computeStreak === 'function') ? this._computeStreak().streak : 0;
+      const body = streak >= 3
+        ? `🔥 ${streak}日連続記録中！今日も記録して連続記録を守りましょう。`
+        : streak > 0
+          ? '昨日も記録しましたね。今日の体調を記録してみましょう。'
+          : '今日の体調をまだ記録していません。少しだけ書いてみませんか？';
       const n = new Notification('健康日記', {
-        body: '今日の体調をまだ記録していません。少しだけ書いてみませんか？',
+        body,
         icon: '/icon.svg',
         badge: '/icon.svg',
         tag: 'daily-reminder',
