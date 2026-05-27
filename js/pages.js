@@ -2180,10 +2180,25 @@ App.prototype.render_chat = function() {
     <div class="chat-container">
       <div class="chat-messages" id="chat-messages">
         ${messages || `
-          <div style="text-align:center;padding:40px;color:var(--text-muted)">
-            <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>${Components.escapeHtml(diseaseLabelForChat)}について何でも質問してください</p>
-            <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
+          <div style="padding:20px">
+            <div style="text-align:center;padding:16px 0 20px;color:var(--text-muted)">
+              <div style="font-size:36px;margin-bottom:8px">💬</div>
+              <p style="font-size:13px">${Components.escapeHtml(diseaseLabelForChat)}について何でも相談できます</p>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">よく使われる質問</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${[
+                '今日の記録から見て、特に気をつけることは何ですか？',
+                '最近の症状のパターンを分析して教えてください',
+                '次の受診までに準備しておくことはありますか？',
+                '今の症状に合わせたセルフケアを教えてください',
+                '薬の飲み合わせや副作用について教えてください'
+              ].map(q => `
+                <button onclick="document.getElementById('chat-input').value=${JSON.stringify(q)};app.sendChat()"
+                  style="text-align:left;padding:9px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-primary);cursor:pointer;line-height:1.5">
+                  ${Components.escapeHtml(q)}
+                </button>`).join('')}
+            </div>
           </div>
         `}
       </div>

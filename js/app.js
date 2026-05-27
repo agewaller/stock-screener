@@ -392,6 +392,7 @@ var App = class App {
     };
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
+    document.title = (titles[page] ? titles[page] + ' — 健康日記' : '健康日記');
 
     // Close sidebar on mobile after navigation
     this.closeSidebar();
