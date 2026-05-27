@@ -1788,7 +1788,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -1825,9 +1825,27 @@ App.prototype.render_analysis = function() {
 
   <!-- Analysis Result -->
   <div id="analysis-result">
-    ${store.get('latestAnalysis')
-      ? ''
-      : Components.emptyState('🤖', 'AI分析を実行してください', '上のボタンからプロンプトを選択して分析を開始します')}
+    ${store.get('latestAnalysis') ? '' : (() => {
+      const textCount = (store.get('textEntries') || []).length;
+      const symptomCount = (store.get('symptoms') || []).length;
+      const totalData = textCount + symptomCount;
+      if (totalData >= 3) {
+        const primaryPromptKey = Object.keys(prompts)[0] || 'text_analysis';
+        return `
+        <div style="padding:24px;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px">🔍</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">${totalData}件のデータが蓄積されています</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.7">
+            症状パターン・改善のきっかけ・注意すべきトリガーを<br>AIが一気に分析します
+          </div>
+          <button onclick="app.runDeepAnalysis()" style="padding:14px 32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:300px">
+            🚀 今すぐ本格分析する
+          </button>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">または上のプロンプトボタンから個別分析</div>
+        </div>`;
+      }
+      return Components.emptyState('🤖', 'AI分析を実行してください', '記録が3件以上たまると本格分析できます。まずはダッシュボードから体調を記録してみましょう。');
+    })()}
   </div>`;
 };
 
@@ -2998,7 +3016,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
