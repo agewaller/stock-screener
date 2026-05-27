@@ -845,6 +845,45 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- Today's medication check-in — shown only when the user has registered
+       medications (med_reminders). Lets them tap each med to confirm it's
+       taken; logs a text entry. State resets daily via a JST date key. -->
+  ${(() => {
+    let reminders = [];
+    try { reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]'); } catch (_) {}
+    if (!reminders.length) return '';
+    const todayKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    let taken = {};
+    try { taken = JSON.parse(localStorage.getItem('med_taken_' + todayKey) || '{}'); } catch (_) {}
+    const allTaken = reminders.every((_, i) => taken[i]);
+    return `
+    <div class="card" style="margin-bottom:16px;border:1px solid ${allTaken ? '#bbf7d0' : '#fde68a'};background:${allTaken ? '#f0fdf4' : '#fffbeb'}">
+      <div class="card-body" style="padding:10px 16px">
+        <div style="font-size:11px;font-weight:700;color:${allTaken ? '#15803d' : '#78350f'};margin-bottom:8px">
+          💊 今日の服薬チェック${allTaken ? ' ✓ すべて完了' : ''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${reminders.map((r, i) => {
+            const done = !!taken[i];
+            return `
+            <button onclick="(function(){
+              var key=${JSON.stringify('med_taken_' + todayKey)};
+              var t={};try{t=JSON.parse(localStorage.getItem(key)||'{}');}catch(_){}
+              t[${i}]=true;localStorage.setItem(key,JSON.stringify(t));
+              var entries=store.get('textEntries')||[];
+              entries.push({id:Date.now().toString(36)+Math.random().toString(36).substr(2),timestamp:new Date().toISOString(),category:'medication',type:'med_check',title:'服薬確認',content:${JSON.stringify(r.name + ' ' + r.time + ' 服薬済')}}); store.set('textEntries',entries);
+              app.navigate('dashboard');
+            })()"
+              style="padding:6px 12px;background:${done ? '#dcfce7' : '#fff'};border:1.5px solid ${done ? '#86efac' : '#fde68a'};border-radius:20px;font-size:12px;font-weight:600;color:${done ? '#15803d' : '#78350f'};cursor:${done ? 'default' : 'pointer'};display:flex;align-items:center;gap:5px">
+              ${done ? '✅' : '⬜'} ${Components.escapeHtml(r.name)}
+              <span style="font-size:10px;opacity:.7">${Components.escapeHtml(r.time)}</span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  })()}
+
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
   <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1px solid #c7d2fe">
