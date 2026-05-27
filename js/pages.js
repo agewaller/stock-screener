@@ -883,6 +883,57 @@ App.prototype.render_dashboard = function() {
     </div>`;
   })()}
 
+  <!-- 7-day symptom sparklines — makes the value of tracking visceral.
+       Uses inline SVG (no library). Only shown when ≥2 symptom entries
+       exist in the last 7 days. Variables fatigueAvg etc. were already
+       computed above; this puts them to use. -->
+  ${recent7.length >= 2 ? (() => {
+    const dims = [
+      { key: 'fatigue_level', label: '疲労', inv: true  },
+      { key: 'pain_level',    label: '痛み', inv: true  },
+      { key: 'brain_fog',     label: '脳霧', inv: true  },
+      { key: 'sleep_quality', label: '睡眠', inv: false },
+    ];
+    const sparkColor = (v, inv) => {
+      const bad = inv ? v / 7 : 1 - v / 7;
+      return bad < 0.4 ? '#22c55e' : bad < 0.7 ? '#f59e0b' : '#ef4444';
+    };
+    const makeSvg = (vals, inv) => {
+      const W = 56, H = 26;
+      if (vals.length < 2) {
+        const cx = W / 2, cy = H - (vals[0] / 7) * H;
+        const c = sparkColor(vals[0], inv);
+        return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><circle cx="${cx}" cy="${cy.toFixed(1)}" r="3" fill="${c}"/></svg>`;
+      }
+      const pts = vals.map((v, i) => {
+        const x = (i / (vals.length - 1)) * W;
+        const y = H - (v / 7) * H;
+        return [x.toFixed(1), y.toFixed(1)];
+      });
+      const last = pts[pts.length - 1];
+      const c = sparkColor(vals[vals.length - 1], inv);
+      return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="overflow:visible"><polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.5" fill="${c}"/></svg>`;
+    };
+    const cards = dims.map(d => {
+      const vals = recent7.filter(s => s[d.key] != null).map(s => s[d.key]);
+      if (!vals.length) return '';
+      const latest = vals[vals.length - 1];
+      const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;background:var(--bg-secondary);border-radius:8px;flex:1;min-width:60px">
+        <div style="font-size:9px;font-weight:600;color:var(--text-muted)">${d.label}</div>
+        ${makeSvg(vals, d.inv)}
+        <div style="font-size:11px;font-weight:700;color:var(--text-primary)">${latest}/7</div>
+        <div style="font-size:9px;color:var(--text-muted)">avg ${avg}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+    if (!cards) return '';
+    return `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">📈 7日間トレンド（${recent7.length}件）</div>
+      <div style="display:flex;gap:6px">${cards}</div>
+    </div>`;
+  })() : ''}
+
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
   <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1px solid #c7d2fe">
