@@ -654,6 +654,22 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       <div id="dash-quick-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
+      <!-- One-tap fatigue scale — fills textarea so chronically fatigued
+           users can log without typing. A single tap appends the level and
+           moves focus to the textarea so they can add context or just hit 送信. -->
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--text-muted);flex-shrink:0">今日の体調:</span>
+        ${[
+          { v: 1, label: '😫 1', title: '最悪' },
+          { v: 2, label: '😰 2', title: 'かなり辛い' },
+          { v: 3, label: '😐 3', title: '普通' },
+          { v: 4, label: '🙂 4', title: '比較的良い' },
+          { v: 5, label: '😄 5', title: '絶好調' },
+        ].map(b => `
+          <button title="${b.title}" onclick="(function(){var t=document.getElementById('dash-quick-input');var cur=t.value.trim();var prefix='体調 ${b.v}/5（${b.title}）';if(cur&&!cur.startsWith('体調')){t.value=prefix+'\\n'+cur;}else{t.value=prefix+'\\n';}t.focus();t.setSelectionRange(t.value.length,t.value.length);})()"
+            style="padding:5px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;line-height:1">${b.label}</button>`).join('')}
+        <span style="font-size:10px;color:var(--text-muted)">タップで入力</span>
+      </div>
     </div>
   </div>
 
@@ -2378,17 +2394,34 @@ App.prototype.render_chat = function() {
             </div>
             <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">よく使われる質問</div>
             <div style="display:flex;flex-direction:column;gap:6px">
-              ${[
-                '今日の記録から見て、特に気をつけることは何ですか？',
-                '最近の症状のパターンを分析して教えてください',
-                '次の受診までに準備しておくことはありますか？',
-                '今の症状に合わせたセルフケアを教えてください',
-                '薬の飲み合わせや副作用について教えてください'
-              ].map(q => `
-                <button onclick="document.getElementById('chat-input').value=${JSON.stringify(q)};app.sendChat()"
-                  style="text-align:left;padding:9px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-primary);cursor:pointer;line-height:1.5">
-                  ${Components.escapeHtml(q)}
-                </button>`).join('')}
+              ${(() => {
+                const diseases = store.get('selectedDiseases') || [];
+                const diseaseQs = {
+                  mecfs: ['PEM（労作後倦怠感）を防ぐために今日できることは？', 'エネルギー管理（ペーシング）の具体的なコツを教えて'],
+                  fibromyalgia: ['今日の痛みを和らげるためのセルフケアは？', '天気・気温と症状の関係について教えて'],
+                  long_covid: ['ブレインフォグの対処法を教えて', 'コロナ後遺症の最新治療はどれくらい進んでいますか？'],
+                  depression: ['今の気分を改善するために今日できることは？', '薬を飲み始めてから何週間で効果が出ますか？'],
+                  insomnia: ['今夜できる睡眠改善の方法を教えて', '睡眠薬を使わずに眠れるようになる方法は？'],
+                  pots: ['立ちくらみを減らすために今日気をつけることは？', '水分・塩分の適切な摂り方を教えて'],
+                  diabetes_t2: ['今日の食事記録を見て何か改善点はありますか？', '低血糖の対処法と予防策を教えて'],
+                  diabetes: ['インスリン管理で気をつけることは何ですか？', '血糖値の変動パターンについて分析してください'],
+                  hashimoto: ['甲状腺機能低下の症状チェックリストを教えて', 'チロキシン服薬のタイミングや注意点は？'],
+                  migraine: ['頭痛のトリガーになりそうな記録はありますか？', '市販薬の飲みすぎによる薬物乱用頭痛を防ぐには？'],
+                  ibs: ['今日の食事で症状に影響しそうなものはありますか？', 'ローフォドマップ食の始め方を教えて'],
+                  ra: ['朝のこわばりを短くする工夫を教えて', 'MTXの副作用で注意すべきことは何ですか？'],
+                  bipolar: ['気分が波打つ時の早期サイン（プロドローム）は？', '薬を忘れずに飲むコツを教えて'],
+                  adhd: ['集中できない日のタスク管理方法を教えて', '薬が切れる時間帯に仕事をうまくこなすには？'],
+                };
+                const qs = new Set();
+                diseases.forEach(d => (diseaseQs[d] || []).forEach(q => qs.add(q)));
+                const fallback = ['今日の記録から見て、特に気をつけることは何ですか？', '最近の症状のパターンを分析して教えてください', '次の受診までに準備しておくことはありますか？', '今の症状に合わせたセルフケアを教えてください', '薬の飲み合わせや副作用について教えてください'];
+                const finalQs = [...qs, ...fallback].slice(0, 5);
+                return finalQs.map(q => `
+                  <button onclick="document.getElementById('chat-input').value=${JSON.stringify(q)};app.sendChat()"
+                    style="text-align:left;padding:9px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-primary);cursor:pointer;line-height:1.5">
+                    ${Components.escapeHtml(q)}
+                  </button>`).join('');
+              })()}
             </div>
           </div>
         `}
