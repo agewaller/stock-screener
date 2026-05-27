@@ -1070,6 +1070,83 @@ App.prototype.render_dashboard = function() {
     </div>`;
   })()}
 
+  <!-- Monthly retrospective card — "Spotify Wrapped" effect for health data.
+       Shown in the first 7 days of each new month when the previous month
+       has ≥3 entries. Dismissed per-month via localStorage. -->
+  ${(() => {
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    if (nowJst.getDate() > 7) return '';
+    const lastMonthEnd = new Date(nowJst.getFullYear(), nowJst.getMonth(), 0);
+    const lastMonthStart = new Date(nowJst.getFullYear(), nowJst.getMonth() - 1, 1);
+    const recapKey = `monthly_recap_${lastMonthStart.getFullYear()}_${lastMonthStart.getMonth() + 1}`;
+    if (localStorage.getItem(recapKey + '_dismissed')) return '';
+
+    const allData = [...(store.get('textEntries') || []), ...(store.get('symptoms') || [])];
+    const lmData = allData.filter(e => {
+      if (!e.timestamp) return false;
+      const ts = new Date(e.timestamp);
+      return ts >= lastMonthStart && ts <= lastMonthEnd;
+    });
+    if (lmData.length < 3) return '';
+
+    const loggedDays = new Set(
+      lmData.map(e => new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }))
+    ).size;
+    const daysInMonth = lastMonthEnd.getDate();
+    const logPct = Math.round(loggedDays / daysInMonth * 100);
+
+    const lmSym = (store.get('symptoms') || []).filter(s => {
+      if (!s.timestamp) return false;
+      const ts = new Date(s.timestamp);
+      return ts >= lastMonthStart && ts <= lastMonthEnd;
+    });
+    let avgFatigue = null, avgSleep = null, trendText = '';
+    if (lmSym.length >= 3) {
+      const fVals = lmSym.filter(s => s.fatigue_level != null).map(s => s.fatigue_level);
+      const sVals = lmSym.filter(s => s.sleep_quality != null).map(s => s.sleep_quality);
+      if (fVals.length) {
+        avgFatigue = (fVals.reduce((a, b) => a + b, 0) / fVals.length).toFixed(1);
+        if (fVals.length >= 4) {
+          const h = Math.floor(fVals.length / 2);
+          const diff = (fVals.slice(h).reduce((a,b)=>a+b,0)/fVals.slice(h).length)
+                     - (fVals.slice(0,h).reduce((a,b)=>a+b,0)/fVals.slice(0,h).length);
+          if (diff < -0.5) trendText = '月末に向けて疲労が改善傾向 📈';
+          else if (diff > 0.5) trendText = '月末に疲労がやや増加 ⚠️';
+        }
+      }
+      if (sVals.length) avgSleep = (sVals.reduce((a, b) => a + b, 0) / sVals.length).toFixed(1);
+    }
+
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const lmName = monthNames[lastMonthStart.getMonth()];
+    return `
+    <div id="monthly-recap-card" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:800;color:#14532d">🌿 ${lmName}の振り返り</div>
+        <button onclick="localStorage.setItem('${recapKey}_dismissed','1');document.getElementById('monthly-recap-card').remove()"
+          style="padding:3px 8px;background:transparent;color:#15803d;border:none;cursor:pointer;font-size:11px">閉じる</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:${trendText ? '8' : '0'}px">
+        <div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">記録日数</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${loggedDays}</div>
+          <div style="font-size:9px;color:#15803d">${logPct}% (${daysInMonth}日中)</div>
+        </div>
+        ${avgFatigue !== null ? `<div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">月平均疲労</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${avgFatigue}</div>
+          <div style="font-size:9px;color:#15803d">/ 7</div>
+        </div>` : ''}
+        ${avgSleep !== null ? `<div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">月平均睡眠</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${avgSleep}</div>
+          <div style="font-size:9px;color:#15803d">/ 7</div>
+        </div>` : ''}
+      </div>
+      ${trendText ? `<div style="font-size:11px;color:#166534">${Components.escapeHtml(trendText)}</div>` : ''}
+    </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
