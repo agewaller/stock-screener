@@ -2571,13 +2571,13 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
+    this.navigate('timeline');
+  }
+
+  loadMoreTimeline() {
+    // Increment the page size and re-render the timeline page.
+    this._timelinePage = (this._timelinePage || 1) + 1;
     this.navigate('timeline');
   }
 

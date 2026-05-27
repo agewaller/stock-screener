@@ -2391,14 +2391,30 @@ App.prototype.render_timeline = function() {
       </div>`;
   };
 
-  // Render by date
-  const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
+  // Render by date — show first PAGE_SIZE days initially for fast render.
+  // Each "load more" click increments app._timelinePage and re-renders.
+  const PAGE_SIZE = 30;
+  const page = (typeof app !== 'undefined' && app._timelinePage) || 1;
+  const dateEntries = Object.entries(byDate);
+  const visible = dateEntries.slice(0, PAGE_SIZE * page);
+  const hiddenCount = dateEntries.length - visible.length;
+
+  const renderDateGroup = ([dateStr, entries]) => `
     <div style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
       ${entries.map(renderEntry).join('')}
     </div>
-  `).join('');
+  `;
+
+  const loadMoreHtml = hiddenCount > 0 ? `
+    <div id="timeline-load-more" style="text-align:center;padding:12px 0;margin-bottom:16px">
+      <button onclick="app.loadMoreTimeline()" style="padding:10px 24px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">
+        さらに読み込む（過去 ${hiddenCount} 日分）
+      </button>
+    </div>` : '';
+
+  const dateGroups = visible.map(renderDateGroup).join('') + loadMoreHtml;
 
   // Quick stats bar — first/last entry date and recording span.
   let timelineStatsHtml = '';
