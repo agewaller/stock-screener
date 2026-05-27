@@ -299,6 +299,16 @@ var App = class App {
       this._pwaPrompt = e;
     });
 
+    // Start the daily reminder scheduler when auth is confirmed.
+    // If already authenticated from cache, start immediately; otherwise
+    // wait for Firebase to resolve.
+    if (hasLocalAuth) {
+      this.setupDailyReminder();
+    }
+    store.on('isAuthenticated', (val) => {
+      if (val) this.setupDailyReminder();
+    });
+
     // Calendar events are loaded per-user from Firestore (users/{uid}/calendarEvents).
     // Never hardcode personal schedule data in source — the built index.html is
     // publicly served, so any hardcoded events would be exposed to anyone who
@@ -4679,6 +4689,104 @@ ${axisHint}
       banner.remove();
       localStorage.setItem('pwa_install_dismissed', '1');
     };
+  }
+
+  // ── Daily reminder notification ──────────────────────────────────────────
+  // Called once at app startup (after login). Sets up a periodic interval
+  // that fires at the user's preferred reminder time. Falls back gracefully
+  // when the Notification API is unavailable or permission is denied.
+
+  setupDailyReminder() {
+    if (typeof Notification === 'undefined') return;
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    if (!enabled) return;
+
+    // Run the check immediately on load, then every 5 minutes.
+    this._checkAndFireReminder();
+    if (this._reminderInterval) clearInterval(this._reminderInterval);
+    this._reminderInterval = setInterval(() => this._checkAndFireReminder(), 5 * 60 * 1000);
+  }
+
+  _checkAndFireReminder() {
+    if (Notification.permission !== 'granted') return;
+
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    if (!enabled) return;
+
+    // Only fire once per calendar day (JST).
+    const todayKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    if (localStorage.getItem('reminder_fired_' + todayKey) === '1') return;
+
+    // Check if the user has already logged today.
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const loggedToday = [...textEntries, ...symptoms].some(e => {
+      if (!e.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+    });
+    if (loggedToday) return;
+
+    // Only fire at or after the user's configured reminder time.
+    const reminderTime = localStorage.getItem('reminder_time') || '20:00';
+    const [rHour, rMin] = reminderTime.split(':').map(Number);
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const nowMinutes = nowJst.getHours() * 60 + nowJst.getMinutes();
+    if (nowMinutes < rHour * 60 + rMin) return;
+
+    // Fire the notification.
+    try {
+      const n = new Notification('健康日記', {
+        body: '今日の体調をまだ記録していません。少しだけ書いてみませんか？',
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        tag: 'daily-reminder',
+        renotify: false,
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+      localStorage.setItem('reminder_fired_' + todayKey, '1');
+    } catch (e) { /* silent */ }
+  }
+
+  async requestNotificationPermission() {
+    if (typeof Notification === 'undefined') return 'unsupported';
+    if (Notification.permission === 'granted') return 'granted';
+    if (Notification.permission === 'denied') return 'denied';
+    try {
+      return await Notification.requestPermission();
+    } catch (e) {
+      return 'denied';
+    }
+  }
+
+  async toggleDailyReminder(checked) {
+    if (!checked) {
+      localStorage.setItem('reminder_enabled', '0');
+      if (this._reminderInterval) {
+        clearInterval(this._reminderInterval);
+        this._reminderInterval = null;
+      }
+      // Update the time input opacity without full re-render.
+      const timeWrap = document.querySelector('#reminder-time-input')?.closest('div[style*="display:flex"]');
+      if (timeWrap) timeWrap.style.opacity = '0.4';
+      return;
+    }
+    const perm = await this.requestNotificationPermission();
+    if (perm !== 'granted') {
+      Components.showToast('通知の許可が必要です。ブラウザの設定を確認してください。', 'error');
+      const toggle = document.getElementById('reminder-toggle');
+      if (toggle) toggle.checked = false;
+      if (perm === 'denied') {
+        // Re-render settings to show the "ブロック" warning.
+        this.navigate('settings');
+      }
+      return;
+    }
+    localStorage.setItem('reminder_enabled', '1');
+    this.setupDailyReminder();
+    const timeWrap = document.querySelector('#reminder-time-input')?.closest('div[style*="display:flex"]');
+    if (timeWrap) { timeWrap.style.opacity = '1'; timeWrap.style.pointerEvents = 'auto'; }
+    Components.showToast('毎日リマインダーを有効にしました', 'success');
   }
 
   // Deep structured analysis of any user input

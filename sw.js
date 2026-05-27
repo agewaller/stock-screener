@@ -19,7 +19,8 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -54,6 +55,34 @@ self.addEventListener('fetch', (event) => {
         return response;
       }).catch(() => cached);
       return cached || fetchPromise;
+    })
+  );
+});
+
+// Notification click: focus an existing app window or open a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return clients.openWindow('/');
+    })
+  );
+});
+
+// Fired by the browser when a push arrives (future Web Push support).
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || '健康日記';
+  const body = data.body || '今日の体調を記録しましょう';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icon.svg',
+      badge: '/icon.svg',
+      tag: 'daily-reminder',
+      renotify: false,
     })
   );
 });

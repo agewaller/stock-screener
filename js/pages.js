@@ -681,10 +681,14 @@ App.prototype.render_dashboard = function() {
   <!-- Today's logging reminder — shown only when the user has past data
        but hasn't logged anything today, to reinforce the daily habit -->
   ${hasData && !loggedToday && !store.get('isAnalyzing') ? `
-  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px">
+  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div style="font-size:18px">📝</div>
-    <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
-    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+    <div style="flex:1;min-width:120px;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
+    <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+      <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">記録する</button>
+      ${(typeof Notification !== 'undefined' && Notification.permission !== 'granted' && localStorage.getItem('reminder_enabled') !== '1') ? `
+      <button onclick="app.toggleDailyReminder(true).then(()=>{var t=document.getElementById('reminder-toggle');if(t)t.checked=true})" style="padding:5px 10px;background:#fff8e1;color:#92400e;border:1px solid #fde68a;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">🔔 毎日通知</button>` : ''}
+    </div>
   </div>` : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
@@ -713,14 +717,28 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
-        ${earnedBadges.map(b => `
-          <span title="${Components.escapeHtml(b.desc)}"
-            style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
-            <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
-          </span>
-        `).join('')}
-      </div>` : ''}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          ${earnedBadges.map(b => `
+            <span title="${Components.escapeHtml(b.desc)}"
+              style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
+              <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
+            </span>
+          `).join('')}
+        </div>
+        ${(() => {
+          // Show a nudge toward the next badge milestone.
+          const milestones = [3,7,14,30,100];
+          const next = milestones.find(m => streakStats.streak < m);
+          if (!next) return '';
+          const remain = next - streakStats.streak;
+          return `<div style="font-size:10px;color:#6366f1">あと ${remain} 日連続で次のバッジ獲得！</div>`;
+        })()}
+      </div>` : `
+      ${streakStats.totalDays === 0 ? '' : `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;font-size:10px;color:#6366f1">
+        3日連続で記録すると最初のバッジを獲得できます！
+      </div>`}`}
     </div>
   </div>` : ''}
 
@@ -3276,6 +3294,40 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Daily Reminder Notification -->
+  ${(() => {
+    const notifSupported = typeof Notification !== 'undefined';
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    const permission = notifSupported ? Notification.permission : 'unsupported';
+    const reminderTime = localStorage.getItem('reminder_time') || '20:00';
+    if (!notifSupported) return '';
+    return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 毎日のリマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        記録し忘れを防ぐため、毎日同じ時刻に通知を送ります。すでにその日に記録済みの場合は通知しません。
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer">
+        <input type="checkbox" id="reminder-toggle" ${enabled ? 'checked' : ''}
+          style="width:16px;height:16px;accent-color:var(--accent)"
+          onchange="app.toggleDailyReminder(this.checked)">
+        <span style="font-size:13px;font-weight:600">毎日リマインダーを有効にする</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:10px;${enabled ? '' : 'opacity:0.4;pointer-events:none'}">
+        <label style="font-size:12px;font-weight:600;white-space:nowrap">通知時刻</label>
+        <input type="time" id="reminder-time-input" value="${Components.escapeHtml(reminderTime)}"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-primary)"
+          onchange="localStorage.setItem('reminder_time',this.value);app.setupDailyReminder();Components.showToast('通知時刻を更新しました','success')">
+      </div>
+      ${permission === 'denied' ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fef2f2;border-radius:8px;font-size:11px;color:#991b1b">
+        ⚠️ 通知がブロックされています。ブラウザの設定から cares.advisers.jp の通知を許可してください。
+      </div>` : ''}
+    </div>
+  </div>`;
+  })()}
 
   <!-- Share / Referral -->
   ${(() => {
