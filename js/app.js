@@ -2577,6 +2577,25 @@ ${titles}`;
   // ---- Timeline ----
   filterTimeline(type) {
     store.set('_timelineFilter', type);
+    this._timelinePage = 1;
+    this.navigate('timeline');
+  }
+
+  searchTimeline(query) {
+    store.set('_timelineSearch', query);
+    this._timelinePage = 1;
+    this.navigate('timeline');
+    // Restore focus to the search input after re-render
+    setTimeout(() => {
+      const el = document.getElementById('timeline-search');
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    }, 50);
+  }
+
+  clearTimelineFilters() {
+    store.set('_timelineFilter', '');
+    store.set('_timelineSearch', '');
+    this._timelinePage = 1;
     this.navigate('timeline');
   }
 

@@ -2378,9 +2378,22 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply active filters
+  const activeTypeFilter = store.get('_timelineFilter') || '';
+  const activeTextFilter = (store.get('_timelineSearch') || '').toLowerCase().trim();
+  const filteredEntries = allEntries.filter(e => {
+    if (activeTypeFilter && e._type !== activeTypeFilter) return false;
+    if (activeTextFilter) {
+      const haystack = [e.content, e.text_note, e.title, e._label, e.category].join(' ').toLowerCase();
+      if (!haystack.includes(activeTextFilter)) return false;
+    }
+    return true;
+  });
+  const displayEntries = (activeTypeFilter || activeTextFilter) ? filteredEntries : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  displayEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2530,20 +2543,26 @@ App.prototype.render_timeline = function() {
   return `
   ${timelineStatsHtml}
 
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件（${(activeTypeFilter || activeTextFilter) ? `${displayEntries.length}件を表示` : '全件表示'}）</p>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="timeline-search" type="search" class="form-input" placeholder="キーワード検索..." value="${Components.escapeHtml(store.get('_timelineSearch') || '')}"
+        style="flex:1;min-width:150px;padding:8px 12px;font-size:13px"
+        oninput="clearTimeout(this._t);this._t=setTimeout(()=>app.searchTimeline(this.value),300)">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        <option value="" ${!activeTypeFilter ? 'selected' : ''}>すべて</option>
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeTypeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
+      ${(activeTypeFilter || activeTextFilter) ? `<button onclick="app.clearTimelineFilters()" style="padding:8px 12px;background:var(--bg-tertiary);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">✕ クリア</button>` : ''}
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', `
+    ${allEntries.length > 0 ? (displayEntries.length > 0 ? dateGroups : `<div style="padding:24px;text-align:center;color:var(--text-muted)">「${Components.escapeHtml(activeTextFilter || activeTypeFilter)}」に一致する記録は見つかりませんでした</div>`) : Components.emptyState('📅', 'データがありません', `
       ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
         <button onclick="if(typeof FirebaseBackend!=='undefined'&&FirebaseBackend.initialized){FirebaseBackend.loadAllData().then(()=>app.navigate('timeline')).catch(()=>app.navigate('timeline'))}else{app.navigate('timeline')}"
