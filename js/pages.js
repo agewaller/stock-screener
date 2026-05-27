@@ -2348,7 +2348,24 @@ App.prototype.render_timeline = function() {
     </div>
   `).join('');
 
+  // Quick stats bar — first/last entry date and recording span.
+  let timelineStatsHtml = '';
+  if (allEntries.length >= 2) {
+    const tsArr = allEntries.map(e => e.timestamp ? new Date(e.timestamp).getTime() : null).filter(Boolean);
+    if (tsArr.length) {
+      const oldestTs = new Date(Math.min(...tsArr));
+      const newestTs = new Date(Math.max(...tsArr));
+      const spanDays = Math.round((newestTs - oldestTs) / 86400000);
+      const textCount = (store.get('textEntries') || []).length;
+      const streakSt = app._computeStreak ? app._computeStreak() : null;
+      const streakPart = streakSt && streakSt.streak > 0 ? ` ／ 🔥${streakSt.streak}日連続` : '';
+      timelineStatsHtml = `<div style="margin-bottom:14px;padding:10px 16px;background:linear-gradient(90deg,#eef2ff,#fdf4ff);border-radius:12px;border:1px solid #c7d2fe;display:flex;gap:16px;flex-wrap:wrap;align-items:center"><div style="font-size:11px;color:#4338ca">${allEntries.length}件 ／ ${spanDays}日間 ／ 日記${textCount}件${streakPart}</div><div style="font-size:10px;color:#6366f1;margin-left:auto">${oldestTs.toLocaleDateString('ja-JP', {month:'short',day:'numeric'})} — ${newestTs.toLocaleDateString('ja-JP', {month:'short',day:'numeric'})}</div></div>`;
+    }
+  }
+
   return `
+  ${timelineStatsHtml}
+
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
@@ -2362,7 +2379,14 @@ App.prototype.render_timeline = function() {
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', `
+      ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button onclick="if(typeof FirebaseBackend!=='undefined'&&FirebaseBackend.initialized){FirebaseBackend.loadAllData().then(()=>app.navigate('timeline')).catch(()=>app.navigate('timeline'))}else{app.navigate('timeline')}"
+          style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 データを再読み込み</button>
+        <a href="diag.html" style="padding:6px 14px;background:var(--bg-tertiary);color:var(--text-secondary);border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">🔍 診断ツール</a>
+      </div>
+    `)}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
