@@ -2002,6 +2002,12 @@ ${titles}`;
   }
 
   // ---- Chat ----
+  clearChat() {
+    store.set('conversationHistory', []);
+    this.navigate('chat');
+    Components.showToast('会話をクリアしました', 'info');
+  }
+
   async sendChat() {
     const input = document.getElementById('chat-input');
     if (!input || !input.value.trim()) return;

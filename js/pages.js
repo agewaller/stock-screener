@@ -2271,9 +2271,12 @@ App.prototype.render_chat = function() {
     : store.get('selectedDisease')?.name || '健康';
 
   return `
-  <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
+  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
+      <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
+    </div>
+    ${history.length > 0 ? `<button onclick="app.clearChat()" style="padding:6px 12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:11px;cursor:pointer">🗑 会話をクリア</button>` : ''}
   </div>
   <div class="card">
     <div class="chat-container">
