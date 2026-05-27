@@ -456,6 +456,65 @@ App.prototype._getEarnedBadges = function(stats) {
   return badges;
 };
 
+// Detect simple patterns in symptom data (min 10 entries with fatigue_level).
+// Returns array of { icon, text } insight objects, up to 3.
+App.prototype._computeCorrelations = function() {
+  const symptoms = store.get('symptoms') || [];
+  const valid = symptoms.filter(s => s.fatigue_level != null && s.timestamp);
+  if (valid.length < 10) return [];
+
+  const insights = [];
+
+  // 1. Sleep quality vs fatigue
+  const withSleepQ = valid.filter(s => s.sleep_quality != null);
+  if (withSleepQ.length >= 6) {
+    const sorted = withSleepQ.slice().sort((a, b) => a.sleep_quality - b.sleep_quality);
+    const half = Math.floor(sorted.length / 2);
+    const poorSleep = sorted.slice(0, half);
+    const goodSleep = sorted.slice(half);
+    const avgFatiguePoor = poorSleep.reduce((s, e) => s + e.fatigue_level, 0) / poorSleep.length;
+    const avgFatigueGood = goodSleep.reduce((s, e) => s + e.fatigue_level, 0) / goodSleep.length;
+    const diff = avgFatiguePoor - avgFatigueGood;
+    if (diff >= 1.0) {
+      insights.push({ icon: '😴', text: `睡眠の質が低い日は疲労度が平均 ${diff.toFixed(1)} 高い傾向があります` });
+    }
+  }
+
+  // 2. Day-of-week pattern (need at least 4 distinct weekdays with 2+ entries each)
+  const byDow = {};
+  valid.forEach(s => {
+    const dow = new Date(s.timestamp).getDay();
+    if (!byDow[dow]) byDow[dow] = [];
+    byDow[dow].push(s.fatigue_level);
+  });
+  const dowLabels = ['日', '月', '火', '水', '木', '金', '土'];
+  const dowEntries = Object.entries(byDow)
+    .filter(([, vs]) => vs.length >= 2)
+    .map(([dow, vs]) => ({ dow: parseInt(dow), avg: vs.reduce((a, b) => a + b, 0) / vs.length }));
+  if (dowEntries.length >= 4) {
+    const maxDay = dowEntries.reduce((a, b) => a.avg > b.avg ? a : b);
+    const minDay = dowEntries.reduce((a, b) => a.avg < b.avg ? a : b);
+    if (maxDay.avg - minDay.avg >= 1.5) {
+      insights.push({ icon: '📅', text: `${dowLabels[maxDay.dow]}曜日の疲労度が最も高く（平均 ${maxDay.avg.toFixed(1)}）、${dowLabels[minDay.dow]}曜日が最も低い（${minDay.avg.toFixed(1)}）` });
+    }
+  }
+
+  // 3. Recent trend: last 7 vs previous 7
+  const last7 = valid.slice(-7);
+  const prev7 = valid.slice(-14, -7);
+  if (last7.length >= 5 && prev7.length >= 5) {
+    const avgLast = last7.reduce((s, e) => s + e.fatigue_level, 0) / last7.length;
+    const avgPrev = prev7.reduce((s, e) => s + e.fatigue_level, 0) / prev7.length;
+    const diff = avgLast - avgPrev;
+    if (Math.abs(diff) >= 0.8) {
+      const improving = diff < 0;
+      insights.push({ icon: improving ? '📈' : '⚠️', text: `先週と比べて疲労度が ${Math.abs(diff).toFixed(1)} ${improving ? '改善' : '悪化'}しています` });
+    }
+  }
+
+  return insights.slice(0, 3);
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
@@ -790,6 +849,26 @@ App.prototype.render_dashboard = function() {
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button onclick="app.runDeepAnalysis()" style="padding:6px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">本格分析する</button>
         <button onclick="localStorage.setItem(${JSON.stringify(seenKey)},'1');this.closest('[style*=background]').remove()" style="padding:6px 10px;background:transparent;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:11px;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Correlation insights — auto-detected patterns (shown when ≥10 symptom entries) -->
+  ${(() => {
+    const correlations = this._computeCorrelations();
+    if (!correlations.length) return '';
+    return `
+    <div class="card" style="margin-bottom:14px;border-left:3px solid #6366f1">
+      <div class="card-body" style="padding:10px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">🔍 あなたのデータから見えてきたパターン</div>
+        ${correlations.map(c => `
+          <div style="display:flex;align-items:start;gap:8px;margin-bottom:5px;font-size:12px;line-height:1.5">
+            <span style="flex-shrink:0">${c.icon}</span>
+            <span style="color:var(--text-secondary)">${Components.escapeHtml(c.text)}</span>
+          </div>`).join('')}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">
+          記録が増えるほど精度が上がります。今 ${(store.get('symptoms')||[]).length} 件のデータから分析中。
+        </div>
       </div>
     </div>`;
   })()}
@@ -1585,6 +1664,8 @@ App.prototype.render_data_input = function() {
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="app.submitTextEntry()" ${store.get('isAnalyzing') ? 'disabled' : ''}>保存して分析</button>
         <label class="btn btn-secondary" style="cursor:pointer">📎 写真・ファイル<input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.dataPageFileUpload(this.files)"></label>
+        ${typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition) ? `
+        <button id="voice-input-btn" class="btn btn-secondary" onclick="app.toggleVoiceInput()" title="音声入力">🎙️ 音声</button>` : ''}
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>

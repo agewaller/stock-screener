@@ -4769,6 +4769,48 @@ ${axisHint}
     }
   }
 
+  // ── Voice input (Web Speech API) ─────────────────────────────────────────
+
+  toggleVoiceInput() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { Components.showToast('このブラウザは音声入力に対応していません', 'error'); return; }
+    const btn = document.getElementById('voice-input-btn');
+    if (this._recognition && this._recognitionActive) {
+      this._recognition.stop();
+      return;
+    }
+    const rec = new SR();
+    this._recognition = rec;
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.continuous = true;
+    let interim = '';
+    const ta = document.getElementById('text-input-content');
+    const baseText = ta ? ta.value : '';
+    if (btn) { btn.textContent = '⏹ 停止'; btn.style.background = '#ef4444'; btn.style.color = '#fff'; btn.style.border = 'none'; }
+    this._recognitionActive = true;
+    rec.onresult = (e) => {
+      interim = '';
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (ta) ta.value = baseText + final + interim;
+    };
+    rec.onend = () => {
+      this._recognitionActive = false;
+      if (btn) { btn.textContent = '🎙️ 音声'; btn.style.background = ''; btn.style.color = ''; btn.style.border = ''; }
+      if (ta && interim) ta.value = ta.value.replace(interim, '').trimEnd() + ' ' + interim;
+    };
+    rec.onerror = (e) => {
+      this._recognitionActive = false;
+      if (btn) { btn.textContent = '🎙️ 音声'; btn.style.background = ''; btn.style.color = ''; btn.style.border = ''; }
+      if (e.error !== 'aborted') Components.showToast('音声入力エラー: ' + e.error, 'error');
+    };
+    rec.start();
+  }
+
   // ── Medication reminders ─────────────────────────────────────────────────
 
   addMedReminder() {
