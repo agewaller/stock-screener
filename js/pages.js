@@ -885,6 +885,81 @@ App.prototype.render_dashboard = function() {
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
 
+  <!-- 自動相関インサイト — データが10件以上溜まったユーザーに「記録から
+       見えてきたパターン」を表示。記録継続のモチベーション維持と、
+       "something new" 体験を促す。 -->
+  ${(() => {
+    if (symptoms.length < 10) return '';
+    const insights = [];
+
+    // 睡眠品質 vs 疲労度の相関
+    const paired = symptoms.filter(s => s.sleep_quality != null && s.fatigue_level != null);
+    if (paired.length >= 5) {
+      const goodSleep = paired.filter(s => s.sleep_quality >= 7);
+      const poorSleep = paired.filter(s => s.sleep_quality <= 4);
+      if (goodSleep.length >= 2 && poorSleep.length >= 2) {
+        const avgFatigueGood = goodSleep.reduce((a, s) => a + s.fatigue_level, 0) / goodSleep.length;
+        const avgFatiguePoor = poorSleep.reduce((a, s) => a + s.fatigue_level, 0) / poorSleep.length;
+        const diff = avgFatiguePoor - avgFatigueGood;
+        if (diff >= 1.5) {
+          insights.push(`😴 睡眠の質が高い日の疲労スコアは、低い日より平均 <strong>${diff.toFixed(1)} ポイント低め</strong>です。睡眠が体調を左右している可能性があります。`);
+        }
+      }
+    }
+
+    // 曜日別疲労パターン
+    const byDow = Array.from({length: 7}, () => []);
+    symptoms.forEach(s => {
+      if (s.fatigue_level != null && s.timestamp) {
+        const dow = new Date(s.timestamp).getDay();
+        byDow[dow].push(s.fatigue_level);
+      }
+    });
+    const dowAvgs = byDow.map(arr => arr.length >= 2 ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
+    const dowNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const validDows = dowAvgs.map((v, i) => ({dow: i, avg: v})).filter(x => x.avg !== null);
+    if (validDows.length >= 4) {
+      const worst = validDows.reduce((a, b) => a.avg > b.avg ? a : b);
+      const best  = validDows.reduce((a, b) => a.avg < b.avg ? a : b);
+      if (worst.avg - best.avg >= 1.0) {
+        insights.push(`📅 <strong>${dowNames[worst.dow]}曜日</strong>に疲労が高く、<strong>${dowNames[best.dow]}曜日</strong>が最も楽な傾向があります。スケジュール調整の参考に。`);
+      }
+    }
+
+    // 先週 vs 前の週のトレンド
+    const now = Date.now();
+    const week1 = symptoms.filter(s => s.fatigue_level != null && s.timestamp
+      && (now - new Date(s.timestamp)) < 7 * 86400000);
+    const week2 = symptoms.filter(s => s.fatigue_level != null && s.timestamp
+      && (now - new Date(s.timestamp)) >= 7 * 86400000
+      && (now - new Date(s.timestamp)) < 14 * 86400000);
+    if (week1.length >= 3 && week2.length >= 3) {
+      const avg1 = week1.reduce((a, s) => a + s.fatigue_level, 0) / week1.length;
+      const avg2 = week2.reduce((a, s) => a + s.fatigue_level, 0) / week2.length;
+      const delta = avg1 - avg2;
+      if (Math.abs(delta) >= 0.8) {
+        const trend = delta < 0 ? `改善 (${Math.abs(delta).toFixed(1)}pt ↓)` : `悪化 (${Math.abs(delta).toFixed(1)}pt ↑)`;
+        const color = delta < 0 ? '#166534' : '#991b1b';
+        insights.push(`📈 先週の平均疲労スコアは前の週より <span style="color:${color};font-weight:700">${trend}</span> しています。`);
+      }
+    }
+
+    if (insights.length === 0) return '';
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#faf5ff 0%,#f3e8ff 100%);border:1px solid #d8b4fe">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:16px">🔍</span>
+          <span style="font-size:13px;font-weight:700;color:#6b21a8">あなたのデータから見えてきたパターン</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${insights.map(i => `<div style="font-size:12px;color:#4c1d95;line-height:1.7;padding:8px 10px;background:#fff;border-radius:8px;border-left:3px solid #8b5cf6">${i}</div>`).join('')}
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:#7c3aed">記録が増えるほど精度が上がります（現在 ${symptoms.length} 件の症状データから算出）</div>
+      </div>
+    </div>`;
+  })()}
+
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
     const syncs = store.get('integrationSyncs') || {};
@@ -2129,6 +2204,8 @@ App.prototype.render_chat = function() {
 // Timeline Page
 App.prototype.render_timeline = function() {
   // Collect ALL data sources
+  const activeFilter = store.get('_timelineFilter') || '';
+  const searchQuery = (store.get('_timelineSearch') || '').trim().toLowerCase();
   const allEntries = [];
   const photos = store.get('photos') || [];
   const photoById = new Map(photos.filter(p => p?.id).map(p => [p.id, p]));
@@ -2212,9 +2289,23 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply category filter
+  const filteredEntries = activeFilter
+    ? allEntries.filter(e => e._type === activeFilter)
+    : allEntries;
+
+  // Apply text search across content/label fields
+  const searchedEntries = searchQuery
+    ? filteredEntries.filter(e => {
+        const haystack = [e.content, e.text_note, e._label, e.title]
+          .filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(searchQuery);
+      })
+    : filteredEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  searchedEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2330,21 +2421,32 @@ App.prototype.render_timeline = function() {
     </div>
   `).join('');
 
+  const shownCount = searchedEntries.length;
+  const isFiltered = activeFilter || searchQuery;
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
-    </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
+  <div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:2px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${isFiltered ? shownCount + '件 / 全' + allEntries.length + '件' : allEntries.length + '件のデータ'}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="search" class="form-input" placeholder="🔍 検索…" value="${Components.escapeHtml(store.get('_timelineSearch') || '')}"
+          style="width:140px;font-size:12px;padding:6px 10px"
+          oninput="app.searchTimeline(this.value)"
+          onsearch="app.searchTimeline(this.value)">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="" ${!activeFilter ? 'selected' : ''}>すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${isFiltered ? `<button class="btn btn-outline btn-sm" onclick="app.clearTimelineFilters()" style="font-size:11px">✕ クリア</button>` : ''}
+      </div>
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${searchedEntries.length > 0 ? dateGroups : (allEntries.length > 0
+      ? `<div style="text-align:center;padding:32px 16px;color:var(--text-muted)"><div style="font-size:24px;margin-bottom:8px">🔍</div><div style="font-size:14px">「${Components.escapeHtml(searchQuery || '')}」に一致する記録がありません</div><button class="btn btn-outline btn-sm" onclick="app.clearTimelineFilters()" style="margin-top:12px">絞り込みをクリア</button></div>`
+      : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>'))}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -3364,11 +3466,7 @@ App.prototype.openInBrowser = async function() {
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
-    try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
-    } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
-    }
+    Components.showToast('URLをコピーしてSafari/Chromeで開いてください: ' + url, 'info', 8000);
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {

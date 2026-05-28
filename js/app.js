@@ -2561,13 +2561,29 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
+    this.navigate('timeline');
+  }
+
+  searchTimeline(query) {
+    clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(() => {
+      store.set('_timelineSearch', query || '');
+      // Partial re-render: only the content div, preserve search box focus
+      const content = document.getElementById('timeline-content');
+      if (!content || this.currentPage !== 'timeline') return;
+      this.navigate('timeline');
+      // Restore focus on search input after re-render
+      setTimeout(() => {
+        const inp = document.querySelector('input[type="search"]');
+        if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+      }, 50);
+    }, 250);
+  }
+
+  clearTimelineFilters() {
+    store.set('_timelineFilter', '');
+    store.set('_timelineSearch', '');
     this.navigate('timeline');
   }
 
@@ -7438,7 +7454,7 @@ ${joined.substring(0, 8000)}`;
             <td style="padding:6px 8px">${niceDate}</td>
             <td style="padding:6px 8px;text-align:right;font-weight:600">${totalDocs.toLocaleString()} 件</td>
             <td style="padding:6px 8px;text-align:right">
-              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}')">復元</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}', this)">復元</button>
               <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.downloadBackup('${id}')">📥 JSON</button>
             </td>
           </tr>
@@ -7512,11 +7528,30 @@ ${joined.substring(0, 8000)}`;
   // are overwritten (idempotent), and missing ones are recreated. We
   // never delete a live doc that's not in the backup, so a restore
   // is non-destructive.
-  async restoreFromBackup(backupId) {
+  async restoreFromBackup(backupId, btn) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+
+    // Two-tap mobile-friendly confirmation — no window.prompt needed.
+    if (btn && !btn.dataset.confirmed) {
+      btn.dataset.confirmed = '1';
+      const origText = btn.textContent;
+      const origBg = btn.style.background || '';
+      btn.textContent = 'もう一度タップで確定';
+      btn.style.background = 'var(--danger, #dc2626)';
+      btn.style.color = '#fff';
+      setTimeout(() => {
+        if (btn.dataset.confirmed) {
+          delete btn.dataset.confirmed;
+          btn.textContent = origText;
+          btn.style.background = origBg;
+          btn.style.color = '';
+        }
+      }, 5000);
+      return;
+    }
+    if (btn) { delete btn.dataset.confirmed; btn.disabled = true; btn.textContent = '復元中…'; }
+
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
