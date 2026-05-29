@@ -484,6 +484,35 @@ App.prototype.render_dashboard = function() {
   const fogChange = changeField(recent7, 'brain_fog');
   const sleepChange = changeField(recent7, 'sleep_quality');
 
+  // Streak milestone celebration — shown once per milestone, then dismissed.
+  // Milestones: 3, 7, 14, 30, 100 days. We store which ones have been shown
+  // in localStorage so the banner doesn't reappear on every re-render.
+  const STREAK_MILESTONES = [
+    { days: 3,   icon: '🔥', msg: '3日連続達成！習慣が芽生えています。' },
+    { days: 7,   icon: '⚡', msg: '1週間連続達成！すごい継続力です。' },
+    { days: 14,  icon: '🌊', msg: '2週間連続達成！記録がパターン解析の精度を高めています。' },
+    { days: 30,  icon: '🏔', msg: '30日連続達成！1ヶ月の記録は医師への報告に使える強力な証拠です。' },
+    { days: 100, icon: '🏆', msg: '100日連続達成！あなたの継続力は驚異的です。' },
+  ];
+  const shownMilestonesKey = 'shown_streak_milestones';
+  let streakMilestoneBanner = '';
+  if (loggedToday && streakStats.streak > 0) {
+    try {
+      const shown = JSON.parse(localStorage.getItem(shownMilestonesKey) || '[]');
+      const hit = STREAK_MILESTONES.find(m => m.days === streakStats.streak && !shown.includes(m.days));
+      if (hit) {
+        shown.push(hit.days);
+        localStorage.setItem(shownMilestonesKey, JSON.stringify(shown));
+        streakMilestoneBanner = `
+          <div style="margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border:2px solid #fbbf24;border-radius:14px;text-align:center;animation:fadeIn 0.4s ease">
+            <div style="font-size:28px;margin-bottom:4px">${hit.icon}</div>
+            <div style="font-size:14px;font-weight:800;color:#78350f;margin-bottom:4px">${hit.msg}</div>
+            <div style="font-size:11px;color:#92400e">記録は医師への報告資料や自己理解に役立ちます。このまま続けましょう！</div>
+          </div>`;
+      }
+    } catch (_) {}
+  }
+
   // Latest text entries for dashboard
   const recentTexts = textEntries.slice(-3).reverse();
 
@@ -553,6 +582,7 @@ App.prototype.render_dashboard = function() {
     : null;
 
   return `
+  ${streakMilestoneBanner}
   <!-- 1. Quick Input Area (always top) -->
   <div class="card" style="margin-bottom:16px;border-color:var(--accent-border)">
     <div class="card-body" style="padding:14px 18px">
@@ -655,8 +685,8 @@ App.prototype.render_dashboard = function() {
              <details style="margin-top:10px;font-size:11px">
                <summary style="cursor:pointer;color:var(--danger);font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>
                <div style="margin-top:8px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px">
-                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → stock-screener で表示される実際の URL を貼り付けてください。</div>
-                 <input type="text" id="proxy-url-override-input" placeholder="https://stock-screener.xxx.workers.dev" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
+                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → cares-relay で表示される実際の URL を貼り付けてください。</div>
+                 <input type="text" id="proxy-url-override-input" placeholder="https://cares-relay.agewaller.workers.dev" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
                  <button onclick="app.setProxyUrlFromInput()" style="margin-top:6px;padding:6px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">💾 保存して再読み込み</button>
                </div>
              </details>
@@ -722,6 +752,20 @@ App.prototype.render_dashboard = function() {
         `).join('')}
       </div>` : ''}
     </div>
+  </div>` : ''}
+
+  <!-- Streak-at-risk reminder: shown when the user has an active streak
+       but hasn't logged yet today. Placed directly below the streak widget
+       so the spatial proximity reinforces the cause-and-effect. -->
+  ${streakStats.streak >= 2 && !loggedToday ? `
+  <div style="margin:-8px 0 16px;padding:10px 16px;background:linear-gradient(90deg,#fff7ed,#fef3c7);border:1.5px solid #fbbf24;border-radius:12px;display:flex;align-items:center;gap:10px;cursor:pointer"
+    onclick="document.getElementById('dash-quick-input').focus()">
+    <span style="font-size:20px">⚠️</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:12px;font-weight:700;color:#92400e">${streakStats.streak}日連続記録が今日で切れます</div>
+      <div style="font-size:11px;color:#b45309;margin-top:2px">1行でもOK。入力欄に書いて送信するとストリークが続きます</div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#d97706;white-space:nowrap">今すぐ記録 →</div>
   </div>` : ''}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->

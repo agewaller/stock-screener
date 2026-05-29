@@ -18,8 +18,8 @@
  *
  * デプロイ:
  *   git push → deploy-worker.yml → Cloudflare Workers 自動デプロイ
- *   シークレット: wrangler secret put ANTHROPIC_API_KEY --name stock-screener
- *               wrangler secret put ADMIN_WRITE_TOKEN --name stock-screener
+ *   シークレット: wrangler secret put ANTHROPIC_API_KEY --name cares-ai-proxy
+ *               wrangler secret put ADMIN_WRITE_TOKEN --name cares-ai-proxy
  *   env: ALLOWED_ORIGINS (カンマ区切り; 省略時 https://cares.advisers.jp)
  *        FIREBASE_PROJECT_ID (Firebase ID トークン検証用)
  *   KV : RESEARCH_KV（research context と admin:key:* を共用）

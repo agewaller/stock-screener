@@ -10,5 +10,28 @@
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "今日の記録を追加",
+      "short_name": "記録する",
+      "description": "今日の体調・薬・食事を記録する",
+      "url": "/#/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI分析を見る",
+      "short_name": "分析",
+      "description": "蓄積データの構造化分析レポート",
+      "url": "/#/analysis",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "記録一覧（タイムライン）",
+      "short_name": "記録一覧",
+      "description": "過去の記録を確認する",
+      "url": "/#/timeline",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

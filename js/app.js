@@ -4471,11 +4471,11 @@ ${axisHint}
               ${isAdmin
                 ? `<div style="margin-top:10px;padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.7">
                      <strong>管理者向けヒント:</strong><br>
-                     ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
-                     ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
-                     <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
-                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
-                     ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
+                     ゲストモードは Cloudflare Worker <code>cares-relay</code> → <code>cares-ai-proxy</code> 経由で動きます。<br>
+                     ① <code>cares-ai-proxy</code> に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
+                     <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name cares-ai-proxy</code><br>
+                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-opus-4-7</code> を使用)<br>
+                     ③ Cloudflare Dashboard → Workers → cares-relay → Logs で Worker の実際のエラーを確認
                    </div>`
                 : ''}
             </details>
