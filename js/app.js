@@ -378,6 +378,7 @@ var App = class App {
     };
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
+    document.title = (titles[page] ? titles[page] + ' — 健康日記' : '健康日記');
 
     // Close sidebar on mobile after navigation
     this.closeSidebar();
@@ -390,7 +391,8 @@ var App = class App {
         this.afterRender(page);
       } catch(err) {
         console.error('Page render error:', page, err);
-        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${Components.escapeHtml(err.message)}</p><button onclick="app.navigate('dashboard')" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer;margin-right:8px">ダッシュボードへ</button><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        try { Components.showToast('ページの読み込みに失敗しました', 'error'); } catch (_) {}
       }
     }
   }

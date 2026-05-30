@@ -1637,7 +1637,8 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const defaultModel = (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
+  const model = store.get('selectedModel') || defaultModel;
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -1664,6 +1665,22 @@ App.prototype.render_analysis = function() {
     </div>
   </div>
 
+  <!-- Doctor Visit Prep card -->
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#ecfeff 0%,#cffafe 100%);border:1px solid #a5f3fc">
+    <div class="card-body" style="padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:14px;font-weight:700;color:#155e75;margin-bottom:2px">🏥 次の診察の準備をする</div>
+          <div style="font-size:11px;color:#0e7490;line-height:1.6">過去 90 日の記録から医師に伝えるべき変化・質問事項・薬の経過をまとめます。</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="app.generateDoctorReport()"
+          style="padding:10px 18px;font-size:12px;font-weight:700;background:#0891b2;border-color:#0e7490;flex:0 0 auto">
+          診察準備レポート
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Prompt Selection -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-header"><span class="card-title">分析プロンプト</span></div>
@@ -1676,7 +1693,7 @@ App.prototype.render_analysis = function() {
   <div id="analysis-result">
     ${store.get('latestAnalysis')
       ? ''
-      : Components.emptyState('🤖', 'AI分析を実行してください', '上のボタンからプロンプトを選択して分析を開始します')}
+      : Components.emptyState('🤖', 'AI分析を実行してください', '上のボタンで診察準備レポートを作成するか、下のプロンプトから分析を開始してください')}
   </div>`;
 };
 
@@ -2212,9 +2229,22 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply active filter and search
+  const activeFilter = store.get('_timelineFilter') || '';
+  const activeSearch = (store.get('_timelineSearch') || '').trim().toLowerCase();
+  const visibleEntries = allEntries.filter(e => {
+    if (activeFilter && e._type !== activeFilter) return false;
+    if (activeSearch) {
+      const haystack = [e._label, e.content, e.text_note, e.title, e.notes]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(activeSearch)) return false;
+    }
+    return true;
+  });
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  visibleEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2330,21 +2360,30 @@ App.prototype.render_timeline = function() {
     </div>
   `).join('');
 
+  const filterActive = activeFilter || activeSearch;
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
-    </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
+  <div style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${filterActive ? visibleEntries.length + '件表示（全' + allEntries.length + '件）' : allEntries.length + '件のデータ（日記・検査・薬剤・バイタル・写真）'}</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="search" class="form-input" placeholder="検索..." value="${Components.escapeHtml(activeSearch)}"
+          style="width:140px;font-size:12px;padding:6px 10px"
+          oninput="clearTimeout(window._tlSearch);window._tlSearch=setTimeout(()=>{store.set('_timelineSearch',this.value);app.navigate('timeline')},300)">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${filterActive ? `<button class="btn btn-secondary btn-sm" onclick="store.set('_timelineFilter','');store.set('_timelineSearch','');app.navigate('timeline')" style="font-size:11px">✕ クリア</button>` : ''}
+      </div>
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${allEntries.length > 0
+      ? (visibleEntries.length > 0 ? dateGroups : `<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:12px">🔍</div><p style="font-size:14px">「${Components.escapeHtml(activeSearch || categoryLabels[activeFilter] || '')}」の記録が見つかりませんでした</p><button class="btn btn-secondary btn-sm" onclick="store.set('_timelineFilter','');store.set('_timelineSearch','');app.navigate('timeline')" style="margin-top:12px">フィルターをクリア</button></div>`)
+      : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -2773,7 +2812,8 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const defaultModel = (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
+  const model = store.get('selectedModel') || defaultModel;
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
@@ -4135,7 +4175,5 @@ App.prototype.importDataFile = function(file) {
 };
 
 
-
-document.addEventListener('DOMContentLoaded', function() { app.init(); });
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });
