@@ -22,10 +22,11 @@ var CONFIG = {
     measurementId: 'G-YEHQ7MNRFX'
   },
 
-  // AI Model Options. Opus 4.7 is the most capable and now the default.
+  // AI Model Options. Opus 4.8 is the most capable and now the default.
   AI_MODELS: [
-    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', provider: 'Anthropic', description: '最新・最高精度（応答30-60秒）', default: true },
-    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', description: '高精度（応答30-60秒）' },
+    { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', provider: 'Anthropic', description: '最新・最高精度（応答30-60秒）', default: true },
+    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', provider: 'Anthropic', description: '高精度（応答30-60秒）' },
+    { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', description: '高精度（旧版）' },
     { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'Anthropic', description: '高速・高精度（10-20秒）' },
     { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', provider: 'Anthropic', description: '最速・低コスト（3-8秒）' },
     { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'OpenAI最新マルチモーダルモデル' },
