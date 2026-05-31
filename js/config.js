@@ -368,6 +368,8 @@ var CONFIG = {
                           japan:     23_000, japanLabel: '約 2.3 万人',           japanSource: '指定難病' },
     als:                { world:       370_000, label: '約 37 万人 (推計)',        tier: 3, density: 'high',   source: '4.5/10万外挿',
                           japan:     10_000, japanLabel: '約 1 万人',             japanSource: '指定難病' },
+    pulmonary_fibrosis: { world:     3_000_000, label: '約 300 万人 (推計)',     tier: 3, density: 'high',   source: 'Lancet 2022 推計',
+                          japan:     20_000, japanLabel: '約 2 万人',             japanSource: '指定難病338' },
 
     // ─── Tier 0: 単一世界人数を置きにくい群 (numeric null) ───
     pots:               { world: null, label: '世界推計は策定中 (米国で 0.1-1.0%)', tier: 0, density: 'high',

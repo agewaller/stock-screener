@@ -104,6 +104,15 @@
         { kind: 'device', label: '食後血糖・胃排出モニター（グルコース連続測定）', q: 'CGM 連続血糖測定 フリースタイルリブレ' }
       ]
     },
+    dysautonomia: {
+      title: '📚 自律神経障害・POTS の管理リソース',
+      items: [
+        { kind: 'device', label: '上腕式血圧計（起立試験・朝晩記録）', q: '上腕式 血圧計 朝 自動記録 オムロン' },
+        { kind: 'device', label: 'スマートウォッチ（HRV・心拍・SpO2 連続計測）', q: 'スマートウォッチ HRV 心拍変動 自律神経 Garmin Polar' },
+        { kind: 'device', label: '医療用圧迫ストッキング（30-40mmHg・太もも上まで）', q: '圧迫ストッキング 医療用 30 40 mmHg POTS 静脈還流' },
+        { kind: 'supplement', label: '塩分補給タブレット・ORS（経口補水液）', q: '塩分 タブレット ORS 経口補水液 電解質 POTS' }
+      ]
+    },
     pulmonary_fibrosis: {
       title: '📚 IPF（肺線維症）療養・呼吸管理のリソース',
       items: [
