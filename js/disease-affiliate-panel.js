@@ -104,6 +104,15 @@
         { kind: 'device', label: '食後血糖・胃排出モニター（グルコース連続測定）', q: 'CGM 連続血糖測定 フリースタイルリブレ' }
       ]
     },
+    dissociative: {
+      title: '📚 解離性障害・トラウマ回復のリソース',
+      items: [
+        { kind: 'book', label: '『解離性障害のことがよくわかる本（IFS・EMDR対応）』', q: '解離性障害 DID 離人感 本 治療 EMDR IFS トラウマ' },
+        { kind: 'book', label: '『複雑性PTSDと解離：フェーズドアプローチ実践ガイド』', q: '複雑性PTSD 解離 フェーズドアプローチ 本 治療' },
+        { kind: 'supplement', label: 'マグネシウムグリシネート（神経過敏・睡眠・筋緊張）', q: 'マグネシウム グリシネート サプリ 睡眠 不安 神経' },
+        { kind: 'device', label: 'ウェアラブル HRV モニター（自律神経状態の可視化）', q: 'HRV 心拍変動 ウェアラブル 自律神経 ストレス Garmin Polar' }
+      ]
+    },
     gastroparesis: {
       title: '📚 胃不全麻痺・消化器症状管理のリソース',
       items: [
