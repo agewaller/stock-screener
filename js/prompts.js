@@ -2317,6 +2317,27 @@ ME/CFSとの重複症状にも注意して分析してください。
 7. 次の受診（消化器内科・内視鏡）前に伝えるべき変化の要約`
   },
 
+  sibo_research: { name: 'SIBO 最新研究', disease: 'sibo', schedule: 'daily', active: true, description: 'SIBO・IMO・腸管発酵の最新研究',
+    prompt: PROMPT_HEADER + `SIBO（小腸内細菌増殖症）・IMO（腸管メタン産生症）の最新研究を報告してください。重点：水素呼気試験の感度・特異度改善（グルコース vs ラクツロース）、硫化水素型SIBOの診断法と治療、リファキシミン新規適応拡大・再発予防プロトコル、プロバイオティクスのSIBOへの効果と適切なタイミング、腸管蠕動改善薬（プロキネティクス）の再発予防効果、低FODMAP食と低炭水化物食の比較、SIBOと自己免疫疾患（橋本病・強皮症）の関連。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 専門施設・患者コミュニティ\n日本のSIBO専門外来・機能性消化管疾患専門医・患者コミュニティの最新情報をURL付きで報告。` },
+
+  sibo_daily: {
+    name: 'SIBO 日次分析',
+    disease: 'sibo',
+    description: '腹部膨満・FODMAP・服薬の追跡',
+    schedule: 'daily',
+    active: true,
+    prompt: PROMPT_HEADER + `あなたは消化器内科専門医（機能性消化管疾患・SIBO専門）です。
+ユーザーの日記・食事記録・症状記録から今日のSIBOの状態を評価してください。
+
+1. 腹部症状評価：腹部膨満・ガス・腹痛の強さ（0-10）・食後の発症タイミング
+2. FODMAP評価：今日食べた高FODMAP食品の特定と症状への影響
+3. 便通評価：排便回数・Bristol Stool Scale（1〜7）・腹部不快感との相関
+4. リファキシミン治療中の評価：服薬確認・治療前後の症状変化トレンド
+5. 水分・電解質：水分摂取量・ナトリウム・腸管過敏の確認
+6. 根本原因リスク因子：PPI使用・糖尿病・甲状腺機能低下・食欲変化の確認
+7. 次の受診（消化器内科）前に伝えるべき変化：呼気試験再検の時期確認`
+  },
+
   dysautonomia_research: { name: '自律神経障害 最新研究', disease: 'dysautonomia', schedule: 'daily', active: true, description: 'POTS・自律神経障害の最新研究',
     prompt: PROMPT_HEADER + `自律神経障害（Dysautonomia）・POTS・小線維神経障害の最新研究を報告してください。重点：Long COVID POTS の病態メカニズム（自己抗体・迷走神経炎症・小線維神経障害）、イバブラジン vs プロプラノロール の比較試験、低容量 naltrexone（LDN）の自律神経症状改善エビデンス、IVIG（免疫グロブリン静注）の小線維神経障害・POTS 改善試験、HRV バイオマーカーとしての有効性、EDS-POTS-MCAS トライアドの新規研究、日本における POTS 診断・診療体制の現状。各論文：タイトル（日本語訳）・著者・要旨・臨床的意義・DOI\n\n■ 患者会・支援情報\nPOTS 患者会・自律神経専門外来（日本）の最新情報をURL付きで報告。` },
 

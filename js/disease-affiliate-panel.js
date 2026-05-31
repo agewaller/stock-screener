@@ -104,6 +104,15 @@
         { kind: 'device', label: '食後血糖・胃排出モニター（グルコース連続測定）', q: 'CGM 連続血糖測定 フリースタイルリブレ' }
       ]
     },
+    sibo: {
+      title: '📚 SIBO・過敏性腸症候群の管理リソース',
+      items: [
+        { kind: 'book', label: '『腸内細菌・SIBO・低FODMAP食完全ガイド』', q: 'SIBO 小腸 細菌 低FODMAP 腸内フローラ 本' },
+        { kind: 'supplement', label: 'ベルベリン（腸内細菌バランス・血糖管理）', q: 'ベルベリン サプリ 腸内 細菌 SIBO 血糖' },
+        { kind: 'supplement', label: '消化酵素複合（膵酵素・ラクターゼ・プロテアーゼ）', q: '消化酵素 サプリ ラクターゼ 膵酵素 腹部膨満' },
+        { kind: 'supplement', label: 'S. ブラウラルジー（Saccharomyces boulardii）プロバイオティクス', q: 'Saccharomyces boulardii プロバイオティクス 下痢 腸' }
+      ]
+    },
     dysautonomia: {
       title: '📚 自律神経障害・POTS の管理リソース',
       items: [
