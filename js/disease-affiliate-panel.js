@@ -806,6 +806,24 @@
         { kind: 'book', label: '『低GI食実践レシピ — 血糖コントロールと体重管理の食事法（PCOS・糖尿病対応）』', q: '低GI 食事 レシピ 血糖 コントロール PCOS 糖尿病 体重 管理' }
       ]
     },
+    dvt: {
+      title: '📚 深部静脈血栓症・抗凝固療法のリソース',
+      items: [
+        { kind: 'device', label: '医療用圧迫ストッキング（20-30mmHg・血栓後症候群予防）', q: '圧迫ストッキング 医療用 20 30 mmHg 下肢 静脈 血栓' },
+        { kind: 'device', label: '家庭用 PT-INR 測定器（CoaguChek）ワーファリン管理', q: 'PT-INR 測定 家庭用 CoaguChek ワーファリン 抗凝固' },
+        { kind: 'book', label: '『深部静脈血栓症・肺塞栓症 患者ガイドブック』', q: '深部静脈血栓症 DVT 肺塞栓 本 ガイド 抗凝固' },
+        { kind: 'supplement', label: 'オメガ3（EPA/DHA）高濃度 — 血小板凝集抑制・血流改善', q: 'オメガ3 EPA DHA 血流 血小板 サプリ 抗凝固 補完' }
+      ]
+    },
+    adrenal: {
+      title: '📚 副腎不全・コルチゾール管理のリソース',
+      items: [
+        { kind: 'device', label: '医療アラートブレスレット（副腎不全・緊急時の情報提示）', q: '医療アラート ブレスレット 副腎不全 救急 MedicAlert' },
+        { kind: 'book', label: '『副腎不全（アジソン病）患者と家族のためのガイド』', q: '副腎不全 アジソン病 副腎クリーゼ 本 患者 管理' },
+        { kind: 'supplement', label: 'ビタミンB5（パントテン酸）副腎機能サポート', q: 'パントテン酸 ビタミンB5 副腎 コルチゾール サポート' },
+        { kind: 'device', label: '血圧計（臥位→起立後の変化確認）', q: '血圧計 上腕式 家庭用 起立性低血圧 副腎' }
+      ]
+    },
     neuropathy: {
       title: '📚 末梢神経障害・神経障害性疼痛のリソース',
       items: [
