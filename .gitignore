@@ -9,3 +9,4 @@
 scripts/node_modules
 scripts/package-lock.json
 scripts/*.serviceaccount.json
+.claude/worktrees/
