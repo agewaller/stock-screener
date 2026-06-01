@@ -739,7 +739,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -2561,14 +2561,25 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+  }
+
+  searchTimeline(query) {
+    const q = (query || '').trim().toLowerCase();
+    const content = document.getElementById('timeline-content');
+    if (!content) return;
+    // Each date group is a <div style="margin-bottom:24px">. Within it,
+    // direct children are the date header and entry cards/rows.
+    content.querySelectorAll('[data-date-group]').forEach(group => {
+      let anyVisible = false;
+      group.querySelectorAll('[data-entry-row]').forEach(row => {
+        const matches = !q || row.textContent.toLowerCase().includes(q);
+        row.style.display = matches ? '' : 'none';
+        if (matches) anyVisible = true;
+      });
+      group.style.display = anyVisible ? '' : 'none';
+    });
   }
 
   openImagePreview(url, filename = '画像') {
@@ -4005,6 +4016,32 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so the record doesn't come back on next snapshot
+    if (target && target._synced && typeof firebaseBackend !== 'undefined') {
+      firebaseBackend.deleteHealthEntry('textEntries', id).catch(err =>
+        console.warn('[deleteTextEntry] Firestore delete failed:', err.message)
+      );
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Generic delete for non-text data types (symptoms, vitals, medications, etc.)
+  // storeKey: the store array key (e.g. 'symptoms', 'vitals', 'medications')
+  // firestoreCollection: Firestore subcollection name (may differ from storeKey)
+  deleteDataRecord(storeKey, firestoreCollection, id) {
+    if (!id || !storeKey) return;
+    const records = store.get(storeKey) || [];
+    const target = records.find(r => r && r.id === id);
+    if (!target) return;
+    store.set(storeKey, records.filter(r => !r || r.id !== id));
+
+    if (target._synced && firestoreCollection && typeof firebaseBackend !== 'undefined') {
+      firebaseBackend.deleteHealthEntry(firestoreCollection, id).catch(err =>
+        console.warn('[deleteDataRecord] Firestore delete failed:', storeKey, err.message)
+      );
+    }
+
     Components.showToast('削除しました', 'success');
   }
 
@@ -4394,7 +4431,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
+        modelId = store.get('selectedModel') || 'claude-opus-4-8';
       }
 
       const rawResponse = await Promise.race([
@@ -6742,7 +6779,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || 'claude-opus-4-7';
+      const modelId = store.get('selectedModel') || 'claude-opus-4-8';
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7304,7 +7341,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');

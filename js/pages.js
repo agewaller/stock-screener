@@ -724,6 +724,40 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- Streak milestone share banner — shown once per milestone, only on the day it's reached -->
+  ${(() => {
+    const milestones = [7, 14, 30, 100];
+    const s = streakStats.streak;
+    if (!loggedToday || !milestones.includes(s)) return '';
+    const key = 'milestone_banner_' + s;
+    try { if (localStorage.getItem(key)) return ''; } catch(_) {}
+    const diseases = store.get('selectedDiseases') || [];
+    const diseaseName = store.get('selectedDisease')?.name || (diseases.length ? '慢性疾患' : '体調');
+    const shareText = encodeURIComponent(`${diseaseName}の体調記録 ${s}日連続達成🔥 毎日コツコツ記録して、自分の体と向き合っています。 #健康日記 #慢性疾患`);
+    const shareUrl = encodeURIComponent('https://cares.advisers.jp');
+    const xUrl = `https://x.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${shareUrl}&text=${shareText}`;
+    const bannerId = 'milestone-banner-' + s;
+    return `
+  <div id="${bannerId}" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1.5px solid #fbbf24;border-radius:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:28px">🎉</div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13px;font-weight:700;color:#92400e">${s}日連続記録を達成しました！</div>
+        <div style="font-size:11px;color:#b45309;margin-top:2px">すごい継続力です。同じ境遇の方の励みになります。</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="${xUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#000;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">𝕏 シェア</a>
+        <a href="${lineUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#06c755;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">LINE</a>
+        <button onclick="try{localStorage.setItem('milestone_banner_${s}','1')}catch(_){}document.getElementById('${bannerId}')?.remove()"
+          style="padding:6px 10px;background:transparent;color:#92400e;border:1px solid #fbbf24;border-radius:8px;font-size:11px;cursor:pointer">後で</button>
+      </div>
+    </div>
+  </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
@@ -1637,7 +1671,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-8';
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -2262,6 +2296,16 @@ App.prototype.render_timeline = function() {
         </div>`;
     }
 
+    // Helper: small delete button for non-text entries
+    const delBtn = (storeKey, fsCollection, id) => {
+      if (!id) return '';
+      const safeId = Components.escapeHtml(id);
+      const safeSk = Components.escapeHtml(storeKey);
+      const safeFc = Components.escapeHtml(fsCollection || '');
+      return `<button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteDataRecord('${safeSk}','${safeFc}','${safeId}'))"
+        title="削除" style="flex-shrink:0;padding:3px 8px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--text-muted);cursor:pointer">🗑️</button>`;
+    };
+
     // Symptom scores
     if (e._type === 'symptom_data') {
       const fields = [];
@@ -2276,6 +2320,7 @@ App.prototype.render_timeline = function() {
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${delBtn('symptoms', 'symptoms', e.id)}
         </div>`;
     }
 
@@ -2293,6 +2338,7 @@ App.prototype.render_timeline = function() {
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn('vitals', 'vitals', e.id)}
         </div>`;
     }
 
@@ -2305,10 +2351,22 @@ App.prototype.render_timeline = function() {
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn('photos', '', e.id)}
         </div>`;
     }
 
-    // Generic data entry
+    // Generic data entry (blood, medication, supplement, meal, sleep, activity, nutrition, plaud)
+    const typeStoreMap = {
+      blood: ['bloodTests', 'bloodTests'],
+      medication: ['medications', 'medications'],
+      supplement: ['supplements', ''],
+      meal: ['meals', ''],
+      nutrition: ['nutritionLog', ''],
+      sleep: ['sleepData', 'sleep'],
+      activity: ['activityData', 'activity'],
+      plaud: ['plaudAnalyses', ''],
+    };
+    const [gStoreKey, gFsColl] = typeStoreMap[e._type] || ['', ''];
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
@@ -2316,27 +2374,31 @@ App.prototype.render_timeline = function() {
     return `
       <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
-        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
+        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || Components.escapeHtml(e._label || '')}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${gStoreKey ? delBtn(gStoreKey, gFsColl, e.id) : ''}
       </div>`;
   };
 
   // Render by date
   const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
-    <div style="margin-bottom:24px">
+    <div data-date-group style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
-      ${entries.map(renderEntry).join('')}
+      ${entries.map(e => `<div data-entry-row>${renderEntry(e)}</div>`).join('')}
     </div>
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
       <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="search" id="timeline-search" placeholder="🔍 キーワード検索…" autocomplete="off"
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;min-width:160px;background:var(--bg-secondary)"
+        oninput="app.searchTimeline(this.value)">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
         <option value="">すべて表示</option>
         ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
@@ -2773,7 +2835,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || 'claude-opus-4-8';
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
