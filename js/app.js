@@ -4005,6 +4005,32 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so the record doesn't come back on next snapshot
+    if (target && target._synced && typeof firebaseBackend !== 'undefined') {
+      firebaseBackend.deleteHealthEntry('textEntries', id).catch(err =>
+        console.warn('[deleteTextEntry] Firestore delete failed:', err.message)
+      );
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Generic delete for non-text data types (symptoms, vitals, medications, etc.)
+  // storeKey: the store array key (e.g. 'symptoms', 'vitals', 'medications')
+  // firestoreCollection: Firestore subcollection name (may differ from storeKey)
+  deleteDataRecord(storeKey, firestoreCollection, id) {
+    if (!id || !storeKey) return;
+    const records = store.get(storeKey) || [];
+    const target = records.find(r => r && r.id === id);
+    if (!target) return;
+    store.set(storeKey, records.filter(r => !r || r.id !== id));
+
+    if (target._synced && firestoreCollection && typeof firebaseBackend !== 'undefined') {
+      firebaseBackend.deleteHealthEntry(firestoreCollection, id).catch(err =>
+        console.warn('[deleteDataRecord] Firestore delete failed:', storeKey, err.message)
+      );
+    }
+
     Components.showToast('削除しました', 'success');
   }
 

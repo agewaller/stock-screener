@@ -365,6 +365,18 @@ var FirebaseBackend = {
     }
   },
 
+  // Delete a single document from a health subcollection
+  async deleteHealthEntry(firestoreCollection, docId) {
+    if (!this.userId || !docId) return false;
+    try {
+      await this.userCollection(firestoreCollection).doc(docId).delete();
+      return true;
+    } catch (err) {
+      console.warn('[deleteHealthEntry]', firestoreCollection, docId, err.message);
+      return false;
+    }
+  },
+
   // Save health data entry to a subcollection
   async saveHealthEntry(collection, entry) {
     try {

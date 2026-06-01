@@ -2296,6 +2296,16 @@ App.prototype.render_timeline = function() {
         </div>`;
     }
 
+    // Helper: small delete button for non-text entries
+    const delBtn = (storeKey, fsCollection, id) => {
+      if (!id) return '';
+      const safeId = Components.escapeHtml(id);
+      const safeSk = Components.escapeHtml(storeKey);
+      const safeFc = Components.escapeHtml(fsCollection || '');
+      return `<button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteDataRecord('${safeSk}','${safeFc}','${safeId}'))"
+        title="削除" style="flex-shrink:0;padding:3px 8px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--text-muted);cursor:pointer">🗑️</button>`;
+    };
+
     // Symptom scores
     if (e._type === 'symptom_data') {
       const fields = [];
@@ -2310,6 +2320,7 @@ App.prototype.render_timeline = function() {
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${delBtn('symptoms', 'symptoms', e.id)}
         </div>`;
     }
 
@@ -2327,6 +2338,7 @@ App.prototype.render_timeline = function() {
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn('vitals', 'vitals', e.id)}
         </div>`;
     }
 
@@ -2339,10 +2351,22 @@ App.prototype.render_timeline = function() {
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn('photos', '', e.id)}
         </div>`;
     }
 
-    // Generic data entry
+    // Generic data entry (blood, medication, supplement, meal, sleep, activity, nutrition, plaud)
+    const typeStoreMap = {
+      blood: ['bloodTests', 'bloodTests'],
+      medication: ['medications', 'medications'],
+      supplement: ['supplements', ''],
+      meal: ['meals', ''],
+      nutrition: ['nutritionLog', ''],
+      sleep: ['sleepData', 'sleep'],
+      activity: ['activityData', 'activity'],
+      plaud: ['plaudAnalyses', ''],
+    };
+    const [gStoreKey, gFsColl] = typeStoreMap[e._type] || ['', ''];
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
@@ -2350,8 +2374,9 @@ App.prototype.render_timeline = function() {
     return `
       <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
-        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
+        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || Components.escapeHtml(e._label || '')}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${gStoreKey ? delBtn(gStoreKey, gFsColl, e.id) : ''}
       </div>`;
   };
 
