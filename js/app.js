@@ -2561,14 +2561,25 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+  }
+
+  searchTimeline(query) {
+    const q = (query || '').trim().toLowerCase();
+    const content = document.getElementById('timeline-content');
+    if (!content) return;
+    // Each date group is a <div style="margin-bottom:24px">. Within it,
+    // direct children are the date header and entry cards/rows.
+    content.querySelectorAll('[data-date-group]').forEach(group => {
+      let anyVisible = false;
+      group.querySelectorAll('[data-entry-row]').forEach(row => {
+        const matches = !q || row.textContent.toLowerCase().includes(q);
+        row.style.display = matches ? '' : 'none';
+        if (matches) anyVisible = true;
+      });
+      group.style.display = anyVisible ? '' : 'none';
+    });
   }
 
   openImagePreview(url, filename = '画像') {

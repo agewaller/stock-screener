@@ -2382,20 +2382,23 @@ App.prototype.render_timeline = function() {
 
   // Render by date
   const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
-    <div style="margin-bottom:24px">
+    <div data-date-group style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
-      ${entries.map(renderEntry).join('')}
+      ${entries.map(e => `<div data-entry-row>${renderEntry(e)}</div>`).join('')}
     </div>
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
       <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="search" id="timeline-search" placeholder="🔍 キーワード検索…" autocomplete="off"
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;min-width:160px;background:var(--bg-secondary)"
+        oninput="app.searchTimeline(this.value)">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
         <option value="">すべて表示</option>
         ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
