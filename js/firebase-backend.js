@@ -365,6 +365,22 @@ var FirebaseBackend = {
     }
   },
 
+  // Paginated full collection fetch — bypasses the onSnapshot limit(500) cap.
+  // Used by admin runDataDiagnosis to get a true document count.
+  async _fetchAllDocs(collectionRef, pageSize = 1000) {
+    let all = [];
+    let lastDoc = null;
+    while (true) {
+      let q = collectionRef.orderBy(firebase.firestore.FieldPath.documentId()).limit(pageSize);
+      if (lastDoc) q = q.startAfter(lastDoc);
+      const snap = await q.get();
+      snap.forEach(d => all.push(d.data()));
+      if (snap.size < pageSize) break;
+      lastDoc = snap.docs[snap.docs.length - 1];
+    }
+    return all;
+  },
+
   // Delete a single document from a health subcollection
   async deleteHealthEntry(firestoreCollection, docId) {
     if (!this.userId || !docId) return false;
