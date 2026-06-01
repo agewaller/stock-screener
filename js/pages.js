@@ -724,6 +724,40 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- Streak milestone share banner — shown once per milestone, only on the day it's reached -->
+  ${(() => {
+    const milestones = [7, 14, 30, 100];
+    const s = streakStats.streak;
+    if (!loggedToday || !milestones.includes(s)) return '';
+    const key = 'milestone_banner_' + s;
+    try { if (localStorage.getItem(key)) return ''; } catch(_) {}
+    const diseases = store.get('selectedDiseases') || [];
+    const diseaseName = store.get('selectedDisease')?.name || (diseases.length ? '慢性疾患' : '体調');
+    const shareText = encodeURIComponent(`${diseaseName}の体調記録 ${s}日連続達成🔥 毎日コツコツ記録して、自分の体と向き合っています。 #健康日記 #慢性疾患`);
+    const shareUrl = encodeURIComponent('https://cares.advisers.jp');
+    const xUrl = `https://x.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${shareUrl}&text=${shareText}`;
+    const bannerId = 'milestone-banner-' + s;
+    return `
+  <div id="${bannerId}" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1.5px solid #fbbf24;border-radius:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:28px">🎉</div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13px;font-weight:700;color:#92400e">${s}日連続記録を達成しました！</div>
+        <div style="font-size:11px;color:#b45309;margin-top:2px">すごい継続力です。同じ境遇の方の励みになります。</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="${xUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#000;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">𝕏 シェア</a>
+        <a href="${lineUrl}" target="_blank" rel="noopener noreferrer"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#06c755;color:#fff;border-radius:8px;font-size:11px;font-weight:700;text-decoration:none">LINE</a>
+        <button onclick="try{localStorage.setItem('milestone_banner_${s}','1')}catch(_){}document.getElementById('${bannerId}')?.remove()"
+          style="padding:6px 10px;background:transparent;color:#92400e;border:1px solid #fbbf24;border-radius:8px;font-size:11px;cursor:pointer">後で</button>
+      </div>
+    </div>
+  </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
