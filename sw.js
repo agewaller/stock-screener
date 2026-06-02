@@ -6,6 +6,7 @@ const CACHE_NAME = 'health-diary-' + CACHE_VERSION;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/js/idb.js',
   '/js/config.js',
   '/js/prompts.js',
   '/js/store.js',
@@ -19,6 +20,7 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
+  '/js/inapp-browser-banner.js',
   '/manifest.json'
 ];
 

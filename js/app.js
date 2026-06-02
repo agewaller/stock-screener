@@ -412,6 +412,7 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      try { this.maybeShowTodayReminderNotification(); } catch (_) {}
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -4239,6 +4240,68 @@ ${bloodText || '記録なし'}
       </div>
     `;
     host.insertBefore(card.firstElementChild, host.firstElementChild);
+  }
+
+  // Request notification permission and store the outcome. Called when
+  // the user enables the daily-reminder toggle in Settings.
+  async toggleDailyReminder(enable) {
+    if (!enable) {
+      localStorage.removeItem('daily_reminder_enabled');
+      Components.showToast('リマインダーをオフにしました', 'info');
+      return;
+    }
+    if (typeof Notification === 'undefined') {
+      Components.showToast('お使いのブラウザは通知に対応していません', 'error');
+      const cb = document.getElementById('toggle-daily-reminder');
+      if (cb) cb.checked = false;
+      return;
+    }
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== 'granted') {
+      Components.showToast('通知を許可してください（ブラウザの設定 → サイトの設定 → 通知）', 'error');
+      const cb = document.getElementById('toggle-daily-reminder');
+      if (cb) cb.checked = false;
+      return;
+    }
+    localStorage.setItem('daily_reminder_enabled', '1');
+    Components.showToast('リマインダーをオンにしました。今日の記録がないときにお知らせします', 'success');
+  }
+
+  // Show a browser notification if: notifications are granted, user
+  // enabled the reminder, and they haven't logged anything today.
+  // Called on every dashboard navigation; skips silently after the
+  // first notification of the day to avoid repeated alerts.
+  maybeShowTodayReminderNotification() {
+    try {
+      if (typeof Notification === 'undefined') return;
+      if (Notification.permission !== 'granted') return;
+      if (localStorage.getItem('daily_reminder_enabled') !== '1') return;
+      // Fire at most once per calendar day per session.
+      const today = new Date().toDateString();
+      if (localStorage.getItem('reminder_notified_today') === today) return;
+
+      const textEntries = store.get('textEntries') || [];
+      const symptoms = store.get('symptoms') || [];
+      const todayJst = new Date().toLocaleDateString('ja-JP', {
+        timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'
+      });
+      const toJst = ts => new Date(ts).toLocaleDateString('ja-JP', {
+        timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'
+      });
+      const loggedToday = textEntries.some(e => e.timestamp && toJst(e.timestamp) === todayJst)
+        || symptoms.some(e => e.timestamp && toJst(e.timestamp) === todayJst);
+      if (loggedToday) return;
+
+      localStorage.setItem('reminder_notified_today', today);
+      const streak = this._computeStreak ? this._computeStreak() : { streak: 0 };
+      const body = streak.streak > 0
+        ? `${streak.streak}日連続記録中！今日の体調を 1 行メモして連続を続けましょう`
+        : '今日の体調をメモしてみましょう。1 行でも続けることが大切です';
+      new Notification('健康日記 📋', { body, icon: '/og-image.png', badge: '/og-image.png' });
+    } catch (_) {}
   }
 
   // Update the "選択疾患の規模" badge when the user ticks disease

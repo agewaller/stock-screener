@@ -432,6 +432,34 @@ App.prototype._getEarnedBadges = function(stats) {
   return badges;
 };
 
+// Return the next badge the user can earn and how many days away it is.
+// Returns null if all badges are already earned.
+App.prototype._getNextBadge = function(stats) {
+  const streakMilestones = [
+    { days: 3,   icon: '🔥', name: '3日連続' },
+    { days: 7,   icon: '⚡', name: '1週間連続' },
+    { days: 14,  icon: '🌊', name: '2週間連続' },
+    { days: 30,  icon: '🏔', name: '30日連続' },
+    { days: 100, icon: '🏆', name: '100日連続' },
+  ];
+  const totalMilestones = [
+    { days: 7,   icon: '📚', name: '1週間の記録' },
+    { days: 30,  icon: '📖', name: '1ヶ月の記録' },
+    { days: 100, icon: '🎓', name: '100日の記録' },
+  ];
+  for (const m of streakMilestones) {
+    if (stats.streak < m.days) {
+      return { icon: m.icon, name: m.name, daysLeft: m.days - stats.streak, type: 'streak' };
+    }
+  }
+  for (const m of totalMilestones) {
+    if (stats.totalDays < m.days) {
+      return { icon: m.icon, name: m.name, daysLeft: m.days - stats.totalDays, type: 'total' };
+    }
+  }
+  return null;
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
@@ -444,6 +472,7 @@ App.prototype.render_dashboard = function() {
   const latestAnalysis = store.get('latestAnalysis');
   const streakStats = this._computeStreak();
   const earnedBadges = this._getEarnedBadges(streakStats);
+  const nextBadge = this._getNextBadge(streakStats);
 
   // Real data counts
   const totalEntries = textEntries.length;
@@ -712,14 +741,22 @@ App.prototype.render_dashboard = function() {
           ` : `<div style="font-size:12px;color:#4338ca">記録を続けて、毎日の処方を受け取りましょう</div>`}
         </div>
       </div>
-      ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
-        ${earnedBadges.map(b => `
-          <span title="${Components.escapeHtml(b.desc)}"
-            style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
-            <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
-          </span>
-        `).join('')}
+      ${earnedBadges.length > 0 || nextBadge ? `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe">
+        ${earnedBadges.length > 0 ? `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${nextBadge ? '8px' : '0'}">
+          ${earnedBadges.map(b => `
+            <span title="${Components.escapeHtml(b.desc)}"
+              style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
+              <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
+            </span>
+          `).join('')}
+        </div>` : ''}
+        ${nextBadge ? `
+        <div style="font-size:10px;color:#6366f1;background:#fff;border-radius:8px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px">
+          <span style="font-size:13px">${nextBadge.icon}</span>
+          <span>あと <strong>${nextBadge.daysLeft}</strong> 日で「${Components.escapeHtml(nextBadge.name)}」</span>
+        </div>` : ''}
       </div>` : ''}
     </div>
   </div>` : ''}
@@ -3271,6 +3308,26 @@ App.prototype.render_settings = function() {
           <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">AI 送信前の匿名化</div>
           <div style="font-size:11px;color:var(--text-muted);line-height:1.7">
             AI に送る前に、メールアドレス・電話番号・郵便番号・住所・人名 (〜さん/〜先生) を自動的に <code>[メール]</code>・<code>[電話]</code> 等のラベルに置き換えます。分析の精度がやや下がる可能性がありますが、万一の漏洩リスクを下げたい方におすすめです。
+          </div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- Daily reminder notification toggle -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 通知・リマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:var(--bg-tertiary);border-radius:8px;cursor:pointer">
+        <input type="checkbox" id="toggle-daily-reminder"
+          ${(typeof Notification !== 'undefined' && Notification.permission === 'granted' && localStorage.getItem('daily_reminder_enabled') === '1') ? 'checked' : ''}
+          onchange="app.toggleDailyReminder(this.checked)"
+          style="margin-top:2px;width:16px;height:16px;accent-color:var(--accent);flex-shrink:0">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:2px">毎日の記録リマインダー</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.7">
+            アプリを開いたときに、その日の記録がない場合はブラウザ通知でお知らせします。
+            連続記録を途切れさせたくない方におすすめです。
           </div>
         </div>
       </label>
