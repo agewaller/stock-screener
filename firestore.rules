@@ -31,6 +31,18 @@ service cloud.firestore {
                        || request.auth.token.email == 'agewaller@gmail.com');
     }
 
+    // Newsletter subscribers — anonymous write allowed so static disease
+    // LPs can collect signups without requiring Firebase Auth. The email
+    // field is validated for size; no PII beyond email is stored.
+    // Admin can read/delete; bulk export stays server-side only.
+    match /newsletter_subscribers/{docId} {
+      allow create, update: if request.resource.data.email is string
+                            && request.resource.data.email.size() > 3
+                            && request.resource.data.email.size() <= 200;
+      allow read, delete:   if request.auth != null
+                            && request.auth.token.email == 'agewaller@gmail.com';
+    }
+
     // Plaud / data inbox dispatched by the plaud-inbox Cloudflare Worker.
     // Path: inbox/{hash}/{kind}/{messageId}
     //

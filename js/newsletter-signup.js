@@ -47,10 +47,15 @@
     return window.firebase;
   }
 
-  // Firebase config is loaded from /firebase-config.json (admin-managed).
-  // If unavailable, the form shows a helpful "later" message.
+  // Firebase config — prefer the global CONFIG (available when index.html
+  // loads config.js), fall back to /firebase-config.json for static disease
+  // LPs that don't bundle the full app.
   async function getFirebaseConfig() {
     if (firebaseConfig) return firebaseConfig;
+    if (window.CONFIG && window.CONFIG.FIREBASE) {
+      firebaseConfig = window.CONFIG.FIREBASE;
+      return firebaseConfig;
+    }
     try {
       var resp = await fetch('/firebase-config.json', { cache: 'force-cache' });
       if (!resp.ok) throw new Error('config http ' + resp.status);
