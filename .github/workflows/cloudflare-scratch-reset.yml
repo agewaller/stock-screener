@@ -1,0 +1,280 @@
+name: Cloudflare scratch reset (AI 経路のみ)
+
+# AI 復旧用 — stock-screener + cares-relay + 関連 Access apps をワイプして
+# 再デプロイの土台を作る。RESEARCH_KV / plaud-inbox / professional-mailer /
+# research-updater / learning-orchestrator は触らない。
+#
+# 使い方（上から順に）:
+#   1. このワークフロー → Run workflow → mode=discover (default)
+#      → Summary の "RESEARCH_KV namespace ID" と access apps の 🎯 印を控える
+#   2. その ID を wrangler.jsonc / wrangler.research-updater.toml に反映して main に merge
+#   3. このワークフロー → Run workflow → mode=wipe, confirm=YES
+#   4. Actions →「Deploy Cloudflare Workers」→ Run workflow で再デプロイ
+#   5. Cloudflare dashboard → stock-screener → Settings → Variables で
+#      ANTHROPIC_API_KEY と ADMIN_WRITE_TOKEN を Add secret
+#   6. Actions →「Cloudflare Workers 診断 / 自動修復」で到達性確認 (per-script subdomain も自動再有効化)
+#   7. /admin でログイン → API キー → AI 動作確認
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'discover (一覧表示のみ・安全) / wipe (削除・破壊的)'
+        required: true
+        default: 'discover'
+        type: choice
+        options:
+          - 'discover'
+          - 'wipe'
+      confirm:
+        description: 'mode=wipe の時のみ "YES" と入力（一致しなければ abort）'
+        required: false
+        default: 'no'
+
+jobs:
+  scratch-reset:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e479bf26646b0349928aed8505418638
+    steps:
+      - name: Verify CLOUDFLARE_API_TOKEN
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret missing."
+            exit 1
+          fi
+          echo "✓ token present (length=${#T})"
+          echo "Mode: ${{ inputs.mode }} / confirm: ${{ inputs.confirm }}"
+
+      - name: Abort if wipe without confirm=YES
+        if: ${{ inputs.mode == 'wipe' && inputs.confirm != 'YES' }}
+        run: |
+          echo "::error::mode=wipe には confirm=YES が必要です（入力: '${{ inputs.confirm }}'）"
+          exit 1
+
+      # ────────────────────────────────────────────────
+      # DISCOVER フェーズ（mode に関わらず常に実行 — 状態の可視化）
+      # ────────────────────────────────────────────────
+
+      - name: List Workers scripts
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "## Workers scripts" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" \
+            > /tmp/scripts.json
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+          d = json.load(open('/tmp/scripts.json'))
+          if not d.get('success'):
+              print('```json'); print(json.dumps(d.get('errors', d), indent=2, ensure_ascii=False)); print('```')
+              raise SystemExit(0)
+          ss = d.get('result', [])
+          print(f'\n**{len(ss)} scripts**\n')
+          print('| name | modified |')
+          print('|---|---|')
+          for s in ss:
+              print(f"| `{s.get('id','?')}` | {s.get('modified_on','-')} |")
+          PY
+
+      - name: List KV namespaces (extract RESEARCH_KV ID)
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## KV namespaces" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
+            > /tmp/kv.json
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json
+          d = json.load(open('/tmp/kv.json'))
+          if not d.get('success'):
+              print('```json'); print(json.dumps(d.get('errors', d), indent=2, ensure_ascii=False)); print('```')
+              raise SystemExit(0)
+          ns = d.get('result', [])
+          print(f'\n**{len(ns)} namespaces**\n')
+          print('| title | id |')
+          print('|---|---|')
+          rkv_id = None
+          for n in ns:
+              title = n.get('title','?')
+              nid = n.get('id','?')
+              print(f"| `{title}` | `{nid}` |")
+              if title == 'RESEARCH_KV':
+                  rkv_id = nid
+          print()
+          if rkv_id:
+              print(f'**→ RESEARCH_KV namespace id**: `{rkv_id}`')
+              print()
+              print('### wrangler.jsonc に追記する snippet (FIREBASE_PROJECT_ID は実値に置換)')
+              print('```jsonc')
+              print('  "vars": {')
+              print('    "FIREBASE_PROJECT_ID": "<firebase project id>",')
+              print('    "ALLOWED_ORIGINS": "https://cares.advisers.jp"')
+              print('  },')
+              print('  "kv_namespaces": [')
+              print(f'    {{ "binding": "RESEARCH_KV", "id": "{rkv_id}" }}')
+              print('  ]')
+              print('```')
+              print()
+              print('### wrangler.research-updater.toml の置換 (行 10)')
+              print('```toml')
+              print(f'id = "{rkv_id}"')
+              print('```')
+          else:
+              print('**⚠️ RESEARCH_KV が見つかりません** — 名前が違うか未作成。dashboard で確認してください。')
+          PY
+
+      - name: List Access applications (flag wipe targets)
+        id: access
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Access applications" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps?per_page=200" \
+            > /tmp/apps.json
+          python3 - <<'PY' >> $GITHUB_STEP_SUMMARY
+          import json, os
+          d = json.load(open('/tmp/apps.json'))
+          if not d.get('success'):
+              print('```json'); print(json.dumps(d.get('errors', d), indent=2, ensure_ascii=False)); print('```')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+                  fh.write('target_app_ids=\n')
+                  fh.write('target_app_count=0\n')
+              raise SystemExit(0)
+          apps = d.get('result', [])
+          print(f'\n**{len(apps)} apps**\n')
+          print('| flag | name | id | domain | destinations |')
+          print('|---|---|---|---|---|')
+          patterns = ['agewaller.workers.dev', 'cares.advisers.jp', 'stock-screener', 'cares-relay', 'cares-ai-proxy']
+          targets = []
+          for a in apps:
+              dests = []
+              dests.append(str(a.get('domain', '')))
+              for x in (a.get('self_hosted_domains') or []):
+                  dests.append(str(x))
+              for r in (a.get('destinations') or []):
+                  if isinstance(r, dict):
+                      dests.append(str(r.get('uri', '') or r.get('hostname', '') or r))
+                  else:
+                      dests.append(str(r))
+              name_str = str(a.get('name', ''))
+              blob = (' '.join(dests) + ' ' + name_str).lower()
+              hit = any(p in blob for p in patterns)
+              dest_str = '<br>'.join(x for x in dests if x) or '-'
+              mark = '🎯' if hit else ''
+              print(f"| {mark} | `{name_str}` | `{a.get('id','?')[:8]}...` | {a.get('domain','-')} | {dest_str} |")
+              if hit:
+                  targets.append(a.get('id'))
+          print()
+          print(f'**🎯 wipe 対象**: {len(targets)} 個')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+              fh.write(f'target_app_ids={",".join(t for t in targets if t)}\n')
+              fh.write(f'target_app_count={len(targets)}\n')
+          PY
+
+      - name: Per-script subdomain + account subdomain status
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## workers.dev subdomain 状態" >> $GITHUB_STEP_SUMMARY
+          echo "### account-level" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | python3 -m json.tool >> $GITHUB_STEP_SUMMARY 2>&1 || echo "(failed)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "### per-script" >> $GITHUB_STEP_SUMMARY
+          echo "| script | enabled |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for s in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+            r=$(curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$s/subdomain" \
+              | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('result',{}).get('enabled','?') if d.get('success') else '(err)')" 2>/dev/null || echo "(err)")
+            echo "| \`$s\` | $r |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Probe workers reachability (外部から見た状態)
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Worker 到達性 (外部 probe)" >> $GITHUB_STEP_SUMMARY
+          echo "| worker | http |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+            code=$(curl -s -o /tmp/b.txt -w "%{http_code}" -m 5 "https://$w.agewaller.workers.dev/" 2>/dev/null || echo "000")
+            mark="❌"
+            if [ "$code" = "200" ] || [ "$code" = "404" ] || [ "$code" = "405" ]; then mark="✅"; fi
+            echo "| \`$w\` | $mark $code |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      # ────────────────────────────────────────────────
+      # WIPE フェーズ（mode=wipe AND confirm=YES の時のみ）
+      # ────────────────────────────────────────────────
+
+      - name: WIPE — delete AI-chain Worker scripts
+        if: ${{ inputs.mode == 'wipe' && inputs.confirm == 'YES' }}
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️ WIPE: Workers 削除" >> $GITHUB_STEP_SUMMARY
+          echo "| worker | result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for w in stock-screener cares-relay cares-ai-proxy; do
+            resp=$(curl -s -X DELETE \
+              -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$w")
+            summary=$(echo "$resp" | python3 -c "import sys,json;d=json.load(sys.stdin);print('deleted' if d.get('success') else 'failed: '+(d.get('errors',[{}])[0].get('message','?') if d.get('errors') else '?'))" 2>/dev/null || echo "parse-err")
+            echo "| \`$w\` | $summary |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: WIPE — delete matched Access apps
+        if: ${{ inputs.mode == 'wipe' && inputs.confirm == 'YES' }}
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          IDS: ${{ steps.access.outputs.target_app_ids }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️ WIPE: Access apps 削除" >> $GITHUB_STEP_SUMMARY
+          if [ -z "$IDS" ]; then
+            echo "対象なし（🎯 印のついた app なし）。" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "| app id | result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          IFS=',' read -ra ARR <<< "$IDS"
+          for aid in "${ARR[@]}"; do
+            [ -z "$aid" ] && continue
+            resp=$(curl -s -X DELETE \
+              -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$aid")
+            ok=$(echo "$resp" | python3 -c "import sys,json;print('deleted ✓' if json.load(sys.stdin).get('success') else 'failed')" 2>/dev/null || echo "parse-err")
+            echo "| \`${aid:0:8}...\` | $ok |" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: WIPE — summary + next steps
+        if: ${{ inputs.mode == 'wipe' && inputs.confirm == 'YES' }}
+        run: |
+          {
+            echo ""
+            echo "## ✅ 保持したリソース（触っていない）"
+            echo "- Workers: \`plaud-inbox\` / \`professional-mailer\` / \`research-updater\` / \`learning-orchestrator\`"
+            echo "- KV: \`RESEARCH_KV\` (\`admin:key:*\` と \`research:*\` キャッシュは保持)"
+            echo "- Custom domain (\`ai.cares.advisers.jp\`): 再デプロイ時に \`custom_domain:true\` で自動再作成"
+            echo ""
+            echo "## 次のアクション"
+            echo "1. Actions →「Deploy Cloudflare Workers」→ Run workflow（stock-screener と cares-relay を再作成）"
+            echo "2. Cloudflare dashboard → Workers → \`stock-screener\` → Settings → Variables で"
+            echo "   \`ANTHROPIC_API_KEY\` と \`ADMIN_WRITE_TOKEN\` を Add secret"
+            echo "3. Actions →「Cloudflare Workers 診断 / 自動修復」→ Run workflow"
+            echo "   （per-script subdomain も自動再有効化し、到達性を再 probe）"
+            echo "4. https://cares.advisers.jp/admin で agewaller@gmail.com にログイン →"
+            echo "   「API キー」で状態確認・必要なら保存 → AI 機能を実行して応答確認"
+          } >> $GITHUB_STEP_SUMMARY
