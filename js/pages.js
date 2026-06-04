@@ -721,6 +721,23 @@ App.prototype.render_dashboard = function() {
           </span>
         `).join('')}
       </div>` : ''}
+      ${(() => {
+        const milestones = [7, 14, 30, 100];
+        const hit = milestones.find(n => streakStats.streak === n);
+        if (!hit) return '';
+        const sharedKey = 'streak_shared_' + hit + '_' + new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem(sharedKey)) return '';
+        const badge = earnedBadges.slice().reverse().find(b => b.name.includes('連続')) || earnedBadges[earnedBadges.length - 1];
+        const badgeIcon = badge ? badge.icon : '🏆';
+        return `
+        <div id="streak-share-banner" style="margin-top:12px;padding:10px 14px;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:20px">${badgeIcon}</span>
+          <span style="flex:1;font-size:13px;color:#fff;font-weight:600">${hit}日連続達成！シェアしよう</span>
+          <button onclick="app.shareStreak(${hit})" style="padding:6px 14px;background:#fff;color:#6366f1;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">X でシェア</button>
+          <button onclick="app.shareStreakLine(${hit})" style="padding:6px 14px;background:#06c755;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">LINE</button>
+          <button onclick="document.getElementById('streak-share-banner').remove();localStorage.setItem('streak_shared_${hit}_'+new Date().toISOString().slice(0,10),'1')" style="padding:6px 10px;background:transparent;color:rgba(255,255,255,0.7);border:none;font-size:16px;cursor:pointer">✕</button>
+        </div>`;
+      })()}
     </div>
   </div>` : ''}
 
@@ -1637,7 +1654,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -2331,16 +2348,22 @@ App.prototype.render_timeline = function() {
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)" id="timeline-count">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" style="width:auto;font-size:12px" id="timeline-category-filter" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
+    <div style="position:relative">
+      <input type="search" id="timeline-search" class="form-input" placeholder="🔍 キーワードで絞り込み…" style="font-size:13px;padding-left:12px"
+        oninput="app.searchTimeline(this.value)">
     </div>
   </div>
   <div id="timeline-content">
@@ -2773,7 +2796,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };

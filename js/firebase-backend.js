@@ -106,7 +106,11 @@ var FirebaseBackend = {
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
         if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+          avatarEl.textContent = '';
+          const img = document.createElement('img');
+          img.setAttribute('src', user.photoURL);
+          img.alt = '';
+          avatarEl.appendChild(img);
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }
@@ -376,6 +380,39 @@ var FirebaseBackend = {
       console.error('Save entry error:', err);
       return null;
     }
+  },
+
+  // Delete a single document from a health subcollection by its
+  // Firestore document ID. Used by deleteTextEntry / deleteDataRecord
+  // to keep Firestore and localStorage in sync (without this, the
+  // next onSnapshot event would resurrect the deleted record).
+  async deleteHealthEntry(collection, docId) {
+    if (!this.userId || !docId) return false;
+    try {
+      await this.userCollection(collection).doc(docId).delete();
+      return true;
+    } catch (err) {
+      console.warn('[deleteHealthEntry]', collection, docId, err.message);
+      return false;
+    }
+  },
+
+  // Paginated fetch of ALL documents in a collection reference with no
+  // document cap. Firestore's .get() has an implicit server-side limit
+  // that varies by query; using startAfter pagination ensures every
+  // document is returned regardless of collection size.
+  async _fetchAllDocs(collectionRef, pageSize = 500) {
+    const all = [];
+    let lastDoc = null;
+    for (;;) {
+      let q = collectionRef.limit(pageSize);
+      if (lastDoc) q = q.startAfter(lastDoc);
+      const snap = await q.get();
+      snap.forEach(d => all.push(Object.assign({ id: d.id }, d.data())));
+      if (snap.size < pageSize) break;
+      lastDoc = snap.docs[snap.docs.length - 1];
+    }
+    return all;
   },
 
   // Save text entry

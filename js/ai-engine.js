@@ -16,6 +16,8 @@ var AIEngine = class AIEngine {
 
   constructor() {
     this.apiEndpoints = {
+      'claude-opus-4-8': '/api/anthropic',
+      'claude-opus-4-7': '/api/anthropic',
       'claude-sonnet-4-6': '/api/anthropic',
       'claude-opus-4-6': '/api/anthropic',
       'claude-haiku-4-5': '/api/anthropic',
@@ -24,9 +26,15 @@ var AIEngine = class AIEngine {
     };
   }
 
+  // Resolve the default model ID from CONFIG so it's never hardcoded.
+  static get DEFAULT_MODEL() {
+    const m = (typeof CONFIG !== 'undefined' ? CONFIG.AI_MODELS : []).find(m => m.default);
+    return m ? m.id : 'claude-opus-4-8';
+  }
+
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
+    const modelId = options.model || store.get('selectedModel') || AIEngine.DEFAULT_MODEL;
     store.set('isAnalyzing', true);
 
     try {
@@ -506,9 +514,10 @@ ${avoidBlock}
   // automatic fallback chain. This reduces timeout from 55s to ~30s
   // and makes failures predictable.
   buildProviderFallbackList(preferredModel) {
-    const opus   = { model: 'claude-opus-4-6',   callFn: this.callAnthropic };
-    const sonnet = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
-    const haiku  = { model: 'claude-haiku-4-5',  callFn: this.callAnthropic };
+    const defaultModel = AIEngine.DEFAULT_MODEL;
+    const opus   = { model: defaultModel,          callFn: this.callAnthropic };
+    const sonnet = { model: 'claude-sonnet-4-6',   callFn: this.callAnthropic };
+    const haiku  = { model: 'claude-haiku-4-5',    callFn: this.callAnthropic };
     const uniq = (arr) => {
       const seen = new Set();
       return arr.filter(p => (seen.has(p.model) ? false : (seen.add(p.model), true)));
@@ -520,7 +529,7 @@ ${avoidBlock}
       return [{ model: preferredModel, callFn: this.callGoogle }];
     }
     return uniq([
-      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      { model: preferredModel || defaultModel, callFn: this.callAnthropic },
       opus, sonnet, haiku
     ]);
   }
@@ -539,12 +548,13 @@ ${avoidBlock}
     // "分析サービスに接続できませんでした" error reported in guest mode
     // once that specific snapshot was rotated out on the API.
     const MODEL_MAP = {
+      'claude-opus-4-8':   'claude-opus-4-8',
       'claude-opus-4-7':   'claude-opus-4-7',
       'claude-sonnet-4-6': 'claude-sonnet-4-6',
       'claude-opus-4-6':   'claude-opus-4-6',
       'claude-haiku-4-5':  'claude-haiku-4-5',
     };
-    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-7';
+    const apiModelId = MODEL_MAP[modelId] || modelId || AIEngine.DEFAULT_MODEL;
 
     // Single fixed endpoint for everyone. The browser never sends a
     // key — the relay forwards to the proxy Worker which injects the

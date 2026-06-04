@@ -2561,14 +2561,34 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+  }
+
+  // Incremental keyword search over the rendered timeline DOM. Walks
+  // every date-group <div> and hides those whose text content doesn't
+  // match the query. No re-render needed, so focus and scroll are
+  // preserved. Empty query restores everything.
+  searchTimeline(query) {
+    const content = document.getElementById('timeline-content');
+    if (!content) return;
+    const q = (query || '').trim().toLowerCase();
+    const groups = content.querySelectorAll('[style*="margin-bottom:24px"]');
+    let visibleGroups = 0;
+    groups.forEach(group => {
+      if (!q) {
+        group.style.display = '';
+        visibleGroups++;
+        return;
+      }
+      const text = (group.textContent || '').toLowerCase();
+      const show = text.includes(q);
+      group.style.display = show ? '' : 'none';
+      if (show) visibleGroups++;
+    });
+    const countEl = document.getElementById('timeline-count');
+    if (countEl && q) countEl.textContent = `「${query}」に一致: ${visibleGroups}件のグループ`;
+    else if (countEl) countEl.textContent = countEl.dataset.total || '';
   }
 
   openImagePreview(url, filename = '画像') {
@@ -2598,6 +2618,29 @@ ${titles}`;
     const image = document.getElementById('image-preview-img');
     if (modal) modal.hidden = true;
     if (image) image.src = '';
+  }
+
+  // Share the user's streak milestone on X (Twitter).
+  shareStreak(days) {
+    const text = `健康日記を${days}日連続で記録しました！\n慢性疾患と向き合いながら、毎日の体調を記録中。\n#健康日記 #慢性疾患 #セルフケア`;
+    const url = 'https://cares.advisers.jp';
+    const shareUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(shareUrl, '_blank', 'noopener');
+    const key = 'streak_shared_' + days + '_' + new Date().toISOString().slice(0, 10);
+    try { localStorage.setItem(key, '1'); } catch (_) {}
+    const banner = document.getElementById('streak-share-banner');
+    if (banner) banner.remove();
+  }
+
+  // Share the user's streak milestone on LINE.
+  shareStreakLine(days) {
+    const text = `健康日記を${days}日連続で記録しました！慢性疾患と向き合いながら毎日記録中。 https://cares.advisers.jp #健康日記`;
+    const shareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank', 'noopener');
+    const key = 'streak_shared_' + days + '_' + new Date().toISOString().slice(0, 10);
+    try { localStorage.setItem(key, '1'); } catch (_) {}
+    const banner = document.getElementById('streak-share-banner');
+    if (banner) banner.remove();
   }
 
   // Generate quick AI insight for timeline entries
@@ -4005,6 +4048,30 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so the next onSnapshot doesn't
+    // resurrect the deleted record for the user.
+    const firestoreId = target?._firestoreId || target?.firestoreId || id;
+    if (FirebaseBackend?.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', firestoreId).catch(() => {});
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Delete any health data record (symptoms / vitals / medications /
+  // bloodTests / sleepData / activityData etc.) from both localStorage
+  // and Firestore. `storeKey` is the localStorage collection name,
+  // `collection` is the Firestore subcollection name, `id` is the
+  // entry id stored in the record.
+  deleteDataRecord(storeKey, collection, id) {
+    if (!id) return;
+    const records = store.get(storeKey) || [];
+    const target = records.find(r => r && r.id === id);
+    store.set(storeKey, records.filter(r => !r || r.id !== id));
+    const firestoreId = target?._firestoreId || target?.firestoreId || id;
+    if (FirebaseBackend?.userId) {
+      FirebaseBackend.deleteHealthEntry(collection, firestoreId).catch(() => {});
+    }
     Components.showToast('削除しました', 'success');
   }
 
