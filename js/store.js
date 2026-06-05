@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: 'claude-opus-4-8',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -329,6 +329,8 @@ var Store = class Store {
   // OpenAI / Google public pricing as of 2026. Multiply tokens × rate
   // ÷ 1,000,000 ÷ usdJpy to get JPY.
   static COSTS_PER_MTOKEN_USD = {
+    'claude-opus-4-8':   { input: 15,   output: 75   },
+    'claude-opus-4-7':   { input: 15,   output: 75   },
     'claude-opus-4-6':   { input: 15,   output: 75   },
     'claude-sonnet-4-6': { input: 3,    output: 15   },
     'claude-haiku-4-5':  { input: 1,    output: 5    },

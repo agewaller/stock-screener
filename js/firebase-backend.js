@@ -106,7 +106,11 @@ var FirebaseBackend = {
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
         if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+          const img = document.createElement('img');
+          img.setAttribute('src', user.photoURL);
+          img.setAttribute('alt', '');
+          avatarEl.innerHTML = '';
+          avatarEl.appendChild(img);
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }
@@ -138,6 +142,7 @@ var FirebaseBackend = {
       // login page" reported by users.
       if (typeof app !== 'undefined' && app && typeof app.navigate === 'function') {
         app.navigate('dashboard');
+        try { app.setupDailyReminder(); } catch (e) { console.warn('[setupDailyReminder]', e); }
       } else {
         console.error('[handleSignedInUser] app.navigate unavailable');
       }
@@ -376,6 +381,37 @@ var FirebaseBackend = {
       console.error('Save entry error:', err);
       return null;
     }
+  },
+
+  // Delete a single health data document from Firestore by collection + document ID.
+  // The document ID is the Firestore auto-generated 20-char string stored as `id`
+  // on entries returned by subscribeToCollections (Object.assign({ id: d.id, … })).
+  async deleteHealthEntry(collection, docId) {
+    if (!this.userId || !docId) return false;
+    try {
+      await this.userCollection(collection).doc(docId).delete();
+      return true;
+    } catch (err) {
+      console.error('[deleteHealthEntry]', collection, docId, err.message);
+      return false;
+    }
+  },
+
+  // Fetch all documents across all user health subcollections.
+  // Used by the admin data-diagnostics tab to surface record counts.
+  async _fetchAllDocs() {
+    if (!this.userId) return {};
+    const collections = ['textEntries','symptoms','vitals','sleep','activity','bloodTests','medications','meals','photos','plaudAnalyses','conversations'];
+    const result = {};
+    for (const c of collections) {
+      try {
+        const snap = await this.userCollection(c).limit(2000).get();
+        result[c] = snap.size;
+      } catch (e) {
+        result[c] = null;
+      }
+    }
+    return result;
   },
 
   // Save text entry

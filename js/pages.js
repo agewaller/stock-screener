@@ -445,6 +445,36 @@ App.prototype.render_dashboard = function() {
   const streakStats = this._computeStreak();
   const earnedBadges = this._getEarnedBadges(streakStats);
 
+  // Streak achievement share banner — show once per milestone per day
+  const streakMilestones = [7, 14, 30, 100];
+  const todayKeyForStreak = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+  const streakShareKey = `streakShared_${todayKeyForStreak}_${streakStats.streak}`;
+  const milestoneHit = streakMilestones.find(m => streakStats.streak === m);
+  const showStreakBanner = milestoneHit && !localStorage.getItem(streakShareKey);
+  const streakBannerHtml = showStreakBanner ? (() => {
+    const txt = `健康日記を${milestoneHit}日連続で記録できました！ #健康日記 #慢性疾患 #記録継続 https://cares.advisers.jp`;
+    const tweetUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(txt);
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent('https://cares.advisers.jp') + '&text=' + encodeURIComponent(txt);
+    return `
+    <div style="margin-bottom:16px;padding:16px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border:2px solid #f59e0b;border-radius:12px;position:relative">
+      <button onclick="localStorage.setItem('${streakShareKey}','1');this.closest('[style]').style.display='none'" title="閉じる"
+        style="position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;font-size:16px;color:#92400e">×</button>
+      <div style="font-size:22px;text-align:center;margin-bottom:6px">🏆</div>
+      <div style="font-size:15px;font-weight:700;text-align:center;color:#92400e;margin-bottom:4px">${milestoneHit}日連続達成！おめでとうございます</div>
+      <div style="font-size:12px;text-align:center;color:#b45309;margin-bottom:12px">この調子で記録を続けましょう。シェアして仲間を増やしませんか？</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <a href="${tweetUrl}" target="_blank" rel="noopener" onclick="localStorage.setItem('${streakShareKey}','1')"
+          style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#000;color:#fff;text-decoration:none;border-radius:8px;font-size:12px;font-weight:600">
+          𝕏 ポスト
+        </a>
+        <a href="${lineUrl}" target="_blank" rel="noopener" onclick="localStorage.setItem('${streakShareKey}','1')"
+          style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#06c755;color:#fff;text-decoration:none;border-radius:8px;font-size:12px;font-weight:600">
+          LINE でシェア
+        </a>
+      </div>
+    </div>`;
+  })() : '';
+
   // Real data counts
   const totalEntries = textEntries.length;
   const totalSymptoms = symptoms.length;
@@ -553,6 +583,7 @@ App.prototype.render_dashboard = function() {
     : null;
 
   return `
+  ${streakBannerHtml}
   <!-- 1. Quick Input Area (always top) -->
   <div class="card" style="margin-bottom:16px;border-color:var(--accent-border)">
     <div class="card-body" style="padding:14px 18px">
@@ -2234,6 +2265,7 @@ App.prototype.render_timeline = function() {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
 
+    const safeId = Components.escapeHtml(e.id || '');
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
       const rawContent = e.content || e.text_note || '';
@@ -2253,7 +2285,13 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                <button onclick="app.beginEditTextEntry('${safeId}')" title="編集"
+                  style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:10px;line-height:1">✏️</button>
+                <button onclick="if(confirm('この記録を削除しますか？'))app.deleteTextEntry('${safeId}')" title="削除"
+                  style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:10px;line-height:1;color:var(--danger,#ef4444)">🗑</button>
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2261,6 +2299,9 @@ App.prototype.render_timeline = function() {
           </div>
         </div>`;
     }
+
+    const deleteBtn = (type) => `<button onclick="app.deleteDataRecord('${type}','${safeId}')" title="削除"
+      style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:10px;line-height:1;color:var(--danger,#ef4444);flex-shrink:0">🗑</button>`;
 
     // Symptom scores
     if (e._type === 'symptom_data') {
@@ -2276,6 +2317,7 @@ App.prototype.render_timeline = function() {
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${deleteBtn('symptom_data')}
         </div>`;
     }
 
@@ -2293,6 +2335,7 @@ App.prototype.render_timeline = function() {
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('vitals')}
         </div>`;
     }
 
@@ -2305,20 +2348,36 @@ App.prototype.render_timeline = function() {
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('photo')}
         </div>`;
     }
 
-    // Generic data entry
+    // Generic data entry (medication, supplement, blood, sleep, activity, meal, nutrition, plaud, calendar)
+    const typeForDelete = e._type;
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
+    const canDelete = ['medication','supplement','blood','sleep','activity','meal','nutrition','plaud'].includes(typeForDelete);
     return `
       <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
         <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${canDelete ? deleteBtn(typeForDelete) : ''}
       </div>`;
+  };
+
+  // Wrap each rendered entry in a searchable container
+  const renderEntryWithSearch = (e) => {
+    const inner = renderEntry(e);
+    const searchText = [e._label, e.content, e.text_note, e.title,
+      e.fatigue_level != null ? `疲労${e.fatigue_level}` : '',
+      e.pain_level != null ? `痛み${e.pain_level}` : '',
+      e.heart_rate ? `HR${e.heart_rate}` : '',
+      e.temperature ? `体温${e.temperature}` : '',
+    ].filter(Boolean).join(' ');
+    return `<div data-tl-entry="1" data-tl-text="${Components.escapeHtml(searchText)}">${inner}</div>`;
   };
 
   // Render by date
@@ -2326,21 +2385,30 @@ App.prototype.render_timeline = function() {
     <div style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
-      ${entries.map(renderEntry).join('')}
+      ${entries.map(renderEntryWithSearch).join('')}
     </div>
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-select" style="width:auto;font-size:12px" id="timeline-filter-sel" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="document.getElementById('timeline-filter-sel').value='';app.filterTimeline('');document.getElementById('timeline-search').value='';document.getElementById('timeline-content').querySelectorAll('[data-tl-entry]').forEach(el=>el.style.display='');" style="font-size:11px">✕ クリア</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
+    <div style="position:relative">
+      <input type="search" id="timeline-search" placeholder="キーワードで絞り込み…" autocomplete="off"
+        style="width:100%;padding:8px 12px 8px 32px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box"
+        oninput="(function(q){var els=document.getElementById('timeline-content').querySelectorAll('[data-tl-entry]');els.forEach(function(el){el.style.display=el.getAttribute('data-tl-text').toLowerCase().includes(q.toLowerCase())||!q?'':'none';})})(this.value)">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none">🔍</span>
     </div>
   </div>
   <div id="timeline-content">
@@ -3276,6 +3344,61 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Reminder Settings -->
+  ${(() => {
+    const reminderEnabled = localStorage.getItem('reminderEnabled') === 'true';
+    const reminderTime = localStorage.getItem('reminderTime') || '20:00';
+    const notifSupported = typeof Notification !== 'undefined';
+    const notifGranted = notifSupported && Notification.permission === 'granted';
+    const meds = JSON.parse(localStorage.getItem('medReminders') || '[]');
+    const medRows = meds.map((med, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:6px">
+        <input type="checkbox" ${med.enabled ? 'checked' : ''}
+          onchange="app.toggleMedReminder(${i}, this.checked)"
+          style="width:14px;height:14px;accent-color:var(--accent);flex-shrink:0">
+        <span style="font-size:13px;flex:1">💊 ${Components.escapeHtml(med.name)} — ${med.time}</span>
+        <button onclick="app.deleteMedReminder(${i})"
+          style="padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--danger,#ef4444)">削除</button>
+      </div>`).join('');
+    return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">🔔 通知・リマインダー</span></div>
+      <div class="card-body" style="padding:14px 16px">
+        ${!notifSupported ? `<p style="font-size:12px;color:var(--text-muted)">このブラウザは通知をサポートしていません</p>` : `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div style="font-size:13px;font-weight:600">毎日の記録リマインダー</div>
+            <div style="font-size:11px;color:var(--text-muted)">今日まだ記録していなければ通知します</div>
+            ${!notifGranted && reminderEnabled ? `<div style="font-size:11px;color:orange;margin-top:2px">⚠ 通知許可が必要です</div>` : ''}
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <span style="font-size:11px;color:var(--text-muted)">${reminderEnabled ? 'ON' : 'OFF'}</span>
+            <input type="checkbox" ${reminderEnabled ? 'checked' : ''} onchange="app.toggleDailyReminder(this.checked)"
+              style="width:16px;height:16px;accent-color:var(--accent)">
+          </label>
+        </div>
+        ${reminderEnabled ? `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">通知時刻</label>
+          <input type="time" value="${reminderTime}"
+            onchange="localStorage.setItem('reminderTime',this.value);Components.showToast('通知時刻を変更しました','success')"
+            style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary)">
+        </div>` : ''}
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">💊 服薬リマインダー</div>
+          ${medRows}
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="text" id="new-med-name" placeholder="薬の名前" style="flex:1;padding:7px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary)">
+            <input type="time" id="new-med-time" value="08:00" style="padding:7px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary)">
+            <button class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap"
+              onclick="(function(){var n=document.getElementById('new-med-name').value.trim(),t=document.getElementById('new-med-time').value;if(!n)return;app.saveMedReminder(-1,n,t)})()">追加</button>
+          </div>
+        </div>
+        `}
+      </div>
+    </div>`;
+  })()}
 
   <!-- Share / Referral -->
   ${(() => {

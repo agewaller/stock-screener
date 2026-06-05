@@ -4008,6 +4008,172 @@ ${bloodText || '記録なし'}
     Components.showToast('削除しました', 'success');
   }
 
+  // Delete any health data record (symptoms, vitals, medications, etc.) from
+  // both localStorage and Firestore. `type` is the _type tag used in the
+  // timeline renderer; `id` is the record's `id` field (= Firestore doc ID for
+  // synced records). Re-renders the timeline when done.
+  deleteDataRecord(type, id) {
+    const TYPE_TO_STORE = {
+      symptom_data: 'symptoms',
+      symptom_note: 'symptoms',
+      vitals:       'vitals',
+      blood:        'bloodTests',
+      medication:   'medications',
+      supplement:   'supplements',
+      sleep:        'sleepData',
+      activity:     'activityData',
+      meal:         'meals',
+      nutrition:    'nutritionLog',
+      photo:        'photos',
+      plaud:        'plaudAnalyses',
+    };
+    const TYPE_TO_FIRESTORE = {
+      symptom_data: 'symptoms',
+      symptom_note: 'symptoms',
+      vitals:       'vitals',
+      blood:        'bloodTests',
+      medication:   'medications',
+      sleep:        'sleep',
+      activity:     'activity',
+    };
+    if (type === 'text') { this.deleteTextEntry(id); return; }
+    const storeKey = TYPE_TO_STORE[type];
+    if (!storeKey) return;
+    const records = store.get(storeKey) || [];
+    const target = records.find(r => r && r.id === id);
+    const remaining = records.filter(r => !r || r.id !== id);
+    store.set(storeKey, remaining);
+    const fbCollection = TYPE_TO_FIRESTORE[type];
+    if (fbCollection && target?._synced && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(fbCollection, id);
+    }
+    Components.showToast('削除しました', 'success');
+    this.navigate('timeline');
+  }
+
+  // ---- Daily Reminder (Notification API) ----
+
+  // Call once after login to arm the daily check-in reminder.
+  setupDailyReminder() {
+    if (typeof Notification === 'undefined') return;
+    const enabled = localStorage.getItem('reminderEnabled') === 'true';
+    if (!enabled) return;
+    this._checkAndFireReminder();
+    // Re-check every 15 minutes (catches the configured time even if the page is open all day).
+    if (!this._reminderInterval) {
+      this._reminderInterval = setInterval(() => this._checkAndFireReminder(), 15 * 60 * 1000);
+    }
+    this._setupMedReminders();
+  }
+
+  _checkAndFireReminder() {
+    if (Notification.permission !== 'granted') return;
+    const todayKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const firedKey = 'reminderFired_' + todayKey;
+    if (localStorage.getItem(firedKey)) return;
+
+    const configuredTime = localStorage.getItem('reminderTime') || '20:00';
+    const [h, m] = configuredTime.split(':').map(Number);
+    const now = new Date();
+    const jstNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    if (jstNow.getHours() < h || (jstNow.getHours() === h && jstNow.getMinutes() < m)) return;
+
+    const symptoms = store.get('symptoms') || [];
+    const textEntries = store.get('textEntries') || [];
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const loggedToday = [...symptoms, ...textEntries].some(e => {
+      if (!e?.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+    });
+    if (loggedToday) { localStorage.setItem(firedKey, '1'); return; }
+
+    localStorage.setItem(firedKey, '1');
+    try {
+      new Notification('健康日記 — 今日の記録を忘れずに', {
+        body: '体調・症状を記録して、傾向をつかみましょう。',
+        icon: '/icon-192.png',
+        tag: 'daily-reminder'
+      });
+    } catch (e) { console.warn('[reminder]', e); }
+  }
+
+  async toggleDailyReminder(enabled) {
+    if (enabled) {
+      if (Notification.permission === 'default') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          Components.showToast('通知の許可が必要です。ブラウザの設定から許可してください', 'error');
+          return false;
+        }
+      }
+      localStorage.setItem('reminderEnabled', 'true');
+      this.setupDailyReminder();
+      Components.showToast('毎日のリマインダーを設定しました', 'success');
+    } else {
+      localStorage.setItem('reminderEnabled', 'false');
+      if (this._reminderInterval) { clearInterval(this._reminderInterval); this._reminderInterval = null; }
+      Components.showToast('リマインダーをオフにしました', 'info');
+    }
+    this.navigate('settings');
+    return true;
+  }
+
+  _setupMedReminders() {
+    if (Notification.permission !== 'granted') return;
+    const meds = JSON.parse(localStorage.getItem('medReminders') || '[]');
+    if (!meds.length) return;
+    if (!this._medReminderInterval) {
+      this._medReminderInterval = setInterval(() => {
+        const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+        const hh = nowJst.getHours();
+        const mm = nowJst.getMinutes();
+        (JSON.parse(localStorage.getItem('medReminders') || '[]')).forEach((med, idx) => {
+          if (!med.enabled) return;
+          const [mh, mp] = (med.time || '08:00').split(':').map(Number);
+          if (hh !== mh || mm !== mp) return;
+          const fk = `medFired_${todayJst}_${idx}`;
+          if (localStorage.getItem(fk)) return;
+          localStorage.setItem(fk, '1');
+          try {
+            new Notification(`💊 ${med.name} の服薬時間です`, {
+              body: `${med.time} に ${med.name} を服用してください。`,
+              icon: '/icon-192.png',
+              tag: 'med-reminder-' + idx
+            });
+          } catch (e) {}
+        });
+      }, 60 * 1000);
+    }
+  }
+
+  saveMedReminder(idx, name, time) {
+    const meds = JSON.parse(localStorage.getItem('medReminders') || '[]');
+    if (idx === -1) {
+      meds.push({ name, time, enabled: true });
+    } else {
+      meds[idx] = { ...meds[idx], name, time };
+    }
+    localStorage.setItem('medReminders', JSON.stringify(meds));
+    Components.showToast(`${name} のリマインダーを保存しました`, 'success');
+    this.navigate('settings');
+  }
+
+  deleteMedReminder(idx) {
+    const meds = JSON.parse(localStorage.getItem('medReminders') || '[]');
+    meds.splice(idx, 1);
+    localStorage.setItem('medReminders', JSON.stringify(meds));
+    Components.showToast('服薬リマインダーを削除しました', 'info');
+    this.navigate('settings');
+  }
+
+  toggleMedReminder(idx, enabled) {
+    const meds = JSON.parse(localStorage.getItem('medReminders') || '[]');
+    if (meds[idx]) { meds[idx].enabled = enabled; }
+    localStorage.setItem('medReminders', JSON.stringify(meds));
+    this.navigate('settings');
+  }
+
   // Switches the rendered entry card into an inline edit form.
   // Avoids a full re-render so the user keeps their scroll position
   // and any unrelated state. Save / cancel restore the normal view.

@@ -62,3 +62,29 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') self.skipWaiting();
 });
+
+// Push notifications (triggered server-side via Web Push API)
+self.addEventListener('push', (event) => {
+  let data = { title: '健康日記', body: '今日の記録を忘れずに。' };
+  try { data = { ...data, ...(event.data?.json() || {}) }; } catch (_) {}
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag || 'health-diary',
+    })
+  );
+});
+
+// Open the app when the user taps a notification
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return clients.openWindow('/');
+    })
+  );
+});
