@@ -214,6 +214,43 @@ jobs:
             echo "| \`$w\` | $mark $code |" >> $GITHUB_STEP_SUMMARY
           done
 
+      - name: Echo key values to stdout (API log capture)
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "=========================================="
+          echo "KEY_VALUES_BEGIN"
+          echo "=========================================="
+          rkv=$(curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" \
+            | python3 -c "import sys,json
+d=json.load(sys.stdin)
+ns=d.get('result',[]) if d.get('success') else []
+m=[n['id'] for n in ns if n.get('title')=='RESEARCH_KV']
+print(m[0] if m else 'NOT_FOUND')")
+          echo "RESEARCH_KV_ID=$rkv"
+          for s in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+            r=$(curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$s/subdomain" \
+              | python3 -c "import sys,json
+d=json.load(sys.stdin)
+print(d.get('result',{}).get('enabled','err') if d.get('success') else 'err')" 2>/dev/null || echo "err")
+            echo "SUBDOMAIN_ENABLED[$s]=$r"
+          done
+          for w in stock-screener cares-relay plaud-inbox professional-mailer research-updater learning-orchestrator; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://$w.agewaller.workers.dev/" 2>/dev/null || echo "000")
+            echo "REACHABILITY[$w]=$code"
+          done
+          acc=$(curl -s -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | python3 -c "import sys,json
+d=json.load(sys.stdin)
+print(d.get('result',{}).get('name','?') if d.get('success') else 'err')" 2>/dev/null || echo "err")
+          echo "ACCOUNT_SUBDOMAIN=$acc"
+          echo "=========================================="
+          echo "KEY_VALUES_END"
+          echo "=========================================="
+
       # ────────────────────────────────────────────────
       # WIPE フェーズ（mode=wipe AND confirm=YES の時のみ）
       # ────────────────────────────────────────────────
