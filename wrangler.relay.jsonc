@@ -1,5 +1,5 @@
 {
-  // redeploy trigger: restore cares-relay public front (workers.dev)
+  // redeploy trigger: restore cares-relay public front (workers.dev) — 2026-06-05 (旧 cares-relay が x-deny-reason: host_not_allowed で 403 を返していたので、host チェックなしの最新 worker/relay.js を再デプロイする)
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
