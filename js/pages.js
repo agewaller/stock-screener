@@ -2212,9 +2212,21 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply category filter and text search from store state
+  const activeFilter = store.get('_timelineFilter') || '';
+  const activeSearch = (store.get('_timelineSearch') || '').trim().toLowerCase();
+  const filteredEntries = allEntries.filter(e => {
+    if (activeFilter && e._type !== activeFilter) return false;
+    if (activeSearch) {
+      const haystack = [e.content, e.text_note, e._label, e.title, e.filename].join(' ').toLowerCase();
+      if (!haystack.includes(activeSearch)) return false;
+    }
+    return true;
+  });
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  filteredEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2330,21 +2342,26 @@ App.prototype.render_timeline = function() {
     </div>
   `).join('');
 
+  const safeSearch = Components.escapeHtml(activeSearch);
+  const filterCount = activeFilter || activeSearch ? filteredEntries.length : allEntries.length;
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
-    </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
-    </div>
+  <div style="margin-bottom:12px">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+    <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）${(activeFilter || activeSearch) ? ` → <strong>${filterCount}件</strong>表示中` : ''}</p>
+  </div>
+  <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="search" class="form-input" placeholder="キーワード検索..." value="${safeSearch}"
+      style="flex:1;min-width:160px;font-size:13px;padding:8px 12px"
+      oninput="app.searchTimeline(this.value)"
+      onkeydown="if(event.key==='Escape'){this.value='';app.searchTimeline('');}">
+    <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+      <option value="" ${!activeFilter ? 'selected' : ''}>すべての種類</option>
+      ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter===k ? 'selected' : ''}>${v}</option>`).join('')}
+    </select>
+    ${(activeFilter || activeSearch) ? `<button class="btn btn-outline btn-sm" onclick="app.clearTimelineFilters()" style="font-size:11px;white-space:nowrap">✕ クリア</button>` : ''}
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${allEntries.length > 0 ? (filteredEntries.length > 0 ? dateGroups : `<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:32px;margin-bottom:12px">🔍</div><div style="font-size:14px">「${safeSearch}」に一致する記録が見つかりませんでした</div></div>`) : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -4135,7 +4152,5 @@ App.prototype.importDataFile = function(file) {
 };
 
 
-
-document.addEventListener('DOMContentLoaded', function() { app.init(); });
 
 document.addEventListener('DOMContentLoaded', function() { app.init(); });

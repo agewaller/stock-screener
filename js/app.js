@@ -6,23 +6,23 @@
 // #18 Global error monitoring — captures unhandled errors and
 // rejections. Logged to Firestore /admin/errors for admin dashboard.
 // Replace with Sentry DSN when available.
-window.addEventListener('error', (e) => {
-  console.error('[Global]', e.message, e.filename, e.lineno);
+const _pushErrorLog = (entry) => {
   try {
-    const errors = JSON.parse(localStorage.getItem('cc_errorLog') || '[]');
-    errors.push({ ts: new Date().toISOString(), msg: e.message, file: e.filename, line: e.lineno });
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let errors = JSON.parse(localStorage.getItem('cc_errorLog') || '[]');
+    errors = errors.filter(e => e.ts && new Date(e.ts).getTime() > cutoff);
+    errors.push(entry);
     if (errors.length > 50) errors.splice(0, errors.length - 50);
     localStorage.setItem('cc_errorLog', JSON.stringify(errors));
   } catch (_) {}
+};
+window.addEventListener('error', (e) => {
+  console.error('[Global]', e.message, e.filename, e.lineno);
+  _pushErrorLog({ ts: new Date().toISOString(), msg: e.message, file: e.filename, line: e.lineno });
 });
 window.addEventListener('unhandledrejection', (e) => {
   console.error('[Global] Unhandled rejection:', e.reason);
-  try {
-    const errors = JSON.parse(localStorage.getItem('cc_errorLog') || '[]');
-    errors.push({ ts: new Date().toISOString(), msg: String(e.reason?.message || e.reason), type: 'promise' });
-    if (errors.length > 50) errors.splice(0, errors.length - 50);
-    localStorage.setItem('cc_errorLog', JSON.stringify(errors));
-  } catch (_) {}
+  _pushErrorLog({ ts: new Date().toISOString(), msg: String(e.reason?.message || e.reason), type: 'promise' });
 });
 
 var App = class App {
@@ -2561,13 +2561,19 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
+    store.set('_timelineFilter', type || '');
+    this.navigate('timeline');
+  }
 
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
-    store.set('_timelineFilter', type);
+  searchTimeline(query) {
+    store.set('_timelineSearch', query || '');
+    clearTimeout(this._searchTimeout);
+    this._searchTimeout = setTimeout(() => this.navigate('timeline'), 220);
+  }
+
+  clearTimelineFilters() {
+    store.set('_timelineFilter', '');
+    store.set('_timelineSearch', '');
     this.navigate('timeline');
   }
 
@@ -4492,8 +4498,12 @@ ${axisHint}
   }
 
   async guestFileAnalyze(event) {
+    if (this._guestFileAnalyzing) return;
+    this._guestFileAnalyzing = true;
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) { this._guestFileAnalyzing = false; return; }
+    // Reset input so same file can be re-selected after an error
+    if (event.target) event.target.value = '';
     const resultEl = document.getElementById('guest-result');
     if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
 
@@ -4562,6 +4572,8 @@ ${axisHint}
             actions: []
           });
         }
+      } finally {
+        this._guestFileAnalyzing = false;
       }
     };
     reader.readAsDataURL(file);
