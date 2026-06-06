@@ -487,6 +487,59 @@ App.prototype.render_dashboard = function() {
   // Latest text entries for dashboard
   const recentTexts = textEntries.slice(-3).reverse();
 
+  // Weekly summary comparison: this week vs last week
+  const weeklyHtml = (() => {
+    if (symptoms.length < 3) return '';
+    const now = Date.now();
+    const thisWeek = symptoms.filter(s => s.timestamp && (now - new Date(s.timestamp).getTime()) < 7 * 86400000);
+    const lastWeek = symptoms.filter(s => {
+      const age = now - new Date(s.timestamp).getTime();
+      return s.timestamp && age >= 7 * 86400000 && age < 14 * 86400000;
+    });
+    if (thisWeek.length === 0 || lastWeek.length === 0) return '';
+    const mean = (arr, f) => { const v = arr.map(s => s[f]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    const delta = (curr, prev) => (curr != null && prev != null) ? (curr - prev) : null;
+    const fmt = v => v != null ? v.toFixed(1) : '--';
+    const arrow = (d) => d == null ? '' : d > 0.2 ? `<span style="color:#ef4444">▲${d.toFixed(1)}</span>` : d < -0.2 ? `<span style="color:#22c55e">▼${Math.abs(d).toFixed(1)}</span>` : `<span style="color:var(--text-muted)">−</span>`;
+
+    const pCurr = mean(thisWeek, 'pain_level'), pPrev = mean(lastWeek, 'pain_level');
+    const fCurr = mean(thisWeek, 'fatigue_level'), fPrev = mean(lastWeek, 'fatigue_level');
+    const sCurr = mean(thisWeek, 'sleep_quality'), sPrev = mean(lastWeek, 'sleep_quality');
+
+    // Count recorded days this week
+    const recordedDays = new Set(
+      [...thisWeek, ...textEntries.filter(e => e.timestamp && (now - new Date(e.timestamp).getTime()) < 7 * 86400000)]
+        .map(e => new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }))
+    ).size;
+
+    return `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header" style="padding:10px 16px">
+        <span class="card-title" style="font-size:13px">今週のサマリー（先週比）</span>
+        <span style="font-size:11px;color:var(--text-muted)">記録 ${recordedDays}日 / 7日</span>
+      </div>
+      <div class="card-body" style="padding:10px 16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">痛み /7</div>
+            <div style="font-size:18px;font-weight:700;color:${(pCurr ?? 0) >= 5 ? '#ef4444' : 'var(--text-primary)'}">${fmt(pCurr)}</div>
+            <div style="font-size:11px">${arrow(delta(pCurr, pPrev))}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">疲労 /7</div>
+            <div style="font-size:18px;font-weight:700;color:${(fCurr ?? 0) >= 5 ? '#f97316' : 'var(--text-primary)'}">${fmt(fCurr)}</div>
+            <div style="font-size:11px">${arrow(delta(fCurr, fPrev))}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">睡眠 /7</div>
+            <div style="font-size:18px;font-weight:700;color:${(sCurr ?? 0) <= 3 ? '#f59e0b' : 'var(--text-primary)'}">${fmt(sCurr)}</div>
+            <div style="font-size:11px">${arrow(delta(sCurr, sPrev))}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  })();
+
   // Show all selected diseases
   const selectedDiseases = store.get('selectedDiseases') || [];
   const diseaseNames = [];
@@ -934,7 +987,10 @@ App.prototype.render_dashboard = function() {
   <!-- 3. Health alert (pain/fatigue streak or recording gap) -->
   ${alertHtml}
 
-  <!-- 3b. Welcome for new users OR Enriched Data Feed -->
+  <!-- 3b. Weekly summary vs last week -->
+  ${weeklyHtml}
+
+  <!-- 3c. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
 
   <!-- Integration sync status — shows last received data per source -->
