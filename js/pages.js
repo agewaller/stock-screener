@@ -673,6 +673,18 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       <div id="dash-quick-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
+      <!-- Quick-fill chips: tap to pre-fill textarea with common scenarios -->
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        ${[
+          { icon: '⚡', label: 'フレア', tmpl: '⚡ フレア発生。痛みが強く、ほとんど動けない。ベッドで安静中。' },
+          { icon: '😴', label: 'PEM', tmpl: '😴 PEM。昨日の活動後から倦怠感が悪化。横になっても回復しない。' },
+          { icon: '💊', label: '服薬', tmpl: '💊 服薬記録：' },
+          { icon: '😊', label: '調子いい', tmpl: '😊 今日は比較的調子がいい。' },
+          { icon: '🩺', label: '診察後', tmpl: '🩺 診察後メモ。先生に話したこと：' },
+        ].map(c => `<button
+          onclick="var el=document.getElementById('dash-quick-input');if(el){el.value=${JSON.stringify(c.tmpl)};el.focus();el.setSelectionRange(el.value.length,el.value.length);}"
+          style="padding:4px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:14px;font-size:11px;color:var(--text-secondary);cursor:pointer;white-space:nowrap">${c.icon} ${c.label}</button>`).join('')}
+      </div>
     </div>
   </div>
 
