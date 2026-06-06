@@ -307,6 +307,36 @@ var App = class App {
     if (!store.get('calendarEvents')) {
       store.set('calendarEvents', []);
     }
+
+    // Cloud sync status badge — updates on online/offline events and
+    // after Firebase sync completes.
+    this._updateSyncBadge();
+    window.addEventListener('online',  () => this._updateSyncBadge());
+    window.addEventListener('offline', () => this._updateSyncBadge());
+  }
+
+  _updateSyncBadge() {
+    const el = document.getElementById('sync-status-badge');
+    if (!el) return;
+    if (!navigator.onLine) {
+      el.textContent = '☁️✗';
+      el.title = 'オフライン — ネットワーク未接続';
+      el.style.opacity = '0.5';
+      return;
+    }
+    const authed = store.get('isAuthenticated');
+    const fbOk = typeof FirebaseBackend !== 'undefined' && FirebaseBackend.initialized;
+    if (authed && fbOk) {
+      el.textContent = '☁️✓';
+      el.title = 'クラウドに同期済み';
+      el.style.opacity = '1';
+    } else if (authed) {
+      el.textContent = '☁️';
+      el.title = '同期中...';
+      el.style.opacity = '0.7';
+    } else {
+      el.textContent = '';
+    }
   }
 
   // #10 Hash routing — enables browser back/forward and bookmarks
@@ -880,6 +910,7 @@ var App = class App {
     }
 
     Components.showToast(`${email} でログインしました（${diseases.length}疾患選択）`, 'success');
+    this._updateSyncBadge();
     this.navigate('dashboard');
   }
 
