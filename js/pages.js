@@ -552,6 +552,55 @@ App.prototype.render_dashboard = function() {
     ? aiEngine._getTodayPrescriptionAxis()
     : null;
 
+  // Health alert — computed from last 3 days of symptom data.
+  // Shows an in-app banner when pain or fatigue has been persistently
+  // high so users don't miss a worsening trend.
+  const alertHtml = (() => {
+    if (!hasData) return '';
+    const threeDaysAgo = Date.now() - 3 * 86400000;
+    const recent3 = symptoms.filter(s => s.timestamp && new Date(s.timestamp).getTime() > threeDaysAgo);
+
+    // Not-recording alert
+    const lastRecordTs = lastEntry ? new Date(lastEntry.timestamp).getTime()
+      : (symptoms.length ? new Date(symptoms[symptoms.length - 1].timestamp).getTime() : 0);
+    const daysSinceRecord = lastRecordTs ? Math.floor((Date.now() - lastRecordTs) / 86400000) : 0;
+    if (daysSinceRecord >= 3) {
+      return `<div style="margin-bottom:16px;padding:12px 16px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:12px;display:flex;gap:12px;align-items:center">
+        <span style="font-size:22px">📅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:2px">${daysSinceRecord}日間、記録がありません</div>
+          <div style="font-size:12px;color:#b45309">継続記録で AI 分析の精度が上がります。今日の体調を入力してください。</div>
+        </div>
+      </div>`;
+    }
+
+    if (recent3.length < 2) return '';
+    const avgPain3 = recent3.map(s => s.pain_level).filter(v => v != null);
+    const avgFatigue3 = recent3.map(s => s.fatigue_level).filter(v => v != null);
+    const painMean = avgPain3.length ? avgPain3.reduce((a, b) => a + b, 0) / avgPain3.length : 0;
+    const fatigueMean = avgFatigue3.length ? avgFatigue3.reduce((a, b) => a + b, 0) / avgFatigue3.length : 0;
+
+    if (painMean >= 5) {
+      return `<div style="margin-bottom:16px;padding:12px 16px;background:#fef2f2;border:1.5px solid #f87171;border-radius:12px;display:flex;gap:12px;align-items:center">
+        <span style="font-size:22px">⚠️</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:2px">痛みが続いています（3日平均 ${painMean.toFixed(1)}/7）</div>
+          <div style="font-size:12px;color:#b91c1c">痛み止めの効果・服薬タイミングを記録して、次の診察で相談してみましょう。</div>
+        </div>
+      </div>`;
+    }
+    if (fatigueMean >= 5) {
+      return `<div style="margin-bottom:16px;padding:12px 16px;background:#fff7ed;border:1.5px solid #fb923c;border-radius:12px;display:flex;gap:12px;align-items:center">
+        <span style="font-size:22px">😴</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#7c2d12;margin-bottom:2px">疲労が高い状態が続いています（3日平均 ${fatigueMean.toFixed(1)}/7）</div>
+          <div style="font-size:12px;color:#9a3412">活動量を減らし、無理に予定を詰め込まないことが大切です。PEM に注意してください。</div>
+        </div>
+      </div>`;
+    }
+    return '';
+  })();
+
   return `
   <!-- 1. Quick Input Area (always top) -->
   <div class="card" style="margin-bottom:16px;border-color:var(--accent-border)">
@@ -882,7 +931,10 @@ App.prototype.render_dashboard = function() {
   <!-- AI Instant Feedback moved up right under the input + deep-analysis
        button (see block earlier in this template). -->
 
-  <!-- 3. Welcome for new users OR Enriched Data Feed -->
+  <!-- 3. Health alert (pain/fatigue streak or recording gap) -->
+  ${alertHtml}
+
+  <!-- 3b. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
 
   <!-- Integration sync status — shows last received data per source -->
