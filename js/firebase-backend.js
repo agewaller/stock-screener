@@ -106,7 +106,11 @@ var FirebaseBackend = {
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
         if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+          avatarEl.textContent = '';
+          const img = document.createElement('img');
+          img.setAttribute('src', user.photoURL);
+          img.setAttribute('alt', '');
+          avatarEl.appendChild(img);
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }
@@ -381,6 +385,30 @@ var FirebaseBackend = {
   // Save text entry
   async saveTextEntry(entry) {
     return await this.saveHealthEntry('textEntries', entry);
+  },
+
+  // Delete a single document from a subcollection by its Firestore doc id.
+  // Used by deleteTextEntry / deleteDataRecord to keep Firestore in sync
+  // so that the next onSnapshot doesn't silently restore the deleted record.
+  async deleteHealthEntry(collection, id) {
+    if (!this.userId || !id) return false;
+    try {
+      await this.userCollection(collection).doc(id).delete();
+      return true;
+    } catch (err) {
+      console.warn('[deleteHealthEntry]', collection, id, err.message);
+      return false;
+    }
+  },
+
+  // Fetch ALL documents from a collection reference (no limit cap).
+  // Used by runDataDiagnosis to get true counts rather than the 500-doc
+  // listener ceiling. Returns an array of plain data objects.
+  async _fetchAllDocs(collRef) {
+    const snap = await collRef.get();
+    const result = [];
+    snap.forEach(d => result.push(Object.assign({ id: d.id }, d.data())));
+    return result;
   },
 
   // Save conversation message

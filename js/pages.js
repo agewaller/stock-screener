@@ -2212,9 +2212,13 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply category filter
+  const activeFilter = store.get('_timelineFilter') || '';
+  const filteredEntries = activeFilter ? allEntries.filter(e => e._type === activeFilter) : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  filteredEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2229,12 +2233,20 @@ App.prototype.render_timeline = function() {
     plaud: '禅トラック', calendar: 'カレンダー'
   };
 
+  // Small delete button shared across all entry types
+  const deleteBtn = (storeKey, id) => {
+    const safeId = Components.escapeHtml(String(id || ''));
+    const safeKey = Components.escapeHtml(String(storeKey || ''));
+    return `<button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteDataRecord('${safeKey}','${safeId}'))"
+      title="削除" style="padding:3px 6px;font-size:10px;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0">🗑</button>`;
+  };
+
   // Render entries
   const renderEntry = (e) => {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
 
-    // Text entries - show formatted content
+    // Text / diary entries
     if (e._type === 'text' || e._type === 'symptom_note') {
       const rawContent = e.content || e.text_note || '';
       const content = Components.escapeHtml(rawContent);
@@ -2244,8 +2256,9 @@ App.prototype.render_timeline = function() {
       const previewPhoto = e.photoId ? photoById.get(e.photoId) : null;
       const previewImage = e.previewImage || previewPhoto?.dataUrl || '';
       const safeFileName = Components.escapeHtml(e.title || previewPhoto?.filename || '画像');
+      const safeEntryId = Components.escapeHtml(String(e.id || ''));
       return `
-        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)" data-text="${content.toLowerCase()}">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
@@ -2253,7 +2266,11 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                <button onclick="event.stopPropagation();app.confirmAction(this,'削除',()=>app.deleteTextEntry('${safeEntryId}'))"
+                  title="削除" style="padding:3px 6px;font-size:10px;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer">🗑</button>
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2272,10 +2289,11 @@ App.prototype.render_timeline = function() {
       if (e.pem_status) fields.push('PEM: あり');
       const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${fields.join(' ').toLowerCase()}">
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${deleteBtn('symptoms', e.id)}
         </div>`;
     }
 
@@ -2289,10 +2307,116 @@ App.prototype.render_timeline = function() {
       if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
       if (e.weight) fields.push(`体重: ${e.weight}kg`);
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${fields.join(' ').toLowerCase()}">
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('vitals', e.id)}
+        </div>`;
+    }
+
+    // Blood tests
+    if (e._type === 'blood') {
+      const fields = [];
+      if (e.test_name) fields.push(Components.escapeHtml(e.test_name));
+      if (e.value != null) fields.push(Components.escapeHtml(String(e.value)) + (e.unit ? Components.escapeHtml(e.unit) : ''));
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${fields.join(' ').toLowerCase()}">
+          <span>🩸</span>
+          <span style="font-size:12px;flex:1">${fields.join(' / ') || '血液検査'}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('bloodTests', e.id)}
+        </div>`;
+    }
+
+    // Medications
+    if (e._type === 'medication') {
+      const name = Components.escapeHtml(e.name || e.medication_name || e.text_note || '服薬');
+      const dose = e.dosage ? ` ${Components.escapeHtml(String(e.dosage))}` : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${name.toLowerCase()}">
+          <span>💊</span>
+          <span style="font-size:12px;flex:1">${name}${dose}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('medications', e.id)}
+        </div>`;
+    }
+
+    // Supplements
+    if (e._type === 'supplement') {
+      const name = Components.escapeHtml(e.name || e.text_note || e.title || 'サプリ');
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${name.toLowerCase()}">
+          <span>💊</span>
+          <span style="font-size:12px;flex:1">${name}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('supplements', e.id)}
+        </div>`;
+    }
+
+    // Meals
+    if (e._type === 'meal') {
+      const name = Components.escapeHtml(e.text_note || e.title || e.meal_description || '食事記録');
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${name.toLowerCase()}">
+          <span>🥗</span>
+          <span style="font-size:12px;flex:1">${name}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('meals', e.id)}
+        </div>`;
+    }
+
+    // Sleep
+    if (e._type === 'sleep') {
+      const hours = e.duration_hours != null ? `${e.duration_hours}時間` : '';
+      const qual = e.quality != null ? ` 質: ${e.quality}/5` : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="睡眠 ${hours}">
+          <span>😴</span>
+          <span style="font-size:12px;flex:1">${hours}${qual || '睡眠記録'}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('sleepData', e.id)}
+        </div>`;
+    }
+
+    // Activity
+    if (e._type === 'activity') {
+      const desc = Components.escapeHtml(e.activity_type || e.text_note || '活動');
+      const steps = e.steps ? ` ${e.steps}歩` : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${desc.toLowerCase()}">
+          <span>🚶</span>
+          <span style="font-size:12px;flex:1">${desc}${steps}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('activityData', e.id)}
+        </div>`;
+    }
+
+    // Nutrition log
+    if (e._type === 'nutrition') {
+      const label = Components.escapeHtml(e._label || '');
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="栄養 ${label.toLowerCase()}">
+          <span>🔥</span>
+          <span style="font-size:12px;flex:1">${label}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('nutritionLog', e.id)}
+        </div>`;
+    }
+
+    // Plaud analyses
+    if (e._type === 'plaud') {
+      const title = Components.escapeHtml(e.title || '禅トラック分析');
+      const preview = Components.escapeHtml((e.fullText || '').slice(0, 80));
+      return `
+        <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${title.toLowerCase()} ${preview.toLowerCase()}">
+          <span>🧘</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600">${title}</div>
+            ${preview ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}…</div>` : ''}
+          </div>
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+          ${deleteBtn('plaudAnalyses', e.id)}
         </div>`;
     }
 
@@ -2300,30 +2424,31 @@ App.prototype.render_timeline = function() {
     if (e._type === 'photo') {
       const safeFileName = Components.escapeHtml(e.filename || '画像');
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${safeFileName.toLowerCase()}">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
-          <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
+          <span style="font-size:12px;flex:1">${safeFileName}${e.size ? ' (' + (e.size/1024).toFixed(0) + 'KB)' : ''}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn('photos', e.id)}
         </div>`;
     }
 
-    // Generic data entry
+    // Generic fallback
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
     return `
-      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-text="${Components.escapeHtml(e._label || '').toLowerCase()}">
         <span>${e._icon}</span>
-        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
+        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || Components.escapeHtml(e._label || '')}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
       </div>`;
   };
 
   // Render by date
   const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
-    <div style="margin-bottom:24px">
+    <div class="timeline-date-group" style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
       ${entries.map(renderEntry).join('')}
@@ -2331,20 +2456,24 @@ App.prototype.render_timeline = function() {
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+  <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
       <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="timeline-search" type="search" placeholder="キーワード検索…" value=""
+        style="padding:7px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;width:160px;outline:none"
+        oninput="app._filterTimelineBySearch(this.value)">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        <option value="" ${!activeFilter ? 'selected' : ''}>すべて表示</option>
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
+      ${activeFilter ? `<button onclick="app.filterTimeline('')" style="padding:6px 10px;font-size:11px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-secondary)">✕ クリア</button>` : ''}
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${filteredEntries.length > 0 ? dateGroups : Components.emptyState('📅', activeFilter ? 'このカテゴリのデータがありません' : 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
