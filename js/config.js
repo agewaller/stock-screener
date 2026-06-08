@@ -50,6 +50,7 @@ var CONFIG = {
         { id: 'alzheimers', name: 'アルツハイマー病・認知症', icd: '8A20' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
+        { id: 'post_herpetic_neuralgia', name: '帯状疱疹後神経痛（PHN）', icd: '8B83.2' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
         { id: 'pots', name: 'POTS（体位性頻脈症候群）', icd: '8D40' },
         { id: 'tbi', name: '外傷性脳損傷後遺症', icd: '8B20' },
@@ -136,6 +137,7 @@ var CONFIG = {
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
         { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' },
+        { id: 'sarcopenia', name: 'サルコペニア（筋肉量減少症）', icd: 'ME62' },
         { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' },
         { id: 'ckd', name: '慢性腎臓病（CKD）', icd: 'GB60' }
       ]

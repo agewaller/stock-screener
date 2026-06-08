@@ -677,6 +677,22 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- サルコペニア -->
+  <url>
+    <loc>https://cares.advisers.jp/sarcopenia.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 帯状疱疹後神経痛 -->
+  <url>
+    <loc>https://cares.advisers.jp/post_herpetic_neuralgia.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
