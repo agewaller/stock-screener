@@ -624,6 +624,24 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://cares.advisers.jp/mcs.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/chemo_side.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://cares.advisers.jp/hsd.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 
   <!-- Meta pages -->
   <url>
