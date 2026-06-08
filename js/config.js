@@ -93,6 +93,7 @@ var CONFIG = {
         { id: 'sle', name: '全身性エリテマトーデス（SLE）', icd: '4A40' },
         { id: 'ra', name: '関節リウマチ', icd: 'FA20' },
         { id: 'sjogrens', name: 'シェーグレン症候群', icd: '4A42' },
+        { id: 'scleroderma', name: '全身性強皮症（強皮症）', icd: 'LD16.0' },
         { id: 'hashimoto', name: '橋本病（慢性甲状腺炎）', icd: '5A00.1' },
         { id: 'crohns', name: 'クローン病', icd: 'DD70' },
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
@@ -460,6 +461,8 @@ var CONFIG = {
                           japan:        null, japanLabel: '50歳以上の30〜50%（変性所見）', japanSource: '日本整形外科学会推計' },
     diverticulitis:         { world:  300_000_000, label: '約 3 億人（憩室症保有者推計）', tier: 2, density: 'medium', source: '60歳以上の30〜50%に憩室',
                           japan:  9_000_000, japanLabel: '約 900 万人（憩室症推計）',   japanSource: '60歳以上の30〜50%（大腸内視鏡所見）' },
+    scleroderma:            { world:     2_500_000, label: '約 250 万人（推計）',          tier: 3, density: 'high',   source: '世界推計（女性に多い）',
+                          japan:      20_000, japanLabel: '約 2 万人',                  japanSource: '指定難病告示番号51（厚生労働省）' },
   },
 
   // ============================================================
