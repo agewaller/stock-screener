@@ -440,6 +440,14 @@ var CONFIG = {
                           japan:     2_000_000, japanLabel: '約 200 万人（推計）',   japanSource: '肝硬変・慢性肝炎' },
     thyroid_cancer:     { world:    10_000_000, label: '約 1,000 万人（5年有病）',  tier: 2, density: 'medium', source: 'GLOBOCAN 2020',
                           japan:      200_000, japanLabel: '約 20 万人（術後管理）', japanSource: '国立がん研究センター' },
+    bph:                { world:   210_000_000, label: '約 2.1 億人（60歳以上男性）', tier: 2, density: 'medium', source: '世界推計 60歳以上男性60%',
+                          japan:    4_300_000, japanLabel: '約 430 万人（推計）',    japanSource: '日本泌尿器科学会' },
+    chronic_pancreatitis:{ world:    10_000_000, label: '約 1,000 万人（推計）',     tier: 2, density: 'high',   source: '世界推計',
+                          japan:       66_000, japanLabel: '約 6.6 万人',            japanSource: '厚生労働省難病調査' },
+    sarcopenia:         { world:   500_000_000, label: '約 5 億人（65歳以上推計）',  tier: 2, density: 'medium', source: '65歳以上の15〜20%（82億人基準）',
+                          japan:    9_000_000, japanLabel: '約 900 万人（推計）',    japanSource: '日本老年医学会 AWGS2019' },
+    post_herpetic_neuralgia: { world: 15_000_000, label: '約 1,500 万人（推計）',   tier: 3, density: 'high',   source: '帯状疱疹患者の10〜20%',
+                          japan:      150_000, japanLabel: '年間 15〜30 万人（推計）', japanSource: '年間帯状疱疹150万人の10〜20%' },
   },
 
   // ============================================================
