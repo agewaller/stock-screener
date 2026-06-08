@@ -701,6 +701,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 特発性肺線維症（IPF）-->
+  <url>
+    <loc>https://cares.advisers.jp/ipf.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- 大腸憩室炎 -->
   <url>
     <loc>https://cares.advisers.jp/diverticulitis.html</loc>
