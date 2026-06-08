@@ -197,6 +197,7 @@ var CONFIG = {
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'FA92' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'lumbar_spinal_stenosis', name: '腰部脊柱管狭窄症', icd: 'FA80.2' },
+        { id: 'cervical_spondylosis', name: '頸椎症・頸椎椎間板ヘルニア', icd: 'FA81' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
       ]
@@ -454,6 +455,8 @@ var CONFIG = {
                           japan:      45_000, japanLabel: '約 4〜5 万人',             japanSource: '日本泌尿器科学会推計' },
     lumbar_spinal_stenosis: { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium', source: '60歳以上の10〜15%',
                           japan:   2_400_000, japanLabel: '約 240 万人（推計）',       japanSource: '60歳以上の10〜15%（日本整形外科学会）' },
+    cervical_spondylosis:   { world: null, label: '50歳以上の30〜50%に変性所見',       tier: 0, density: 'medium', source: '有症状者数は未集計',
+                          japan:        null, japanLabel: '50歳以上の30〜50%（変性所見）', japanSource: '日本整形外科学会推計' },
   },
 
   // ============================================================
