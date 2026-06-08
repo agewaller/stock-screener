@@ -3364,11 +3364,26 @@ App.prototype.openInBrowser = async function() {
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
-    try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
-    } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
-    }
+    const dlg = document.createElement('div');
+    dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    dlg.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
+      <p style="margin:0 0 10px;font-size:14px;font-weight:600">URLをコピーしてください</p>
+      <input id="_copy-url-inp" value="${url.replace(/"/g,'&quot;')}" readonly style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;margin-bottom:12px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="_copy-url-btn" style="padding:8px 18px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">コピー</button>
+        <button id="_copy-url-close" style="padding:8px 18px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;font-size:13px">閉じる</button>
+      </div>
+    </div>`;
+    document.body.appendChild(dlg);
+    const inp = dlg.querySelector('#_copy-url-inp');
+    inp.select();
+    dlg.querySelector('#_copy-url-btn').addEventListener('click', () => {
+      inp.select();
+      document.execCommand('copy');
+      Components.showToast('URLをコピーしました', 'success');
+      dlg.remove();
+    });
+    dlg.querySelector('#_copy-url-close').addEventListener('click', () => dlg.remove());
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
