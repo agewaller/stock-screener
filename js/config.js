@@ -46,6 +46,7 @@ var CONFIG = {
         { id: 'epilepsy', name: 'てんかん', icd: '8A60' },
         { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
         { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
+        { id: 'alzheimers', name: 'アルツハイマー病・認知症', icd: '8A20' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
@@ -74,7 +75,9 @@ var CONFIG = {
         { id: 'substance', name: '物質依存症', icd: '6C4' },
         { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
         { id: 'dissociative', name: '解離性障害', icd: '6B6' },
-        { id: 'panic', name: 'パニック障害', icd: 'F41.0' }
+        { id: 'panic', name: 'パニック障害', icd: 'F41.0' },
+        { id: 'schizophrenia', name: '統合失調症', icd: '6A20' },
+        { id: 'sad', name: '季節性情動障害（SAD）', icd: '6A71' }
       ]
     },
     {
@@ -98,7 +101,8 @@ var CONFIG = {
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'L40' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
-        { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' }
+        { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' },
+        { id: 'atopy', name: 'アトピー性皮膚炎', icd: 'EA80' }
       ]
     },
     {
@@ -134,7 +138,8 @@ var CONFIG = {
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
         { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' },
-        { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' }
+        { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' },
+        { id: 'ckd', name: '慢性腎臓病（CKD）', icd: 'GB60' }
       ]
     },
     {
@@ -176,7 +181,8 @@ var CONFIG = {
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
-        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
+        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
+        { id: 'liver_disease', name: '慢性肝臓病（肝硬変・自己免疫性肝炎）', icd: 'DB9' }
       ]
     },
     {
@@ -201,7 +207,8 @@ var CONFIG = {
       diseases: [
         { id: 'cancer_survivor', name: 'がんサバイバー（治療後管理）', icd: '02' },
         { id: 'cancer_fatigue', name: 'がん関連疲労', icd: 'MG22' },
-        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' }
+        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' },
+        { id: 'thyroid_cancer', name: '甲状腺がん（術後管理）', icd: '2D1' }
       ]
     },
     {
