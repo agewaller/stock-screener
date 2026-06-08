@@ -701,6 +701,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 大腸憩室炎 -->
+  <url>
+    <loc>https://cares.advisers.jp/diverticulitis.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- 頸椎症・頸椎椎間板ヘルニア -->
   <url>
     <loc>https://cares.advisers.jp/cervical_spondylosis.html</loc>

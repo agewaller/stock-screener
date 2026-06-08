@@ -183,6 +183,7 @@ var CONFIG = {
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
         { id: 'chronic_pancreatitis', name: '慢性膵炎', icd: 'DC31' },
+        { id: 'diverticulitis', name: '大腸憩室炎（再発性）', icd: 'DA92' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
         { id: 'liver_disease', name: '慢性肝臓病（肝硬変・自己免疫性肝炎）', icd: 'DB9' }
       ]
@@ -457,6 +458,8 @@ var CONFIG = {
                           japan:   2_400_000, japanLabel: '約 240 万人（推計）',       japanSource: '60歳以上の10〜15%（日本整形外科学会）' },
     cervical_spondylosis:   { world: null, label: '50歳以上の30〜50%に変性所見',       tier: 0, density: 'medium', source: '有症状者数は未集計',
                           japan:        null, japanLabel: '50歳以上の30〜50%（変性所見）', japanSource: '日本整形外科学会推計' },
+    diverticulitis:         { world:  300_000_000, label: '約 3 億人（憩室症保有者推計）', tier: 2, density: 'medium', source: '60歳以上の30〜50%に憩室',
+                          japan:  9_000_000, japanLabel: '約 900 万人（憩室症推計）',   japanSource: '60歳以上の30〜50%（大腸内視鏡所見）' },
   },
 
   // ============================================================
