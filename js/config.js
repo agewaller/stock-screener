@@ -115,6 +115,7 @@ var CONFIG = {
         { id: 'menopause', name: '更年期障害', icd: 'GA30' },
         { id: 'pms_pmdd', name: 'PMS・PMDD（月経前症候群）', icd: 'GA34' },
         { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' },
+        { id: 'bph', name: '前立腺肥大症（BPH）', icd: 'GA90' },
         { id: 'tinnitus', name: '耳鳴り・感音性難聴', icd: 'H93.1' },
         { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' },
         { id: 'chronic_prostatitis', name: '慢性前立腺炎（CP/CPPS）', icd: 'N41.1' }
@@ -178,6 +179,7 @@ var CONFIG = {
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
+        { id: 'chronic_pancreatitis', name: '慢性膵炎', icd: 'DC31' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' },
         { id: 'liver_disease', name: '慢性肝臓病（肝硬変・自己免疫性肝炎）', icd: 'DB9' }
       ]
