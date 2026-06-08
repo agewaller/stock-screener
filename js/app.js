@@ -268,6 +268,17 @@ var App = class App {
           console.log('[d-param] pre-selected disease:', dParam);
         }
       }
+      // ?action= from manifest shortcuts — deep-link into a specific view.
+      const action = params.get('action');
+      if (action) this._pendingAction = action;
+      // share_target — Web Share Target API receives ?share_text=&share_url=
+      const shareText = params.get('share_text');
+      const shareUrl = params.get('share_url');
+      const shareTitle = params.get('share_title');
+      if (shareText || shareUrl) {
+        const combined = [shareTitle, shareText, shareUrl].filter(Boolean).join('\n');
+        store.set('_pendingShareContent', combined);
+      }
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
@@ -412,6 +423,29 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      // Handle pending URL action from manifest shortcuts (?action=...)
+      if (this._pendingAction) {
+        const action = this._pendingAction;
+        delete this._pendingAction;
+        try {
+          if (action === 'quick-log') {
+            setTimeout(() => { const el = document.getElementById('dash-quick-input'); if (el) el.focus(); }, 300);
+          } else if (action === 'ai-chat') {
+            setTimeout(() => this.navigate('chat'), 200);
+          } else if (action === 'timeline') {
+            setTimeout(() => this.navigate('timeline'), 200);
+          }
+        } catch (_) {}
+      }
+      // Pre-fill shared content from Web Share Target into the quick input
+      const shared = store.get('_pendingShareContent');
+      if (shared) {
+        store.set('_pendingShareContent', null);
+        setTimeout(() => {
+          const el = document.getElementById('dash-quick-input');
+          if (el) { el.value = shared; el.focus(); }
+        }, 400);
+      }
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -4642,6 +4676,40 @@ ${axisHint}
     if (textEntries.length === 1) {
       setTimeout(() => this._maybeShowInstallBanner(), 8000);
     }
+    // After 3 entries, invite user to enable daily reminder notifications.
+    if (textEntries.length === 3) {
+      setTimeout(() => this._maybeRequestNotificationPermission(), 12000);
+    }
+  }
+
+  _maybeRequestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'default') return;
+    if (localStorage.getItem('notif_permission_asked')) return;
+    localStorage.setItem('notif_permission_asked', '1');
+    const banner = document.createElement('div');
+    banner.id = 'notif-permission-banner';
+    banner.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9998;background:#fff;border:1.5px solid #a5f3fc;border-radius:14px;box-shadow:0 4px 24px rgba(6,182,212,0.15);padding:14px 16px;display:flex;align-items:center;gap:10px;max-width:340px;width:calc(100% - 32px)';
+    banner.innerHTML = `
+      <div style="font-size:22px">🔔</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:#155e75">毎日の記録リマインダー</div>
+        <div style="font-size:11px;color:#0891b2;margin-top:2px">記録し忘れを防ぐ通知を受け取る</div>
+      </div>
+      <button id="notif-ok" style="padding:6px 12px;background:#0891b2;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">許可</button>
+      <button id="notif-no" style="padding:6px 8px;background:transparent;color:#94a3b8;border:none;font-size:14px;cursor:pointer">✕</button>`;
+    document.body.appendChild(banner);
+    document.getElementById('notif-ok').onclick = async () => {
+      banner.remove();
+      try {
+        const result = await Notification.requestPermission();
+        if (result === 'granted') {
+          Components.showToast('通知を有効にしました', 'success');
+          store.set('notificationsEnabled', true);
+        }
+      } catch (_) {}
+    };
+    document.getElementById('notif-no').onclick = () => banner.remove();
   }
 
   _maybeShowInstallBanner() {

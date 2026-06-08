@@ -6,6 +6,7 @@ const CACHE_NAME = 'health-diary-' + CACHE_VERSION;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/js/idb.js',
   '/js/config.js',
   '/js/prompts.js',
   '/js/store.js',
@@ -19,7 +20,10 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
-  '/manifest.json'
+  '/js/inapp-browser-banner.js',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -61,4 +65,36 @@ self.addEventListener('fetch', (event) => {
 // Listen for update messages from the app
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
+// Push notification handler — fired when the server sends a push.
+// Payload format: { title, body, url }
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || '健康日記';
+  const options = {
+    body: data.body || '今日の体調を記録しましょう',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: 'health-diary-reminder',
+    renotify: false,
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Open / focus the app tab when the user taps the notification.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
