@@ -347,7 +347,8 @@ var FirebaseBackend = {
         lastSeenAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       // First sign-in for this uid → record firstSeenAt as well.
-      if (!snap.exists || !snap.data()?.firstSeenAt) {
+      const isNewUser = !snap.exists || !snap.data()?.firstSeenAt;
+      if (isNewUser) {
         meta.firstSeenAt = firebase.firestore.FieldValue.serverTimestamp();
         // Pull the referrer ID captured on app bootstrap (if any).
         try {
@@ -356,6 +357,16 @@ var FirebaseBackend = {
         } catch (_) {}
       }
       await ref.set(meta, { merge: true });
+      // Increment public user counter on first sign-in.
+      // stats/public is world-readable and auth-writable (firestore.rules).
+      if (isNewUser) {
+        try {
+          await this.db.doc('stats/public').set(
+            { userCount: firebase.firestore.FieldValue.increment(1) },
+            { merge: true }
+          );
+        } catch (_) {}
+      }
     } catch (err) {
       console.warn('[touchUserMetadata]', err.message);
     }

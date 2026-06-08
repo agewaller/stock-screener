@@ -837,18 +837,7 @@ var App = class App {
     }
   }
 
-  loginWithPrompt() {
-    const email = prompt('Googleアカウントのメールアドレスを入力してください:', 'agewaller@gmail.com');
-    if (!email) return;
-    const user = {
-      uid: 'local_' + email.replace(/[^a-z0-9]/gi, '_'),
-      displayName: email.split('@')[0],
-      email: email,
-      photoURL: null
-    };
-    store.update({ user, isAuthenticated: true });
-    this.finishLogin(email);
-  }
+
 
   finishLogin(email) {
     // Save custom disease name if selected
@@ -3268,8 +3257,8 @@ ${responseText.substring(0, 3000)}`;
   }
 
   // Copy share text to clipboard + toast feedback. Used by the 📋
-  // button in the analysis card. Falls back to a prompt dialog on
-  // browsers without clipboard API.
+  // button in the analysis card. Falls back to a selectable textarea
+  // overlay — window.prompt is blocked on mobile.
   copyAnalysisShare(btn, text) {
     if (!text) return;
     const done = () => {
@@ -3281,12 +3270,31 @@ ${responseText.substring(0, 3000)}`;
       }
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(() => this._showCopyOverlay(text));
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      this._showCopyOverlay(text);
     }
+  }
+
+  _showCopyOverlay(text) {
+    const existing = document.getElementById('copy-share-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'copy-share-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:20px;box-sizing:border-box';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px 16px 16px 16px;padding:20px;width:100%;max-width:480px;box-shadow:0 -4px 40px rgba(0,0,0,0.18)">
+        <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:4px">テキストをコピー</div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:10px">テキストを長押し・全選択してSNSに貼り付けてください</div>
+        <textarea readonly onclick="this.select()" style="width:100%;min-height:96px;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;line-height:1.6;resize:none;box-sizing:border-box;font-family:inherit">${Components.escapeHtml(text)}</textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button onclick="document.getElementById('copy-share-overlay').remove()" style="padding:8px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">閉じる</button>
+        </div>
+      </div>`;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    const ta = overlay.querySelector('textarea');
+    if (ta) setTimeout(() => { ta.focus(); ta.select(); }, 80);
   }
 
   // Use navigator.share (iOS/Android native share sheet) if available.
@@ -4145,15 +4153,12 @@ ${bloodText || '記録なし'}
 
   // ---- Guest Mode (no registration) ----
   // Lazy-load the public user count for the social-proof widget on
-  // the login page. The count is read from the Firestore users
-  // collection; we only show the number (no per-user data). If the
-  // collection read fails (unauth, offline, rules), we fail silent
-  // — the widget then just shows a generic message.
+  // the login page. Reads stats/public (publicly readable, 1 read per
+  // page load max via 1-hour localStorage cache). Avoids reading the
+  // entire users collection which is expensive and requires auth.
   async loadPublicUserCount() {
     const el = document.getElementById('public-user-count-inline');
     if (!el) return;
-    // Cache the value in localStorage for 1 hour so repeat visitors
-    // don't incur a Firestore read per page load.
     const CACHE_KEY = 'public_user_count_cache';
     const cache = (() => {
       try {
@@ -4164,36 +4169,28 @@ ${bloodText || '記録なし'}
         return j;
       } catch (_) { return null; }
     })();
-    if (cache && typeof cache.count === 'number') {
+    if (cache && typeof cache.count === 'number' && cache.count > 0) {
       el.textContent = `🌱 ${cache.count.toLocaleString()} 人が使用中`;
       return;
     }
-    if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.initialized) {
-      el.textContent = '';
-      return;
-    }
     try {
-      // Use count() aggregation if available (Firebase v9+); fall
-      // back to a bounded .get() otherwise so we don't blow up
-      // read costs for very large collections.
-      const db = firebase.firestore();
-      let total = 0;
-      try {
-        // Firebase compat: query.count() may not exist on some SDK versions.
-        const countSnap = await db.collection('users').get();
-        total = countSnap.size;
-      } catch (e) {
-        total = 0;
+      // stats/public is world-readable (see firestore.rules).
+      // Requires Firebase SDK to be available — lazy-wait up to 3s.
+      let db = null;
+      for (let i = 0; i < 6; i++) {
+        if (typeof firebase !== 'undefined' && firebase.firestore) { db = firebase.firestore(); break; }
+        await new Promise(r => setTimeout(r, 500));
       }
-      if (total > 0) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ count: total, at: Date.now() }));
-        el.textContent = `🌱 ${total.toLocaleString()} 人が使用中`;
+      if (!db) { el.textContent = ''; return; }
+      const snap = await db.doc('stats/public').get();
+      const count = snap.exists ? (snap.data()?.userCount || 0) : 0;
+      if (count > 0) {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ count, at: Date.now() }));
+        el.textContent = `🌱 ${count.toLocaleString()} 人が使用中`;
       } else {
         el.textContent = '';
       }
-    } catch (err) {
-      // Firestore rules may block anonymous reads until the user
-      // signs in. This is expected — we silently hide the widget.
+    } catch (_) {
       el.textContent = '';
     }
   }
@@ -7515,8 +7512,33 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    // Inline confirm — window.prompt is blocked on mobile.
+    const niceDate = backupId.slice(0,4) + '/' + backupId.slice(4,6) + '/' + backupId.slice(6,8);
+    const confirmed = await new Promise(resolve => {
+      const dlgId = 'restore-confirm-dlg';
+      const existing = document.getElementById(dlgId);
+      if (existing) existing.remove();
+      const dlg = document.createElement('div');
+      dlg.id = dlgId;
+      dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+      dlg.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+          <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px">バックアップを復元しますか？</div>
+          <div style="font-size:12px;color:#475569;line-height:1.8;margin-bottom:18px">
+            <strong>${Components.escapeHtml(niceDate)}</strong> のバックアップから復元します。<br>
+            本日のデータも残ります（マージ動作）。
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="${dlgId}-cancel" style="padding:9px 18px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">キャンセル</button>
+            <button id="${dlgId}-ok" style="padding:9px 18px;background:var(--danger,#dc2626);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">復元する</button>
+          </div>
+        </div>`;
+      document.body.appendChild(dlg);
+      document.getElementById(dlgId + '-ok').addEventListener('click', () => { dlg.remove(); resolve(true); });
+      document.getElementById(dlgId + '-cancel').addEventListener('click', () => { dlg.remove(); resolve(false); });
+      dlg.addEventListener('click', e => { if (e.target === dlg) { dlg.remove(); resolve(false); } });
+    });
+    if (!confirmed) return;
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();

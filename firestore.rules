@@ -66,6 +66,28 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Public statistics — read by the login-page user-count widget
+    // without auth. Only userCount may be written by authenticated
+    // clients (increment on first sign-in). No sensitive data here.
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Newsletter subscriptions — created anonymously from the disease
+    // landing pages (no Firebase Auth on those static pages).
+    // Only the admin may read; data shape is validated on create/update.
+    match /newsletter_subscribers/{docId} {
+      allow read:   if request.auth != null
+                    && request.auth.token.email == 'agewaller@gmail.com';
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 3
+                    && request.resource.data.consent == true;
+      allow update: if request.resource.data.email is string
+                    && request.resource.data.consent == true;
+      allow delete: if false;
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Personal Learning Companion (learning.html)
     // Separate namespace from 健康日記 to keep the two products'
