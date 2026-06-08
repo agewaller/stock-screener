@@ -26,7 +26,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
+    const modelId = options.model || store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
     store.set('isAnalyzing', true);
 
     try {
@@ -506,7 +506,8 @@ ${avoidBlock}
   // automatic fallback chain. This reduces timeout from 55s to ~30s
   // and makes failures predictable.
   buildProviderFallbackList(preferredModel) {
-    const opus   = { model: 'claude-opus-4-6',   callFn: this.callAnthropic };
+    const defaultModel = (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const opus   = { model: defaultModel,          callFn: this.callAnthropic };
     const sonnet = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
     const haiku  = { model: 'claude-haiku-4-5',  callFn: this.callAnthropic };
     const uniq = (arr) => {
@@ -520,7 +521,7 @@ ${avoidBlock}
       return [{ model: preferredModel, callFn: this.callGoogle }];
     }
     return uniq([
-      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      { model: preferredModel || defaultModel, callFn: this.callAnthropic },
       opus, sonnet, haiku
     ]);
   }

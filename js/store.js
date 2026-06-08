@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id,
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -410,7 +410,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    this.state.selectedModel = (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
   }
 };
 
