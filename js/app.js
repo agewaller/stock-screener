@@ -3314,7 +3314,9 @@ ${responseText.substring(0, 3000)}`;
       atopy: '#アトピー性皮膚炎',
       ckd: '#慢性腎臓病CKD',
       schizophrenia: '#統合失調症',
-      sad: '#社会不安障害'
+      sad: '#社会不安障害',
+      emf: '#電磁波過敏症EHS',
+      mold: '#カビ毒マイコトキシン症'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
