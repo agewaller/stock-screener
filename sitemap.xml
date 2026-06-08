@@ -661,6 +661,22 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 前立腺肥大症 -->
+  <url>
+    <loc>https://cares.advisers.jp/bph.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 慢性膵炎 -->
+  <url>
+    <loc>https://cares.advisers.jp/chronic_pancreatitis.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
