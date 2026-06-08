@@ -545,7 +545,8 @@ ${avoidBlock}
       'claude-opus-4-6':   'claude-opus-4-6',
       'claude-haiku-4-5':  'claude-haiku-4-5',
     };
-    const apiModelId = MODEL_MAP[modelId] || modelId || 'claude-opus-4-7';
+    const _defaultModelId = (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const apiModelId = MODEL_MAP[modelId] || modelId || _defaultModelId;
 
     // Single fixed endpoint for everyone. The browser never sends a
     // key — the relay forwards to the proxy Worker which injects the
