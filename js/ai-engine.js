@@ -26,7 +26,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const modelId = options.model || store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
     store.set('isAnalyzing', true);
 
     try {
@@ -506,7 +506,7 @@ ${avoidBlock}
   // automatic fallback chain. This reduces timeout from 55s to ~30s
   // and makes failures predictable.
   buildProviderFallbackList(preferredModel) {
-    const defaultModel = (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const defaultModel = (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
     const opus   = { model: defaultModel,          callFn: this.callAnthropic };
     const sonnet = { model: 'claude-sonnet-4-6', callFn: this.callAnthropic };
     const haiku  = { model: 'claude-haiku-4-5',  callFn: this.callAnthropic };
@@ -545,7 +545,7 @@ ${avoidBlock}
       'claude-opus-4-6':   'claude-opus-4-6',
       'claude-haiku-4-5':  'claude-haiku-4-5',
     };
-    const _defaultModelId = (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const _defaultModelId = (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
     const apiModelId = MODEL_MAP[modelId] || modelId || _defaultModelId;
 
     // Single fixed endpoint for everyone. The browser never sends a

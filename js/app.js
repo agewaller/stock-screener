@@ -773,7 +773,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -4425,7 +4425,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+        modelId = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
       }
 
       const rawResponse = await Promise.race([
@@ -4505,7 +4505,7 @@ ${axisHint}
                      ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
                      ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
                      <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
-                     ② モデル ID が有効か確認 (CONFIG.ai_models で定義されたモデルを使用)<br>
+                     ② モデル ID が有効か確認 (CONFIG.AI_MODELS で定義されたモデルを使用)<br>
                      ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
                    </div>`
                 : ''}
@@ -4655,7 +4655,7 @@ ${axisHint}
     const diseases = (store.get('selectedDiseases') || []).join('・');
     const sys = 'あなたは慢性疾患患者の日記分析パートナーです。温かく寄り添い、具体的なアドバイスを日本語で返してください。';
     const userMsg = (diseases ? '【疾患: ' + diseases + '】\n' : '') + content;
-    aiEngine.callModel(store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id, userMsg, {
+    aiEngine.callModel(store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id, userMsg, {
       maxTokens: 800, temperature: 0.4, systemPrompt: sys, globalTimeoutMs: 30000
     })
     .then(text => {
@@ -6807,7 +6807,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+      const modelId = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7369,7 +7369,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || (CONFIG.ai_models.find(m => m.default) || CONFIG.ai_models[0]).id;
+    const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
