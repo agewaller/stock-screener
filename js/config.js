@@ -100,6 +100,7 @@ var CONFIG = {
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'EA90' },
         { id: 'alopecia', name: '円形脱毛症（AA）', icd: 'ED70' },
+        { id: 'behcet', name: 'ベーチェット病', icd: '4A62' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
@@ -469,6 +470,8 @@ var CONFIG = {
                           japan:      25_000, japanLabel: '約 2〜3 万人',               japanSource: '指定難病告示番号50（厚生労働省）' },
     alopecia:               { world:   147_000_000, label: '約 1.5 億人（生涯罹患率 2%）', tier: 2, density: 'medium', source: '世界人口の1.9〜2.1%',
                           japan:   2_500_000, japanLabel: '約 250 万人（生涯罹患率 2%）', japanSource: '皮膚科学会推計（生涯罹患率 2%）' },
+    behcet:                 { world:     3_000_000, label: '約 300 万人（推計）',           tier: 3, density: 'high',   source: 'シルクロード地帯に集中',
+                          japan:      20_000, japanLabel: '約 2 万人',                  japanSource: '指定難病告示番号56（厚生労働省）' },
   },
 
   // ============================================================

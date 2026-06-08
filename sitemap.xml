@@ -701,6 +701,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- ベーチェット病 -->
+  <url>
+    <loc>https://cares.advisers.jp/behcet.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- 円形脱毛症 -->
   <url>
     <loc>https://cares.advisers.jp/alopecia.html</loc>
