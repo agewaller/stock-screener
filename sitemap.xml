@@ -693,6 +693,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 間質性膀胱炎 -->
+  <url>
+    <loc>https://cares.advisers.jp/interstitial_cystitis.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>

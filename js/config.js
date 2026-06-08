@@ -116,6 +116,7 @@ var CONFIG = {
         { id: 'menopause', name: '更年期障害', icd: 'GA30' },
         { id: 'pms_pmdd', name: 'PMS・PMDD（月経前症候群）', icd: 'GA34' },
         { id: 'overactive_bladder', name: '過活動膀胱（OAB）', icd: 'MF44' },
+        { id: 'interstitial_cystitis', name: '間質性膀胱炎（IC/PBS）', icd: 'MF44.0' },
         { id: 'bph', name: '前立腺肥大症（BPH）', icd: 'GA90' },
         { id: 'tinnitus', name: '耳鳴り・感音性難聴', icd: 'H93.1' },
         { id: 'vertigo', name: 'めまい・BPPV・メニエール病', icd: 'H81' },
@@ -448,6 +449,8 @@ var CONFIG = {
                           japan:    9_000_000, japanLabel: '約 900 万人（推計）',    japanSource: '日本老年医学会 AWGS2019' },
     post_herpetic_neuralgia: { world: 15_000_000, label: '約 1,500 万人（推計）',   tier: 3, density: 'high',   source: '帯状疱疹患者の10〜20%',
                           japan:      150_000, japanLabel: '年間 15〜30 万人（推計）', japanSource: '年間帯状疱疹150万人の10〜20%' },
+    interstitial_cystitis:  { world: null, label: '世界推計は策定中（人口の0.5〜1%説も）', tier: 0, density: 'high',
+                          japan:      45_000, japanLabel: '約 4〜5 万人',             japanSource: '日本泌尿器科学会推計' },
   },
 
   // ============================================================
