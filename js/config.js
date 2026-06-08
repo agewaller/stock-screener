@@ -2730,6 +2730,962 @@ var CONFIG = {
         { timestamp: '2026-03-01T08:00:00Z', name: 'カルシウム＋ビタミンD3', notes: '700mg/400IU 朝食後（ホルモン療法による骨密度低下予防）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    epilepsy: {
+      diseases: ['てんかん'],
+      profile: { age: 34, gender: 'male', height: 175, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '発作が再発', content: '昨夜入眠後1時間で全般発作。5分ほど意識なし。妻が119番通報、救急搬送。抗てんかん薬を飲み忘れた可能性がある。仕事のストレスと睡眠不足が続いていた。' },
+        { timestamp: '2026-01-12T10:00:00Z', category: 'medication', title: '薬剤調整', content: '主治医と相談。レベチラセタム 1000mg→1500mgに増量。服薬アラームをスマホに設定。脳波検査を予約した。' },
+        { timestamp: '2026-02-15T09:00:00Z', category: 'symptoms', title: '発作ゼロ5週間', content: '増量後5週間で発作なし。仕事に復帰。ただし運転免許は発作後3ヶ月経過するまで停止中（道路交通法）。睡眠7〜8時間確保を優先している。' },
+        { timestamp: '2026-03-20T10:00:00Z', category: 'consultation', title: '3ヶ月定期受診', content: '脳波：焦点性徐波あり（前回より改善）。発作ゼロ継続中。医師「このまま3ヶ月続けば薬を維持用量に戻すことも検討します」。ビタミンD 28 ng/mL（やや低値）。' },
+        { timestamp: '2026-04-10T08:00:00Z', category: 'vitals', title: '発作ゼロ3ヶ月達成', content: '本日で発作なし丸3ヶ月。免許の運転再開申請を神経科医に相談予定。副作用（眠気・頭重感）は以前より軽くなった。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '定期血液・薬物濃度', findings: 'レベチラセタム血中濃度 42 μg/mL（治療域内）, 肝機能 正常, ビタミンD 28 ng/mL（やや低値）, Hb 14.8 g/dL' }
+      ],
+      medications: [
+        { timestamp: '2026-01-12T10:00:00Z', name: 'レベチラセタム（イーケプラ）', notes: '750mg 朝夕 各1錠（増量後）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    parkinsons: {
+      diseases: ['パーキンソン病'],
+      profile: { age: 68, gender: 'male', height: 170, weight: 63 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '震えと歩行が悪化', content: '昨年末から右手の安静時振戦が増強。歩幅が小さくなり「すり足」気味。朝起き上がりに時間がかかる。内科からパーキンソン専門外来に紹介。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'medication', title: 'L-ドパ開始', content: '神経内科でパーキンソン病（ホーン・ヤール重症度3）と確定。レボドパ/カルビドパ（メネシット）100/25mg 1日3回開始。理学療法士によるリハビリも週2回開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'L-ドパ1ヶ月後', content: 'ON時間が明らかに増えた（1日の半分以上が「動ける」状態）。右手振戦 8→5/10。書字が少し読みやすくなった。夕方のウェアリングオフが問題。ドパミンアゴニスト追加の検討。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'symptoms', title: 'ウェアリングオフ管理', content: 'ロピニロール（レキップ）を追加。ON/OFFの変動が減少した。リハビリでタンデムウォーキング練習中。声量が小さいためLSVT-LOUDセラピーも開始。' },
+        { timestamp: '2026-04-18T10:00:00Z', category: 'vitals', title: '定期受診・MDS-UPDRS改善', content: 'MDS-UPDRS PartIII（運動機能）: 38→28点（改善）。歩行速度が10m歩行テストで改善。姿勢反射は不安定継続。転倒予防として自宅の手すり設置完了。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 3, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 2, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-15T10:00:00Z', name: '定期検査', findings: 'CBC 正常, 肝機能 正常, ビタミンD 32 ng/mL, HbA1c 5.4%, 甲状腺機能 正常（パーキンソン症状との鑑別）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'レボドパ/カルビドパ（メネシット）', notes: '100/25mg 1日3回（ON時間確保）' },
+        { timestamp: '2026-03-15T09:00:00Z', name: 'ロピニロール（レキップ）', notes: '0.25mg→2mg 漸増中（ウェアリングオフ補正）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    als: {
+      diseases: ['筋萎縮性側索硬化症（ALS）'],
+      profile: { age: 55, gender: 'male', height: 173, weight: 68 },
+      textEntries: [
+        { timestamp: '2025-11-01T09:00:00Z', category: 'symptoms', title: 'ALS診断後1ヶ月', content: '右手の握力低下・構音障害の進行でALS確定診断（ALSFRS-R 42点）。エダラボン点滴投与開始。難病申請完了。妻と長男が主な介護者として協力体制を組んでいる。' },
+        { timestamp: '2026-01-15T09:00:00Z', category: 'vitals', title: 'ALSFRS-R 38点', content: '3ヶ月後。右手の細かい動作が困難に。歩行は自立継続中。嚥下は「硬いものが飲み込みにくい」程度。肺活量 FVC 78%（要経過観察）。言語聴覚士（ST）と週1回セッション。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'medication', title: 'AMX0035（レルブリ）開始', content: 'AMX0035（ウルソデオキシコール酸+フェニル酪酸ナトリウム）処方開始。エダラボン継続中。胃ろう（PEG）の造設を来月に予定。意思疎通用のアイトラッキングデバイスを試用中。' },
+        { timestamp: '2026-03-25T10:00:00Z', category: 'vitals', title: 'PEG造設後', content: 'PEG造設・術後経過良好。発語は聞き取りにくくなったがアイトラッカーでコミュニケーション継続中。ALSFRS-R 32点。NPPVを夜間使用開始（SpO2 94→97%に改善）。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '重点的な在宅ケア体制', content: '訪問看護（週5日）・訪問リハビリ（週2日）体制が整った。難病支援コーディネーターと連絡が取れた。家族の負担軽減のためレスパイト入院（月1回）を計画中。本人の意思をACP文書に記録した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 8, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-25T10:00:00Z', name: '定期・PEG周術期検査', findings: 'Alb 3.5 g/dL, CRP 0.8 mg/dL（軽度炎症）, FVC 72%（低下）, SpO2（夜間NPPV使用下）97%, ALSFRS-R 32/48' }
+      ],
+      medications: [
+        { timestamp: '2025-11-01T10:00:00Z', name: 'エダラボン（ラジカット）', notes: '60mg 点滴 月1クール（10日投与・14日休薬）' },
+        { timestamp: '2026-02-20T09:00:00Z', name: 'AMX0035（レルブリ）', notes: '1袋 朝1回（フェニル酪酸Na+ウルソデオキシコール酸）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    neuropathy: {
+      diseases: ['末梢神経障害'],
+      profile: { age: 61, gender: 'female', height: 158, weight: 62 },
+      textEntries: [
+        { timestamp: '2026-01-05T09:00:00Z', category: 'symptoms', title: '手足のしびれ・灼熱感', content: '両足先〜足首にかけてじんじんしたしびれ。就寝時に灼熱感があって眠れない。糖尿病歴12年。神経内科に紹介された。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: '神経伝導速度検査', content: '神経伝導速度：腓骨神経 34 m/s（低下）、振動覚 消失。スモールファイバー神経障害（皮膚生検確認）。「糖尿病性末梢神経障害 中等度」と診断。プレガバリン開始。' },
+        { timestamp: '2026-02-15T09:00:00Z', category: 'medication', title: 'プレガバリン増量', content: '75mg→150mgに増量。夜間の灼熱感が7→4/10に軽減。眠気・浮腫が副作用として出現したが、2週間で軽快。HbA1c管理を再強化（7.2→目標6.5%）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '血糖管理の改善効果', content: 'HbA1c 6.8%（前回 7.2%→改善）。しびれ強度 5→3/10。足の転倒リスク評価：バランス検査で「軽度不安定」。転倒予防として自宅に手すり追加。足底感覚低下による傷に注意するよう指導。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '6ヶ月後・改善傾向', content: 'しびれ 3/10（当初 7/10）。夜間の灼熱感はほぼ消失。α-リポ酸600mg・メチルB12 1000μgを追加。歩行は改善したが走ることは難しい。神経障害の進行は抑制されている模様。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, pain_level: 4, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '血糖・神経マーカー', findings: 'HbA1c 6.8%（改善）, ビタミンB12 312 pg/mL（低値傾向）, ビタミンD 26 ng/mL, CRP 0.4 mg/dL, eGFR 62（軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'プレガバリン（リリカ）', notes: '150mg 朝夕（神経因性疼痛）' },
+        { timestamp: '2026-02-15T09:00:00Z', name: 'α-リポ酸', notes: '600mg 朝食後（神経保護・抗酸化）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    dysautonomia: {
+      diseases: ['自律神経失調症'],
+      profile: { age: 42, gender: 'female', height: 163, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-01-12T09:00:00Z', category: 'symptoms', title: '起立時のめまい・動悸', content: '立ち上がるとクラクラして倒れそうになる。安静時心拍 58bpm→起立後1分で 104bpm。HRV Oura で低値が続く。更年期かとも思ったが検査では異常なし。神経内科受診予定。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'consultation', title: 'チルトテーブル試験', content: 'チルト試験陽性：起立30度で収縮期血圧 118→94mmHg（20mmHg以上低下）、心拍 62→98bpm。自律神経性起立性低血圧と診断。1日水分2.5L・塩分8g目標の指導。ミドドリン処方。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '水分・塩分増量2週間後', content: '起立時めまいが7→4/10に改善。横になって立つとき「ゆっくり」を実践中。弾性ストッキング（20-30mmHg）着用開始。HRV: 38ms→45msに上昇。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'vitals', title: '有酸素運動プログラム開始', content: '横位での自転車エルゴメーター（臥位・リクライン式）週3回開始。起立性低血圧症状がさらに改善（めまい頻度: 5回/週→1-2回/週）。心拍変動トレーニング（HRV biofeedback）アプリを導入。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '3ヶ月後の安定化', content: '起立時めまい 1-2/10。仕事への復帰（週4日・座業）が可能になった。ミドドリンは必要時のみに減量できている。HRV 52ms（改善）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-25T10:00:00Z', name: '自律神経精査', findings: '甲状腺機能 正常, 副腎機能 正常, フェリチン 18 ng/mL（低値）, ビタミンB12 420 pg/mL, 直立3分後心拍 98 bpm（起立前 62）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'ミドドリン塩酸塩', notes: '2.5mg 起床時・昼食前（起立性低血圧改善）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    pots: {
+      diseases: ['体位性頻脈症候群（POTS）'],
+      profile: { age: 26, gender: 'female', height: 167, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: 'Long COVID後のPOTS', content: '昨年11月にCOVID-19感染後、立つと心拍が140台になる。ブレインフォグ・倦怠感も持続。大学の授業に出席できない状態。循環器内科でPOTS（体位性頻脈症候群）と診断。' },
+        { timestamp: '2026-01-25T09:00:00Z', category: 'medication', title: '治療開始', content: 'フロリネフ 0.1mg・ミドドリン 2.5mgを開始。水分2.5L/日・塩分10g/日の強化指示。圧迫ストッキング（腹部まで）を処方された。臥位・リクライン位での運動プログラム開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '1ヶ月後の改善', content: '起立10分後心拍: 145→118bpm（改善傾向）。起立不耐 7→4/10。水分摂取が2.5L/日を維持できている。立位でできる活動が「15分→30分」に延びた。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'vitals', title: '運動耐容性向上', content: '直立での自転車エルゴ10分が可能に。心拍最高 132bpm（前月 155→改善）。大学の授業にオンラインで週3日参加再開。ブレインフォグは残存するが軽減傾向。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '3ヶ月後・実質的回復', content: '起立後10分心拍: 105bpm（診断時 145）。対面授業に週2日登校できるようになった。イバブラジン5mgを追加処方、さらに安定。疲労は残存するが「普通の日」が増えた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, brain_fog: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-10T10:00:00Z', name: 'POTS精査', findings: '起立後10分心拍増加 +48bpm（基準+30以上）, 自己抗体スクリーニング 陽性（β1受容体 1:160）, フェリチン 12 ng/mL（低値）, 甲状腺機能 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T09:00:00Z', name: 'フルドロコルチゾン（フロリネフ）', notes: '0.1mg 朝食後（循環血液量増加）' },
+        { timestamp: '2026-04-20T09:00:00Z', name: 'イバブラジン（コララン）', notes: '5mg 朝夕（心拍抑制）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    tbi: {
+      diseases: ['高次脳機能障害（外傷性脳損傷）'],
+      profile: { age: 45, gender: 'male', height: 176, weight: 78 },
+      textEntries: [
+        { timestamp: '2025-10-01T09:00:00Z', category: 'symptoms', title: '交通事故から3ヶ月後', content: '7月の交通事故による頭部打撲後。頭痛・記憶の混乱・集中力低下が続く。仕事に復帰したが、会議の内容が頭に入らない。感情コントロールが難しく、些細なことで怒ってしまう。高次脳機能障害の診断を受けた。' },
+        { timestamp: '2025-11-10T10:00:00Z', category: 'consultation', title: '神経心理学的評価', content: 'WAIS-IV：ワーキングメモリ指標 79（低下）、処理速度指標 82（低下）。TMT-B：82秒（低下）。「高次脳機能障害：注意障害・記憶障害・遂行機能障害」確認。週2回の認知リハ開始。' },
+        { timestamp: '2026-01-15T09:00:00Z', category: 'vitals', title: '3ヶ月リハビリ後', content: 'メモリーノート（外部補助具）の活用が習慣化。会議の内容を録音→要点メモに変えた。頭痛は週3→週1回に減少。感情コントロールのためのマインドフルネス練習（週2回）。職場の理解を得て業務量を70%に調整。' },
+        { timestamp: '2026-03-01T10:00:00Z', category: 'vitals', title: '6ヶ月後の再評価', content: 'WAIS-IVワーキングメモリ: 79→88（改善）。処理速度: 82→89。頭痛: 月1回以下。感情爆発: 週2→週0-1回に減少。上司に障害開示し、業務配慮（単純作業主体・メモ許可）を取り付けた。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '8ヶ月後・職場復帰安定', content: '週5日フルタイム（業務量80%）復帰できている。メモリーノート・スマホ活用で生産性を維持。頭痛はほぼ消失。社会復帰支援センターのグループセラピーにも参加中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, brain_fog: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2025-11-10T10:00:00Z', name: '外傷後精査', findings: 'MRI 右前頭葉・右頭頂葉白質変化 残存, 神経心理検査 ワーキングメモリ指標 79, 処理速度指標 82（ともに低下）' }
+      ],
+      medications: [
+        { timestamp: '2025-10-01T10:00:00Z', name: 'アマンタジン塩酸塩', notes: '100mg 朝食後（認知機能改善）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    bipolar: {
+      diseases: ['双極性障害'],
+      profile: { age: 36, gender: 'female', height: 161, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '軽躁状態が3週間続く', content: '睡眠が4〜5時間でもエネルギーが溢れ、仕事のアイデアが止まらない。クレジットカードで衝動買いを繰り返した（15万円）。主治医に連絡し受診予約を入れた。' },
+        { timestamp: '2026-01-15T10:00:00Z', category: 'medication', title: '気分安定薬の調整', content: 'リチウム血中濃度 0.6 mEq/L（目標0.8-1.0）。投与量を600→900mgに増量。「軽躁エピソードが3週間持続しており、双極I型の躁転の可能性あり」。睡眠ログと気分チャートの記録を強化。' },
+        { timestamp: '2026-02-01T09:00:00Z', category: 'vitals', title: 'リチウム増量2週間後', content: 'リチウム血中濃度 0.88 mEq/L（目標域）。睡眠が7時間に戻った。衝動的な行動が減少。気分チャートで「中程度の躁」→「正常域」へ移行。' },
+        { timestamp: '2026-03-10T09:00:00Z', category: 'symptoms', title: '抑うつ相に移行', content: '今週から気分が落ち込み始めた。朝起きられず、仕事の意欲ゼロ。食欲低下（1日1食）。双極性うつのパターン。主治医と相談し、ラモトリギン50mgを追加。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'vitals', title: '安定期へ', content: '抑うつエピソードが徐々に回復。気分チャートで「正常域下寄り」を3週間維持。CBT-Bpのセラピーを週1回継続中。気分の波の予兆サインリスト（睡眠短縮・多弁）を作成した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'リチウム血中濃度・定期', findings: 'リチウム 0.6 mEq/L（低値）→増量後 0.88, TSH 1.8 mIU/L（リチウム甲状腺監視）, eGFR 82（腎機能監視）, BMI 22.3' }
+      ],
+      medications: [
+        { timestamp: '2026-01-15T10:00:00Z', name: '炭酸リチウム（リーマス）', notes: '900mg/日（血中濃度 0.88 mEq/L 目標）' },
+        { timestamp: '2026-03-10T09:00:00Z', name: 'ラモトリギン（ラミクタール）', notes: '25→50mg漸増中（双極性うつ）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ptsd: {
+      diseases: ['PTSD（心的外傷後ストレス障害）'],
+      profile: { age: 38, gender: 'female', height: 160, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-01-05T21:00:00Z', category: 'symptoms', title: 'フラッシュバックが続く', content: '3年前の交通事故の映像が突然よみがえる。車が近づく音で心臓がバクバクする（過覚醒）。夜は悪夢で目が覚める（週4〜5回）。子供の送迎でも運転できない状態。精神科でPTSDと診断。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'medication', title: 'セルトラリン開始・EMDR予約', content: 'セルトラリン50mg開始。EMDRセラピスト（公認心理師）の予約。CPTSSSスクリーニング: 52点（重症）。安全基地のイメージワーク練習を開始。' },
+        { timestamp: '2026-02-25T09:00:00Z', category: 'symptoms', title: 'EMDR 4セッション後', content: 'フラッシュバック頻度: 毎日→週2-3回に減少。EMDRで「事故のシーン」の脱感作が進んだ。悪夢: 週5→週2回に減少。過覚醒（車の音への反応）も和らいできた。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'セルトラリン増量', content: 'セルトラリン50→100mgに増量。睡眠が改善（夜間覚醒週1回以下）。感情のしびれ（解離）が少なくなり「感じられる」場面が増えた。EMDRは8セッション継続中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・機能改善', content: 'CPSS-5スコア: 52→24点（中等度に改善）。短距離運転（近くのスーパー）ができるようになった。フラッシュバックは週0-1回に減少。「回復が感じられる」と報告。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: '初診時スクリーニング', findings: 'CPSS-5スコア 52点（重症）, コルチゾール（朝） 22.1 μg/dL（高値傾向）, 甲状腺 正常, CBC 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'セルトラリン（ジェイゾロフト）', notes: '100mg 朝食後（PTSD標準薬・漸増後安定）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ocd: {
+      diseases: ['強迫性障害（OCD）'],
+      profile: { age: 29, gender: 'male', height: 172, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-01-12T09:00:00Z', category: 'symptoms', title: '戸締まり確認が止まらない', content: '外出のたびに鍵・ガス・電気を確認。「確認した」と思っても不安が取れず10回以上繰り返す。1回の外出準備に40〜50分かかる。会社に遅刻が増えた。精神科を初めて受診。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'medication', title: 'フルボキサミン開始・ERP開始', content: 'Y-BOCSスコア: 28点（重症）。フルボキサミン50mgとERP（暴露反応妨害法）を開始。「鍵を確認するのは1回まで」という行動実験を設定。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'symptoms', title: 'ERP5週後・確認回数が減少', content: '確認行為: 10回以上→3〜4回に減少。不安ピーク時間が「15分→5分」に短縮（不安は必ず下がる、を体験）。フルボキサミン100mgに増量。準備時間: 40分→20分に短縮。' },
+        { timestamp: '2026-03-25T09:00:00Z', category: 'vitals', title: 'Y-BOCS 16点（中等度に改善）', content: 'Y-BOCSスコア: 28→16点。確認行為は1〜2回で止められるようになった。「汚染強迫」の軽いエピソードが新たに出現（手洗い5分→15分）、これも現在ERPで対処中。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '遅刻なし・会社継続できている', content: 'Y-BOCSスコア: 12点（軽症域）。遅刻なし2ヶ月達成。会社の同僚2名にOCDを開示し、理解を得た。フルボキサミン150mgで安定している。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-25T10:00:00Z', name: '初診時スクリーニング', findings: 'Y-BOCS 28点（重症）, 甲状腺 正常, CBC 正常, 肝機能 正常（SSRI開始前）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'フルボキサミン（デプロメール）', notes: '150mg 朝夕（OCD第一選択SSRI・漸増後安定）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    asd: {
+      diseases: ['自閉スペクトラム症（ASD）'],
+      profile: { age: 32, gender: 'female', height: 159, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-20T09:00:00Z', category: 'symptoms', title: '職場で限界を迎えた', content: '仕事中の電話対応・急な予定変更・騒音がつらくて毎日疲弊する。帰宅後は話せないほど消耗する（マスキング疲弊）。「なぜ普通の人はこんなに苦労しないの？」と思い続けていた。発達外来を受診したところASDと診断。' },
+        { timestamp: '2026-02-05T10:00:00Z', category: 'consultation', title: 'ASD確定診断・支援計画', content: 'ADOS-2・ADI-R・WAIS-IV（言語理解 128・処理速度 91：大きな格差）でASD確定。「高IQのためマスキングが得意で見逃されていた」。感覚プロファイル（聴覚・光過敏が強い）を作成し職場配慮申請の準備。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '職場配慮が開始', content: '耳栓・ノイズキャンセリングイヤホン使用許可。電話応対免除（メール主体）。週1回テレワーク追加。マスキング消耗が顕著に減った。退社後の「クラッシュ」が週5→週1-2回に減少。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'vitals', title: 'ASDを自己理解に変える', content: 'ASDコミュニティのオンライングループに参加。「自分の特性は障害ではなく違い」という視点を得た。特定の興味（生物学）を活かした副業の検討を始めた。マスキングをやめる練習中。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '3ヶ月後・安定', content: '仕事の継続ができている。テレワーク週2日に増やした。退社後のクラッシュが大幅減少。診断後「自分の行動に理由がある」ことへの安堵感が大きい。次のステップ：キャリアカウンセリング。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-05T10:00:00Z', name: '発達外来精査', findings: 'ADOS-2 陽性, WAIS-IV 言語理解 128 処理速度 91（15点以上差・ASD特徴的パターン）, 甲状腺 正常, フェリチン 22 ng/mL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-03-01T10:00:00Z', name: 'メラトニン（ロゼレム）', notes: '8mg 就寝30分前（入眠困難 ASD合併不眠に対して）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    insomnia: {
+      diseases: ['不眠症'],
+      profile: { age: 48, gender: 'female', height: 160, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-01-05T23:00:00Z', category: 'symptoms', title: '2年間眠れない', content: '2年前からの不眠。布団に入って2時間眠れないことが多い（入眠困難）。夜中に2〜3回目が覚め、朝4時頃に覚醒してしまう。睡眠薬を服用しているが効果が弱くなった。睡眠外来を受診。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: 'CBT-I開始', content: 'ポリソムノグラフィ正常（睡眠時無呼吸なし）。PSQI 16点（重症不眠）。睡眠効率 54%。CBT-I（認知行動療法）を6週間コースで開始。睡眠制限法（床上時間を5.5時間に制限）を開始。' },
+        { timestamp: '2026-02-10T09:00:00Z', category: 'vitals', title: 'CBT-I 3週目', content: '睡眠効率: 54%→72%に改善。就床時刻を23:00→23:30に遅らせた（ベッドへの嫌悪条件づけを解除中）。刺激制御（ベッドは寝るためだけ）を実施中。眠気で布団に入る練習。' },
+        { timestamp: '2026-03-01T09:00:00Z', category: 'vitals', title: 'CBT-I 6週完了', content: '睡眠効率: 82%。PSQI 10点（中等度に改善）。睡眠薬をゾルピデム半錠に減量。入眠に30分以内が多くなった。夜間覚醒: 3回→1回以下に減少。' },
+        { timestamp: '2026-04-15T09:00:00Z', category: 'vitals', title: '睡眠薬なしの夜が増えた', content: 'PSQI 7点（軽症）。週に4〜5日は睡眠薬なしで6〜7時間眠れるようになった。認知再構成「眠れなくても横になれば休める」の定着。再発予防の維持セッション（月1回）を継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: '不眠精査', findings: 'PSQI 16点（重症）, 睡眠効率 54%, 甲状腺 正常, コルチゾール（夜間）やや高値, フェリチン 28 ng/mL, ポリソムノグラフィ: OSAS なし' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'レンボレキサント（デエビゴ）', notes: '5mg 就寝直前（CBT-I期間中に漸減中）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    substance: {
+      diseases: ['依存症回復（アルコール使用障害）'],
+      profile: { age: 52, gender: 'male', height: 172, weight: 79 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '断酒3週間目', content: '肝機能悪化（AST 78・ALT 95）で主治医から強く禁酒を勧められた。アルコール依存症と診断。断酒3週間経過中だが夜9〜10時に強い飲酒欲求がある（8/10）。専門外来に通院開始。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'medication', title: 'ナルトレキソン開始・AA参加', content: 'ナルトレキソン25mg（飲酒欲求抑制）開始。アルコホーリクス・アノニマス（AA）へ週2回参加。AUDIT 28点（重症）。断酒カレンダーをスマホで管理開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '断酒6週間・肝機能改善', content: 'AST 78→38、ALT 95→45（著明改善）。断酒42日継続。夜の欲求は5→3/10に減少。AAでスポンサー（経験者サポーター）を得た。「今日1日だけ飲まない」の実践。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'AAの仲間との繋がりが支えに', content: '断酒70日達成。1度の飲酒衝動エピソードがあったが、スポンサーに電話して乗り越えた。職場の飲み会には参加せず代わりに家族と夕食。肝機能：AST 28、ALT 32（正常域）。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '断酒100日突破', content: '断酒100日超え達成。飲酒欲求 1〜2/10（稀に出るが対処できる）。体重: 79→75kg（4kg減）。睡眠が深くなり仕事のパフォーマンスが向上した。「飲まない人生の方が豊か」と感じ始めた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-20T10:00:00Z', name: '断酒6週間後・肝機能', findings: 'AST 38 U/L（改善）, ALT 45 U/L（改善）, γGTP 58 U/L（改善）, MCV 96 fL（正常化）, AUDIT 28→15点' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'ナルトレキソン塩酸塩', notes: '25mg 起床時（飲酒欲求抑制・快感遮断）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    burnout: {
+      diseases: ['バーンアウト（燃え尽き症候群）'],
+      profile: { age: 40, gender: 'female', height: 163, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '何もできない、何も感じない', content: 'ICU看護師5年目。昨年12月からシフトに入れなくなった。患者への共感が感じられず、自分が嫌になった。疲れているのに眠れない。泣けないのに虚しい。産業医に相談した。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: '休職3ヶ月の診断書', content: 'MBI（Maslach Burnout Inventory）：情緒的消耗感 44点（重篤）・脱人格化 25点（重篤）。PHQ-9 17点（中等度うつ）。精神科医「3ヶ月の完全休養と段階的回復を勧めます」。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '休職1ヶ月・睡眠が戻る', content: '8時間以上眠れる日が増えた。料理ができるようになった。散歩（20分）を始めた。副交感神経優位の活動（読書・音楽）を意識的に取り入れている。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '休職2ヶ月・感情が戻る', content: 'PHQ-9: 17→8点。笑えるようになってきた。「なぜ燃え尽きたか」を振り返りセラピーで整理。完璧主義・自己犠牲パターンの認識。復職後の「境界線の引き方」を練習中。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '段階的復職プラン', content: 'PHQ-9: 5点（軽症）。復職プラン：月2回外来デイケア→週2日軽業務→通常シフトと段階的に。「ICUではなく外来勤務」の申請も検討。仕事の意義を再定義できてきた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'バーンアウト精査', findings: 'PHQ-9 17点（中等度うつ）, MBI 情緒的消耗感 44点（重篤）, コルチゾール（朝）低値 8.2 μg/dL（HPA軸疲弊）, TSH 正常, フェリチン 24 ng/mL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '5mg 朝食後（うつ症状・低用量から開始）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    dissociative: {
+      diseases: ['解離性障害'],
+      profile: { age: 30, gender: 'female', height: 158, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-10T20:00:00Z', category: 'symptoms', title: '気づいたら時間が飛んでいた', content: '昨夜、気づいたら3時間後になっていた（解離性健忘エピソード）。仕事中も「自分が機械のようで何も感じない」感覚（離人症）が続く。幼少期のトラウマ歴あり。解離性同一性障害（DID）の可能性を専門家に指摘された。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'consultation', title: 'DID専門外来 初診', content: 'DES-II 42点（高解離）。「解離性同一性障害（DID）の基準を満たします」。段階的トラウマ治療（Phase1: 安定化・スキル習得）を開始。安全基地イメージワークとグラウンディング5-4-3-2-1を毎日実践。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'symptoms', title: 'グラウンディングが定着', content: 'グラウンディング練習を1日3回実施中。解離エピソード：週7→週3回に減少。「今・ここ」に戻ってくる時間が短縮（1時間→20分）。「内部家族システム（IFS）」の概念で自分の状態を理解し始めた。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '安定化フェーズが進んでいる', content: '解離エピソード：週1-2回に減少。仕事を週4日継続できている。EMDR（Phase2準備：トラウマ記憶への段階的接近）を開始する準備が整ってきた。内部の「状態」同士のコミュニケーションが少し取れるようになった。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '4ヶ月後・生活の安定', content: '解離エピソード：2週間に1〜2回（著明改善）。離人感は残るが「管理できている」。内部状態の記録（ジャーナリング）を継続中。DES-II: 42→28点。「自分が存在している感覚」が少しずつ戻ってきた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-25T10:00:00Z', name: '初診精査', findings: 'DES-II 42点（高解離）, PHQ-9 18点（中等度うつ）, 甲状腺 正常, CBC 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T10:00:00Z', name: 'クエチアピン（セロクエル）', notes: '25mg 就寝前（解離・不眠・フラッシュバック軽減・低用量）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    mcas: {
+      diseases: ['肥満細胞活性化症候群（MCAS）'],
+      profile: { age: 35, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '謎のアレルギー反応が続く', content: '食事後に蕁麻疹・腹痛・動悸が繰り返される。食物アレルギー検査は全て陰性。香水・煙でも頭痛と気分不快が出る。Long COVID後から悪化した印象。免疫専門外来へ。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'consultation', title: 'MCAS診断・治療開始', content: 'トリプターゼ 13.2 ng/mL（発作時高値）、尿ヒスタミン代謝物高値。「MCAS（Valent基準）確定」。H1（セチリジン）+H2（ファモチジン）二重抗ヒスタミン療法を開始。トリガー食品リスト作成。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '二重抗H治療2週間後', content: '蕁麻疹頻度: 毎日→週2-3回に減少。重篤反応（ショック級）はゼロ。低ヒスタミン食を実施中（発酵食品・赤ワイン・イチゴ除去）。POTS合併が疑われるため循環器に紹介。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'ケトチフェン追加', content: 'ケトチフェン1mgを就寝前に追加。症状: 蕁麻疹 週1-2回・腹痛ほぼなし。オマリズマブ（ゾレア）の保険適用外処方を主治医と相談中。EpiPen自己注射処方を受けた。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定・トリガー管理できてきた', content: 'トリガー食品を50種類リスト化、大半を同定できた。アナフィラキシー様発作: 1ヶ月ゼロ。POTS症状（起立時動悸）は水分・塩分強化で管理中。「予測できる生活」が戻ってきた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'MCAS精査', findings: 'トリプターゼ（発作時）13.2 ng/mL（高値）, 尿メチルヒスタミン 高値, IgE 48 IU/mL（正常）, アレルゲン特異的IgE 全陰性, CRP 0.6 mg/dL' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'セチリジン（ジルテック）', notes: '10mg 朝食後（H1拮抗）' },
+        { timestamp: '2026-01-25T10:00:00Z', name: 'ファモチジン（ガスター）', notes: '20mg 朝夕（H2拮抗）' },
+        { timestamp: '2026-03-20T09:00:00Z', name: 'ケトチフェン（ザジテン）', notes: '1mg 就寝前（肥満細胞安定化）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    hashimoto: {
+      diseases: ['橋本病（慢性甲状腺炎）'],
+      profile: { age: 44, gender: 'female', height: 160, weight: 61 },
+      textEntries: [
+        { timestamp: '2026-01-05T09:00:00Z', category: 'symptoms', title: '疲れが取れない・体重増加', content: '半年前から疲れやすく、寒がりになった。体重が6ヶ月で4kg増加。髪の毛が抜ける。婦人科での血液検査でTSHが高いことが分かり、甲状腺専門外来に紹介された。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: '橋本病確定・LT4開始', content: 'TSH 8.2 mIU/L（高値）・FT4 0.7 ng/dL（低値）・TPO抗体 680 IU/mL（強陽性）。「橋本病による甲状腺機能低下症」確定。レボチロキシン（チラーヂンS）25μg開始。' },
+        { timestamp: '2026-02-25T09:00:00Z', category: 'vitals', title: 'LT4 6週後', content: 'TSH 8.2→3.8 mIU/L（改善）。FT4 0.7→0.9 ng/dL（改善）。疲労感が7→5/10に軽減。寒がりも改善傾向。LT4を25→50μgに増量。セレン200μg補充を開始（TPO抗体低下目的）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '3ヶ月後・ほぼ正常化', content: 'TSH 1.6 mIU/L（目標域）・FT4 1.1 ng/dL（正常）。疲労感 3/10。体重: 61→59.5kg（LT4の代謝改善効果）。脱毛も減少。TPO抗体: 680→420（セレン効果の可能性）。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定期・メンテナンス', content: 'TSH 1.8 mIU/L（安定）。「3〜6ヶ月ごとの採血管理でよい」と主治医。グルテンフリー食を週3日試行中（自己抗体管理）。維持量LT4 50μg/日で安定。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '甲状腺フォロー', findings: 'TSH 1.6 mIU/L（目標域）, FT4 1.1 ng/dL（正常）, FT3 2.8 pg/mL（正常）, TPO抗体 420 IU/mL（低下中）, ビタミンD 34 ng/mL' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'レボチロキシン（チラーヂンS）', notes: '50μg 起床後30分空腹服用（甲状腺ホルモン補充）' },
+        { timestamp: '2026-02-25T09:00:00Z', name: 'セレン', notes: '200μg 朝食後（TPO抗体低下目的）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    celiac: {
+      diseases: ['セリアック病（グルテン不耐症）'],
+      profile: { age: 33, gender: 'female', height: 165, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '腹痛・下痢が1年以上続く', content: '食後に腹痛・水様便・腹部膨満が繰り返される。体重が8kg減少した。血液検査でHb 10.2（貧血）。消化器内科でIBSと言われたが改善しなかった。消化器専門医に再受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'セリアック病確定診断', content: '抗tTG-IgA 95 U/mL（陽性）・抗DGP-IgA 88 U/mL（陽性）。小腸内視鏡（十二指腸生検）：絨毛萎縮（Marsh III）確認。「セリアック病確定診断」。厳格なグルテンフリー食（GFD）を即時開始。栄養士指導を受けた。' },
+        { timestamp: '2026-02-25T09:00:00Z', category: 'nutrition', title: 'GFD 5週間後', content: '腹痛: 毎日→週1-2回に大幅改善。下痢: 著明減少。体重: 52→53.2kg（回復中）。「麦・大麦・ライ麦」を厳格除去中。醤油・天ぷら衣・みそ（麦みそ）に注意して代替品に変更。外食が難しく自炊中心。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・腸管回復中', content: 'Hb: 10.2→11.8 g/dL（鉄剤補充効果）。抗tTG-IgA: 95→42（低下中）。体重: 54kg（回復傾向）。ビタミンD 18 ng/mL（低値）→補充開始。カルシウムとB12も追加。日本コムギアレルギー研究会のGFDリストを活用中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・ほぼ症状なし', content: 'GFD継続3ヶ月。腹痛・下痢: ほぼゼロ（交差汚染の可能性があった外食後に1回のみ）。体重 55.5kg（目標体重まで1kg）。抗tTG-IgA 22 U/mL（著明改善）。「1年後に内視鏡再検で絨毛回復を確認する予定」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '2ヶ月後フォロー', findings: 'Hb 11.8 g/dL（改善）, 抗tTG-IgA 42 U/mL（低下中）, ビタミンD 18 ng/mL（低値）, ビタミンB12 230 pg/mL（低値）, 鉄 52 μg/dL（改善中）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '鉄剤（フェロミア）', notes: '50mg 朝食後（セリアック病による鉄欠乏性貧血）' },
+        { timestamp: '2026-03-20T09:00:00Z', name: 'ビタミンD3', notes: '2000IU 朝食後（低値補充）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    immunodeficiency: {
+      diseases: ['免疫不全症（CVID）'],
+      profile: { age: 38, gender: 'male', height: 178, weight: 72 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '肺炎が年に3回', content: '昨年1年間で肺炎3回・副鼻腔炎5回・中耳炎2回を繰り返した。抗生剤で治るが繰り返す。免疫専門外来で免疫グロブリン欠乏が確認された。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'consultation', title: 'CVID確定診断・IVIG開始', content: 'IgG 320 mg/dL（低値）・IgA 12 mg/dL（低値）・IgM 45 mg/dL（低値）。B細胞数は正常だが抗体産生不良。「CVID（分類不能型免疫不全症）」確定。4週ごとのIVIG（免疫グロブリン静注）療法を開始。' },
+        { timestamp: '2026-02-22T09:00:00Z', category: 'vitals', title: 'IVIG 2回目後', content: 'IgGトラフ値: 680 mg/dL（目標600以上）。感染症なし（2ヶ月間）。倦怠感が軽減。副作用（頭痛・発熱）は1回目のみ、2回目は軽微。予防的ST合剤を開始。' },
+        { timestamp: '2026-03-22T09:00:00Z', category: 'vitals', title: 'SCIG（皮下注）への移行', content: 'IVIG→SCIG（週1回皮下自己注射）に移行。在宅で実施できるようになった。「感染ゼロ3ヶ月」。IgGトラフ 710 mg/dL（目標達成）。春のインフルエンザワクチン（不活化）を接種した。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '在宅治療が安定', content: '感染ゼロ4ヶ月継続。仕事（IT系・在宅主体）を継続できている。SCIGの手技に慣れた。マスク・手洗いを継続。「生ワクチン禁忌」リストを主治医・歯科医と共有済み。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-22T10:00:00Z', name: 'IVIG後 IgGトラフ', findings: 'IgGトラフ 680 mg/dL（目標域達成）, IgA 12 mg/dL, IgM 45 mg/dL, CD19+ B細胞 正常数, CBC 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: '皮下免疫グロブリン（ハイゼントラ）', notes: '週1回 皮下自己注射（免疫グロブリン補充）' },
+        { timestamp: '2026-02-22T09:00:00Z', name: 'ST合剤（バクタ）', notes: '1錠 月・水・金（ニューモシスチス肺炎予防）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    diabetes_t1: {
+      diseases: ['1型糖尿病'],
+      profile: { age: 24, gender: 'female', height: 162, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: 'CGM導入後の気づき', content: '1型糖尿病歴8年。リブレ2からDexcom G7に変更。食後の血糖スパイクが見えるようになった。TIR（目標範囲内時間）は57%（目標70%以上）。AIDシステムを検討中。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'medication', title: 'AIDシステム（ループ）導入', content: 'タンデム t:slim X2 + Dexcom G7 のClosed Loopシステムを導入。最初の1週間は学習期間（血糖目標110mg/dL設定）。TIR: 57%→68%に改善。夜間低血糖アラートが激減した。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'AID 1ヶ月後', content: 'TIR: 72%（目標達成）。TBR（低血糖時間）: 5%→2%に改善。HbA1c（最新）: 7.8→7.2%（改善）。運動前の基礎率一時停止機能を活用中。「生理周期でインスリン感受性が変わる」ことをAIDが自動補正。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '3ヶ月後・TIR 78%', content: 'TIR 78%（AID前 57%から大幅改善）。HbA1c 7.0%。低血糖入院ゼロ。食事前ボーラスのタイミング（15分前）を最適化した。AIDの学習精度が上がり介入が減った。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定・合併症スクリーニング', content: 'HbA1c 6.8%（1型として良好）。TIR 79%。年次スクリーニング：網膜症なし、腎症なし（eGFR 98・尿アルブミン/Cr比 正常）。フットケア確認。「この調子を続けましょう」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '3ヶ月後 HbA1c・合併症検査', findings: 'HbA1c 7.0%（改善）, TIR 78%（CGMデータ）, eGFR 98, 尿アルブミン/Cr比 正常, 眼底検査: 網膜症なし, TSH 正常（自己免疫甲状腺合併確認）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'インスリン（Closed Loop: t:slim X2）', notes: '超速効型+基礎インスリン AIDシステムにより自動調整' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    diabetes_t2: {
+      diseases: ['2型糖尿病'],
+      profile: { age: 58, gender: 'male', height: 170, weight: 84 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: 'HbA1c 8.2%・薬剤調整', content: '2型糖尿病歴5年。最近のHbA1c 8.2%（目標7%未満）。体重も5kg増えた。食事制限が続かない。主治医からGLP-1薬の追加を提案された。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'medication', title: 'セマグルチド開始', content: 'セマグルチド（オゼンピック）0.25mg/週→0.5mg/週に開始。初期の副作用（悪心）は1〜2週間で軽快。体重が2週間で1.5kg減。食欲が自然と抑えられる感覚。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '1ヶ月後', content: '体重: 84→81kg（-3kg）。空腹時血糖: 145→118mg/dL。SGLT2阻害薬（エンパグリフロジン）を追加（心腎保護目的）。血圧も改善（142/88→132/82mmHg）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・HbA1c改善', content: 'HbA1c: 8.2→7.1%（大幅改善）。体重: 79.5kg（-4.5kg）。空腹時血糖: 108mg/dL。「食事を変えずともGLP-1の満腹感で自然と食べ過ぎが減った」。セマグルチドを1mg/週に増量。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・目標達成', content: 'HbA1c 6.8%（目標7%未満を達成）。体重 78kg（-6kg）。ウォーキング30分/日を習慣化。「食後血糖スパイクが消えた」。合併症検査：腎症・網膜症なし（eGFR 72→74 わずかに改善）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '2ヶ月後フォロー', findings: 'HbA1c 7.1%（改善）, 空腹時血糖 108 mg/dL, LDL 98 mg/dL, eGFR 72（軽度低下 安定）, 尿アルブミン/Cr比 正常, 体重 79.5 kg（-4.5kg）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'セマグルチド（オゼンピック）', notes: '1mg/週 皮下注射（血糖・体重管理）' },
+        { timestamp: '2026-02-20T09:00:00Z', name: 'エンパグリフロジン（ジャディアンス）', notes: '10mg 朝食後（心腎保護・血糖降下）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    thyroid_hypo: {
+      diseases: ['甲状腺機能低下症'],
+      profile: { age: 52, gender: 'female', height: 158, weight: 64 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '甲状腺術後・ホルモン補充が不安定', content: '甲状腺がん術後2年。TSHが2.8→7.1に上昇（検査で判明）。疲れやすさが増し、便秘・体重増加・抑うつが出てきた。LT4の用量が足りていないと判断し受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'medication', title: 'LT4 増量・服薬指導', content: 'LT4 75μg→100μgに増量。「起床後30〜60分空腹で服用・カルシウム/鉄と2時間間隔」を再確認。コーヒーと同時服用が吸収を下げていたことが判明（改善指導）。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '1ヶ月後', content: 'TSH: 7.1→3.2 mIU/L（改善）。倦怠感 7→4/10。便秘解消。体重: 64→63kg。服薬タイミングの改善（コーヒー前に服薬→水のみ）が有効だった。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後', content: 'TSH: 1.4 mIU/L（目標域）。FT4 1.05 ng/dL（正常）。倦怠感 2/10（ほぼ消失）。体重 62.5kg。「T3も足りていない可能性」をT3が若干低値のため主治医と相談中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定・3〜6ヶ月ごとの管理', content: 'TSH 1.6 mIU/L（安定）。次回採血は6月予定。ビタミンD・セレン補充継続中。「術後甲状腺がんフォロー」でサイログロブリン 0.3 ng/mL（検出感度以下、再発なし）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 2, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '2ヶ月後フォロー', findings: 'TSH 1.4 mIU/L（目標域）, FT4 1.05 ng/dL（正常）, FT3 2.5 pg/mL（やや低値）, サイログロブリン 0.3 ng/mL（再発なし）, ビタミンD 35 ng/mL' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'レボチロキシン（チラーヂンS）', notes: '100μg 起床後30分空腹服用（水のみ・コーヒー前）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    adrenal: {
+      diseases: ['副腎機能不全（アジソン病）'],
+      profile: { age: 37, gender: 'female', height: 164, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '立てないほどの倦怠感・低血圧', content: '昨年末から激しい倦怠感・体重減少・食欲不振・皮膚の色素沈着（肘・歯茎が黒ずむ）。起立時血圧 90/58mmHg（低血圧）。救急受診でコルチゾール低値、副腎不全が疑われた。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: 'アジソン病確定・ヒドロコルチゾン開始', content: '早朝コルチゾール 2.8 μg/dL（正常8以上）・ACTH 1480 pg/mL（著明高値）・21-水酸化酵素抗体 陽性。「自己免疫性副腎不全（アジソン病）」確定。ヒドロコルチゾン20mg（朝10mg・昼5mg・夕5mg）と塩皮質ホルモン（フロリネフ0.1mg）を開始。' },
+        { timestamp: '2026-02-15T09:00:00Z', category: 'vitals', title: '治療3週間後', content: '倦怠感: 10→5/10（著明改善）。血圧: 90/58→108/68mmHg（改善）。食欲が戻った。体重: 52→53kg。「シックデールール」（発熱・嘔吐時の投与量倍増）を記載したメディカルアラートカードを作成。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'vitals', title: '2ヶ月後・日常生活が可能に', content: '倦怠感 3/10。職場に戻れた（週3日から）。色素沈着が薄くなってきた。低血糖エピソードが2回あったが、グルコース摂取で回復。ヒドロコルチゾンのサーカディアンリズム投与（朝高め）を試行中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定・緊急時対応の準備完了', content: '倦怠感 2/10（ほぼ正常な生活）。週5日就労継続中。エマージェンシーキット（ヒドロコルチゾン自己注射100mg）を常備。職場・家族への「副腎クリーゼ時の対応手順」を共有済み。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'アジソン病確定検査', findings: '早朝コルチゾール 2.8 μg/dL（低値）, ACTH 1480 pg/mL（著明高値）, 21-水酸化酵素抗体 陽性, Na 131 mEq/L（低Na）, K 5.2 mEq/L（高K）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'ヒドロコルチゾン（コートリル）', notes: '朝10mg・昼5mg・夕5mg（サーカディアンリズム投与）' },
+        { timestamp: '2026-01-20T10:00:00Z', name: 'フルドロコルチゾン（フロリネフ）', notes: '0.1mg 朝食後（塩皮質ホルモン補充）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    metabolic_syndrome: {
+      diseases: ['メタボリックシンドローム'],
+      profile: { age: 50, gender: 'male', height: 172, weight: 88 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '健診で全項目引っかかった', content: '会社の健診：腹囲 96cm（基準85以下）・血圧 146/92mmHg・中性脂肪 258mg/dL・HDL 38mg/dL・空腹時血糖 118mg/dL（5項目全てアウト）。産業医から内科受診と生活改善を強く勧められた。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: '生活習慣病外来・改善プラン', content: '「メタボリックシンドロームに加え、予備軍の高血圧・脂質異常・糖尿病」。まず3ヶ月の生活改善（食事・運動）から開始。管理栄養士・運動指導士によるプログラム。薬は3ヶ月後に判断。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '1ヶ月後の変化', content: '体重: 88→85kg（-3kg）。腹囲: 96→93cm。朝30分ウォーキング+夜筋トレ（週4日）を習慣化。夕食の炭水化物を半減。血圧: 146/92→136/84mmHg（改善）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・検査値改善', content: '中性脂肪: 258→168mg/dL。HDL: 38→46mg/dL。空腹時血糖: 118→105mg/dL。腹囲: 90cm（目標85まで5cm）。「このペースを続けば薬は不要になるかもしれない」と主治医。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・大幅改善', content: '体重 83kg（-5kg）。腹囲 87cm（目標まで2cm）。血圧 128/80mmHg（高血圧解消）。中性脂肪 138mg/dL、HDL 52mg/dL、血糖 98mg/dL（全項目改善）。薬なしで3ヶ月達成。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '2ヶ月後フォロー', findings: '中性脂肪 168 mg/dL（改善）, HDL-C 46 mg/dL（改善）, LDL 112 mg/dL, 空腹時血糖 105 mg/dL（改善）, HbA1c 5.8%, 血圧 136/84 mmHg（改善）, 腹囲 90 cm（改善中）' }
+      ],
+      medications: [],
+      sleepData: [], activityData: [], meals: []
+    },
+    obesity: {
+      diseases: ['肥満症'],
+      profile: { age: 45, gender: 'female', height: 160, weight: 95 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '体重減少の繰り返しに疲れた', content: 'BMI 37.1（高度肥満）。これまで10回以上ダイエットに挑戦し全て失敗。変形性膝関節症・高血圧・睡眠時無呼吸が合併。「病気としての肥満」の治療を求めて肥満外来を受診。' },
+        { timestamp: '2026-01-25T10:00:00Z', category: 'medication', title: 'セマグルチド2.4mg（Wegovy）開始', content: 'セマグルチド2.4mg/週（皮下注射）を0.25mgから開始（12週で漸増）。管理栄養士・運動療法士との3職種チームで支援。目標：6ヶ月で10%減量（約9.5kg）。' },
+        { timestamp: '2026-02-22T09:00:00Z', category: 'vitals', title: '4週後・自然と食べ量が減った', content: '体重: 95→91kg（-4kg）。悪心は1〜2週で軽快。「お腹が空かなくなった」という感覚が驚き。血圧: 148/92→138/86mmHg（改善）。CPAP継続中。' },
+        { timestamp: '2026-03-22T09:00:00Z', category: 'vitals', title: '8週後・セマグルチド1mg', content: '体重: 88kg（-7kg）。膝の痛みが「歩けるほどに」改善。ウォーキング10分が可能になった。血圧 132/82mmHg。セマグルチドを1mgに増量予定。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'vitals', title: '3ヶ月後・15kg減', content: '体重 80kg（-15kg）。BMI 31.3（高度→中等度肥満）。膝痛: ほぼ消失。睡眠時無呼吸: CPAP圧設定が下がった（改善）。血圧 126/78mmHg（目標達成）。「手術なしでここまで来られた」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-22T10:00:00Z', name: '8週後フォロー', findings: 'HbA1c 5.9%（正常）, LDL 118 mg/dL, 中性脂肪 182 mg/dL（改善中）, 尿酸 6.2 mg/dL, 血圧 132/82 mmHg, 体重 88 kg（-7kg）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-25T10:00:00Z', name: 'セマグルチド2.4mg（ウゴービ）', notes: '1mg/週→2.4mg漸増中（皮下注射）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    arrhythmia: {
+      diseases: ['不整脈（上室性頻脈・WPW症候群）'],
+      profile: { age: 32, gender: 'male', height: 175, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '急に脈が速くなる発作', content: '突然心拍が180台になり30分続く（SVT発作）。今年4回目。職場でも発作があり恥ずかしい思いをした。循環器内科に紹介。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'consultation', title: 'カテーテルアブレーション手術', content: '電気生理検査でWPW症候群（副伝導路存在）確認。カテーテルアブレーション（焼灼術）を実施。副伝導路の離断成功。術後観察48時間後に退院。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'アブレーション後1ヶ月', content: '発作ゼロ。Holter心電図（24時間）：副伝導路の再伝導なし。「非常に良好な結果です」。カフェイン・アルコールを控えた生活を継続中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・完全寛解', content: '発作ゼロ3ヶ月。「5年後まで年1回の定期心電図フォローを継続します」。スポーツ（バスケットボール）に復帰した。QOLが大幅に改善。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 2, sleep_quality: 8 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: '術前精査', findings: '心電図: WPWパターン（デルタ波陽性）, 電気生理検査: 副伝導路（左側)確認・アブレーション成功, 心エコー: 正常（EF 65%）' }
+      ],
+      medications: [],
+      sleepData: [], activityData: [], meals: []
+    },
+    ihd: {
+      diseases: ['虚血性心疾患（狭心症・心筋梗塞後）'],
+      profile: { age: 62, gender: 'male', height: 168, weight: 75 },
+      textEntries: [
+        { timestamp: '2026-01-05T09:00:00Z', category: 'symptoms', title: '心筋梗塞から6ヶ月', content: '昨年7月にNSTEMI（非ST上昇型心筋梗塞）でPCI（ステント留置）施行。リハビリ外来に通い、服薬継続中。最近は労作時の胸部不快感がほぼ消えた。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'vitals', title: '心臓リハビリ成果', content: '6分間歩行距離: 420m→510m（改善）。安静時心拍 62bpm。血圧 128/78mmHg。LDLコレステロール: 68mg/dL（スタチン強化で目標55mg/dL未満に向けて調整中）。DAPT継続中（PCI後12ヶ月予定）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'DAPT完了・スタチン強化', content: 'ステント留置12ヶ月でDAPT（2剤抗血小板）完了。アスピリン単剤継続。ロスバスタチン10→20mgに増量（LDL 68→55mg/dL目標）。心臓リハビリ「自宅継続フェーズ」に移行。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '9ヶ月後・安定', content: 'LDL 52mg/dL（目標達成）。血圧 124/76mmHg。HbA1c 5.6%（正常）。週5日30分のウォーキングを継続中。「狭心症症状ゼロ。良好な二次予防が達成できています」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '冠動脈二次予防管理', findings: 'LDL 52 mg/dL（目標達成）, 血圧 124/76 mmHg, HbA1c 5.6%, 心エコー EF 58%（回復）, 高感度CRP 0.4 mg/dL' }
+      ],
+      medications: [
+        { timestamp: '2025-07-10T10:00:00Z', name: 'アスピリン（バイアスピリン）', notes: '100mg 毎食後（抗血小板・二次予防）' },
+        { timestamp: '2025-07-10T10:00:00Z', name: 'ロスバスタチン（クレストール）', notes: '20mg 就寝前（LDL目標55mg/dL未満）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    dvt: {
+      diseases: ['深部静脈血栓症（DVT）'],
+      profile: { age: 48, gender: 'female', height: 162, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '左ふくらはぎの腫れ・痛み', content: '先週から左下腿に腫れと疼痛。長距離フライト（14時間）の翌日から始まった。圧迫すると痛い。救急受診→静脈エコーで「左脛骨静脈・腓腹筋静脈の血栓」確認。DVT確定。' },
+        { timestamp: '2026-01-15T10:00:00Z', category: 'medication', title: 'DOAC開始・弾性ストッキング', content: 'アピキサバン（エリキュース）10mg×2回/日（最初10日間）→5mg×2回/日に開始。弾性ストッキング（20-30mmHg）を処方。「安静不要・ウォーキング推奨」。肺塞栓症状の確認リストを渡された。' },
+        { timestamp: '2026-02-15T09:00:00Z', category: 'vitals', title: '1ヶ月後・腫脹消退', content: '左下腿の腫脹: ほぼ消失。圧痛: 消失。弾性ストッキングを1日12時間着用継続中。出血副作用なし。D-ダイマー: 1.8→0.9 ng/mL（低下）。「3ヶ月抗凝固継続」の方針。' },
+        { timestamp: '2026-04-10T09:00:00Z', category: 'vitals', title: '3ヶ月後・治療完了検討', content: 'D-ダイマー 0.4 ng/mL（正常化）。静脈エコー：血栓消失確認。「誘因あり（フライト）の初回DVTのため3ヶ月で抗凝固終了を検討」。血栓後症候群（PTS）の兆候なし。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-10T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-15T10:00:00Z', name: '1ヶ月後フォロー', findings: 'D-ダイマー 0.9 ng/mL（低下）, 静脈エコー: 部分的再疎通, PT-INR 1.1（DOAC下）, 出血所見なし, 血小板 22万/μL' }
+      ],
+      medications: [
+        { timestamp: '2026-01-15T10:00:00Z', name: 'アピキサバン（エリキュース）', notes: '5mg 朝夕（DVT治療・3ヶ月コース）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    raynauds: {
+      diseases: ['レイノー症候群'],
+      profile: { age: 35, gender: 'female', height: 160, weight: 50 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '冬になると指が真っ白になる', content: '毎年冬に指先が白→青→赤と色変化する。今年は痛みが強く仕事（タイピング）が困難。既往に強皮症（SSc）の診断あり。皮膚科→血管外科に紹介。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'medication', title: 'カルシウム拮抗薬開始', content: 'アムロジピン5mg開始。週の発作: 14回→7回に減少（1ヶ月後）。指先の潰瘍（右小指）のためブロスタグランジン（アルプロスタジル）点滴を2週間実施。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '保温対策の徹底', content: '発熱インソール・電熱手袋・腹部カイロを導入。発作: 週4回（当初14回から大幅減）。指先潰瘍が治癒。「暖かい環境への外出前カイロ」が最も効果的と感じている。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '春になり発作減少', content: '発作: 週1-2回。アムロジピン継続中。シルデナフィル25mgを重症発作時の頓服として処方。爪床毛細血管鏡：「強皮症パターン」を確認（SSc合併の管理が重要）。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '春の安定期', content: '発作: 週0-1回（気温上昇で自然軽快）。「来冬に備えた早期介入プランを秋に立てる」。爪先潰瘍の予防として保湿・保護継続。SSc本体の管理（肺機能・食道・皮膚硬化）も並行フォロー。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'レイノー精査', findings: 'ANA 陽性 1:320（強皮症パターン）, 抗Scl-70抗体 陽性（SSc確定）, 爪床毛細血管鏡: SSc型ループ消失・出血点, 肺機能 FVC 82%（軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'アムロジピン（アムロジン）', notes: '5mg 朝食後（血管拡張・発作予防）' },
+        { timestamp: '2026-03-20T09:00:00Z', name: 'シルデナフィル（バイアグラ）', notes: '25mg 重症発作時頓服（血管拡張）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    pulmonary_fibrosis: {
+      diseases: ['特発性肺線維症（IPF）'],
+      profile: { age: 67, gender: 'male', height: 170, weight: 68 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '息切れ・乾性咳が悪化', content: '2年前にIPFと診断。最近は階段1階分で息切れが出るようになった。在宅酸素療法（HOT 1L/分）を開始して2ヶ月。定期受診で肺活量の低下が指摘された。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'ニンテダニブ継続・酸素流量増量', content: 'FVC: 65%（前回68%→低下）。SpO2安静時94%・労作時87%（低下）。在宅酸素を2L/分に増量。ニンテダニブ150mg×2の副作用（下痢）が続いており、整腸剤を追加。' },
+        { timestamp: '2026-02-22T09:00:00Z', category: 'vitals', title: '在宅酸素2ヶ月後', content: 'SpO2（O2 2L下）: 安静96%・歩行92%。下痢: 整腸剤で管理できている。6分間歩行: 320m（前回340m）。パルモケア（在宅リハビリ）の担当理学療法士と運動プログラムを開始。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '肺移植評価を検討', content: 'FVC低下継続（63%）。「肺移植の適応評価を大学病院で受けることを勧めます」。心理面のサポートとして緩和ケアチームの介入も開始。家族に病状の説明と今後の見通しを共有した。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '肺移植評価・安定化', content: '大学病院での移植前評価実施中。FVC 62%・SpO2（O2 2L）安静95%維持中。急性増悪なし。「現状維持が目標」として緩和ケア・訪問看護体制を整備中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 7, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '定期呼吸機能精査', findings: 'FVC 65%（低下）, SpO2 安静94% 労作87%, 6分間歩行 320 m, KL-6 1580 U/mL（高値）, 胸部HRCT: 蜂巣肺進行' }
+      ],
+      medications: [
+        { timestamp: '2024-01-01T10:00:00Z', name: 'ニンテダニブ（オフェブ）', notes: '150mg 朝夕食後（抗線維化・副作用：下痢管理中）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    ibs: {
+      diseases: ['過敏性腸症候群（IBS）'],
+      profile: { age: 28, gender: 'female', height: 161, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '通勤中に腹痛が起きる', content: '毎朝通勤途中に腹痛・下痢。職場近くのトイレに駆け込むことが週3〜4回。緊張するとすぐ腸が反応する。会議前は朝食を抜いている。消化器内科でIBS-D（下痢型）と診断。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'Low-FODMAP食開始・薬剤調整', content: 'ROME IV基準でIBS確定。栄養士によるLow-FODMAP食指導（除去フェーズ6週間）開始。ラモセトロン（イリボー）2.5μg処方（女性適応）。CBT-IBSセラピーの予約。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'Low-FODMAP 4週間後', content: '腹痛頻度: 週4-5回→週1-2回に大幅改善。下痢: ほぼ消失（Bristol type 6-7→3-4）。FODMAPの犯人として「小麦・りんご・乳製品」が特定されてきた。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '再導入フェーズ開始', content: 'Low-FODMAPの再導入フェーズで各食品を1つずつテスト中。「大麦・豆類・乳糖」が発症トリガーと確認。「果物・野菜の大半はOK」。CBT-IBS：腸と脳の双方向性の理解で過度な食事制限から解放されつつある。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・ほぼ正常な生活', content: '腹痛: 週0-1回。通勤中の発作ゼロ（先月）。朝食を再開できた。IBS-SSS（重症度スコア）: 285→120（中等度→軽症）。ラモセトロン週3回服用に減量。「食べる楽しさが戻った」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '初診精査（器質的疾患除外）', findings: 'CBC 正常, CRP 0.2 mg/dL, 便カルプロテクチン 45 μg/g（正常：炎症性腸疾患除外）, 甲状腺機能 正常, セリアック抗体 陰性' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'ラモセトロン塩酸塩（イリボー）', notes: '2.5μg 朝食前（女性IBS-D・腸蠕動調整）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gerd: {
+      diseases: ['逆流性食道炎（GERD）'],
+      profile: { age: 46, gender: 'male', height: 172, weight: 82 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '夜間の胸焼けで目が覚める', content: '3ヶ月前から夜中に胸焼けで目が覚める（週3〜4回）。就寝後2〜3時間で起きてしまう。オムプラゾールを飲んでいるが効果が薄れてきた感じ。内視鏡で逆流性食道炎グレードBと診断。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'medication', title: 'P-CAB（ボノプラザン）に変更', content: 'P-CAB（ボノプラザン：タケキャブ20mg）に切替。「夜間酸突破があるためPPIより強力な酸分泌抑制が適切」。就寝前2時間の食事制限・頭部挙上15cmを開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '1ヶ月後・夜間症状が消えた', content: '夜間覚醒: 週3-4回→週0-1回。胸焼け: 8→2/10（著明改善）。体重 82→80kg（2kg減：就寝前食事制限の副産物）。頭部挙上（楔型枕）が最も効果的と感じている。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '内視鏡再検（2ヶ月後）', content: '食道炎: グレードBから「ほぼ治癒（グレードA）」に改善。「バレット食道の兆候なし」。ボノプラザン10mgの維持療法に減量。アルコール・高脂肪食の制限継続。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '安定・薬の減量を検討', content: '胸焼けゼロ。夜間覚醒なし。「6ヶ月後に薬を中止して再発がなければ治療終了を検討します」。体重 79kg（-3kg）。食道裂孔ヘルニアが軽度あるため完全な断薬は難しいかも。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 8 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '初診精査', findings: '上部消化管内視鏡: 逆流性食道炎グレードB, 食道裂孔ヘルニア 軽度, H.pylori 陰性（除菌治療不要）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'ボノプラザン（タケキャブ）', notes: '10mg 朝食前（P-CAB・維持療法）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    nafld: {
+      diseases: ['非アルコール性脂肪肝疾患（NAFLD/MAFLD）'],
+      profile: { age: 50, gender: 'male', height: 170, weight: 86 },
+      textEntries: [
+        { timestamp: '2026-01-10T09:00:00Z', category: 'symptoms', title: '健診でALT高値・脂肪肝', content: '健診でALT 68 U/L（正常40以下）・腹部超音波で「明らかな脂肪肝」。体重 86kg（BMI 29.8）。アルコール飲まない（NAFLD確定）。消化器内科でFibroScan検査を受けた。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'FibroScan・NASH評価', content: 'FibroScan 硬度 8.2 kPa（F2相当：有意な線維化なし）。CAP値 312 dB/m（重度脂肪化）。「NASHの可能性が高いが肝生検は現時点で保留。まず6ヶ月の積極的生活改善」。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '6週後の生活改善成果', content: '体重: 86→82.5kg（-3.5kg）。ALT: 68→48 U/L（改善）。地中海食（野菜・魚・オリーブオイル中心）と週150分運動を継続中。コーヒー3杯/日（肝保護作用を期待）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・ALT正常化', content: 'ALT: 40 U/L（正常化）。体重 81kg（-5kg）。腹囲: 100→94cm。「中性脂肪 180→125 mg/dL」。肝臓エコー再検：「脂肪化が中等度に改善（当初重度→中等度）」。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・7%減量達成', content: '体重 80kg（-6kg、7%達成）。「NAFLDの組織学的改善に必要な7〜10%減量を達成」。ALT 32 U/L（正常）。FibroScan 6ヶ月後再検予定。「この生活習慣を維持することが最大の治療」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-03-20T10:00:00Z', name: '2ヶ月後フォロー', findings: 'ALT 40 U/L（正常化）, AST 32 U/L, γGTP 48 U/L（低下）, 中性脂肪 125 mg/dL（改善）, フィブロスキャン 硬度 7.8 kPa（改善）, FIB-4インデックス 1.2（低リスク）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T10:00:00Z', name: 'ビタミンE（天然型d-α-トコフェロール）', notes: '400IU 朝食後（NASHへの抗酸化・組織学的改善エビデンスあり）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    sibo: {
+      diseases: ['小腸内細菌異常増殖（SIBO）'],
+      profile: { age: 38, gender: 'female', height: 163, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '食後の膨満感・ガスが止まらない', content: '食後30分〜1時間で腹部が異常に膨らむ。ガスが大量に出て社会生活に支障。IBS治療を続けていたが改善しない。水素呼気検査を受けるため専門機関を受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'SIBOラクツロース呼気試験陽性', content: 'ラクツロース呼気検査：90分で水素 +28 ppm（陽性基準+20）。「水素型SIBO確定」。リファキシミン550mg×3回/日 14日間コースを開始。低FODMAP食も同時実施。' },
+        { timestamp: '2026-02-10T09:00:00Z', category: 'vitals', title: 'リファキシミン10日目', content: '膨満感: 9→4/10（著明改善）。リファキシミン終了。ガスが大幅減少した。ヘルクスハイマー様の一時的悪化が3日間あったが軽快。プロキネティクス（低用量エリスロマイシン）を追加。' },
+        { timestamp: '2026-03-10T09:00:00Z', category: 'vitals', title: '呼気再検査・転陰', content: '呼気検査再検：水素 ピーク+6 ppm（陰性）。膨満感ほぼなし。食後の不快感 1-2/10。Low-FODMAP維持食（再導入を慎重に進めている）。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・再発予防に注力', content: '膨満感ゼロの日が月の8割。FODMAPの再導入で「にんにく・玉ねぎ・りんご」がトリガーと確認。プロキネティクス継続中（MMC促進でSIBO再発予防）。再発は「低FODMAP食逸脱」のタイミングで起きやすいと気づいた。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '呼気検査・精査', findings: 'ラクツロース呼気試験: 90分水素 +28 ppm（陽性）, ビタミンB12 280 pg/mL（低値：細菌過剰消費）, 鉄 55 μg/dL（低値）, CBC 正常' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'リファキシミン（リファキシミン）', notes: '550mg 1日3回 14日間（腸内殺菌）' },
+        { timestamp: '2026-02-10T09:00:00Z', name: '低用量エリスロマイシン', notes: '50mg 就寝前（MMC促進・再発予防）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    gastroparesis: {
+      diseases: ['胃不全麻痺（Gastroparesis）'],
+      profile: { age: 52, gender: 'female', height: 160, weight: 48 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '食べると吐く・体重が減り続ける', content: '1型糖尿病歴20年。食後に悪心・嘔吐が毎日起きる。少し食べると満腹感で食べられなくなる。体重が3ヶ月で5kg減少（48kg）。消化器内科で胃排出遅延を疑われ精査。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: '胃排出シンチグラフィ・診断確定', content: '胃排出シンチグラフィ（4時間法）：4時間残存率 38%（正常10%以下）。「重症糖尿病性胃不全麻痺」と確定。ドンペリドン処方。液体主体・低脂肪・低繊維食・1日6回少量食に変更。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '食事変更1ヶ月後', content: '嘔吐: 毎日→週2-3回に減少。体重: 48→48.5kg（わずかに増加）。ミキサー食・経口栄養補助食品（エンシュア）で液体カロリーを補填中。血糖コントロールが食後低血糖→高血糖の乱高下から改善してきた（AID効果）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'medication', title: 'GES（胃電気刺激装置）を検討', content: 'ドンペリドン単独では不十分。「難治性重症例にはGES（Enterra）を検討できます」と専門医から提案。大学病院で評価予約。栄養士・糖尿病チームと連携し在宅TPN（経静脈栄養）の可能性も準備中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: 'GES植込み手術後3週間', content: 'GES（Enterra）植込み術後経過良好。嘔吐: 週2-3回→ほぼゼロ。体重 49.5kg（回復中）。固形食が少しずつ食べられるようになってきた。「手術して本当によかった」。血糖コントロールも安定化した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '胃排出精査・栄養評価', findings: '胃排出シンチ 4時間残存率 38%（重症）, アルブミン 3.2 g/dL（低値）, HbA1c 8.9%（高値・血糖乱高下）, Mg 1.8 mg/dL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'ドンペリドン（ナウゼリン）', notes: '10mg 食前30分（プロキネティクス・胃排出促進）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    eds: {
+      diseases: ['エーラス・ダンロス症候群（EDS）'],
+      profile: { age: 28, gender: 'female', height: 167, weight: 57 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '毎日どこかが外れる', content: '幼少期から関節が柔らかく、ヨガが得意だと思っていたが、実は問題だった。今は毎日指・肩・膝が亜脱臼する。慢性疼痛と疲労が強い。遺伝科でhEDS（過可動型EDS）と確定診断。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: '物理療法プログラム開始', content: 'Beightonスコア 8/9（最大可動性）。hEDS確定。「筋力強化・固有受容感覚訓練が最優先」。理学療法士（EDS専門）との週2回セッション開始。キネシオテーピング指導。肩・膝のサポーター処方。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '物理療法1ヶ月後', content: '亜脱臼頻度: 毎日→週3-4回に減少。疼痛 7→5/10。コアトレーニング（プランク・クラムシェル）を自宅で毎日実施中。仕事（デスクワーク）でエルゴノミクス環境を整備した。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'POTS症状の管理', content: '起立時の動悸・めまいがPOTS合併と判断。水分2.5L・塩分増量・圧迫ストッキングで対応。亜脱臼頻度: 週1-2回（大改善）。コラーゲンペプチド10g/日・ビタミンC1000mgを開始。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・生活の質改善', content: '「外れる回数が劇的に減った」。疼痛 3-4/10。仕事を週5日継続できている。POTS症状も安定。EDS患者会のオンラインコミュニティに参加し、先輩患者からの具体的なヒントが役立っている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'EDS精査', findings: 'Beightonスコア 8/9, 皮膚伸展性 増加, 遺伝子検査 hEDS（非分子診断・臨床診断）, ビタミンD 22 ng/mL（低値）, フェリチン 18 ng/mL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'プレガバリン（リリカ）', notes: '75mg 朝夕（神経因性疼痛・関節痛）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    polymyalgia: {
+      diseases: ['リウマチ性多発筋痛症（PMR）'],
+      profile: { age: 71, gender: 'female', height: 155, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '朝、肩と腰が硬くて動けない', content: '3週間前から突然、朝起きると両肩・首・腰・臀部が硬くて1〜2時間動けない。72歳。CRP・ESRが著明高値。巨細胞性動脈炎（GCA）の除外目的で眼科受診も行った。リウマチ科を受診。' },
+        { timestamp: '2026-01-20T10:00:00Z', category: 'medication', title: 'プレドニゾロン開始', content: 'CRP 9.8 mg/dL・ESR 88mm/hr。「PMR確定」。プレドニゾロン15mgを開始。眼科：眼動脈の炎症なし（GCA除外）。骨粗鬆症予防のビスホスホネート・カルシウム・ビタミンDを同時開始。' },
+        { timestamp: '2026-01-27T09:00:00Z', category: 'vitals', title: 'ステロイド1週後・劇的改善', content: '「まるで別人のよう」。朝のこわばり: 120分→15分に短縮。疼痛: 9→3/10。「PMRのステロイドへの劇的反応が診断を支持する」。CRP: 9.8→1.2 mg/dL（1週間で著明改善）。' },
+        { timestamp: '2026-03-01T09:00:00Z', category: 'medication', title: 'プレドニゾロン減量開始', content: '15→12.5mgに減量。症状再燃なし。ESR 18mm/hr（正常域）。ステロイド副作用（血糖・血圧・骨密度）のモニタリング強化。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・10mgで安定', content: 'プレドニゾロン 10mg。朝のこわばり: ゼロ。疼痛 1/10。CRP 0.5 mg/dL（正常）。「2年かけてゆっくり減量を目指します」。骨密度 YAM 81%（軽度低下→ビスホス継続）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 3, pain_level: 1, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 2, pain_level: 1, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'PMR確定時検査', findings: 'CRP 9.8 mg/dL（著明高値）, ESR 88 mm/hr（著明高値）, IL-6 38 pg/mL（高値）, 血糖 98 mg/dL, 骨密度 YAM 81%（軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-20T10:00:00Z', name: 'プレドニゾロン', notes: '10mg 朝食後（PMR維持量・漸減中）' },
+        { timestamp: '2026-01-20T10:00:00Z', name: 'アレンドロン酸（フォサマック）', notes: '35mg 週1回 起床後空腹服用（骨粗鬆症予防）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    chemo_side: {
+      diseases: ['化学療法後遺症（CIPN・ケモブレイン）'],
+      profile: { age: 54, gender: 'female', height: 160, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '乳がん治療終了後の後遺症', content: 'AC療法+パクリタキセル完了から8ヶ月。手足のしびれ（CIPN）が改善せず、タイプミスが増えた（ケモブレイン）。仕事（経理）に支障あり。サバイバーシップ外来を受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'CIPN・認知機能評価', content: 'NCI-CTCAE CIPNグレード2（日常生活に影響）。神経伝導検査：腓腹神経感覚障害。MoCA 26点（軽度認知低下）。デュロキセチン60mgを処方。作業療法士による認知リハ開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'デュロキセチン4週後', content: 'CIPNしびれ: 7→4/10（改善）。「夜間の灼熱感が消えた」。ケモブレイン：メモリーノート・カレンダーアプリ活用で職場ミスが減少。水中ウォーキング（週2回）開始（足底感覚改善に有効との研究）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・機能改善', content: 'しびれ 3/10。転倒リスク評価「中程度→低リスク」に改善。ケモブレイン：職場の同僚にCIPNと認知障害を開示し、チェックリスト確認の習慣化を提案。アロマターゼ阻害薬の関節痛が新たな問題として浮上。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '9ヶ月後・安定', content: 'しびれ 2/10。転倒なし4ヶ月継続。仕事を週5日継続中。骨密度 YAM 78%（アロマターゼ阻害薬影響）→ビスホスホネート追加。腫瘍マーカー・画像フォローは「問題なし」が続いている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'サバイバーシップ精査', findings: 'CA15-3 18 U/mL（正常）, CEA 1.2 ng/mL（正常）, Hb 12.1 g/dL（軽度貧血）, 骨密度 YAM 78%, ビタミンD 24 ng/mL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'デュロキセチン（サインバルタ）', notes: '60mg 朝食後（CIPN疼痛・神経因性疼痛）' },
+        { timestamp: '2026-01-01T10:00:00Z', name: 'アナストロゾール（アリミデックス）', notes: '1mg 毎日（ホルモン受容体陽性乳がん・5年計画）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    mcs: {
+      diseases: ['化学物質過敏症（MCS）'],
+      profile: { age: 42, gender: 'female', height: 160, weight: 52 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '香水の香りで倒れそうになる', content: 'オフィスリフォーム後から職場で頭痛・めまい・倦怠感が毎日出るようになった。香水・柔軟剤・コピー機のにおいに反応する。スーパーや電車も困難になった。化学物質過敏症専門外来を受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'MCS診断・回避戦略', content: 'Cullenの8基準を充足→MCS確定。「再曝露で増悪する感作が起きている」。VOC・農薬・香料を徹底回避。在宅勤務に切替申請。活性炭マスク・空気清浄機（HEPAフィルター）を導入。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '回避生活1ヶ月後', content: '症状: 9→5/10（在宅で著明改善）。安全な食材（有機農産物）を特定。洗剤・シャンプーを無香料に変更。職場は在宅勤務への移行が認められた。「家の中は快適になった」。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'CBT開始・症状の解釈変化', content: 'MCS専門の心理士によるCBT開始。「脳・神経系の感作メカニズム」を学ぶことで「化学物質=即危険」という思考が柔らかくなってきた。段階的にスーパーへ短時間外出の練習中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・行動範囲が拡大', content: '症状 3/10（安定環境下）。スーパー10分以内が可能（マスク着用）。外出可能な場所リストが5→15に増えた。ME/CFS的な疲労は残存するが「生活の範囲が少しずつ戻ってきた」。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, brain_fog: 5, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, brain_fog: 4, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '初診精査（他疾患除外）', findings: '甲状腺 正常, CBC 正常, 肝機能 正常, アレルゲン特異的IgE 陰性（アレルギーとの鑑別）, ニューロキニンB・SP測定（研究的：高値傾向）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-01T10:00:00Z', name: 'ビタミンC（薬局グレード）', notes: '1000mg 朝食後（抗酸化・神経保護・補助的）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    emf: {
+      diseases: ['電磁波過敏症（EHS）'],
+      profile: { age: 38, gender: 'male', height: 175, weight: 70 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '5G基地局設置後から頭痛が毎日', content: '近所に5G基地局が設置された昨年秋から頭痛・疲労・睡眠障害が続く。「電波が原因」と確信。スマホはなるべく遠ざけ、Wi-Fiを切って生活。仕事（IT）がほぼできなくなった。専門外来を受診。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'EHS診断・機能的アプローチ', content: 'WHO定義のIEI-EMFに該当。「二重盲検試験ではEMF曝露との因果関係は証明されていないが、症状は本物」。機能性身体症状として認知行動療法アプローチを提案。睡眠改善と生活制限の緩和を目標に設定。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'CBT2週目・睡眠改善', content: '「電波が直接有害ではなく、脳が脅威として学習している」という視点を少しずつ受け入れ始めた。睡眠: 4時間→6時間に改善（リラクゼーション技法の効果）。頭痛: 9→6/10。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'CBT6週後・段階的再曝露', content: '段階的曝露（グレード別EMF環境への短時間接触）を開始。スマホを「1日30分まで」使用できるようになった。仕事のリモート接続を再開（週2時間）。頭痛 5/10に減少。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・機能回復', content: '頭痛 3/10（当初9から改善）。週20時間のPC作業が可能。「電波への恐怖が減った」と自覚。仕事への段階的復帰中。社会的孤立を避けるためオンラインコミュニティ参加を再開した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, brain_fog: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, brain_fog: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: '初診精査（他疾患除外）', findings: '甲状腺 正常, MRI 頭部 正常, 脳波 正常, CBC・肝腎機能 正常, PHQ-9 12点（軽度うつ傾向）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'スボレキサント（ベルソムラ）', notes: '15mg 就寝前（睡眠障害改善）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    lyme: {
+      diseases: ['ライム病（治療後遷延症状・PTLDS）'],
+      profile: { age: 45, gender: 'male', height: 178, weight: 75 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '抗生剤後も疲労・関節痛が続く', content: '昨年春にダニに刺されてライム病と診断。ドキシサイクリン3週間投与後も疲労・関節痛・ブレインフォグが継続（8ヶ月）。「PTLDS（治療後遷延ライム病症候群）」の診断を求めて専門家外来へ。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'PTLDS診断・多面的アプローチ', content: 'PTLDS確定（ウエスタンブロット陽性・抗生剤後遷延症状）。CD57 NK細胞 48/μL（低値）。「長期抗生剤追加は推奨されない（エビデンス不足）」。免疫・炎症の管理・症状管理・生活調整を柱に治療方針を立てた。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: 'エネルギー管理で安定', content: 'ME/CFS様ペーシング戦略（活動可能時間を4時間以内に制限）を実施。PEM頻度: 週5→週2回に減少。LDN（低用量ナルトレキソン）4.5mgを開始（免疫調節目的）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: '2ヶ月後・炎症指標改善', content: 'CRP: 1.8→0.8 mg/dL（改善）。疲労 7→5/10。ブレインフォグ 8→5/10。LDNの効果が感じられている。α-リポ酸・マグネシウム・B複合ビタミンを追加。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '4ヶ月後・緩やかな回復', content: '疲労 4/10。ブレインフォグ 4/10。週20時間の在宅勤務が可能になった。「PTLDS患者は数年かけて60〜70%が改善する」という情報に希望を持っている。LDN継続中。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, brain_fog: 5, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 4, brain_fog: 4, pain_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'PTLDS精査', findings: 'ライムウエスタンブロット IgG 陽性（5バンド）, CD57 NK細胞 48/μL（低値）, CRP 1.8 mg/dL（軽度高値）, サイトカインパネル IL-6 高値, TGF-β1 高値' }
+      ],
+      medications: [
+        { timestamp: '2026-02-20T09:00:00Z', name: '低用量ナルトレキソン（LDN）', notes: '4.5mg 就寝前（免疫調節・神経保護）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    mold: {
+      diseases: ['カビ毒症（CIRS・慢性炎症反応症候群）'],
+      profile: { age: 40, gender: 'female', height: 163, weight: 56 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: '新しいマンションに引越してから体調が崩れた', content: '3年前に引越し後から原因不明の倦怠感・ブレインフォグ・関節痛・動悸が続く。複数の病院で「異常なし」。家の壁紙に黒いシミを発見。CIRS専門家への紹介を求めた。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'CIRS診断・環境除去', content: 'VCS（視覚コントラスト感度）テスト異常。TGF-β1 9800 pg/mL（高値）・MSH 28 pg/mL（低値）。室内ERMI検査：Stachybotrys chartarum検出（危険域）。「CIRS確定。まず環境除去が最優先」。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '引越し後1ヶ月', content: '新居へ引越し完了（カビ建物から離れた）。倦怠感: 9→6/10に改善。「環境除去だけでこれほど改善するのか」と驚いた。コレスチラミン（胆汁酸レジン）服用開始（毒素排出）。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'Shoemakerプロトコル2ヶ月', content: 'TGF-β1: 9800→5200（低下中）。MSH: 28→48 pg/mL（上昇中）。倦怠感 4/10。ブレインフォグ 5/10。VIPkスプレーは保険外で高額なため現在保留中。食事（マイコトキシン回避食）を継続中。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・着実な回復', content: '倦怠感 3/10。ブレインフォグ 3/10。子供の送迎・家事が自力でできるようになった。「カビのせいだったと分かっただけで精神的に楽になった」。TGF-β1 4200 pg/mL（継続改善中）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, brain_fog: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, brain_fog: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'CIRS精査', findings: 'TGF-β1 9800 pg/mL（高値）, MSH 28 pg/mL（低値）, VEGF 低値, C4a 高値, 部屋内ERMI 14（危険域）, VCSテスト 異常' }
+      ],
+      medications: [
+        { timestamp: '2026-02-20T09:00:00Z', name: 'コレスチラミン（クエストラン）', notes: '4g 食前（胆汁酸に吸着・マイコトキシン排出・Shoemakerプロトコル）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    hsd: {
+      diseases: ['関節過可動性症候群（HSD）'],
+      profile: { age: 25, gender: 'female', height: 168, weight: 58 },
+      textEntries: [
+        { timestamp: '2026-01-08T09:00:00Z', category: 'symptoms', title: 'バレエを引退してから体中が痛い', content: '15年間のバレエを昨年引退。「すごく体が柔らかい」と言われていたが、引退後から膝・腰・肩の慢性疼痛が始まった。毎日どこかが痛い。関節が「ガクっと」なる感覚も頻繁にある。リウマチ科へ。' },
+        { timestamp: '2026-01-22T10:00:00Z', category: 'consultation', title: 'HSD診断・物理療法開始', content: 'Beightonスコア 7/9。hEDSの遺伝的バリアント検索陰性→HSD（関節過可動性症候群）と診断。「筋力強化で関節を動的に安定させることが根本治療」。EDS/HSD専門の理学療法士との週2回セッション開始。' },
+        { timestamp: '2026-02-20T09:00:00Z', category: 'vitals', title: '物理療法5週後', content: '疼痛: 7→4/10。膝・腰の安定感が増した（固有受容感覚訓練の効果）。自宅でのホームエクサ（クラムシェル・デッドバグ・コプレーン）を毎朝20分実施中。' },
+        { timestamp: '2026-03-20T09:00:00Z', category: 'vitals', title: 'POTSの評価', content: '起立時の頭痛・動悸があり循環器科へ。チルト試験陽性：POTS合併確認。水分2.5L・塩分増量・圧迫ストッキングを開始。「HSD+POTS+MCAS（軽症）の三つ組み合わせ」。' },
+        { timestamp: '2026-04-18T09:00:00Z', category: 'vitals', title: '3ヶ月後・全体的改善', content: '疼痛 2-3/10（大幅改善）。POTS症状も安定化。週3日のピラティス（体幹強化）を始めた。「痛くない日が増えた」。ダンス（趣味の現代舞踊）を週1回再開できている。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 7 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 3, pain_level: 2, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'HSD精査', findings: 'Beightonスコア 7/9, CRP 0.3 mg/dL（正常）, ANA 陰性（RA/SLE除外）, ビタミンD 24 ng/mL（低値）, フェリチン 16 ng/mL（低値）' }
+      ],
+      medications: [
+        { timestamp: '2026-01-22T10:00:00Z', name: 'ロキソプロフェン（ロキソニン）', notes: '60mg 必要時頓服（急性疼痛発作時）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
