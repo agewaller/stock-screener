@@ -2274,6 +2274,54 @@ ME/CFSとの重複症状にも注意して分析してください。
 6. 食事記録：低GI食・食物繊維・砂糖・精製炭水化物の摂取と血糖の関係
 7. 次の受診前に報告すべき排卵の変化・生理不順の悪化・妊娠反応`
   },
+
+  // アレルギー疾患
+  allergy_research: { name: 'アレルギー疾患 研究動向', disease: 'allergy', description: 'アレルゲン免疫療法・デュピルマブ・食物アレルギー最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `アレルギー疾患（アトピー・喘息・花粉症・食物アレルギー）の最新研究を報告してください。重点：舌下免疫療法の長期効果・アレルゲン特異的IgE低下のバイオマーカー、デュピルマブ・トラロキヌマブ等Th2阻害生物学的製剤の実世界データ、食物アレルギー経口免疫療法（OIT）の耐性獲得成功率・安全性プロトコル、MCASとアレルギー疾患の重複病態への新アプローチ、予防戦略（早期曝露・腸内細菌叢）。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+  allergy_daily: { name: 'アレルギー疾患 日次分析', disease: 'allergy', description: 'アレルゲン曝露・症状・薬剤効果の記録評価', schedule: 'daily', active: true,
+    prompt: PROMPT_HEADER + `アレルギー疾患患者の日記・症状データを評価してください。1. アレルゲン曝露（花粉・ダニ・食物・ペット）と症状の相関分析 2. 抗ヒスタミン薬・ステロイド外用・吸入薬の使用パターンと効果 3. アナフィラキシーリスク因子の確認 4. 舌下免疫療法の継続確認 5. 生活環境改善（空気清浄機・マットレスカバー・外出時の対策）の進捗 6. 次回受診前に報告すべき症状の変化・エピペン使用の有無` },
+
+  // 摂食障害
+  eating_research: { name: '摂食障害 研究動向', disease: 'eating', description: 'CBT-E・神経性やせ症・過食症の最新治療エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `摂食障害（神経性やせ症・神経性過食症・過食性障害）の最新研究を報告してください。重点：CBT-E（強化認知行動療法）の有効性・完了率の向上戦略、神経性やせ症への外来栄養回復プロトコル（TEMAP・SSCM）、過食症に対するSSRI・抗てんかん薬（トピラマート）の有効性、fMRI・神経画像でわかった摂食障害の脳機能異常と治療標的、ケトセリン・ピモジド等の新規薬物療法候補。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+  eating_daily: { name: '摂食障害 日次分析', disease: 'eating', description: '栄養回復・認知・行動の記録評価', schedule: 'daily', active: true,
+    prompt: PROMPT_HEADER + `摂食障害患者の日記・体重・食事データを分析してください。1. 体重・BMI推移と目標体重への進捗（週次変化の安全範囲確認） 2. カロリー・栄養バランスの記録（過度な制限または過食の検出） 3. 体型への認知の歪み・感情と食事の関係パターン 4. CBT-Eのセッション進捗・行動実験の実施と結果 5. 検査値（アルブミン・Hb・QTc）の変化 6. 入院基準（BMI著明低下・電解質異常・自傷リスク）の評価` },
+
+  // 複雑性PTSD
+  cptsd_research: { name: '複雑性PTSD 研究動向', disease: 'cptsd', description: 'EMDR・NET・複雑性トラウマの最新治療エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `複雑性PTSD（CPTSD）・複合トラウマの最新研究を報告してください。重点：EMDR（眼球運動脱感作・再処理）のCPTSD標準化プロトコル、NET（ナラティブ・エクスポージャー・セラピー）の有効性・組み込み研究、感情調節スキル向上を先行させる段階的トラウマ治療（Phase-based）、MDMA補助療法のPTSD臨床試験（MAPS研究）進捗、解離症状への特化治療（DID・離人症を含む）。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+  cptsd_daily: { name: '複雑性PTSD 日次分析', disease: 'cptsd', description: 'フラッシュバック・解離・感情調節の記録評価', schedule: 'daily', active: true,
+    prompt: PROMPT_HEADER + `複雑性PTSD患者の日記・症状データを分析してください。1. フラッシュバック・悪夢・侵入記憶の頻度と強度（0-10）変化 2. 解離症状（離人感・離現実感・健忘）の記録 3. 感情調節困難（感情の激しい波・麻痺）のパターン 4. トリガーとなった出来事と対処法の効果評価 5. EMDR/NETセッション後の変化とグラウンディング練習の実施 6. 安全な関係性（治療者・信頼できる人）との接触と回復への影響` },
+
+  // がんサバイバー
+  cancer_survivor_research: { name: 'がんサバイバー 研究動向', disease: 'cancer_survivor', description: '術後QOL・CIPN・サバイバーシップケアの最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `がんサバイバーシップ（術後・治療後管理）の最新研究を報告してください。重点：化学療法誘発末梢神経障害（CIPN）の予防・治療（デュロキセチン・運動療法）、がん関連疲労（CRF）への運動介入・マインドフルネスのエビデンス、ホルモン療法（アロマターゼ阻害薬）の副作用管理（骨密度・関節痛）、定期フォローアップの最適間隔（CT・腫瘍マーカー）に関するリスクベース戦略、サバイバー症候群・うつ病・不安への心理的サポート。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+  cancer_survivor_daily: { name: 'がんサバイバー 日次分析', disease: 'cancer_survivor', description: 'CIPN・疲労・副作用・定期検査の記録評価', schedule: 'daily', active: true,
+    prompt: PROMPT_HEADER + `がんサバイバーの日記・症状データを分析してください。1. CIPN（末梢神経障害）のしびれ・疼痛の変化（0-10）と生活への影響 2. がん関連疲労（CRF）のレベルと運動・睡眠との関係 3. ホルモン療法の副作用（関節痛・骨密度低下・ホットフラッシュ） 4. 腫瘍マーカー・画像検査の最新結果と前回比 5. 感情的健康（サバイバー症候群・再発不安）の記録 6. 次回フォローアップ前に医師に伝えるべき新しい症状・変化` },
+
+  // ライム病
+  lyme_research: { name: 'ライム病 研究動向', disease: 'lyme', description: '慢性ライム病・Post-treatment症状の最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `ライム病（ボレリア感染症）・治療後遷延症状（PTLDS）の最新研究を報告してください。重点：PTLDS（Post-Treatment Lyme Disease Syndrome）のメカニズム仮説（持続感染 vs 免疫異常）、長期抗生物質療法の臨床試験結果、ミノサイクリン・ダプソン併用療法（Horowitz protocol）の有効性データ、ME/CFSとのオーバーラップと鑑別、バイオフィルム型ボレリアへの新規アプローチ、診断改善（CLIA法・抗原検査）。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+
+  // 化学物質過敏症
+  mcs_research: { name: '化学物質過敏症 研究動向', disease: 'mcs', description: 'MCS・環境過敏症・多感作の最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `化学物質過敏症（MCS）・多発性化学物質過敏症・環境過敏症（IEI）の最新研究を報告してください。重点：中枢神経感作メカニズム（NMDA受容体・一酸化窒素・酸化ストレス仮説）、ME/CFS・線維筋痛症・EHSとの合併病態と神経生物学的共通機序、嗅覚過敏・化学物質曝露後の遅延反応の評価法、段階的脱感作・認知行動療法・マインドフルネスの有効性データ、日本の化学物質過敏症診断基準と海外比較。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+
+  // カビ毒症
+  mold_research: { name: 'カビ毒（CIRS）研究動向', disease: 'mold', description: 'CIRS・マイコトキシン・慢性炎症反応の最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `カビ毒症（Mold Illness）・慢性炎症反応症候群（CIRS）の最新研究を報告してください。重点：Shoemaker CIRSプロトコルの有効性・批判的評価、室内カビ（Stachybotrys・Aspergillus）とマイコトキシン（トリコテセン・オクラトキシン・グリオトキシン）の健康影響研究、ERMI値・HERTSMI-2によるカビ建物評価の精度、CIRS生体マーカー（TGF-β1・VEGF・MSH）の診断的価値、ME/CFS・MCAS・自己免疫疾患との重複。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+
+  // ALS
+  als_research: { name: 'ALS 研究動向', disease: 'als', description: '筋萎縮性側索硬化症の最新治療・研究エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `筋萎縮性側索硬化症（ALS）の最新研究を報告してください。重点：SOD1標的療法（タウロウルソデオキシコール酸・アンチセンスオリゴヌクレオチド）の臨床試験、TDP-43・FUS凝集阻害の創薬進捗、RNA結合タンパク・液-液相分離メカニズムの治療標的化、神経幹細胞・エクソソーム治療の臨床段階、エダラボン・フマル酸ジメチルの実世界データ、ALS-FTD（前頭側頭葉認知症型）への特化アプローチ、患者会・レジストリ（JaCALS）の活動。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+
+  // 電磁波過敏症
+  emf_research: { name: '電磁波過敏症 研究動向', disease: 'emf', description: 'EHS・IEI-EMF・環境過敏症の最新エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `電磁波過敏症（EHS）・IEI-EMF（電磁場関連特発性環境不耐症）の最新研究を報告してください。重点：二重盲検チャレンジ試験の累積エビデンスとその解釈・限界、神経生理学的研究（脳波・ERP・自律神経指標での差異検出）、心理社会的要因・メディア効果・ノセボ効果の定量化、ME/CFS・MCS・線維筋痛症との合併と機能性身体症状としての統合モデル、認知行動療法・暴露療法の有効性データ。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
+
+  // 肺線維症
+  pulmonary_fibrosis_research: { name: '肺線維症 研究動向', disease: 'pulmonary_fibrosis', description: '特発性肺線維症・間質性肺疾患の最新治療エビデンス', schedule: 'weekly', active: true,
+    prompt: PROMPT_HEADER + `特発性肺線維症（IPF）・間質性肺疾患（ILD）の最新研究を報告してください。重点：ニンテダニブ・ピルフェニドンの長期予後データ（INBUILD・TOMORROW延長試験）、新規抗線維化薬（GB0139・GLPG1690）の臨床試験、IPFの急性増悪（AE-IPF）の予防・管理戦略、肺移植基準の改訂と免疫抑制療法、テロメア異常・MUC5B多型等の遺伝的リスク要因、デジタル肺音モニタリングと在宅酸素療法の最適化。各論文：タイトル（日本語訳）・要旨・臨床的意義・DOI` },
 };
 
 // Build DEFAULT_PROMPTS by merging universal + disease-specific
