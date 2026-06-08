@@ -2630,6 +2630,106 @@ var CONFIG = {
         { timestamp: '2026-01-15T10:00:00Z', name: '低用量エストロゲン・プロゲスチン配合薬（LEP）', notes: '毎日1錠（月経調整・アンドロゲン抑制・子宮内膜保護）' }
       ],
       sleepData: [], activityData: [], meals: []
+    },
+    eating: {
+      diseases: ['摂食障害（神経性やせ症・神経性過食症）'],
+      profile: { age: 22, gender: 'female', height: 162, weight: 46 },
+      textEntries: [
+        { timestamp: '2026-03-10T20:00:00Z', category: 'symptoms', title: '食事と体重', content: '体重 46kg（BMI 17.5）。今日の食事は朝なし・昼おにぎり1個・夕野菜スープ。1,000kcal以下の食事が続いている。鏡を見るたびに「もっと痩せたい」という考えが止まらない。カウンセラーへの紹介状をもらった。' },
+        { timestamp: '2026-03-17T10:00:00Z', category: 'consultation', title: '摂食障害外来 初診', content: '神経性やせ症（制限型）と診断。BMI 17.5は低体重域。BDI-II 28点（中等度うつ）。管理栄養士・心理士・精神科医のチーム治療を開始。目標体重を設定（週0.5kg増加を目指す）。CBT-Eの予約を入れた。' },
+        { timestamp: '2026-03-24T08:00:00Z', category: 'nutrition', title: '食事記録 1週目', content: '管理栄養士の計画に従い、1,400kcalに増量した。食事の前後の不安が強い（8/10）が「食事をしないと体が回復しない」という認知再構成を練習している。体重 46.3kg（少し増加）。' },
+        { timestamp: '2026-03-31T09:00:00Z', category: 'medication', title: 'SSRIの処方', content: '気分の落ち込みと強迫的な考え（体型へのこだわり）に対してエスシタロプラム10mgが追加処方された。過食嘔吐への移行を防ぐためモニタリングも強化される。' },
+        { timestamp: '2026-04-07T10:00:00Z', category: 'symptoms', title: '体重 47kg', content: '体重 47kg。「太った感覚」が強いが、主治医から「それは認知の歪み。健康的な変化」と確認された。CBT-Eで「食事は敵ではなく燃料」という行動実験を行った。ランチを友人と一緒に食べることができた。' },
+        { timestamp: '2026-04-14T09:00:00Z', category: 'vitals', title: '栄養状態の改善', content: '血液検査: アルブミン 3.9（前回 3.5→改善）。Hb 11.8（前回 10.2→改善）。心電図: QTc 420ms（前回 450→正常化）。医師「栄養状態が着実に回復しています。この調子で続けましょう」。体重 47.5kg。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 6, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 5, sleep_quality: 6 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-14T10:00:00Z', name: '栄養・代謝評価', findings: 'アルブミン 3.9 g/dL（改善）, Hb 11.8 g/dL（改善）, Zn 73 μg/dL（低値傾向）, 空腹時血糖 72 mg/dL, QTc 420 ms（正常化）, BMI 18.1（回復中）' }
+      ],
+      medications: [
+        { timestamp: '2026-04-01T08:00:00Z', name: 'エスシタロプラム（レクサプロ）', notes: '10mg 朝食後（うつ・強迫的思考に対して）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    cptsd: {
+      diseases: ['複雑性PTSD（CPTSD）'],
+      profile: { age: 32, gender: 'female', height: 163, weight: 54 },
+      textEntries: [
+        { timestamp: '2026-03-11T21:00:00Z', category: 'symptoms', title: 'フラッシュバック', content: '職場での怒鳴り声がトリガーになり、幼少期の記憶がフラッシュバックした（15分以上）。身体が固まって動けなかった。過去の出来事と「今」を区別する練習を続けているが、トリガーに反応してしまう。' },
+        { timestamp: '2026-03-18T10:00:00Z', category: 'consultation', title: 'トラウマ専門外来 初診', content: 'PCL-5スコア 52点。複雑性PTSDと診断。フラッシュバック・解離・感情調節困難・慢性の羞恥感が主症状。NET（ナラティブ・エクスポージャー・セラピー）または EMDR の治療選択肢を説明された。来週からEMDRを開始する。' },
+        { timestamp: '2026-03-25T19:00:00Z', category: 'symptoms', title: 'EMDR 1回目後', content: 'EMDR後は疲労感が強い。ターゲット記憶のSUDS（苦痛度）が 9→7 に低下した。「感情が動いた」という感覚があり、セッション後に涙が出た。治療者から「プロセスが動いている」と言われた。グラウンディング練習を毎晩行っている。' },
+        { timestamp: '2026-04-01T09:00:00Z', category: 'symptoms', title: '感情の波', content: 'セラピーの合間は感情の波が大きい。過去の記憶が整理される途中は一時的に症状が強くなることを説明された。身体感覚（胸の緊張・呼吸浅さ）をノートに記録している。睡眠は改善中（4時間→6時間）。' },
+        { timestamp: '2026-04-08T10:00:00Z', category: 'medication', title: 'セルトラリン開始', content: '過覚醒・不眠に対してセルトラリン50mgが追加処方。「トラウマ治療と薬は車の両輪」と主治医。EMDRは週1回継続中。' },
+        { timestamp: '2026-04-15T20:00:00Z', category: 'symptoms', title: 'EMDR 5回目', content: 'ターゲット記憶のSUDS 3（9から大幅低下）。「昔のことは昔のこと」という感覚が少しずつ出てきた。職場で怒鳴り声があっても固まらなくなった（軽い緊張はあるが動ける）。睡眠 6.5時間。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 8, sleep_quality: 4 },
+        { timestamp: '2026-04-08T09:00:00Z', fatigue_level: 7, sleep_quality: 5 },
+        { timestamp: '2026-04-15T09:00:00Z', fatigue_level: 6, sleep_quality: 6 },
+        { timestamp: '2026-04-22T09:00:00Z', fatigue_level: 5, sleep_quality: 7 }
+      ],
+      bloodTests: [],
+      medications: [
+        { timestamp: '2026-04-08T08:00:00Z', name: 'セルトラリン（ジェイゾロフト）', notes: '50mg 朝食後（PTSD 過覚醒・不眠・うつ症状）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    allergy: {
+      diseases: ['アレルギー疾患（スギ花粉症・アトピー性皮膚炎）'],
+      profile: { age: 35, gender: 'female', height: 160, weight: 55 },
+      textEntries: [
+        { timestamp: '2026-02-10T07:00:00Z', category: 'symptoms', title: '花粉シーズン開始', content: 'くしゃみ 30回以上、鼻水止まらない。目がかゆくて職場でのデスクワーク集中できず。毎年2〜5月がつらい。今年からアレルギー科に通って治療を見直すことにした。抗ヒスタミン薬は眠くなるので仕事中は使えない。' },
+        { timestamp: '2026-02-17T10:00:00Z', category: 'consultation', title: 'アレルギー科受診', content: 'スギ特異的IgE クラス5（高度陽性）。皮膚プリックテスト：スギ・ハウスダスト・ダニ陽性。舌下免疫療法（SLIT）の候補と診断。眠気の少ないアレルギー薬（ビラノア）に変更。鼻噴霧ステロイドも処方された。' },
+        { timestamp: '2026-03-01T08:00:00Z', category: 'medication', title: '舌下免疫療法（シダキュア）開始', content: 'シダキュア舌下錠（2,000JAU）から開始。舌下に2分保持後飲み込む。最初の1週間は低用量（200JAU）。口の中の軽いかゆみあり。医師から「3〜5年続けることで根本的な改善が期待できる」と説明された。' },
+        { timestamp: '2026-03-15T07:00:00Z', category: 'symptoms', title: '舌下免疫療法2週間後', content: 'シダキュア継続中。ビラノア朝1錠＋鼻噴霧ステロイドで症状は去年より軽くなった感じ（7/10→5/10）。アトピーは首回りのかゆみが強い。デュピクセントを相談してみようと思う。' },
+        { timestamp: '2026-04-01T09:00:00Z', category: 'symptoms', title: '花粉ピーク', content: '花粉ピーク期間だが去年よりくしゃみは半分以下。外出時はマスク＋メガネで帰宅後すぐ洗顔洗眼で対策。アトピーはデュピクセントの保険適用申請中。' },
+        { timestamp: '2026-04-20T10:00:00Z', category: 'vitals', title: 'アレルギー経過確認', content: '花粉シーズン終盤。症状スコア：前年比約40%減（舌下免疫療法効果の可能性）。アトピー：デュピクセント承認。次回受診で1回目の注射予定。ハウスダスト対策でマットレスカバー・空気清浄機を追加した。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 6, sleep_quality: 4 },
+        { timestamp: '2026-03-15T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-02-17T10:00:00Z', name: 'アレルギー検査', findings: 'スギ IgE クラス5（高度陽性）, ダニ IgE クラス4, ハウスダスト IgE クラス3, 好酸球 620/μL（軽度高値）, IgE total 820 IU/mL（高値）' }
+      ],
+      medications: [
+        { timestamp: '2026-02-17T08:00:00Z', name: 'ビラノア（ビラスチン）', notes: '20mg 朝食前30分（空腹時・第二世代抗ヒスタミン薬・眠気少ない）' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'シダキュア舌下錠（スギ免疫療法）', notes: '2,000JAU 毎日就寝前（根本治療・3〜5年継続予定）' }
+      ],
+      sleepData: [], activityData: [], meals: []
+    },
+    cancer_survivor: {
+      diseases: ['がんサバイバー（乳がん術後管理）'],
+      profile: { age: 49, gender: 'female', height: 158, weight: 60 },
+      textEntries: [
+        { timestamp: '2026-02-15T10:00:00Z', category: 'symptoms', title: '術後6ヶ月・後遺症', content: '乳がん（ステージ2A・術後6ヶ月）。化学療法（ACT）終了後2ヶ月。主な後遺症：指先のしびれ（CIPN）・疲労感（6/10）・ブレインフォグ・脱毛（徐々に回復中）。ホルモン療法（アナストロゾール）で関節痛あり。' },
+        { timestamp: '2026-02-22T11:00:00Z', category: 'consultation', title: 'がんサバイバー外来 初診', content: '「疾患の管理から生活の質の回復へ」のフェーズ。CIPN（末梢神経障害）は化学療法後2〜3ヶ月でピークとのこと。デュロキセチン（サインバルタ）が神経障害性疼痛に有効な場合があると説明。骨粗鬆症リスクのため骨密度検査予約。' },
+        { timestamp: '2026-03-01T08:00:00Z', category: 'medication', title: 'アナストロゾール継続・骨対策', content: 'アナストロゾール（アリミデックス）1mg/日 継続（5年計画）。関節痛対策にグルコサミン・オメガ3を追加。骨密度の低下リスクのためカルシウム＋ビタミンD補充開始。朝のウォーキング15分も始めた。' },
+        { timestamp: '2026-03-15T09:00:00Z', category: 'activity', title: '運動療法開始', content: 'がんリハビリテーション（有酸素運動＋筋トレ）週2回を開始。有酸素運動はがん再発リスク低下・CIPN改善・疲労軽減に有効と説明された。最初は10分歩くのがやっとだったが今日は20分歩けた。' },
+        { timestamp: '2026-04-01T10:00:00Z', category: 'vitals', title: '3ヶ月後経過', content: 'CIPN（しびれ）: 6/10→4/10に改善。疲労: 6/10→4/10。脱毛は約3cm回復。腫瘍マーカー（CA15-3）: 22 U/mL（正常域）。CEA: 1.8（正常）。画像検査「再発なし」。次回は3ヶ月後。ブレインフォグは運動開始後に改善している実感あり。' },
+        { timestamp: '2026-04-20T09:00:00Z', category: 'activity', title: '運動継続・QOL向上', content: 'ウォーキング30分が安定してできるようになった。週2回のリハビリも継続中。職場復帰に向けて週3日の時短勤務を打診している。「治療が終わって虚脱感がある」という話をカウンセラーとした（サバイバー症候群）。' }
+      ],
+      symptoms: [
+        { timestamp: '2026-03-01T09:00:00Z', fatigue_level: 7, pain_level: 5, sleep_quality: 5 },
+        { timestamp: '2026-03-15T09:00:00Z', fatigue_level: 6, pain_level: 4, sleep_quality: 6 },
+        { timestamp: '2026-04-01T09:00:00Z', fatigue_level: 5, pain_level: 3, sleep_quality: 6 },
+        { timestamp: '2026-04-20T09:00:00Z', fatigue_level: 4, pain_level: 3, sleep_quality: 7 }
+      ],
+      bloodTests: [
+        { timestamp: '2026-04-01T10:00:00Z', name: '術後経過チェック', findings: 'CA15-3 22 U/mL（正常）, CEA 1.8 ng/mL（正常）, WBC 5800/μL（回復）, Hb 11.9 g/dL（軽度貧血）, 骨密度 YAM 82%（ホルモン療法による軽度低下）' }
+      ],
+      medications: [
+        { timestamp: '2025-09-01T08:00:00Z', name: 'アナストロゾール（アリミデックス）', notes: '1mg 毎日（ホルモン受容体陽性乳がん・アロマターゼ阻害薬・5年計画）' },
+        { timestamp: '2026-03-01T08:00:00Z', name: 'カルシウム＋ビタミンD3', notes: '700mg/400IU 朝食後（ホルモン療法による骨密度低下予防）' }
+      ],
+      sleepData: [], activityData: [], meals: []
     }
   }
 };
