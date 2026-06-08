@@ -196,6 +196,7 @@ var CONFIG = {
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
         { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'FA92' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
+        { id: 'lumbar_spinal_stenosis', name: '腰部脊柱管狭窄症', icd: 'FA80.2' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
       ]
@@ -451,6 +452,8 @@ var CONFIG = {
                           japan:      150_000, japanLabel: '年間 15〜30 万人（推計）', japanSource: '年間帯状疱疹150万人の10〜20%' },
     interstitial_cystitis:  { world: null, label: '世界推計は策定中（人口の0.5〜1%説も）', tier: 0, density: 'high',
                           japan:      45_000, japanLabel: '約 4〜5 万人',             japanSource: '日本泌尿器科学会推計' },
+    lumbar_spinal_stenosis: { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium', source: '60歳以上の10〜15%',
+                          japan:   2_400_000, japanLabel: '約 240 万人（推計）',       japanSource: '60歳以上の10〜15%（日本整形外科学会）' },
   },
 
   // ============================================================

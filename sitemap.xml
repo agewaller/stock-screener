@@ -701,6 +701,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 腰部脊柱管狭窄症 -->
+  <url>
+    <loc>https://cares.advisers.jp/lumbar_spinal_stenosis.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Meta pages -->
   <url>
     <loc>https://cares.advisers.jp/#privacy</loc>
