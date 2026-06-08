@@ -77,7 +77,7 @@ var CONFIG = {
         { id: 'dissociative', name: '解離性障害', icd: '6B6' },
         { id: 'panic', name: 'パニック障害', icd: 'F41.0' },
         { id: 'schizophrenia', name: '統合失調症', icd: '6A20' },
-        { id: 'sad', name: '季節性情動障害（SAD）', icd: '6A71' }
+        { id: 'sad', name: '社会不安障害（SAD）', icd: '6B03' }
       ]
     },
     {
@@ -429,8 +429,8 @@ var CONFIG = {
                           japan:    13_300_000, japanLabel: '約 1,330 万人',         japanSource: '日本腎臓学会 2020' },
     schizophrenia:      { world:    24_000_000, label: '約 2,400 万人',             tier: 2, density: 'high',   source: 'WHO 2019',
                           japan:      800_000, japanLabel: '約 80 万人',             japanSource: '厚労省患者調査' },
-    sad:                { world:    33_000_000, label: '約 3,300 万人（推計）',      tier: 3, density: 'medium', source: 'うつ病 3.32億 × 10% SAD比',
-                          japan:     1_000_000, japanLabel: '約 100 万人（推計）',   japanSource: '有病率 1-3%' },
+    sad:                { world:   120_000_000, label: '約 1.2 億人（推計）',         tier: 3, density: 'medium', source: '生涯有病率 12.1% 外挿',
+                          japan:     4_800_000, japanLabel: '約 480 万人（推計）',   japanSource: '生涯有病率 ~4%' },
     liver_disease:      { world:   100_000_000, label: '約 1 億人（慢性肝炎・肝硬変）', tier: 2, density: 'medium', source: 'WHO 世界推計',
                           japan:     2_000_000, japanLabel: '約 200 万人（推計）',   japanSource: '肝硬変・慢性肝炎' },
     thyroid_cancer:     { world:    10_000_000, label: '約 1,000 万人（5年有病）',  tier: 2, density: 'medium', source: 'GLOBOCAN 2020',
