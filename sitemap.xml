@@ -701,6 +701,14 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- 多発性筋炎・皮膚筋炎 -->
+  <url>
+    <loc>https://cares.advisers.jp/polymyositis.html</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- 全身性強皮症 -->
   <url>
     <loc>https://cares.advisers.jp/scleroderma.html</loc>

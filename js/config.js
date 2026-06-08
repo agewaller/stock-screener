@@ -94,6 +94,7 @@ var CONFIG = {
         { id: 'ra', name: '関節リウマチ', icd: 'FA20' },
         { id: 'sjogrens', name: 'シェーグレン症候群', icd: '4A42' },
         { id: 'scleroderma', name: '全身性強皮症（強皮症）', icd: 'LD16.0' },
+        { id: 'polymyositis', name: '多発性筋炎・皮膚筋炎', icd: 'FA54' },
         { id: 'hashimoto', name: '橋本病（慢性甲状腺炎）', icd: '5A00.1' },
         { id: 'crohns', name: 'クローン病', icd: 'DD70' },
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
@@ -463,6 +464,8 @@ var CONFIG = {
                           japan:  9_000_000, japanLabel: '約 900 万人（憩室症推計）',   japanSource: '60歳以上の30〜50%（大腸内視鏡所見）' },
     scleroderma:            { world:     2_500_000, label: '約 250 万人（推計）',          tier: 3, density: 'high',   source: '世界推計（女性に多い）',
                           japan:      20_000, japanLabel: '約 2 万人',                  japanSource: '指定難病告示番号51（厚生労働省）' },
+    polymyositis:           { world:     1_000_000, label: '約 100 万人（PM＋DM 推計）',   tier: 3, density: 'high',   source: '世界推計',
+                          japan:      25_000, japanLabel: '約 2〜3 万人',               japanSource: '指定難病告示番号50（厚生労働省）' },
   },
 
   // ============================================================
