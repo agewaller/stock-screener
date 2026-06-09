@@ -4447,7 +4447,7 @@ ${axisHint}
       } else if (/401/.test(errMessage)) {
         friendlyHint = 'APIキーが設定されていません (401)。管理者に連絡してください。';
       } else if (/404|not found|deprecat/i.test(errMessage)) {
-        friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
+        friendlyHint = 'AI モデルが一時的に利用できません (404)。少し時間を置いて再度お試しください。';
       } else if (/429|rate limit/i.test(errMessage)) {
         friendlyHint = '一時的に混雑しています (429)。30 秒ほど待ってから再度お試しください。';
       } else if (/Failed to fetch|NetworkError|TypeError/.test(errMessage)) {
