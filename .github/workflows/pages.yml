@@ -29,10 +29,11 @@ jobs:
         run: |
           convert og-image.png -resize 512x512 -background white -gravity center -extent 512x512 icon-512.png
           convert og-image.png -resize 192x192 -background white -gravity center -extent 192x192 icon-192.png
-      - name: Stamp schema lastReviewed with today's date
+      - name: Stamp schema lastReviewed and sitemap lastmod with today's date
         run: |
           TODAY=$(date -u +%Y-%m-%d)
-          sed -i "s/\"lastReviewed\": \"[0-9-]*\"/\"lastReviewed\": \"${TODAY}\"/" index.html
+          find . -maxdepth 1 -name "*.html" -exec sed -i "s/\"lastReviewed\": \"[0-9-]*\"/\"lastReviewed\": \"${TODAY}\"/" {} \;
+          sed -i "s/<lastmod>[0-9-]*<\/lastmod>/<lastmod>${TODAY}<\/lastmod>/g" sitemap.xml
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
