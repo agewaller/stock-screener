@@ -31,6 +31,17 @@ service cloud.firestore {
                        || request.auth.token.email == 'agewaller@gmail.com');
     }
 
+    // Newsletter subscribers — written from LP pages without auth.
+    // create: anyone (anonymous LP visitors), validated shape.
+    // read/update/delete: admin only.
+    match /newsletter_subscribers/{docId} {
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.size() > 3
+                    && request.resource.data.email.size() < 254
+                    && request.resource.data.consent == true;
+      allow read, update, delete: if isAdmin();
+    }
+
     // Plaud / data inbox dispatched by the plaud-inbox Cloudflare Worker.
     // Path: inbox/{hash}/{kind}/{messageId}
     //
