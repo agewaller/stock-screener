@@ -391,6 +391,8 @@ var CONFIG = {
                           japan:     30_000, japanLabel: '数千〜数万人',          japanSource: '原発性免疫不全症' },
     allergy:            { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low',
                           japan: 50_000_000, japanLabel: '花粉症のみで 約 5,000 万人', japanSource: '国民健康栄養調査' },
+    nafld:              { world: 1_500_000_000, label: '約 15 億人（世界）',          tier: 2, density: 'high',
+                          japan: 31_000_000, japanLabel: '約 3,100 万人（成人の約 25〜30%）', japanSource: '日本消化器病学会' },
     sibo:               { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
                           japan: null, japanLabel: '国内推計策定中' },
     gastroparesis:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
