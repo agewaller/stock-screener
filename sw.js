@@ -19,7 +19,9 @@ const STATIC_ASSETS = [
   '/js/firebase-backend.js',
   '/js/app.js',
   '/js/pages.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/firebase-config.json',
+  '/og-image.png'
 ];
 
 self.addEventListener('install', (event) => {
