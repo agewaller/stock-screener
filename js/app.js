@@ -296,6 +296,16 @@ var App = class App {
     setInterval(() => store.calculateHealthScore(), 60000);
     store.calculateHealthScore();
 
+    // PWA App Badge — show badge when new analysis result arrives,
+    // clear when user opens the dashboard.
+    if ('setAppBadge' in navigator) {
+      store.on('latestFeedback', (v) => {
+        if (v && !store.get('isAnalyzing')) {
+          navigator.setAppBadge(1).catch(() => {});
+        }
+      });
+    }
+
     // PWA install prompt — capture the browser event so we can trigger
     // it at a better moment (after first entry) rather than the default
     // Chrome banner which fires too early and gets dismissed.
@@ -418,6 +428,7 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
     }
     // Apply pending PWA shortcut action (?action= / ?page=) on first
     // authenticated dashboard render so deep links work after install.
