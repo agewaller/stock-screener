@@ -25,6 +25,14 @@ jobs:
         uses: actions/checkout@v4
       - name: Cache busting — inject commit hash into SW
         run: sed -i "s/__COMMIT_HASH__/${GITHUB_SHA::8}/g" sw.js
+      - name: Generate PWA icons from og-image
+        run: |
+          convert og-image.png -resize 512x512 -background white -gravity center -extent 512x512 icon-512.png
+          convert og-image.png -resize 192x192 -background white -gravity center -extent 192x192 icon-192.png
+      - name: Stamp schema lastReviewed with today's date
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          sed -i "s/\"lastReviewed\": \"[0-9-]*\"/\"lastReviewed\": \"${TODAY}\"/" index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

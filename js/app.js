@@ -268,6 +268,12 @@ var App = class App {
           console.log('[d-param] pre-selected disease:', dParam);
         }
       }
+      // ?action= / ?page= — PWA home screen shortcuts deep-link users
+      // into the app after install. Applied once, after auth confirms.
+      const actionParam = params.get('action');
+      const pageParam = params.get('page');
+      if (actionParam === 'new_entry') this._pendingAction = 'data-input';
+      else if (pageParam && ['timeline', 'data-input', 'research', 'settings'].includes(pageParam)) this._pendingAction = pageParam;
     } catch (_) {}
 
     // Show immediate content from localStorage while Firebase loads
@@ -412,6 +418,13 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+    }
+    // Apply pending PWA shortcut action (?action= / ?page=) on first
+    // authenticated dashboard render so deep links work after install.
+    if (page === 'dashboard' && this._pendingAction && store.get('isAuthenticated')) {
+      const target = this._pendingAction;
+      this._pendingAction = null;
+      setTimeout(() => this.navigate(target), 150);
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
