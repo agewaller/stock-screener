@@ -23,8 +23,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Cache busting — inject commit hash into SW
-        run: sed -i "s/__COMMIT_HASH__/${GITHUB_SHA::8}/g" sw.js
+      - name: Cache busting — inject commit hash into SW and JS query strings
+        run: |
+          sed -i "s/__COMMIT_HASH__/${GITHUB_SHA::8}/g" sw.js
+          sed -i "s/\.js?v=[0-9]*/\.js?v=${GITHUB_SHA::8}/g" index.html
       - name: Generate PWA icons from og-image
         run: |
           convert og-image.png -resize 512x512 -background white -gravity center -extent 512x512 icon-512.png
