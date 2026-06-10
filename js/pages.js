@@ -445,6 +445,13 @@ App.prototype.render_dashboard = function() {
   const streakStats = this._computeStreak();
   const earnedBadges = this._getEarnedBadges(streakStats);
 
+  // Streak share banner: show once per day per milestone
+  const streakMilestones = [7, 14, 30, 100];
+  const reachedMilestone = streakMilestones.filter(m => streakStats.streak >= m).pop();
+  const today = new Date().toISOString().split('T')[0];
+  const showShareBanner = reachedMilestone
+    && !localStorage.getItem('_streakShare_' + reachedMilestone + '_' + today);
+
   // Real data counts
   const totalEntries = textEntries.length;
   const totalSymptoms = symptoms.length;
@@ -685,6 +692,24 @@ App.prototype.render_dashboard = function() {
     <div style="font-size:18px">📝</div>
     <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
     <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+  </div>` : ''}
+
+  <!-- Streak share banner (7/14/30/100日達成時、当日1回のみ) -->
+  ${showShareBanner ? `
+  <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1px solid #fbbf24;border-radius:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#92400e">🎉 ${reachedMilestone}日連続達成！</div>
+      <div style="font-size:12px;color:#78350f">毎日の記録を続けています。みんなに伝えましょう</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent('健康日記で' + reachedMilestone + '日連続記録を達成しました。毎日の体調管理を続けています。#健康日記 #慢性疾患 https://cares.advisers.jp')}"
+         target="_blank" rel="noopener"
+         style="padding:7px 13px;background:#1da1f2;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">X でシェア</a>
+      <a href="https://line.me/R/share?text=${encodeURIComponent('健康日記で' + reachedMilestone + '日連続記録を達成しました！ https://cares.advisers.jp')}"
+         target="_blank" rel="noopener"
+         style="padding:7px 13px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">LINE でシェア</a>
+      <button onclick="app.dismissStreakBanner(${reachedMilestone})" style="background:none;border:none;cursor:pointer;color:#92400e;font-size:20px;padding:2px 6px;line-height:1">×</button>
+    </div>
   </div>` : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
@@ -1637,7 +1662,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -2212,9 +2237,15 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply category filter from store
+  const activeFilter = store.get('_timelineFilter') || '';
+  const displayEntries = activeFilter
+    ? allEntries.filter(e => e._type === activeFilter)
+    : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  displayEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2233,6 +2264,22 @@ App.prototype.render_timeline = function() {
   const renderEntry = (e) => {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
+    const safeId = Components.escapeHtml(e.id || '');
+    const eType = e._type || '';
+    const deleteBtn = safeId ? `
+      <button onclick="app.confirmAction(this,'削除',()=>app.deleteDataRecord('${eType}','${safeId}'))"
+        title="削除" style="flex:0 0 auto;background:none;border:none;cursor:pointer;font-size:14px;padding:2px 6px;color:var(--text-muted)">🗑</button>` : '';
+
+    // Build searchable text for DOM filtering
+    const searchParts = [
+      e._label || '', e.content || '', e.text_note || '', e.title || '',
+      e.filename || '',
+      e.fatigue_level != null ? '疲労 ' + e.fatigue_level : '',
+      e.pain_level != null ? '痛み ' + e.pain_level : '',
+      e.heart_rate ? 'HR ' + e.heart_rate : '',
+      e.temperature ? '体温 ' + e.temperature : '',
+    ];
+    const searchText = searchParts.filter(Boolean).join(' ').toLowerCase();
 
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
@@ -2245,7 +2292,7 @@ App.prototype.render_timeline = function() {
       const previewImage = e.previewImage || previewPhoto?.dataUrl || '';
       const safeFileName = Components.escapeHtml(e.title || previewPhoto?.filename || '画像');
       return `
-        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+        <div class="card" data-search-text="${searchText}" style="margin-bottom:10px;border-left:3px solid var(--accent)">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
@@ -2253,7 +2300,10 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                ${deleteBtn}
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2272,10 +2322,11 @@ App.prototype.render_timeline = function() {
       if (e.pem_status) fields.push('PEM: あり');
       const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-search-text="${searchText}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${deleteBtn}
         </div>`;
     }
 
@@ -2289,10 +2340,11 @@ App.prototype.render_timeline = function() {
       if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
       if (e.weight) fields.push(`体重: ${e.weight}kg`);
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-search-text="${searchText}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn}
         </div>`;
     }
 
@@ -2300,11 +2352,12 @@ App.prototype.render_timeline = function() {
     if (e._type === 'photo') {
       const safeFileName = Components.escapeHtml(e.filename || '画像');
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-search-text="${searchText}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${deleteBtn}
         </div>`;
     }
 
@@ -2314,16 +2367,17 @@ App.prototype.render_timeline = function() {
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
     return `
-      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+      <div data-search-text="${searchText}" style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
         <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${deleteBtn}
       </div>`;
   };
 
   // Render by date
   const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
-    <div style="margin-bottom:24px">
+    <div data-date-group style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
       ${entries.map(renderEntry).join('')}
@@ -2331,17 +2385,22 @@ App.prototype.render_timeline = function() {
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）${activeFilter ? `・<strong>${categoryLabels[activeFilter] || activeFilter}</strong>で絞り込み中（${displayEntries.length}件）` : ''}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="" ${!activeFilter ? 'selected' : ''}>すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${activeFilter ? `<button onclick="app.filterTimeline('')" class="btn btn-outline btn-sm" style="font-size:11px;white-space:nowrap">✕ クリア</button>` : ''}
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
-    </div>
+    <input type="search" placeholder="🔍 キーワードで絞り込み…" oninput="app.applyTimelineSearch(this.value)"
+      style="width:100%;padding:8px 12px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;margin-bottom:4px">
   </div>
   <div id="timeline-content">
     ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
@@ -2773,7 +2832,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0]).id;
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };

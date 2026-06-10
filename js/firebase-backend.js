@@ -105,8 +105,13 @@ var FirebaseBackend = {
       const avatarEl = document.getElementById('user-avatar');
       const nameEl = document.getElementById('user-name');
       if (avatarEl) {
+        avatarEl.textContent = '';
         if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" alt="">`;
+          const img = document.createElement('img');
+          img.setAttribute('src', user.photoURL);
+          img.setAttribute('alt', '');
+          img.style.cssText = 'width:28px;height:28px;border-radius:50%;object-fit:cover';
+          avatarEl.appendChild(img);
         } else {
           avatarEl.textContent = (user.displayName || user.email || '?')[0];
         }
@@ -297,6 +302,28 @@ var FirebaseBackend = {
 
   userCollection(name) {
     return this.userDoc().collection(name);
+  },
+
+  // Fetch all docs from a collection reference (up to 2000). Used by
+  // the admin "データ診断" panel to count records without a cap.
+  async _fetchAllDocs(collectionRef) {
+    const snap = await collectionRef.limit(2000).get();
+    const docs = [];
+    snap.forEach(d => docs.push(Object.assign({ id: d.id }, d.data())));
+    return docs;
+  },
+
+  // Delete a single document from a user subcollection by its Firestore
+  // document ID. Returns true on success, false on error.
+  async deleteHealthEntry(collection, id) {
+    if (!this.userId || !id) return false;
+    try {
+      await this.userCollection(collection).doc(id).delete();
+      return true;
+    } catch (err) {
+      console.error('[deleteHealthEntry]', collection, id, err.message);
+      return false;
+    }
   },
 
   // Save a single key-value to user profile

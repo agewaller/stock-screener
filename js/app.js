@@ -4005,7 +4005,68 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't resurrect the entry
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id)
+        .catch(e => console.warn('[deleteTextEntry Firestore]', e));
+    }
+
     Components.showToast('削除しました', 'success');
+  }
+
+  // Delete any health record by its _type and id, from both the local
+  // store and Firestore. Used by timeline delete buttons.
+  deleteDataRecord(type, id) {
+    if (!type || !id) return;
+    const TYPE_MAP = {
+      text:         { store: 'textEntries',  fb: 'textEntries' },
+      symptom_note: { store: 'symptoms',     fb: 'symptoms' },
+      symptom_data: { store: 'symptoms',     fb: 'symptoms' },
+      vitals:       { store: 'vitals',       fb: 'vitals' },
+      blood:        { store: 'bloodTests',   fb: 'bloodTests' },
+      medication:   { store: 'medications',  fb: 'medications' },
+      sleep:        { store: 'sleepData',    fb: 'sleep' },
+      activity:     { store: 'activityData', fb: 'activity' },
+      supplement:   { store: 'supplements',  fb: 'supplements' },
+      meal:         { store: 'meals',        fb: 'meals' },
+      nutrition:    { store: 'nutritionLog', fb: 'nutritionLog' },
+      plaud:        { store: 'plaudAnalyses',fb: 'plaudAnalyses' },
+      photo:        { store: 'photos',       fb: 'photos' },
+      calendar:     { store: 'calendarEvents', fb: null },
+    };
+    if (type === 'text') { this.deleteTextEntry(id); return; }
+    const map = TYPE_MAP[type];
+    if (!map) return;
+    const arr = store.get(map.store) || [];
+    store.set(map.store, arr.filter(e => !e || e.id !== id));
+    if (map.fb && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(map.fb, id)
+        .catch(e => console.warn('[deleteDataRecord Firestore]', type, e));
+    }
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Dismiss streak share banner for today so it won't re-appear until tomorrow.
+  dismissStreakBanner(milestone) {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('_streakShare_' + milestone + '_' + today, '1');
+    this.navigate(store.get('currentPage') || 'dashboard');
+  }
+
+  // Live DOM-based keyword filter for timeline entries. Does not re-render.
+  applyTimelineSearch(query) {
+    const q = (query || '').trim().toLowerCase();
+    const entries = document.querySelectorAll('[data-search-text]');
+    const groups = document.querySelectorAll('[data-date-group]');
+    entries.forEach(el => {
+      const text = (el.dataset.searchText || '').toLowerCase();
+      el.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+    groups.forEach(g => {
+      const visible = Array.from(g.querySelectorAll('[data-search-text]'))
+        .filter(el => el.style.display !== 'none');
+      g.style.display = visible.length ? '' : 'none';
+    });
   }
 
   // Switches the rendered entry card into an inline edit form.
