@@ -49,6 +49,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
         run: |
+          # pipefail 必須: これがないと wrangler が失敗しても tee の exit 0 が
+          # 採用されてジョブが「成功」になる。実際に 2026-05 の認証エラーが
+          # 1 か月間この緑色の成功表示に隠れて、本番が古いコードのまま
+          # AI 全停止していた。
+          set -o pipefail
           npx -y wrangler@4 deploy --config wrangler.relay.jsonc 2>&1 | tee /tmp/deploy.txt
 
       - name: Probe cares-relay
