@@ -1,4 +1,5 @@
 {
+  // redeploy trigger: 2026-06-11 トークン更新後の復旧デプロイ
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
