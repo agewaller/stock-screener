@@ -1,5 +1,5 @@
 {
-  // redeploy trigger: 2026-06-11 #2 新トークン (sparkling-meadow) 検証
+  // redeploy trigger: 2026-06-11 #3 GitHub secret 更新後の検証
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
