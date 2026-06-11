@@ -26,9 +26,10 @@
  */
 
 // ────────────────────────────────────────────────
-// CORS — Origin を本番ドメインのみに制限
+// CORS — Origin を本番 + ステージングのみに制限
 // ────────────────────────────────────────────────
-const DEFAULT_ALLOWED = 'https://cares.advisers.jp';
+const DEFAULT_ALLOWED =
+  'https://cares.advisers.jp,https://cares-staging.agewaller.workers.dev';
 
 function getAllowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED;

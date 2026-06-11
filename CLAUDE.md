@@ -43,6 +43,28 @@ git push origin main             # → GitHub Pages 自動デプロイ（pages.y
 Worker を変更した場合は `worker/*.js` を編集→push で
 `deploy-worker.yml` が Cloudflare に自動配布する。
 
+### ステージング → 本番フロー
+
+**main に直接 push すると即・本番反映される。** ユーザーに見せる前に
+確認したい変更は staging を経由する:
+
+```bash
+git checkout staging
+git merge main          # 最新を取り込んでから作業
+# …変更を commit…
+git push origin staging # → https://cares-staging.agewaller.workers.dev に自動デプロイ
+# ステージング URL で動作確認できたら:
+git checkout main && git merge staging && git push origin main  # → 本番
+```
+
+- ステージングは `deploy-staging.yml` が Cloudflare Worker
+  `cares-staging` の静的アセットとして配信する（GitHub Pages とは独立）
+- ステージングのフロントも AI は本番 relay（`cares-relay`）を呼ぶ。
+  proxy の許可 Origin にステージング URL を含めてある
+- Google ログインをステージングで使うには Firebase Console →
+  Authentication → Settings → Authorized domains に
+  `cares-staging.agewaller.workers.dev` を追加しておくこと（一度だけ）
+
 ### ⚠️ 開発サンドボックスからの疎通確認の罠（2026-06 の誤診の教訓）
 
 Claude Code のサンドボックスから `*.workers.dev` に curl すると、

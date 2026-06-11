@@ -1,0 +1,13 @@
+{
+  // ステージング環境: staging ブランチ push で deploy-staging.yml が
+  // サイト一式（dist/ に rsync したもの）を静的アセットとして配信する。
+  // URL: https://cares-staging.agewaller.workers.dev
+  // 本番 (cares.advisers.jp / GitHub Pages) とは完全に独立。
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cares-staging",
+  "compatibility_date": "2026-04-06",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash"
+  }
+}
