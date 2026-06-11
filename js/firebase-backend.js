@@ -1044,6 +1044,30 @@ var FirebaseBackend = {
     }
   },
 
+  // Fetch all documents from a collection reference. Used by the admin
+  // data-diagnosis page (app.js) to count records in each Firestore
+  // subcollection without a .limit() cap that would give wrong totals.
+  async _fetchAllDocs(collRef) {
+    if (!collRef) return [];
+    const snap = await collRef.get();
+    const result = [];
+    snap.forEach(d => result.push(Object.assign({ id: d.id }, d.data())));
+    return result;
+  },
+
+  // Delete a single document from a user's Firestore subcollection.
+  // Called after the store has already removed the entry locally so
+  // the onSnapshot listener doesn't restore the deleted record.
+  async deleteHealthEntry(collection, entryId) {
+    if (!this.userId || !collection || !entryId) return;
+    try {
+      await this.userCollection(collection).doc(entryId).delete();
+    } catch (err) {
+      console.warn('[Firebase] deleteHealthEntry failed:', err.message);
+      throw err;
+    }
+  },
+
   // Check if Firebase is configured
   isConfigured() {
     const cfg = this.getConfig();

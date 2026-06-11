@@ -2212,9 +2212,15 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply category filter from store
+  const activeFilter = store.get('_timelineFilter') || '';
+  const filteredEntries = activeFilter
+    ? allEntries.filter(e => e._type === activeFilter)
+    : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  filteredEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2234,6 +2240,10 @@ App.prototype.render_timeline = function() {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
 
+    const safeId = e.id ? JSON.stringify(String(e.id)) : 'null';
+    const safeType = JSON.stringify(String(e._type || ''));
+    const delBtn = e.id ? `<button onclick="app.deleteDataRecord(${safeType},${safeId})" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-muted);padding:2px 4px;line-height:1;opacity:0.6" title="削除">🗑</button>` : '';
+
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
       const rawContent = e.content || e.text_note || '';
@@ -2244,8 +2254,9 @@ App.prototype.render_timeline = function() {
       const previewPhoto = e.photoId ? photoById.get(e.photoId) : null;
       const previewImage = e.previewImage || previewPhoto?.dataUrl || '';
       const safeFileName = Components.escapeHtml(e.title || previewPhoto?.filename || '画像');
+      const searchText = (rawContent + ' ' + (e._label || '') + ' ' + (e._category || '')).toLowerCase();
       return `
-        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)" data-search="${Components.escapeHtml(searchText)}">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
@@ -2253,7 +2264,10 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                ${delBtn}
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2271,11 +2285,13 @@ App.prototype.render_timeline = function() {
       if (e.sleep_quality != null) fields.push(`睡眠: ${e.sleep_quality}/7`);
       if (e.pem_status) fields.push('PEM: あり');
       const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
+      const searchText = ('症状スコア ' + fields.join(' ')).toLowerCase();
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-search="${Components.escapeHtml(searchText)}">
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2288,63 +2304,78 @@ App.prototype.render_timeline = function() {
       if (e.bp_systolic) fields.push(`BP: ${e.bp_systolic}/${e.bp_diastolic}`);
       if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
       if (e.weight) fields.push(`体重: ${e.weight}kg`);
+      const searchText = ('バイタル ' + fields.join(' ')).toLowerCase();
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-search="${Components.escapeHtml(searchText)}">
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
     // Photos
     if (e._type === 'photo') {
       const safeFileName = Components.escapeHtml(e.filename || '画像');
+      const searchText = ('写真 ' + (e.filename || '')).toLowerCase();
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-search="${Components.escapeHtml(searchText)}">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
-    // Generic data entry
+    // Generic data entry (blood, medication, supplement, meal, sleep, activity, nutrition, plaud, calendar)
     const dataFields = Object.entries(e)
       .filter(([k, v]) => !skipKeys.includes(k) && v != null && v !== '' && !k.startsWith('_'))
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
+    const searchText = (e._label + ' ' + Object.values(e).filter(v => typeof v === 'string').join(' ')).toLowerCase();
     return `
-      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px" data-search="${Components.escapeHtml(searchText)}">
         <span>${e._icon}</span>
         <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${delBtn}
       </div>`;
   };
 
   // Render by date
   const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
-    <div style="margin-bottom:24px">
+    <div class="timeline-date-group" style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
       ${entries.map(renderEntry).join('')}
     </div>
   `).join('');
 
+  const clearFilterBtn = activeFilter
+    ? `<button class="btn btn-sm btn-outline" onclick="app.filterTimeline('')" style="font-size:11px">✕ クリア</button>`
+    : '';
+
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
-    </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${filteredEntries.length}件${activeFilter ? '（絞り込み中）' : ''}／合計${allEntries.length}件</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="search" placeholder="🔍 キーワード検索..." oninput="app.filterTimelineSearch(this.value)"
+          style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);width:160px">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}"${activeFilter === k ? ' selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${clearFilterBtn}
+      </div>
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${allEntries.length > 0 ? (filteredEntries.length > 0 ? dateGroups : `<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:40px 0">このカテゴリのデータはありません</p>`) : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">

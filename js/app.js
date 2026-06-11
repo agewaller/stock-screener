@@ -4005,7 +4005,73 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't restore it
+    if (FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id).catch(err => {
+        console.warn('[deleteTextEntry] Firestore sync failed:', err.message);
+      });
+    }
+
     Components.showToast('削除しました', 'success');
+  }
+
+  // Generic deletion handler for all timeline data types.
+  // Removes from store immediately (so the UI is instant) and fires a
+  // background Firestore delete so the onSnapshot listener doesn't
+  // restore the record on the next broadcast.
+  deleteDataRecord(type, id) {
+    if (!type || !id) return;
+
+    if (type === 'text' || type === 'symptom_note') {
+      this.deleteTextEntry(id);
+      return;
+    }
+
+    // storeKey → Firestore collection mapping (null = local only)
+    const typeMap = {
+      symptom_data: { storeKey: 'symptoms',        fbColl: 'symptoms'      },
+      vitals:       { storeKey: 'vitals',           fbColl: 'vitals'        },
+      blood:        { storeKey: 'bloodTests',       fbColl: 'bloodTests'    },
+      medication:   { storeKey: 'medications',      fbColl: 'medications'   },
+      supplement:   { storeKey: 'supplements',      fbColl: null            },
+      meal:         { storeKey: 'meals',            fbColl: null            },
+      nutrition:    { storeKey: 'nutritionLog',     fbColl: null            },
+      sleep:        { storeKey: 'sleepData',        fbColl: 'sleep'         },
+      activity:     { storeKey: 'activityData',     fbColl: 'activity'      },
+      photo:        { storeKey: 'photos',           fbColl: null            },
+      plaud:        { storeKey: 'plaudAnalyses',    fbColl: null            },
+      calendar:     { storeKey: 'calendarEvents',   fbColl: null            },
+    };
+
+    const cfg = typeMap[type];
+    if (!cfg) return;
+
+    const arr = store.get(cfg.storeKey) || [];
+    store.set(cfg.storeKey, arr.filter(e => e && e.id !== id));
+
+    if (cfg.fbColl && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(cfg.fbColl, id).catch(err => {
+        console.warn('[deleteDataRecord] Firestore sync failed:', err.message);
+      });
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Incremental text search on the rendered timeline DOM.
+  // Adds/removes display:none on data-search items without re-rendering.
+  filterTimelineSearch(query) {
+    const q = (query || '').toLowerCase().trim();
+    const content = document.getElementById('timeline-content');
+    if (!content) return;
+    content.querySelectorAll('[data-search]').forEach(el => {
+      el.style.display = (!q || el.dataset.search.includes(q)) ? '' : 'none';
+    });
+    // Hide date-group headers when all their entries are hidden
+    content.querySelectorAll('.timeline-date-group').forEach(group => {
+      const anyVisible = [...group.querySelectorAll('[data-search]')].some(el => el.style.display !== 'none');
+      group.style.display = anyVisible ? '' : 'none';
+    });
   }
 
   // Switches the rendered entry card into an inline edit form.
