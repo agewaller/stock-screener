@@ -43,6 +43,19 @@ git push origin main             # → GitHub Pages 自動デプロイ（pages.y
 Worker を変更した場合は `worker/*.js` を編集→push で
 `deploy-worker.yml` が Cloudflare に自動配布する。
 
+### ⚠️ 開発サンドボックスからの疎通確認の罠（2026-06 の誤診の教訓）
+
+Claude Code のサンドボックスから `*.workers.dev` に curl すると、
+**サンドボックス自身の egress フィルタ**が `403` +
+`x-deny-reason: host_not_allowed` + 本文 `Host not in allowlist` を返す。
+これは **Cloudflare 側の応答ではない**（この文字列はリポジトリのどの
+Worker ソースにも存在しない）。過去に複数セッションがこれを
+「Cloudflare の workers.dev 無効化」や「Worker の host チェック」と
+誤診し、存在しない問題の修正を繰り返した。
+本番疎通の確認は **GitHub Actions のランナーから curl する**
+（`deploy-relay.yml` の Probe / E2E ステップを見る）か、ユーザーに
+実機で試してもらうこと。
+
 ## JS モジュール構成（読み込み順 = 依存順）
 
 1. `js/config.js` — CONFIG オブジェクト（疾患、AI モデル、金銭サポート等）

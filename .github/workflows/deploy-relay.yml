@@ -83,6 +83,25 @@ jobs:
           head -c 1500 /tmp/probe-custom.txt 2>/dev/null || true
           echo ""
 
+      # E2E: 実際の AI 呼び出しが通るか（鍵注入・モデル解決まで含めた本物のテスト）。
+      # 200 + content が返れば「ブラウザから AI が使える」ことの証明になる。
+      # ステータスだけで成否判定し、失敗時は本文先頭を表示して原因を見える化する。
+      - name: E2E probe (POST /v1/messages)
+        run: |
+          echo "--- POST /v1/messages (real AI round-trip) ---"
+          code=$(curl -s -o /tmp/probe-post.txt -w "%{http_code}" -m 60 \
+            -X POST https://cares-relay.agewaller.workers.dev/v1/messages \
+            -H "Content-Type: application/json" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Origin: https://cares.advisers.jp" \
+            -d '{"model":"claude-haiku-4-5","max_tokens":16,"messages":[{"role":"user","content":"reply with exactly: OK"}]}' || echo "000")
+          echo "HTTP $code"
+          head -c 600 /tmp/probe-post.txt; echo ""
+          if [ "$code" != "200" ]; then
+            echo "::error::E2E AI probe failed with HTTP $code"
+            exit 1
+          fi
+
       - name: Summary
         if: always()
         run: |
