@@ -4002,9 +4002,42 @@ ${bloodText || '記録なし'}
       const remainingPhotos = photos.filter(p => p && p.id !== target.photoId);
       if (remainingPhotos.length !== photos.length) {
         store.set('photos', remainingPhotos);
+        if (FirebaseBackend.userId) FirebaseBackend.deleteHealthEntry('photos', target.photoId);
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot can't resurrect the entry
+    if (target && target.id && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', target.id);
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Delete any typed health record from both localStorage and Firestore.
+  deleteDataRecord(type, id) {
+    if (!id) return;
+    const collectionMap = {
+      symptom_data: ['symptoms', 'symptoms'],
+      symptom_note: ['symptoms', 'symptoms'],
+      vitals:       ['vitals', 'vitals'],
+      blood:        ['bloodTests', 'bloodTests'],
+      medication:   ['medications', 'medications'],
+      supplement:   ['supplements', 'supplements'],
+      meal:         ['meals', 'meals'],
+      sleep:        ['sleepData', 'sleepData'],
+      activity:     ['activityData', 'activityData'],
+      nutrition:    ['nutritionLog', 'nutritionLog'],
+      plaud:        ['plaudAnalyses', 'plaudAnalyses'],
+      photo:        ['photos', 'photos'],
+    };
+    const mapping = collectionMap[type];
+    if (!mapping) return;
+    const [storeKey, fbCollection] = mapping;
+    const records = store.get(storeKey) || [];
+    const remaining = records.filter(r => r && r.id !== id);
+    store.set(storeKey, remaining);
+    if (FirebaseBackend.userId) FirebaseBackend.deleteHealthEntry(fbCollection, id);
     Components.showToast('削除しました', 'success');
   }
 
