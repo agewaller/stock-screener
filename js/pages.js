@@ -713,13 +713,18 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
+        ${streakStats.streak >= 3 ? `
+        <button onclick="app.shareStreak(${streakStats.streak},${streakStats.totalDays})"
+          style="margin-left:auto;padding:4px 10px;font-size:10px;background:#6366f1;color:#fff;border:none;border-radius:10px;cursor:pointer">
+          📣 シェア
+        </button>` : ''}
       </div>` : ''}
     </div>
   </div>` : ''}

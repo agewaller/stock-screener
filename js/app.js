@@ -2571,6 +2571,18 @@ ${titles}`;
     this.navigate('timeline');
   }
 
+  shareStreak(streak, totalDays) {
+    const disease = (store.get('selectedDisease') || {}).name || '慢性疾患';
+    const text = `${disease}の体調を${streak}日連続・通算${totalDays}日記録中です！\n無料で使える体調管理アプリ「健康日記」を使っています。慢性疾患の方にぜひ。`;
+    const url = 'https://cares.advisers.jp';
+    if (navigator.share) {
+      navigator.share({ title: '健康日記', text, url }).catch(() => {});
+    } else {
+      const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url);
+      window.open(twitterUrl, '_blank', 'noopener');
+    }
+  }
+
   openImagePreview(url, filename = '画像') {
     if (!url) return;
     if (!document.getElementById('image-preview-modal')) {
