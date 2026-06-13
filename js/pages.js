@@ -681,10 +681,14 @@ App.prototype.render_dashboard = function() {
   <!-- Today's logging reminder — shown only when the user has past data
        but hasn't logged anything today, to reinforce the daily habit -->
   ${hasData && !loggedToday && !store.get('isAnalyzing') ? `
-  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px">
-    <div style="font-size:18px">📝</div>
-    <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
-    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+  <div style="margin-bottom:12px;padding:10px 14px;background:${streakStats.streak >= 3 ? '#fff7ed' : '#fffbeb'};border:1px solid ${streakStats.streak >= 3 ? '#fed7aa' : '#fde68a'};border-radius:10px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:18px">${streakStats.streak >= 3 ? '🔥' : '📝'}</div>
+    <div style="flex:1;font-size:12px;color:${streakStats.streak >= 3 ? '#9a3412' : '#78350f'}">
+      ${streakStats.streak >= 3
+        ? `<strong>${streakStats.streak}日連続記録</strong>が今日途切れてしまいます。ひとこと記録しませんか？`
+        : '今日はまだ記録がありません。体調を入力してみましょう。'}
+    </div>
+    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:${streakStats.streak >= 3 ? '#ea580c' : '#f59e0b'};color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
   </div>` : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
