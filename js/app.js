@@ -237,7 +237,7 @@ var App = class App {
         } catch (e) { console.warn('timeline refresh:', e); }
       }, 200);
     };
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory']
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory', 'supplements', 'nutritionLog']
       .forEach(key => store.on(key, scheduleTimelineRefresh));
 
     // Start the auto-sync scheduler so connected integrations
@@ -2561,14 +2561,21 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
+    // Save the keyword search value before re-render so we can restore it.
+    const searchEl = document.getElementById('timeline-search');
+    const savedSearch = searchEl ? searchEl.value : '';
 
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+
+    // Restore keyword search and re-apply filtering after the re-render.
+    if (savedSearch) {
+      const el = document.getElementById('timeline-search');
+      if (el) {
+        el.value = savedSearch;
+        el.dispatchEvent(new Event('input'));
+      }
+    }
   }
 
   shareStreak(streak, totalDays) {
