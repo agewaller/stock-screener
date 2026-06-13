@@ -4005,6 +4005,42 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't resurrect the entry
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id);
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Generic delete for all data types. Removes from the appropriate store
+  // array and deletes the matching Firestore document so the record doesn't
+  // reappear via onSnapshot. The storeKey → Firestore collection mapping
+  // mirrors enableAutoSync().
+  deleteDataRecord(type, id) {
+    if (!type || !id) return;
+    const typeMap = {
+      text: { storeKey: 'textEntries', fbCollection: 'textEntries' },
+      symptom_note: { storeKey: 'symptoms', fbCollection: 'symptoms' },
+      symptom_data: { storeKey: 'symptoms', fbCollection: 'symptoms' },
+      vitals:       { storeKey: 'vitals',       fbCollection: 'vitals' },
+      blood:        { storeKey: 'bloodTests',    fbCollection: 'bloodTests' },
+      medication:   { storeKey: 'medications',   fbCollection: 'medications' },
+      sleep:        { storeKey: 'sleepData',     fbCollection: 'sleep' },
+      activity:     { storeKey: 'activityData',  fbCollection: 'activity' },
+      supplement:   { storeKey: 'supplements',   fbCollection: null },
+      meal:         { storeKey: 'meals',         fbCollection: null },
+      nutrition:    { storeKey: 'nutritionLog',  fbCollection: null },
+      photo:        { storeKey: 'photos',        fbCollection: null },
+    };
+    if (type === 'text') { this.deleteTextEntry(id); return; }
+    const mapping = typeMap[type];
+    if (!mapping) return;
+    const arr = store.get(mapping.storeKey) || [];
+    store.set(mapping.storeKey, arr.filter(e => !e || e.id !== id));
+    if (mapping.fbCollection && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(mapping.fbCollection, id);
+    }
     Components.showToast('削除しました', 'success');
   }
 

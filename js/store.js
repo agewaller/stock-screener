@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: 'claude-opus-4-8',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},

@@ -2212,9 +2212,13 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply stored category filter
+  const activeFilter = store.get('_timelineFilter') || '';
+  const visibleEntries = activeFilter ? allEntries.filter(e => e._type === activeFilter) : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  visibleEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2229,10 +2233,21 @@ App.prototype.render_timeline = function() {
     plaud: '禅トラック', calendar: 'カレンダー'
   };
 
+  // Delete button helper — 2-tap confirm so mobile users don't accidentally delete.
+  // First tap changes the button to "本当に削除？" (red), second tap calls deleteDataRecord.
+  const deleteBtn = (type, id) => {
+    const safeType = Components.escapeHtml(type);
+    const safeId = Components.escapeHtml(id || '');
+    return `<button
+      style="padding:2px 8px;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted);flex-shrink:0"
+      onclick="(function(btn){if(btn.dataset.confirm){app.deleteDataRecord('${safeType}','${safeId}');}else{btn.dataset.confirm='1';btn.textContent='本当に削除？';btn.style.color='var(--danger,#dc2626)';btn.style.borderColor='var(--danger,#dc2626)';setTimeout(()=>{if(btn.dataset.confirm){delete btn.dataset.confirm;btn.textContent='削除';btn.style.color='';btn.style.borderColor='';}},3000);}})(this)">削除</button>`;
+  };
+
   // Render entries
   const renderEntry = (e) => {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
+    const delBtn = e.id ? deleteBtn(e._type, e.id) : '';
 
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
@@ -2245,7 +2260,7 @@ App.prototype.render_timeline = function() {
       const previewImage = e.previewImage || previewPhoto?.dataUrl || '';
       const safeFileName = Components.escapeHtml(e.title || previewPhoto?.filename || '画像');
       return `
-        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+        <div class="card" data-entry-type="${Components.escapeHtml(e._type)}" style="margin-bottom:10px;border-left:3px solid var(--accent)">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
@@ -2253,7 +2268,10 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                ${delBtn}
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2272,10 +2290,11 @@ App.prototype.render_timeline = function() {
       if (e.pem_status) fields.push('PEM: あり');
       const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2289,10 +2308,11 @@ App.prototype.render_timeline = function() {
       if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
       if (e.weight) fields.push(`体重: ${e.weight}kg`);
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2300,11 +2320,12 @@ App.prototype.render_timeline = function() {
     if (e._type === 'photo') {
       const safeFileName = Components.escapeHtml(e.filename || '画像');
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2314,10 +2335,11 @@ App.prototype.render_timeline = function() {
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
     return `
-      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+      <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
         <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${delBtn}
       </div>`;
   };
 
@@ -2331,20 +2353,26 @@ App.prototype.render_timeline = function() {
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ${activeFilter ? `（${categoryLabels[activeFilter] || activeFilter}でフィルター中: ${visibleEntries.length}件）` : '（日記・検査・薬剤・バイタル・写真）'}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}"${activeFilter === k ? ' selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${activeFilter ? `<button onclick="app.filterTimeline('')" style="padding:4px 10px;font-size:11px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-muted)">✕ クリア</button>` : ''}
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
-    </div>
+    <input type="search" id="timeline-search" placeholder="キーワードで絞り込み…"
+      style="width:100%;padding:8px 12px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box"
+      oninput="(function(q){const cards=document.querySelectorAll('#timeline-content [data-entry-type]');cards.forEach(c=>{const text=c.textContent||'';c.style.display=q&&!text.includes(q)?'none':'';});const groups=document.querySelectorAll('#timeline-content>div');groups.forEach(g=>{const visible=g.querySelectorAll('[data-entry-type]:not([style*=\'display: none\'])');g.style.display=visible.length?'':'none';});})(this.value)">
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${visibleEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', activeFilter ? `「${categoryLabels[activeFilter] || activeFilter}」の記録がありません。フィルターをクリアしてください。` : 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
