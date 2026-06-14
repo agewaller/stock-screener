@@ -3428,6 +3428,40 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Daily Reminder Settings -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 毎日のリマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
+        今日の記録が未入力の場合、設定した時刻にブラウザ通知でお知らせします（タブを開いている間のみ機能します）。
+      </div>
+      ${(() => {
+        const notifSupported = typeof Notification !== 'undefined';
+        const notifGranted = notifSupported && Notification.permission === 'granted';
+        const notifDenied  = notifSupported && Notification.permission === 'denied';
+        const enabled = !!store.get('reminderEnabled');
+        const time = store.get('reminderTime') || '20:00';
+        return `
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer">
+          <input type="checkbox" id="toggle-daily-reminder" ${enabled ? 'checked' : ''} ${notifDenied ? 'disabled' : ''}
+            onchange="app.toggleDailyReminder(this.checked)"
+            style="width:16px;height:16px;accent-color:var(--accent)">
+          <span style="font-size:13px;font-weight:600">リマインダーを有効にする</span>
+          ${notifGranted ? '<span style="font-size:10px;color:#16a34a;font-weight:600">（通知許可済）</span>'
+            : notifDenied ? '<span style="font-size:10px;color:#dc2626">（通知がブロックされています）</span>'
+            : '<span style="font-size:10px;color:#64748b">（許可ダイアログが表示されます）</span>'}
+        </label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="form-label" style="margin:0;font-size:12px">通知時刻</label>
+          <input type="time" class="form-input" value="${Components.escapeHtml(time)}"
+            style="width:auto;padding:6px 10px;font-size:14px"
+            onchange="store.set('reminderTime',this.value);if(store.get('reminderEnabled'))app.setupDailyReminder();">
+        </div>
+        ${notifDenied ? `<div style="margin-top:8px;font-size:11px;color:#dc2626;line-height:1.6">ブラウザの設定（アドレスバーの🔒）からこのサイトの通知を「許可」に変更してください。</div>` : ''}`;
+      })()}
+    </div>
+  </div>
+
   <!-- Share / Referral -->
   ${(() => {
     const uid = (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) || '';

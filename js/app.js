@@ -290,6 +290,10 @@ var App = class App {
     setInterval(() => store.calculateHealthScore(), 60000);
     store.calculateHealthScore();
 
+    // Set up daily reminder (fires at user-configured time if Notification
+    // permission is already granted; no-op if reminder is disabled)
+    this.setupDailyReminder();
+
     // PWA install prompt — capture the browser event so we can trigger
     // it at a better moment (after first entry) rather than the default
     // Chrome banner which fires too early and gets dismissed.
@@ -2602,6 +2606,80 @@ ${titles}`;
       <button onclick="document.getElementById('streak-share-popup').remove()" style="margin-left:4px;padding:4px 8px;background:transparent;border:none;font-size:16px;cursor:pointer;color:#94a3b8">✕</button>`;
     document.body.appendChild(popup);
     setTimeout(() => popup.remove(), 8000);
+  }
+
+  // Daily reminder: fires a browser Notification at the user's configured
+  // time (default 20:00 JST) when they haven't logged anything today.
+  // Requires Notification permission; falls back to a dashboard banner.
+  setupDailyReminder() {
+    if (!store.get('reminderEnabled')) return;
+    if (!('Notification' in window)) return;
+    const reminderTime = store.get('reminderTime') || '20:00';
+    const [h, m] = reminderTime.split(':').map(Number);
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const trigger = new Date(nowJst);
+    trigger.setHours(h, m, 0, 0);
+    let msUntil = trigger - nowJst;
+    if (msUntil < 0) return;
+    clearTimeout(this._reminderTimer);
+    this._reminderTimer = setTimeout(() => this._checkAndFireReminder(), msUntil);
+  }
+
+  _checkAndFireReminder() {
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const firedKey = 'reminderFiredDate';
+    try { if (localStorage.getItem(firedKey) === todayJst) return; } catch(_){}
+    const entries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const loggedToday = [...entries, ...symptoms].some(e => {
+      if (!e?.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+    });
+    try { localStorage.setItem(firedKey, todayJst); } catch(_){}
+    if (loggedToday) return;
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification('健康日記 📝', {
+          body: '今日の体調をまだ記録していません。ひとこと書いてみませんか？',
+          icon: '/icon-192.png',
+          tag: 'daily-reminder'
+        });
+      } catch(_) {}
+    }
+  }
+
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      Components.showToast('このブラウザは通知に対応していません', 'error');
+      return false;
+    }
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') {
+      Components.showToast('通知がブロックされています。ブラウザの設定から許可してください', 'error');
+      return false;
+    }
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  }
+
+  async toggleDailyReminder(enabled) {
+    store.set('reminderEnabled', enabled);
+    if (enabled) {
+      const granted = await this.requestNotificationPermission();
+      if (!granted) {
+        store.set('reminderEnabled', false);
+        Components.showToast('通知を許可してからリマインダーを有効にしてください', 'error');
+        const el = document.getElementById('toggle-daily-reminder');
+        if (el) el.checked = false;
+        return;
+      }
+      this.setupDailyReminder();
+      const time = store.get('reminderTime') || '20:00';
+      Components.showToast(`毎日 ${time} に未記録の場合は通知します`, 'success');
+    } else {
+      clearTimeout(this._reminderTimer);
+      Components.showToast('リマインダーを無効にしました', 'info');
+    }
   }
 
   openImagePreview(url, filename = '画像') {
