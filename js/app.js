@@ -2584,10 +2584,24 @@ ${titles}`;
     const url = 'https://cares.advisers.jp';
     if (navigator.share) {
       navigator.share({ title: '健康日記', text, url }).catch(() => {});
-    } else {
-      const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url);
-      window.open(twitterUrl, '_blank', 'noopener');
+      return;
     }
+    // No Web Share API: show inline share options (X / LINE)
+    const shareText = encodeURIComponent(text + '\n' + url);
+    const twitterUrl = 'https://twitter.com/intent/tweet?text=' + shareText;
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+    const existing = document.getElementById('streak-share-popup');
+    if (existing) { existing.remove(); return; }
+    const popup = document.createElement('div');
+    popup.id = 'streak-share-popup';
+    popup.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;display:flex;gap:10px;align-items:center';
+    popup.innerHTML = `
+      <span style="font-size:12px;color:#475569;font-weight:600;margin-right:4px">シェア:</span>
+      <a href="${twitterUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#000;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">𝕏 ポスト</a>
+      <a href="${lineUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#06c755;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">LINE</a>
+      <button onclick="document.getElementById('streak-share-popup').remove()" style="margin-left:4px;padding:4px 8px;background:transparent;border:none;font-size:16px;cursor:pointer;color:#94a3b8">✕</button>`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 8000);
   }
 
   openImagePreview(url, filename = '画像') {

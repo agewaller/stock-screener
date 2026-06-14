@@ -733,6 +733,29 @@ App.prototype.render_dashboard = function() {
     </div>
   </div>` : ''}
 
+  <!-- Severe symptom nudge: when 7-day average fatigue or pain is high
+       (≥7), suggest consulting a doctor. Soft and non-alarmist tone.
+       Dismissed per-day via localStorage so it only shows once. -->
+  ${(() => {
+    if (recent7.length < 3) return '';
+    const fAvg = parseFloat(fatigueAvg);
+    const pAvg = parseFloat(painAvg);
+    const isHigh = (fAvg >= 7) || (pAvg >= 7);
+    if (!isHigh) return '';
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dismissed = (() => { try { return localStorage.getItem('severeNudgeDismissed') === todayJst; } catch(_){return false;} })();
+    if (dismissed) return '';
+    const which = fAvg >= 7 ? `疲労スコアの平均が ${fAvg.toFixed(1)}` : `痛みスコアの平均が ${pAvg.toFixed(1)}`;
+    return `
+    <div style="margin-bottom:12px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:18px">🏥</div>
+      <div style="flex:1;font-size:12px;color:#991b1b;line-height:1.5">
+        この7日間、${which}と高い水準が続いています。担当医への相談も検討してみてください。
+      </div>
+      <button onclick="try{localStorage.setItem('severeNudgeDismissed','${todayJst}');}catch(_){}this.closest('[style]').remove()" style="padding:3px 10px;background:transparent;border:1px solid #fecaca;border-radius:6px;font-size:10px;color:#b91c1c;cursor:pointer;flex-shrink:0">確認</button>
+    </div>`;
+  })()}
+
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
     const diseases = store.get('selectedDiseases') || [];
@@ -893,6 +916,97 @@ App.prototype.render_dashboard = function() {
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
+
+  <!-- Weekly analysis nudge: shown when 7+ entries exist but no deep
+       analysis has run in the past 7 days. Collapses permanently once
+       the user dismisses it (localStorage key 'wkNudgeDismissed'). -->
+  ${(() => {
+    if (!hasData || totalEntries < 7) return '';
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const lastRun = store.get('deepAnalysisLastRun');
+    if (lastRun === todayJst) return '';
+    let daysSince = 999;
+    if (lastRun) {
+      daysSince = Math.floor((Date.now() - new Date(lastRun.replace(/\//g, '-')).getTime()) / 86400000);
+    }
+    if (daysSince < 7) return '';
+    const dismissed = (() => { try { return localStorage.getItem('wkNudgeDismissed') === todayJst; } catch(_){return false;} })();
+    if (dismissed) return '';
+    return `
+    <div style="margin-bottom:16px;padding:12px 14px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #86efac;border-radius:10px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🔍</div>
+      <div style="flex:1;font-size:12px;color:#166534">
+        <strong>${totalEntries}件のデータが溜まっています。</strong>${lastRun ? `前回の本格分析から${daysSince}日経ちました。` : ''}パターンが見えてくるかもしれません。
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button onclick="app.runDeepAnalysis()" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">分析する</button>
+        <button onclick="try{localStorage.setItem('wkNudgeDismissed','${todayJst}');}catch(_){}this.closest('[style]').remove()" style="padding:3px 12px;background:transparent;border:none;font-size:10px;color:#4ade80;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Correlation insights: shown when 5+ symptom records with numeric
+       fields exist. Computes simple correlations client-side, no AI. -->
+  ${(() => {
+    if (symptoms.length < 5) return '';
+    const insights = [];
+    const recent30 = symptoms.filter(s => (Date.now() - new Date(s.timestamp)) < 30 * 86400000);
+    if (recent30.length < 5) return '';
+    // Sleep vs fatigue correlation
+    const sleepFatigue = recent30.filter(s => s.sleep_quality != null && s.fatigue_level != null);
+    if (sleepFatigue.length >= 4) {
+      const avg = (arr, f) => arr.reduce((a,b) => a + b[f], 0) / arr.length;
+      const good = sleepFatigue.filter(s => s.sleep_quality >= 7);
+      const poor = sleepFatigue.filter(s => s.sleep_quality <= 4);
+      if (good.length >= 2 && poor.length >= 2) {
+        const fatGood = avg(good, 'fatigue_level').toFixed(1);
+        const fatPoor = avg(poor, 'fatigue_level').toFixed(1);
+        const diff = Math.abs(fatGood - fatPoor);
+        if (diff >= 1.5) {
+          insights.push(`睡眠が良い日（7以上）の疲労平均: ${fatGood} ／ 悪い日（4以下）: ${fatPoor}。睡眠との相関が見られます。`);
+        }
+      }
+    }
+    // Weekday fatigue pattern
+    const withDay = recent30.filter(s => s.fatigue_level != null && s.timestamp);
+    if (withDay.length >= 7) {
+      const byDay = Array(7).fill(null).map(() => []);
+      withDay.forEach(s => { const d = new Date(s.timestamp).getDay(); byDay[d].push(s.fatigue_level); });
+      const dayAvg = byDay.map(arr => arr.length ? arr.reduce((a,b) => a+b,0)/arr.length : null);
+      const defined = dayAvg.map((v,i) => ({v,i})).filter(x => x.v !== null);
+      if (defined.length >= 3) {
+        const worst = defined.reduce((a,b) => a.v > b.v ? a : b);
+        const best  = defined.reduce((a,b) => a.v < b.v ? a : b);
+        const dnames = ['日','月','火','水','木','金','土'];
+        if (worst.v - best.v >= 1.5) {
+          insights.push(`疲労が最も高い曜日: ${dnames[worst.i]}曜日（平均${worst.v.toFixed(1)}）。最も低い: ${dnames[best.i]}曜日（${best.v.toFixed(1)}）。`);
+        }
+      }
+    }
+    // Week-over-week trend
+    const prev7 = symptoms.filter(s => { const d = Date.now() - new Date(s.timestamp); return d >= 7*86400000 && d < 14*86400000; });
+    if (recent7.length >= 2 && prev7.length >= 2) {
+      const a7 = (arr, f) => { const v = arr.map(s=>s[f]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+      const thisF = a7(recent7, 'fatigue_level'), lastF = a7(prev7, 'fatigue_level');
+      if (thisF !== null && lastF !== null) {
+        const diff = thisF - lastF;
+        if (Math.abs(diff) >= 1) {
+          insights.push(`先週と比べ疲労スコアが${diff > 0 ? Math.abs(diff).toFixed(1) + ' 上昇' : Math.abs(diff).toFixed(1) + ' 改善'}しています（先週${lastF.toFixed(1)} → 今週${thisF.toFixed(1)}）。`);
+        }
+      }
+    }
+    if (insights.length === 0) return '';
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#faf5ff 0%,#ede9fe 100%);border:1px solid #ddd6fe">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="font-size:13px;font-weight:700;color:#5b21b6;margin-bottom:10px">🔍 あなたのデータから見えてきたパターン</div>
+        <ul style="margin:0;padding-left:16px;list-style:disc;font-size:12px;color:#4c1d95;line-height:1.8">
+          ${insights.map(i => `<li>${Components.escapeHtml(i)}</li>`).join('')}
+        </ul>
+        <div style="margin-top:8px;font-size:10px;color:#7c3aed">記録が増えるほど精度が上がります。</div>
+      </div>
+    </div>`;
+  })()}
 
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
