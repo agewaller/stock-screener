@@ -4143,6 +4143,7 @@ ${bloodText || '記録なし'}
       meal:         { storeKey: 'meals',         fbCollection: null },
       nutrition:    { storeKey: 'nutritionLog',  fbCollection: null },
       photo:        { storeKey: 'photos',        fbCollection: null },
+      plaud:        { storeKey: 'plaudAnalyses', fbCollection: 'plaudAnalyses' },
     };
     if (type === 'text') { this.deleteTextEntry(id); return; }
     const mapping = typeMap[type];
@@ -4560,10 +4561,16 @@ ${axisHint}
       result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1.5px solid #6366f1;border-radius:14px">
+            <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:8px">📊 記録を続けると、もっと深い分析ができます</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>📈</span><span>毎日の変化をグラフで可視化</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>🏥</span><span>医師向けレポートを自動生成</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>🔬</span><span>症状パターンを自動検出</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>💊</span><span>服薬・睡眠・食事を一元管理</span></div>
+            </div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">無料で登録する（30秒） ↓</button>
+            <div style="font-size:10px;color:#6366f1;text-align:center;margin-top:6px">クレジットカード不要 ・ Googleアカウントで即開始</div>
           </div>`;
       }
     } catch (err) {
