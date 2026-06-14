@@ -237,7 +237,7 @@ var App = class App {
         } catch (e) { console.warn('timeline refresh:', e); }
       }, 200);
     };
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory']
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory', 'supplements', 'nutritionLog']
       .forEach(key => store.on(key, scheduleTimelineRefresh));
 
     // Start the auto-sync scheduler so connected integrations
@@ -2561,14 +2561,33 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
+    // Save the keyword search value before re-render so we can restore it.
+    const searchEl = document.getElementById('timeline-search');
+    const savedSearch = searchEl ? searchEl.value : '';
 
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+
+    // Restore keyword search and re-apply filtering after the re-render.
+    if (savedSearch) {
+      const el = document.getElementById('timeline-search');
+      if (el) {
+        el.value = savedSearch;
+        el.dispatchEvent(new Event('input'));
+      }
+    }
+  }
+
+  shareStreak(streak, totalDays) {
+    const disease = (store.get('selectedDisease') || {}).name || '慢性疾患';
+    const text = `${disease}の体調を${streak}日連続・通算${totalDays}日記録中です！\n無料で使える体調管理アプリ「健康日記」を使っています。慢性疾患の方にぜひ。`;
+    const url = 'https://cares.advisers.jp';
+    if (navigator.share) {
+      navigator.share({ title: '健康日記', text, url }).catch(() => {});
+    } else {
+      const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url);
+      window.open(twitterUrl, '_blank', 'noopener');
+    }
   }
 
   openImagePreview(url, filename = '画像') {
@@ -4005,6 +4024,42 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't resurrect the entry
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id);
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Generic delete for all data types. Removes from the appropriate store
+  // array and deletes the matching Firestore document so the record doesn't
+  // reappear via onSnapshot. The storeKey → Firestore collection mapping
+  // mirrors enableAutoSync().
+  deleteDataRecord(type, id) {
+    if (!type || !id) return;
+    const typeMap = {
+      text: { storeKey: 'textEntries', fbCollection: 'textEntries' },
+      symptom_note: { storeKey: 'symptoms', fbCollection: 'symptoms' },
+      symptom_data: { storeKey: 'symptoms', fbCollection: 'symptoms' },
+      vitals:       { storeKey: 'vitals',       fbCollection: 'vitals' },
+      blood:        { storeKey: 'bloodTests',    fbCollection: 'bloodTests' },
+      medication:   { storeKey: 'medications',   fbCollection: 'medications' },
+      sleep:        { storeKey: 'sleepData',     fbCollection: 'sleep' },
+      activity:     { storeKey: 'activityData',  fbCollection: 'activity' },
+      supplement:   { storeKey: 'supplements',   fbCollection: null },
+      meal:         { storeKey: 'meals',         fbCollection: null },
+      nutrition:    { storeKey: 'nutritionLog',  fbCollection: null },
+      photo:        { storeKey: 'photos',        fbCollection: null },
+    };
+    if (type === 'text') { this.deleteTextEntry(id); return; }
+    const mapping = typeMap[type];
+    if (!mapping) return;
+    const arr = store.get(mapping.storeKey) || [];
+    store.set(mapping.storeKey, arr.filter(e => !e || e.id !== id));
+    if (mapping.fbCollection && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(mapping.fbCollection, id);
+    }
     Components.showToast('削除しました', 'success');
   }
 

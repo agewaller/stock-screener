@@ -1044,6 +1044,36 @@ var FirebaseBackend = {
     }
   },
 
+  // Paginated full-collection fetch. Firestore limits a single .get()
+  // to 500 docs by default (and our subscribeToCollections uses .limit(500)).
+  // For admin diagnostics and one-shot data exports we need the true count,
+  // so this helper loops with startAfter until the batch is smaller than
+  // the page size, returning all docs' data objects.
+  async _fetchAllDocs(collectionRef, pageSize = 500) {
+    const all = [];
+    let last = null;
+    for (;;) {
+      let q = collectionRef.limit(pageSize);
+      if (last) q = q.startAfter(last);
+      const snap = await q.get();
+      snap.forEach(d => all.push(Object.assign({ id: d.id }, d.data())));
+      if (snap.size < pageSize) break;
+      last = snap.docs[snap.docs.length - 1];
+    }
+    return all;
+  },
+
+  // Delete a single document from a named sub-collection for the current user.
+  // Called after localStorage removal to keep Firestore and local state in sync.
+  async deleteHealthEntry(collection, docId) {
+    if (!this.userId || !docId) return;
+    try {
+      await this.userCollection(collection).doc(docId).delete();
+    } catch (err) {
+      console.warn('[Firebase] deleteHealthEntry failed:', collection, docId, err.message);
+    }
+  },
+
   // Check if Firebase is configured
   isConfigured() {
     const cfg = this.getConfig();
