@@ -293,6 +293,7 @@ var App = class App {
     // Set up daily reminder (fires at user-configured time if Notification
     // permission is already granted; no-op if reminder is disabled)
     this.setupDailyReminder();
+    this.setupMedReminders();
 
     // PWA install prompt — capture the browser event so we can trigger
     // it at a better moment (after first entry) rather than the default
@@ -2646,6 +2647,75 @@ ${titles}`;
         });
       } catch(_) {}
     }
+  }
+
+  // Medication reminders: fires a Notification for each registered medication
+  // at its configured time. Timers are re-created on every call (e.g. after
+  // adding/removing a medication). Each reminder fires at most once per day.
+  setupMedReminders() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    (this._medReminderTimers || []).forEach(t => clearTimeout(t));
+    this._medReminderTimers = [];
+    const meds = store.get('medReminders') || [];
+    const now = new Date();
+    const jstOffsetMs = 9 * 60 * 60 * 1000;
+    const todayKey = new Date(now.getTime() + jstOffsetMs).toISOString().slice(0, 10);
+    meds.forEach((med, i) => {
+      if (!med.enabled || !med.time || !med.name) return;
+      const [h, m] = med.time.split(':').map(Number);
+      const firedKey = `medReminderFired_${i}_${todayKey}`;
+      if (store.get(firedKey)) return;
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      let msUntil = target - now;
+      if (msUntil <= 0) msUntil += 86400000;
+      const timer = setTimeout(() => {
+        if (store.get(firedKey)) return;
+        store.set(firedKey, true);
+        try {
+          new Notification(`💊 ${med.name}`, {
+            body: '服薬の時間です',
+            tag: `med-reminder-${i}`,
+            icon: '/icon-192.png'
+          });
+        } catch (_) {}
+      }, msUntil);
+      this._medReminderTimers.push(timer);
+    });
+  }
+
+  async addMedReminder() {
+    const nameEl = document.getElementById('med-reminder-name');
+    const timeEl = document.getElementById('med-reminder-time');
+    const name = nameEl?.value?.trim();
+    const time = timeEl?.value;
+    if (!name) { Components.showToast('薬名を入力してください', 'error'); return; }
+    if (!time) { Components.showToast('服薬時刻を選択してください', 'error'); return; }
+    const granted = await this.requestNotificationPermission();
+    if (!granted) return;
+    const meds = store.get('medReminders') || [];
+    meds.push({ name, time, enabled: true });
+    store.set('medReminders', meds);
+    this.setupMedReminders();
+    this.navigate('settings');
+    Components.showToast(`${name} のリマインダーを追加しました`, 'success');
+  }
+
+  removeMedReminder(index) {
+    const meds = store.get('medReminders') || [];
+    const name = meds[index]?.name || '';
+    meds.splice(index, 1);
+    store.set('medReminders', meds);
+    this.setupMedReminders();
+    this.navigate('settings');
+    if (name) Components.showToast(`${name} のリマインダーを削除しました`, 'info');
+  }
+
+  toggleMedReminder(index, enabled) {
+    const meds = store.get('medReminders') || [];
+    if (meds[index]) meds[index].enabled = enabled;
+    store.set('medReminders', meds);
+    this.setupMedReminders();
   }
 
   async requestNotificationPermission() {

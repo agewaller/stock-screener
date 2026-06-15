@@ -3462,6 +3462,47 @@ App.prototype.render_settings = function() {
     </div>
   </div>
 
+  <!-- Medication Reminder Settings -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">💊 服薬リマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
+        薬名と服薬時刻を登録すると、毎日その時刻にブラウザ通知でお知らせします。
+      </div>
+      ${(() => {
+        const meds = store.get('medReminders') || [];
+        const medList = meds.length ? meds.map((med, i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:6px">
+            <input type="checkbox" ${med.enabled ? 'checked' : ''}
+              onchange="app.toggleMedReminder(${i},this.checked)"
+              style="width:14px;height:14px;accent-color:var(--accent);flex-shrink:0">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${Components.escapeHtml(med.name)}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${Components.escapeHtml(med.time)}</div>
+            </div>
+            <button onclick="app.removeMedReminder(${i})"
+              style="padding:4px 8px;background:transparent;border:1px solid var(--danger,#dc2626);border-radius:6px;font-size:11px;color:var(--danger,#dc2626);cursor:pointer">削除</button>
+          </div>`).join('') : '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">まだ登録されていません</div>';
+        return `
+        <div style="margin-bottom:12px">${medList}</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <label class="form-label" style="font-size:11px;margin-bottom:4px">薬名</label>
+            <input type="text" id="med-reminder-name" class="form-input" placeholder="例: メトトレキサート"
+              style="padding:6px 10px;font-size:13px">
+          </div>
+          <div style="flex-shrink:0">
+            <label class="form-label" style="font-size:11px;margin-bottom:4px">服薬時刻</label>
+            <input type="time" id="med-reminder-time" class="form-input" value="08:00"
+              style="padding:6px 10px;font-size:13px;width:auto">
+          </div>
+          <button onclick="app.addMedReminder()"
+            style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;height:36px">＋ 追加</button>
+        </div>`;
+      })()}
+    </div>
+  </div>
+
   <!-- Share / Referral -->
   ${(() => {
     const uid = (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) || '';
