@@ -16,8 +16,9 @@ var AIEngine = class AIEngine {
 
   constructor() {
     this.apiEndpoints = {
-      'claude-sonnet-4-6': '/api/anthropic',
+      'claude-opus-4-7': '/api/anthropic',
       'claude-opus-4-6': '/api/anthropic',
+      'claude-sonnet-4-6': '/api/anthropic',
       'claude-haiku-4-5': '/api/anthropic',
       'gpt-4o': '/api/openai',
       'gemini-2.5-pro': '/api/google'
@@ -26,7 +27,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
+    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-7';
     store.set('isAnalyzing', true);
 
     try {

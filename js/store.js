@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: 'claude-opus-4-7',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -370,47 +370,18 @@ var Store = class Store {
     // Save device-level config that survives logout. These are not
     // per-user data — they're per-device integration settings that
     // a user explicitly configured and expects to persist.
-    const PRESERVE_KEYS = [
-      // System config
-      'firebase_config',
-      'anthropic_proxy_url',
-      'anthropic_mode',
-      'admin_emails',
-      'enable_shared_guest_ai',
-      // API keys (admin-managed, shared across users)
-      'apikey_anthropic',
-      'apikey_openai',
-      'apikey_google',
-      // Calendar integrations
-      'ics_calendar_url',
-      'google_calendar_oauth_connected',
-      // Fitbit integration
-      'fitbit_token',
-      'fitbit_client_id',
-      'fitbit_refresh_token',
-      // Apple Health / Plaud integrations
-      'apple_health_last_import',
-      'plaud_email',
-    ];
-    const preserved = {};
-    PRESERVE_KEYS.forEach(k => {
-      const v = localStorage.getItem(k);
-      if (v !== null) preserved[k] = v;
-    });
-
-    localStorage.clear();
-
-    // Restore preserved device-level config
-    Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
-
+    // Only remove keys owned by the store — Firebase config,
+    // API keys, and device-level integration settings live in
+    // localStorage under different keys and must not be wiped.
     Object.keys(this.state).forEach(key => {
+      localStorage.removeItem(key);
       if (Array.isArray(this.state[key])) this.state[key] = [];
       else if (typeof this.state[key] === 'object' && this.state[key] !== null) this.state[key] = {};
     });
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    this.state.selectedModel = 'claude-opus-4-7';
   }
 };
 

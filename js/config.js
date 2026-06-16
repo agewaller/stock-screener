@@ -96,7 +96,7 @@ var CONFIG = {
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
-        { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'L40' },
+        { id: 'psoriatic_arthritis', name: '関節症性乾癬', icd: 'FA92.1' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
         { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' }
       ]
@@ -127,9 +127,7 @@ var CONFIG = {
         { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
         { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
         { id: 'thyroid_hyper', name: '甲状腺機能亢進症（バセドウ病）', icd: '5A02' },
-        { id: 'hyperthyroidism', name: '甲状腺機能亢進症・バセドウ病', icd: 'E05' },
         { id: 'adrenal', name: '副腎機能不全', icd: '5A70' },
-        { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
         { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
@@ -186,8 +184,7 @@ var CONFIG = {
       icd: 'ICD-11: 15',
       diseases: [
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
-        { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
-        { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
+        { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'FA92' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
