@@ -22,9 +22,10 @@ var CONFIG = {
     measurementId: 'G-YEHQ7MNRFX'
   },
 
-  // AI Model Options. Opus 4.7 is the most capable and now the default.
+  // AI Model Options. Opus 4.8 is the most capable and now the default.
   AI_MODELS: [
-    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', provider: 'Anthropic', description: '最新・最高精度（応答30-60秒）', default: true },
+    { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', provider: 'Anthropic', description: '最新・最高精度（応答30-60秒）', default: true },
+    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', provider: 'Anthropic', description: '高精度（応答30-60秒）' },
     { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', provider: 'Anthropic', description: '高精度（応答30-60秒）' },
     { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'Anthropic', description: '高速・高精度（10-20秒）' },
     { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', provider: 'Anthropic', description: '最速・低コスト（3-8秒）' },
@@ -92,11 +93,10 @@ var CONFIG = {
         { id: 'crohns', name: 'クローン病', icd: 'DD70' },
         { id: 'uc', name: '潰瘍性大腸炎', icd: 'DD71' },
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
-        { id: 'psoriasis', name: '乾癬', icd: 'EA90' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
-        { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'L40' },
+        { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'EA90' },
         { id: 'chronic_urticaria', name: '慢性蕁麻疹', icd: 'L50.1' },
         { id: 'dry_eye', name: 'ドライアイ（乾性角結膜炎）', icd: 'H04.1' }
       ]
@@ -127,9 +127,7 @@ var CONFIG = {
         { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
         { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
         { id: 'thyroid_hyper', name: '甲状腺機能亢進症（バセドウ病）', icd: '5A02' },
-        { id: 'hyperthyroidism', name: '甲状腺機能亢進症・バセドウ病', icd: 'E05' },
         { id: 'adrenal', name: '副腎機能不全', icd: '5A70' },
-        { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
         { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
         { id: 'obesity', name: '肥満症', icd: '5B81' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
@@ -249,8 +247,6 @@ var CONFIG = {
                           japan: 15_000_000, japanLabel: '約 1,500 万人（推計）', japanSource: 'WHO・国内推計' },
     allergic_rhinitis:  { world: 1_000_000_000, label: '約 10 億人',      tier: 1, density: 'medium', source: 'WHO成人・小児',
                           japan: 42_000_000, japanLabel: '約 4,200 万人（花粉症含む）', japanSource: '環境省・日本アレルギー学会' },
-    psoriasis:          { world:   125_000_000, label: '約 1.25 億人',    tier: 2, density: 'medium', source: 'WHO 2016',
-                          japan:      430_000, japanLabel: '約 43 万人',           japanSource: '日本皮膚科学会' },
     chronic_urticaria:  { world:    75_000_000, label: '約 7,500 万人',   tier: 2, density: 'medium', source: '世界人口の約1%',
                           japan:     1_500_000, japanLabel: '約 150 万人',          japanSource: '国内推計' },
     pms_pmdd:           { world: 1_800_000_000, label: '月経女性の 70〜80%', tier: 1, density: 'high', source: 'WHO 世界推計',
