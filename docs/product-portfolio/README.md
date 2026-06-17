@@ -21,6 +21,8 @@
 2. [`01-cares.md`](01-cares.md) — 健康日記：機能・顧客価値・ターゲット・技術・マーケ戦略
 3. [`02-vm-suite.md`](02-vm-suite.md) — バリューマトリクス：機能・顧客価値・ターゲット・技術・マーケ戦略
 4. [`03-zentrack.md`](03-zentrack.md) — 禅トラック：機能・顧客価値・ターゲット・技術・マーケ戦略
+5. [`onepagers/`](onepagers/) — 各プロダクトの**外部向け1枚資料**（Markdown 正本 ＋ A4 デザインPDF）
+   - `vm-suite-sales-onepager`（toB営業）／ `cares-onepager`（健康日記・外部向け）／ `zentrack-onepager`（禅トラック・外部向け）
 
 ## 共通する設計思想（全プロダクト共通の DNA）
 
