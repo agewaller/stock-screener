@@ -1,0 +1,707 @@
+openapi: 3.1.0
+info:
+  title: cares API
+  version: 0.5.0
+  description: |
+    健康日記 (cares) BE API。Hono + Prisma で実装。
+    本仕様は実装 (apps/api/src/index.ts) と同期 (2026-06-01)。
+    人間向けの一覧・補足は api-list.md を参照。
+    設計のみ・未実装の API (会話型相談 / drafts / cache-key / 連携系 / アカウント削除) は
+    api-list.md §12 を参照し、本仕様には含めない。
+  contact:
+    name: cares team
+servers:
+  - url: http://localhost:8080
+    description: local dev (docker compose)
+  - url: https://cares-api-<hash>-an.a.run.app
+    description: prod (Cloud Run。実 URL は `gcloud run services describe cares-api` で確認)
+
+tags:
+  - name: meta
+    description: ヘルスチェック・メタ情報
+  - name: auth
+    description: 認証 (token 検証は middleware。ログインは Web 層 Auth.js が担う)
+  - name: me
+    description: ユーザー設定・使用量・監査ログ
+  - name: health-data
+    description: 健康データ 10 カテゴリ (9 + 写真)
+  - name: photos
+    description: 写真 (3-step アップロード)
+  - name: ai
+    description: AI 解析 (日次 / 深堀 / 研究スキャン)
+  - name: reports
+    description: audience 別レポート
+  - name: export
+    description: データエクスポート
+  - name: admin
+    description: 管理者専用 (三段フェイルセーフ)
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ====================== meta ======================
+  /healthz:
+    get:
+      tags: [meta]
+      summary: ヘルスチェック (Cloud Run frontend に intercept される場合あり)
+      security: []
+      responses:
+        '200': { $ref: '#/components/responses/HealthOk' }
+
+  /api/healthz:
+    get:
+      tags: [meta]
+      summary: ヘルスチェック正本 (auth middleware を skip)
+      security: []
+      responses:
+        '200': { $ref: '#/components/responses/HealthOk' }
+
+  /api/models:
+    get:
+      tags: [meta]
+      summary: 利用可能 AI モデル一覧 (現状ハードコード AVAILABLE_MODELS)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        displayName: { type: string }
+                        description: { type: string }
+                        isDefault: { type: boolean }
+                  default: { type: string }
+
+  # ====================== auth / me ======================
+  /api/me:
+    get:
+      tags: [auth]
+      summary: 現在のユーザー情報
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/me/preferences:
+    get:
+      tags: [me]
+      summary: UI 設定取得 (無ければ既定値で自動作成)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Preferences' }
+    patch:
+      tags: [me]
+      summary: UI 設定更新 (疾患選択 selectedDiseases 含む)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferencesInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Preferences' }
+
+  /api/me/usage:
+    get:
+      tags: [me]
+      summary: 月次 AI コスト使用状況 (FN-AI-10, BR-20)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  monthlyCostJpy: { type: number }
+                  monthlyCapJpy: { type: number }
+                  remainingJpy: { type: number }
+                  exceeded: { type: boolean }
+
+  /api/me/audit-logs:
+    get:
+      tags: [me]
+      summary: 自分のデータへのアクセス履歴 (FN-AUDIT-01)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuditLogEntry' }
+
+  # ====================== health-data (カテゴリ別) ======================
+  # 9 カテゴリは同一パターン: GET (一覧) / POST (作成)。代表として symptoms を詳細定義し、
+  # 他カテゴリは path のみ列挙する。
+  /api/symptoms:
+    get:
+      tags: [health-data]
+      summary: 症状記録の一覧取得
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Symptom' }
+    post:
+      tags: [health-data]
+      summary: 症状記録の新規作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SymptomInput' }
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Symptom' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /api/vitals:
+    get: { tags: [health-data], summary: バイタル一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: バイタル作成, responses: { '201': { description: 作成成功 } } }
+  /api/medications:
+    get: { tags: [health-data], summary: 服薬一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 服薬作成, responses: { '201': { description: 作成成功 } } }
+  /api/sleep-records:
+    get: { tags: [health-data], summary: 睡眠一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 睡眠作成, responses: { '201': { description: 作成成功 } } }
+  /api/activities:
+    get: { tags: [health-data], summary: 活動一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 活動作成, responses: { '201': { description: 作成成功 } } }
+  /api/meals:
+    get: { tags: [health-data], summary: 食事一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 食事作成, responses: { '201': { description: 作成成功 } } }
+  /api/blood-tests:
+    get: { tags: [health-data], summary: 血液検査一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 血液検査作成, responses: { '201': { description: 作成成功 } } }
+  /api/moods:
+    get: { tags: [health-data], summary: 気分一覧, responses: { '200': { description: OK } } }
+    post: { tags: [health-data], summary: 気分作成, responses: { '201': { description: 作成成功 } } }
+  /api/text-entries:
+    get: { tags: [health-data], summary: テキスト記録一覧, responses: { '200': { description: OK } } }
+    post:
+      tags: [health-data]
+      summary: テキスト記録作成 (content は暗号化未実装・現状平文)
+      responses:
+        '201': { description: 作成成功 }
+
+  # ====================== health-data (横断) ======================
+  /api/records:
+    get:
+      tags: [health-data]
+      summary: 全カテゴリ横断のタイムライン取得 (SC-02)
+      responses:
+        '200': { description: OK }
+
+  /api/records/{category}/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryParam'
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [health-data]
+      summary: 1 件取得
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [health-data]
+      summary: 部分更新 (FN-DIARY-05)
+      responses:
+        '200': { description: OK }
+        '400': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [health-data]
+      summary: ソフト削除 (deleted_at 付与)
+      responses:
+        '200': { description: OK }
+
+  /api/records/{category}/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/CategoryParam'
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [health-data]
+      summary: ソフト削除のリストア
+      responses:
+        '200': { description: OK }
+
+  /api/quick-entry:
+    post:
+      tags: [health-data]
+      summary: クイック入力 (テキスト/写真 → AI 分類 → 複数カテゴリ同時記録)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                photoId: { type: string, format: uuid }
+      responses:
+        '200': { description: OK (Cache-Control no-store) }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/QuotaExceeded' }
+
+  /api/trial/analyze:
+    post:
+      tags: [ai-analysis]
+      summary: お試し AI 分析 (未ログイン / FN-TRIAL-01 / ADR-0016)
+      description: |
+        認証不要の唯一の AI エンドポイント。日記 1 件を AI 分類 → カテゴリ別プロンプトで分析。
+        日記本文はサーバに保存しない。悪用対策 (BR-23): 入力 4000 字 + IP 1 日 3 回 + 全体 3000 円/月。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 4000, description: 日記本文 }
+      responses:
+        '200':
+          description: OK (Cache-Control no-store)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { type: string, enum: [symptom, vital, medication, sleep, meal, activity, mood, blood_test, other] }
+                  comment: { type: string, description: 分析コメント (次の 1 アクションを含む) }
+                  modelUsed: { type: string }
+                  remainingToday: { type: integer, description: 本日の残りお試し回数 }
+        '400': { description: 'text_required / text_too_long' }
+        '422': { description: 'trial_quota_exceeded (お試し全体 3000 円/月)' }
+        '429': { description: 'rate_limited (IP 1 日 3 回)' }
+        '502': { description: 'ai_failed' }
+        '503': { description: 'unavailable (AI キー未設定)' }
+        '504': { description: 'timeout (15 秒超過)' }
+
+  # ====================== photos ======================
+  /api/photos:
+    get:
+      tags: [photos]
+      summary: 写真一覧 (signed URL は含めない)
+      responses:
+        '200': { description: OK }
+
+  /api/photos/upload-url:
+    post:
+      tags: [photos]
+      summary: GCS への PUT 用 Signed URL を発行
+      responses:
+        '200': { description: OK }
+
+  /api/photos/{id}/complete:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [photos]
+      summary: GCS 直 PUT 完了後にメタ確定
+      responses:
+        '200': { description: OK }
+
+  /api/photos/{id}/signed-url:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [photos]
+      summary: 表示用 Signed URL を都度発行 (5 分有効、Cache-Control no-store)
+      responses:
+        '200': { description: OK }
+
+  # ====================== ai ======================
+  /api/analysis/today:
+    get:
+      tags: [ai]
+      summary: 本日の日次解析結果を取得 (FN-AI-01)
+      responses:
+        '200': { description: OK }
+
+  /api/analysis/daily:
+    post:
+      tags: [ai]
+      summary: 日次解析を実行
+      responses:
+        '200': { description: OK }
+        '422': { $ref: '#/components/responses/QuotaExceeded' }
+
+  /api/analysis/deep/today:
+    get:
+      tags: [ai]
+      summary: 本日の深堀解析結果を取得 (FN-AI-02)
+      responses:
+        '200': { description: OK }
+
+  /api/analysis/deep:
+    post:
+      tags: [ai]
+      summary: 深堀解析を実行 (1 日 1 回、BR-01)
+      responses:
+        '200': { description: OK }
+        '409': { description: 既に本日実行済み }
+        '422': { $ref: '#/components/responses/QuotaExceeded' }
+
+  /api/analysis/research/latest:
+    get:
+      tags: [ai]
+      summary: 研究スキャン (PubMed + AI 要約) の最新結果 (FN-RES-01)
+      responses:
+        '200': { description: OK }
+
+  /api/analysis/research:
+    post:
+      tags: [ai]
+      summary: 研究スキャンを実行
+      responses:
+        '200': { description: OK }
+        '422': { $ref: '#/components/responses/QuotaExceeded' }
+
+  # ====================== reports ======================
+  /api/reports:
+    get:
+      tags: [reports]
+      summary: 生成済みレポート一覧
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [reports]
+      summary: レポート生成 (FN-AI-05〜07)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                audience:
+                  type: string
+                  enum: [doctor, sns, relative]
+                  default: doctor
+                periodDays:
+                  type: integer
+                  enum: [7, 30, 90]
+                  default: 30
+      responses:
+        '201': { description: 作成成功 }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/QuotaExceeded' }
+
+  /api/reports/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [reports]
+      summary: レポート詳細
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ====================== export ======================
+  /api/export:
+    post:
+      tags: [export]
+      summary: 全データエクスポート (JSON のみ実装。CSV/PDF/FHIR は format_not_supported 400)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [json]
+                  default: json
+                periodDays:
+                  type: integer
+                  nullable: true
+      responses:
+        '200': { description: ダウンロード }
+        '400': { description: format_not_supported (csv/pdf/fhir は未実装) }
+
+  # ====================== admin ======================
+  /api/admin/stats:
+    get:
+      tags: [admin]
+      summary: 利用統計 (ユーザー数 / 匿名数 / 月次 AI コスト / 直近 24h 解析数 / 症状記録数)
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/users:
+    get:
+      tags: [admin]
+      summary: 全ユーザー一覧 (FN-ADMIN-03)
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/secrets:
+    get:
+      tags: [admin]
+      summary: シークレット設定状況 (フラグのみ、値は返さない。ADR-0006 / BR-04)
+      responses:
+        '200': { description: OK }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/secrets/{name}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [admin]
+      summary: シークレットを保存 (FN-ADMIN-02)
+      responses:
+        '200': { description: OK }
+    delete:
+      tags: [admin]
+      summary: シークレットを削除
+      responses:
+        '200': { description: OK }
+
+  /api/admin/prompts:
+    get:
+      tags: [admin]
+      summary: プロンプト一覧 (FN-ADMIN-01)
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [admin]
+      summary: プロンプト作成 (新バージョン同時作成)
+      responses:
+        '201': { description: 作成成功 }
+
+  /api/admin/prompts/{key}:
+    parameters:
+      - name: key
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      tags: [admin]
+      summary: プロンプト更新 (新バージョン追加 / アクティブ切替)
+      responses:
+        '200': { description: OK }
+    delete:
+      tags: [admin]
+      summary: プロンプト削除
+      responses:
+        '200': { description: OK }
+
+  /api/admin/ai-models:
+    get:
+      tags: [admin]
+      summary: AI モデル一覧 (ai_models テーブル。FN-ADMIN-06)
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [admin]
+      summary: AI モデル追加
+      responses:
+        '201': { description: 作成成功 }
+
+  /api/admin/ai-models/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    delete:
+      tags: [admin]
+      summary: AI モデル削除
+      responses:
+        '200': { description: OK }
+
+  /api/admin/notifications:
+    get:
+      tags: [admin]
+      summary: 通知キャンペーン一覧 (FN-ADMIN-07)
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [admin]
+      summary: 通知キャンペーン作成 (作成・保管のみ。実配信は未実装)
+      responses:
+        '201': { description: 作成成功 }
+
+  /api/admin/notifications/{campaignKey}:
+    parameters:
+      - name: campaignKey
+        in: path
+        required: true
+        schema: { type: string }
+    delete:
+      tags: [admin]
+      summary: キャンペーン削除
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase ID Token (GCP Identity Platform 発行、firebase-admin verifyIdToken で検証。ADR-0014)
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryParam:
+      name: category
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [symptoms, vitals, medications, sleep-records, activities, meals, blood-tests, moods, text-entries, photos]
+
+  responses:
+    HealthOk:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status: { type: string, example: ok }
+    Unauthorized:
+      description: 未認証
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: 認可なし (admin ガード)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: リソース未存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    QuotaExceeded:
+      description: 月次 AI コストキャップ超過 (BR-20、フォールバック禁止 ADR-0006)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Me:
+      type: object
+      required: [userId, globalUid]
+      properties:
+        userId: { type: string, format: uuid }
+        globalUid: { type: string, description: Firebase UID }
+        email: { type: string, format: email }
+        roles:
+          type: array
+          items: { type: string }
+        isAdmin: { type: boolean }
+        provider:
+          type: string
+          description: firebase.sign_in_provider (google.com / password)
+
+    Preferences:
+      type: object
+      properties:
+        locale: { type: string, example: ja }
+        selectedModel: { type: string }
+        selectedDiseases:
+          type: array
+          items: { type: string }
+
+    PreferencesInput:
+      type: object
+      properties:
+        locale: { type: string }
+        selectedModel: { type: string }
+        selectedDiseases:
+          type: array
+          items: { type: string }
+
+    Symptom:
+      type: object
+      required: [id, recordedAt, conditionLevel]
+      properties:
+        id: { type: string, format: uuid }
+        recordedAt: { type: string, format: date-time }
+        conditionLevel: { type: integer, minimum: 1, maximum: 10 }
+        sleepQuality: { type: integer, minimum: 1, maximum: 10 }
+        memo: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SymptomInput:
+      type: object
+      required: [conditionLevel]
+      properties:
+        recordedAt: { type: string, format: date-time }
+        conditionLevel: { type: integer, minimum: 1, maximum: 10 }
+        sleepQuality: { type: integer, minimum: 1, maximum: 10 }
+        memo: { type: string }
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        eventAt: { type: string, format: date-time }
+        actorType:
+          type: string
+          enum: [self, admin, system, integration]
+        action:
+          type: string
+          enum: [read, write, delete, export]
+        targetTable: { type: string }
+        details: { type: object }
+
+    Error:
+      type: object
+      required: [error]
+      description: >-
+        実装は flat 形式 (error / detail の 2 フィールド)。
+        旧設計のネスト形式 (error.code / error.message / requestId) は不採用。
+      properties:
+        error:
+          type: string
+          description: エラーコード (unauthorized / invalid_token / not_found / ai_quota_exceeded / format_not_supported 等)
+        detail: { type: string }

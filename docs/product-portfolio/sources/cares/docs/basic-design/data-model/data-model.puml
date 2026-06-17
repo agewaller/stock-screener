@@ -1,0 +1,262 @@
+@startuml cares-domain-model
+' ドメインクラス図 (PlantUML)
+' Mermaid 版 (data-model.md) と内容を合わせつつ、PlantUML の表現力を活かす
+' レンダリング: plantuml -tsvg data-model.puml
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide circle
+
+' ==================== Identity ====================
+package "Identity" {
+    abstract class User {
+        +id : UserId
+        +tenantId : TenantId
+        +globalUid : String <<Firebase UID, ADR-0014>>
+        +email : Email
+        +displayName : String
+        +isAnonymous : Boolean
+        --
+        +login()
+        +logout()
+        +requestDeletion()
+        +restoreFromSoftDelete()
+    }
+
+    class AnonymousUser {
+        +upgradeToRegular() <<FN-AUTH-08 未実装. Firebase linkWithCredential (UID 不変)>>
+    }
+    class AdminUser {
+        +grantAdminRole(target)
+        +editPrompt()
+        +manageAIModels()
+    }
+    User <|-- AnonymousUser
+    User <|-- AdminUser
+
+    class Profile {
+        +age : Int
+        +gender : String
+        +currentMedications : Encrypted<String>
+        +allergies : Encrypted<String>
+        +selectedDiseases : DiseaseId[]
+    }
+    class Preferences {
+        +locale : Locale
+        +selectedModel : ModelId
+        +featureFlags : Json
+    }
+    User "1" *-- "0..1" Profile
+    User "1" *-- "0..1" Preferences
+
+    class ExternalAccountLink {
+        +provider : Provider
+        +refreshToken : Encrypted<String>
+        +expiresAt : DateTime
+    }
+    User "1" o-- "*" ExternalAccountLink
+}
+
+' ==================== Diary ====================
+package "Diary" {
+    abstract class HealthRecord {
+        +id : RecordId
+        +userId : UserId
+        +tenantId : TenantId
+        +recordedAt : DateTime
+        +deletedAt : DateTime?
+    }
+
+    class SymptomRecord
+    class VitalRecord
+    class BloodTestRecord
+    class MedicationRecord
+    class MealRecord
+    class SleepRecord
+    class ActivityRecord
+    class MoodRecord
+    class TextEntry {
+        +content : Encrypted<String>
+    }
+    class PhotoRecord {
+        +gcsObjectPath : String
+        +photoType : PhotoType
+        +aiClassification : String?
+    }
+
+    HealthRecord <|-- SymptomRecord
+    HealthRecord <|-- VitalRecord
+    HealthRecord <|-- BloodTestRecord
+    HealthRecord <|-- MedicationRecord
+    HealthRecord <|-- MealRecord
+    HealthRecord <|-- SleepRecord
+    HealthRecord <|-- ActivityRecord
+    HealthRecord <|-- MoodRecord
+    HealthRecord <|-- TextEntry
+    HealthRecord <|-- PhotoRecord
+
+    class Draft {
+        +formKind : FormKind
+        +payload : Encrypted<Json>
+        +expiresAt : DateTime
+        --
+        +submitToHealthRecord()
+        +discard()
+    }
+}
+
+User "1" o-- "*" HealthRecord : owns
+User "1" o-- "*" Draft
+
+' ==================== AI ====================
+package "AI" {
+    class AIConversation {
+        +id : ConversationId
+        +title : String
+        +startedAt : DateTime
+        +lastMessageAt : DateTime
+    }
+    class AIMessage {
+        +role : Role
+        +content : Encrypted<String>
+        +modelUsed : ModelId
+        +inputTokens : Int
+        +outputTokens : Int
+    }
+    AIConversation "1" *-- "*" AIMessage
+
+    class Analysis {
+        +type : AnalysisType
+        +result : String
+        +runDate : Date
+    }
+    class DoctorReport {
+        +format : Format
+        +content : String
+        +exportFormat : ExportFormat?
+    }
+    class Summary {
+        +audience : Audience
+        +content : String
+    }
+}
+
+User "1" o-- "*" AIConversation
+User "1" o-- "*" Analysis
+User "1" o-- "*" DoctorReport
+User "1" o-- "*" Summary
+
+' ==================== Integration ====================
+package "Integration" {
+    class CalendarEvent {
+        +source : Source
+        +externalId : String?
+        +title : String
+        +startAt : DateTime
+        +endAt : DateTime
+    }
+    class InboxMessage {
+        +hash : String
+        +kind : String
+        +rawText : String
+        +processed : Boolean
+    }
+    class ResearchCache {
+        +queryHash : String
+        +query : String
+        +results : Json
+        +expiresAt : DateTime
+    }
+}
+
+User "1" o-- "*" CalendarEvent
+User "1" o-- "*" InboxMessage
+
+' ==================== Sharing (Phase 5 後半) ====================
+package "Sharing" {
+    class Share {
+        +role : Role
+        +scope : Scope
+        +grantedAt : DateTime
+        +expiresAt : DateTime?
+        --
+        +revoke()
+    }
+    class ShareInvitation {
+        +recipientEmail : Email
+        +status : Status
+        +token : String
+        +expiresAt : DateTime
+    }
+    Share "1" -- "1" ShareInvitation
+}
+
+User "1" o-- "*" Share : owner
+User "1" o-- "*" Share : recipient
+
+' ==================== Admin ====================
+package "Admin" {
+    class Prompt {
+        +key : String
+        +description : String
+        +currentVersion : String
+    }
+    class PromptVersion {
+        +version : String
+        +template : String
+        +updatedBy : String
+    }
+    Prompt "1" *-- "*" PromptVersion
+
+    class AIModel {
+        +id : ModelId
+        +displayName : String
+        +provider : Provider
+        +apiModelId : String
+        +inputUsdPer1M : Decimal
+        +outputUsdPer1M : Decimal
+        +isEnabled : Boolean
+        +isDefault : Boolean
+    }
+
+    class NotificationCampaign {
+        +campaignKey : String
+        +subject : String
+        +body : String
+        +sendAt : DateTime?
+        +targetFilter : Json
+    }
+
+    class SecretStatus <<view>> {
+        +name : SecretName
+        +isSet : Boolean
+        +lastUpdatedAt : DateTime
+    }
+}
+
+' ==================== Audit / Usage ====================
+package "Audit" {
+    class AuditLog {
+        +actorType : ActorType
+        +actorUserId : UserId
+        +action : Action
+        +targetTable : String
+        +targetUserId : UserId
+        +details : Json
+        +visibleToUser : Boolean
+    }
+    class UsageLog {
+        +provider : Provider
+        +model : ModelId
+        +inputTokens : Int
+        +outputTokens : Int
+        +costJpy : Decimal
+        +purpose : String
+    }
+}
+
+User "1" o-- "*" AuditLog : actor
+User "1" o-- "*" AuditLog : target
+User "1" o-- "*" UsageLog
+
+@enduml

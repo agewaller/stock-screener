@@ -1,0 +1,405 @@
+# er
+
+> **実装状況 (2026-06-01)**: 本図は論理設計の全体像。実装済み / 未実装テーブルの区別は [README.md](README.md) のカテゴリ別一覧、
+> 実 DB スキーマは `packages/db/prisma/schema.prisma` を参照。
+
+```mermaid
+%% cares 新仕様 PostgreSQL 論理 ER 図
+%% ADR-0008 マルチテナント設計、ADR-0014 (global_uid 直保管、user_link 廃止) を反映
+
+erDiagram
+    USERS ||--o| USER_PROFILES : "1:1"
+    USERS ||--o| USER_PREFERENCES : "1:1"
+    USERS ||--o{ OAUTH_TOKENS : "stores external"
+
+    USERS ||--o{ SYMPTOMS : "tenant_id"
+    USERS ||--o{ VITALS : "tenant_id"
+    USERS ||--o{ BLOOD_TESTS : "tenant_id"
+    USERS ||--o{ MEDICATIONS : "tenant_id"
+    USERS ||--o{ MEALS : "tenant_id"
+    USERS ||--o{ SLEEP_RECORDS : "tenant_id"
+    USERS ||--o{ PHOTOS : "tenant_id"
+    USERS ||--o{ ACTIVITIES : "tenant_id"
+    USERS ||--o{ MOODS : "tenant_id"
+    USERS ||--o{ TEXT_ENTRIES : "tenant_id"
+
+    USERS ||--o{ AI_CONVERSATIONS : "tenant_id"
+    AI_CONVERSATIONS ||--o{ AI_MESSAGES : "in"
+    USERS ||--o{ ANALYSES : "tenant_id"
+    USERS ||--o{ DOCTOR_REPORTS : "tenant_id"
+    USERS ||--o{ SUMMARIES : "tenant_id"
+
+    USERS ||--o{ INBOX_MESSAGES : "via hash"
+    USERS ||--o{ CALENDAR_EVENTS : "tenant_id"
+    USERS ||--o{ DRAFTS : "form autosave"
+
+    USERS ||--o{ AI_USAGE_LOGS : "cost tracking"
+    USERS ||--o{ AUDIT_LOGS : "actor or target"
+
+    PROMPTS ||--o{ PROMPT_VERSIONS : "versioned"
+
+    USERS ||--o{ SHARES : "shared by"
+    USERS ||--o{ SHARES : "shared with"
+    SHARES ||--o{ SHARE_INVITATIONS : "via invitation"
+
+    USERS {
+        uuid id PK
+        string global_uid UK "Firebase UID (immutable な identity 主軸)"
+        string email "Firebase から取得、unique"
+        string display_name
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "soft delete"
+        boolean is_anonymous
+    }
+
+    USER_PROFILES {
+        uuid user_id PK, FK
+        integer age
+        string gender
+        text current_medications "暗号化対象"
+        text allergies "暗号化対象"
+        jsonb selected_diseases "65 疾患 ID の配列"
+        timestamp updated_at
+    }
+
+    USER_PREFERENCES {
+        uuid user_id PK, FK
+        string locale "ja, en, ..."
+        string selected_model "anthropic-opus-4-7 等"
+        jsonb feature_flags
+        timestamp updated_at
+    }
+
+    OAUTH_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        string provider "google_calendar/fitbit/..."
+        text encrypted_refresh_token
+        timestamp expires_at
+        timestamp updated_at
+    }
+
+    SYMPTOMS {
+        uuid id PK
+        uuid tenant_id "MVP は user_id"
+        uuid user_id FK
+        timestamp recorded_at "JST 想定だが UTC 格納"
+        integer condition_level "1-10"
+        integer sleep_quality
+        text memo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    VITALS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp recorded_at
+        integer heart_rate
+        string blood_pressure "120/80"
+        decimal temperature
+        integer spo2
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    BLOOD_TESTS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        date test_date
+        decimal wbc
+        decimal rbc
+        decimal hemoglobin
+        decimal crp
+        jsonb extra_values
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    MEDICATIONS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp taken_at
+        string name
+        string dosage
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    MEALS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp eaten_at
+        text description
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    SLEEP_RECORDS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        date date
+        decimal duration_hours
+        integer quality
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    PHOTOS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string gcs_object_path "Cloud Storage のオブジェクト"
+        string photo_type "food/blood_test/prescription/supplement"
+        text ai_classification
+        timestamp captured_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    ACTIVITIES {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp recorded_at
+        integer step_count
+        decimal distance_km
+        integer active_minutes
+        string source "manual/fitbit/apple_health"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    MOODS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp recorded_at
+        integer mood_level "1-10"
+        jsonb mood_tags
+        text memo
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    TEXT_ENTRIES {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        timestamp recorded_at
+        text content "暗号化対象"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    AI_CONVERSATIONS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string title
+        timestamp started_at
+        timestamp last_message_at
+        timestamp deleted_at
+    }
+
+    AI_MESSAGES {
+        uuid id PK
+        uuid conversation_id FK
+        string role "user/assistant/system"
+        text content "暗号化対象"
+        string model_used
+        integer input_tokens
+        integer output_tokens
+        timestamp created_at
+    }
+
+    ANALYSES {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string analysis_type "daily/deep/timeline/image"
+        text result
+        string model_used
+        date run_date "JST、deep の重複制御用"
+        timestamp created_at
+        timestamp deleted_at
+    }
+
+    DOCTOR_REPORTS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string format "carte/sns/relative"
+        text content
+        string export_format "pdf/json/fhir"
+        timestamp created_at
+        timestamp deleted_at
+    }
+
+    SUMMARIES {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string audience "doctor/sns/relative"
+        text content
+        timestamp generated_at
+        timestamp deleted_at
+    }
+
+    INBOX_MESSAGES {
+        uuid id PK
+        string hash "Plaud 用 djb2 ハッシュ"
+        uuid user_id FK
+        string kind "plaud/data"
+        text raw_text
+        boolean processed
+        timestamp received_at
+        timestamp processed_at
+    }
+
+    CALENDAR_EVENTS {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id FK
+        string source "google_calendar/manual"
+        string external_id "Google Calendar event_id"
+        string title
+        timestamp start_at
+        timestamp end_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    CACHED_RESEARCH {
+        uuid id PK
+        string query_hash UK "クエリの正規化ハッシュ"
+        text query
+        jsonb results "PubMed 結果 + AI 要約"
+        timestamp cached_at
+        timestamp expires_at "TTL (7 日想定)"
+    }
+
+    DRAFTS {
+        uuid id PK
+        uuid user_id FK
+        string form_kind "symptom/vital/text_entry/..."
+        jsonb payload "入力中の値"
+        timestamp updated_at
+        timestamp expires_at "提出または明示破棄まで保持"
+    }
+
+    AI_USAGE_LOGS {
+        uuid id PK
+        uuid user_id FK
+        string provider "anthropic/openai/google"
+        string model
+        integer input_tokens
+        integer output_tokens
+        decimal cost_jpy
+        string purpose "daily_analysis/deep/chat/etc"
+        timestamp created_at
+    }
+
+    AUDIT_LOGS {
+        uuid id PK
+        timestamp event_at
+        string actor_type "self/admin/system/integration"
+        uuid actor_user_id FK
+        string action "read/write/delete/export"
+        string target_table
+        uuid target_id
+        uuid target_user_id FK
+        jsonb details
+        boolean visible_to_user "監査ログユーザー可視化用フラグ"
+    }
+
+    PROMPTS {
+        string key PK
+        text description
+        string current_version
+        timestamp updated_at
+    }
+
+    PROMPT_VERSIONS {
+        uuid id PK
+        string prompt_key FK
+        string version
+        text template
+        string updated_by "admin email"
+        timestamp created_at
+    }
+
+    SECRET_STATUS {
+        string secret_name PK
+        boolean is_set
+        timestamp last_updated_at
+        string updated_by
+    }
+
+    AI_MODELS {
+        string id PK "内部 ID 例: claude-opus-4-7"
+        string display_name "UI 表示用 (AI リテラル含めない)"
+        string provider "anthropic/openai/google"
+        string api_model_id "API 呼び出し時の実 ID"
+        decimal input_usd_per_1m
+        decimal output_usd_per_1m
+        boolean supports_streaming
+        boolean supports_vision
+        boolean is_enabled
+        boolean is_default
+        integer sort_order
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    NOTIFICATIONS_CONFIG {
+        uuid id PK
+        string campaign_key UK
+        text subject
+        text body
+        timestamp send_at
+        timestamp sent_at
+        jsonb target_filter
+        timestamp created_at
+        string created_by
+    }
+
+    SHARES {
+        uuid id PK
+        uuid owner_user_id FK
+        uuid recipient_user_id FK
+        string role "viewer/commenter"
+        jsonb scope "categories: [...], from: date, to: date"
+        timestamp granted_at
+        timestamp expires_at
+        timestamp revoked_at
+    }
+
+    SHARE_INVITATIONS {
+        uuid id PK
+        uuid owner_user_id FK
+        string recipient_email
+        string status "pending/accepted/declined/expired"
+        string token "Magic Link"
+        jsonb proposed_scope
+        timestamp invited_at
+        timestamp expires_at
+    }
+```

@@ -23,6 +23,7 @@
 4. [`03-zentrack.md`](03-zentrack.md) — 禅トラック：機能・顧客価値・ターゲット・技術・マーケ戦略
 5. [`onepagers/`](onepagers/) — 各プロダクトの**外部向け1枚資料**（Markdown 正本 ＋ A4 デザインPDF）
    - `vm-suite-sales-onepager`（toB営業）／ `cares-onepager`（健康日記・外部向け）／ `zentrack-onepager`（禅トラック・外部向け）
+6. [`sources/`](sources/) — **各プロダクトの全ドキュメント・ミラー**（要件・設計・ADR・運用・分析例など、元リポジトリの docs 一式を複製。vm-suite/zentrack は外部参照不可のためここに集約）
 
 ## 共通する設計思想（全プロダクト共通の DNA）
 
