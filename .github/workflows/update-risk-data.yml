@@ -42,10 +42,10 @@ jobs:
 
       - name: Commit data changes (if any)
         run: |
-          if [ -n "$(git status --porcelain data/)" ]; then
+          if [ -n "$(git status --porcelain jsrm/data/)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/
+            git add jsrm/data/
             git commit -m "chore(data): hourly risk-data refresh [skip ci]"
             git push
           else
