@@ -237,7 +237,7 @@ var App = class App {
         } catch (e) { console.warn('timeline refresh:', e); }
       }, 200);
     };
-    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory']
+    ['textEntries', 'symptoms', 'vitals', 'sleepData', 'activityData', 'bloodTests', 'medications', 'meals', 'photos', 'plaudAnalyses', 'conversationHistory', 'supplements', 'nutritionLog']
       .forEach(key => store.on(key, scheduleTimelineRefresh));
 
     // Start the auto-sync scheduler so connected integrations
@@ -289,6 +289,9 @@ var App = class App {
     // Set up periodic health score calc
     setInterval(() => store.calculateHealthScore(), 60000);
     store.calculateHealthScore();
+
+    // Set up daily reminder (no-op if disabled or permission not granted)
+    this.setupDailyReminder();
 
     // PWA install prompt — capture the browser event so we can trigger
     // it at a better moment (after first entry) rather than the default
@@ -2561,14 +2564,134 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
+    // Save keyword search before re-render so we can restore it.
+    const searchEl = document.getElementById('timeline-search');
+    const savedSearch = searchEl ? searchEl.value : '';
 
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
     this.navigate('timeline');
+
+    // Restore keyword search after re-render.
+    if (savedSearch) {
+      const el = document.getElementById('timeline-search');
+      if (el) {
+        el.value = savedSearch;
+        el.dispatchEvent(new Event('input'));
+      }
+    }
+  }
+
+  shareStreak(streak, totalDays) {
+    const disease = (store.get('selectedDisease') || {}).name || '慢性疾患';
+    const text = `${disease}の体調を${streak}日連続・通算${totalDays}日記録中です！\n無料で使える体調管理アプリ「健康日記」を使っています。慢性疾患の方にぜひ。`;
+    const url = 'https://cares.advisers.jp';
+    if (navigator.share) {
+      navigator.share({ title: '健康日記', text, url }).catch(() => {});
+      return;
+    }
+    const shareText = encodeURIComponent(text + '\n' + url);
+    const twitterUrl = 'https://twitter.com/intent/tweet?text=' + shareText;
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+    const existing = document.getElementById('streak-share-popup');
+    if (existing) { existing.remove(); return; }
+    const popup = document.createElement('div');
+    popup.id = 'streak-share-popup';
+    popup.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;display:flex;gap:10px;align-items:center';
+    const shareTitle = document.createElement('span');
+    shareTitle.style.cssText = 'font-size:12px;color:#475569;font-weight:600;margin-right:4px';
+    shareTitle.textContent = 'シェア:';
+    const xLink = document.createElement('a');
+    xLink.href = twitterUrl;
+    xLink.target = '_blank';
+    xLink.rel = 'noopener';
+    xLink.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#000;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none';
+    xLink.textContent = '𝕏 ポスト';
+    const lineLink = document.createElement('a');
+    lineLink.href = lineUrl;
+    lineLink.target = '_blank';
+    lineLink.rel = 'noopener';
+    lineLink.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#06c755;color:#fff;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none';
+    lineLink.textContent = 'LINE';
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'margin-left:4px;padding:4px 8px;background:transparent;border:none;font-size:16px;cursor:pointer;color:#94a3b8';
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = () => popup.remove();
+    popup.appendChild(shareTitle);
+    popup.appendChild(xLink);
+    popup.appendChild(lineLink);
+    popup.appendChild(closeBtn);
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 8000);
+  }
+
+  setupDailyReminder() {
+    if (!store.get('reminderEnabled')) return;
+    if (!('Notification' in window)) return;
+    const reminderTime = store.get('reminderTime') || '20:00';
+    const [h, m] = reminderTime.split(':').map(Number);
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const trigger = new Date(nowJst);
+    trigger.setHours(h, m, 0, 0);
+    const msUntil = trigger - nowJst;
+    if (msUntil < 0) return;
+    clearTimeout(this._reminderTimer);
+    this._reminderTimer = setTimeout(() => this._checkAndFireReminder(), msUntil);
+  }
+
+  _checkAndFireReminder() {
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    try { if (localStorage.getItem('reminderFiredDate') === todayJst) return; } catch(_){}
+    const entries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const loggedToday = [...entries, ...symptoms].some(e => {
+      if (!e?.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+    });
+    try { localStorage.setItem('reminderFiredDate', todayJst); } catch(_){}
+    if (loggedToday) return;
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification('健康日記 📝', {
+          body: '今日の体調をまだ記録していません。ひとこと書いてみませんか？',
+          icon: '/icon-192.png',
+          tag: 'daily-reminder'
+        });
+      } catch(_) {}
+    }
+  }
+
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) {
+      Components.showToast('このブラウザは通知に対応していません', 'error');
+      return false;
+    }
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') {
+      Components.showToast('通知がブロックされています。ブラウザの設定から許可してください', 'error');
+      return false;
+    }
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  }
+
+  async toggleDailyReminder(enabled) {
+    store.set('reminderEnabled', enabled);
+    if (enabled) {
+      const granted = await this.requestNotificationPermission();
+      if (!granted) {
+        store.set('reminderEnabled', false);
+        Components.showToast('通知を許可してからリマインダーを有効にしてください', 'error');
+        const el = document.getElementById('toggle-daily-reminder');
+        if (el) el.checked = false;
+        return;
+      }
+      this.setupDailyReminder();
+      const time = store.get('reminderTime') || '20:00';
+      Components.showToast(`毎日 ${time} に未記録の場合は通知します`, 'success');
+    } else {
+      clearTimeout(this._reminderTimer);
+      Components.showToast('リマインダーを無効にしました', 'info');
+    }
   }
 
   openImagePreview(url, filename = '画像') {
@@ -4005,6 +4128,43 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't resurrect the entry
+    if (typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id);
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Generic delete for all data types. Removes from the appropriate store
+  // array and deletes the Firestore document so it doesn't reappear via
+  // onSnapshot. The storeKey → Firestore collection mapping mirrors
+  // enableAutoSync().
+  deleteDataRecord(type, id) {
+    if (!type || !id) return;
+    const typeMap = {
+      text:         { storeKey: 'textEntries',  fbCollection: 'textEntries' },
+      symptom_note: { storeKey: 'symptoms',     fbCollection: 'symptoms' },
+      symptom_data: { storeKey: 'symptoms',     fbCollection: 'symptoms' },
+      vitals:       { storeKey: 'vitals',       fbCollection: 'vitals' },
+      blood:        { storeKey: 'bloodTests',   fbCollection: 'bloodTests' },
+      medication:   { storeKey: 'medications',  fbCollection: 'medications' },
+      sleep:        { storeKey: 'sleepData',    fbCollection: 'sleep' },
+      activity:     { storeKey: 'activityData', fbCollection: 'activity' },
+      supplement:   { storeKey: 'supplements',  fbCollection: null },
+      meal:         { storeKey: 'meals',        fbCollection: null },
+      nutrition:    { storeKey: 'nutritionLog', fbCollection: null },
+      photo:        { storeKey: 'photos',       fbCollection: null },
+      plaud:        { storeKey: 'plaudAnalyses', fbCollection: 'plaudAnalyses' },
+    };
+    if (type === 'text') { this.deleteTextEntry(id); return; }
+    const mapping = typeMap[type];
+    if (!mapping) return;
+    const arr = store.get(mapping.storeKey) || [];
+    store.set(mapping.storeKey, arr.filter(e => !e || e.id !== id));
+    if (mapping.fbCollection && typeof FirebaseBackend !== 'undefined' && FirebaseBackend.userId) {
+      FirebaseBackend.deleteHealthEntry(mapping.fbCollection, id);
+    }
     Components.showToast('削除しました', 'success');
   }
 
@@ -4413,10 +4573,16 @@ ${axisHint}
       result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,#eef2ff 0%,#fdf4ff 100%);border:1.5px solid #6366f1;border-radius:14px">
+            <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:8px">📊 記録を続けると、もっと深い分析ができます</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>📈</span><span>毎日の変化をグラフで可視化</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>🏥</span><span>医師向けレポートを自動生成</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>🔬</span><span>症状パターンを自動検出</span></div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4338ca"><span>💊</span><span>服薬・睡眠・食事を一元管理</span></div>
+            </div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">無料で登録する（30秒） ↓</button>
+            <div style="font-size:10px;color:#6366f1;text-align:center;margin-top:6px">クレジットカード不要 ・ Googleアカウントで即開始</div>
           </div>`;
       }
     } catch (err) {

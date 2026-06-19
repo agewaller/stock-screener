@@ -681,10 +681,14 @@ App.prototype.render_dashboard = function() {
   <!-- Today's logging reminder — shown only when the user has past data
        but hasn't logged anything today, to reinforce the daily habit -->
   ${hasData && !loggedToday && !store.get('isAnalyzing') ? `
-  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px">
-    <div style="font-size:18px">📝</div>
-    <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
-    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+  <div style="margin-bottom:12px;padding:10px 14px;background:${streakStats.streak >= 3 ? '#fff7ed' : '#fffbeb'};border:1px solid ${streakStats.streak >= 3 ? '#fed7aa' : '#fde68a'};border-radius:10px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:18px">${streakStats.streak >= 3 ? '🔥' : '📝'}</div>
+    <div style="flex:1;font-size:12px;color:${streakStats.streak >= 3 ? '#9a3412' : '#78350f'}">
+      ${streakStats.streak >= 3
+        ? `<strong>${streakStats.streak}日連続記録</strong>が今日途切れてしまいます。ひとこと記録しませんか？`
+        : '今日はまだ記録がありません。体調を入力してみましょう。'}
+    </div>
+    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:${streakStats.streak >= 3 ? '#ea580c' : '#f59e0b'};color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
   </div>` : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
@@ -713,16 +717,43 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
         ${earnedBadges.map(b => `
           <span title="${Components.escapeHtml(b.desc)}"
             style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
             <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
           </span>
         `).join('')}
+        ${streakStats.streak >= 3 ? `
+        <button onclick="app.shareStreak(${streakStats.streak},${streakStats.totalDays})"
+          style="margin-left:auto;padding:4px 10px;font-size:10px;background:#6366f1;color:#fff;border:none;border-radius:10px;cursor:pointer">
+          📣 シェア
+        </button>` : ''}
       </div>` : ''}
     </div>
   </div>` : ''}
+
+  <!-- Severe symptom nudge: when 7-day average fatigue or pain is high
+       (>=7), suggest consulting a doctor. Dismissed per-day. -->
+  ${(() => {
+    if (recent7.length < 3) return '';
+    const fAvg = parseFloat(fatigueAvg);
+    const pAvg = parseFloat(painAvg);
+    const isHigh = (fAvg >= 7) || (pAvg >= 7);
+    if (!isHigh) return '';
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dismissed = (() => { try { return localStorage.getItem('severeNudgeDismissed') === todayJst; } catch(_){return false;} })();
+    if (dismissed) return '';
+    const which = fAvg >= 7 ? `疲労スコアの平均が ${fAvg.toFixed(1)}` : `痛みスコアの平均が ${pAvg.toFixed(1)}`;
+    return `
+    <div style="margin-bottom:12px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:18px">🏥</div>
+      <div style="flex:1;font-size:12px;color:#991b1b;line-height:1.5">
+        この7日間、${which}と高い水準が続いています。担当医への相談も検討してみてください。
+      </div>
+      <button onclick="try{localStorage.setItem('severeNudgeDismissed','${todayJst}');}catch(_){}this.closest('[style]').remove()" style="padding:3px 10px;background:transparent;border:1px solid #fecaca;border-radius:6px;font-size:10px;color:#b91c1c;cursor:pointer;flex-shrink:0">確認</button>
+    </div>`;
+  })()}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
@@ -884,6 +915,95 @@ App.prototype.render_dashboard = function() {
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
+
+  <!-- Weekly analysis nudge: when 7+ entries exist but no deep analysis
+       has run in the past 7 days. Dismissed per-day via localStorage. -->
+  ${(() => {
+    if (!hasData || totalEntries < 7) return '';
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const lastRun = store.get('deepAnalysisLastRun');
+    if (lastRun === todayJst) return '';
+    let daysSince = 999;
+    if (lastRun) {
+      daysSince = Math.floor((Date.now() - new Date(lastRun.replace(/\//g, '-')).getTime()) / 86400000);
+    }
+    if (daysSince < 7) return '';
+    const dismissed = (() => { try { return localStorage.getItem('wkNudgeDismissed') === todayJst; } catch(_){return false;} })();
+    if (dismissed) return '';
+    return `
+    <div style="margin-bottom:16px;padding:12px 14px;background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #86efac;border-radius:10px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🔍</div>
+      <div style="flex:1;font-size:12px;color:#166534">
+        <strong>${totalEntries}件のデータが溜まっています。</strong>${lastRun ? `前回の本格分析から${daysSince}日経ちました。` : ''}パターンが見えてくるかもしれません。
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button onclick="app.runDeepAnalysis()" style="padding:5px 12px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">分析する</button>
+        <button onclick="try{localStorage.setItem('wkNudgeDismissed','${todayJst}');}catch(_){}this.closest('[style]').remove()" style="padding:3px 12px;background:transparent;border:none;font-size:10px;color:#4ade80;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Correlation insights: shown when 5+ symptom records exist.
+       Computes simple correlations client-side, no AI needed. -->
+  ${(() => {
+    if (symptoms.length < 5) return '';
+    const insights = [];
+    const recent30 = symptoms.filter(s => (Date.now() - new Date(s.timestamp)) < 30 * 86400000);
+    if (recent30.length < 5) return '';
+    // Sleep vs fatigue correlation
+    const sleepFatigue = recent30.filter(s => s.sleep_quality != null && s.fatigue_level != null);
+    if (sleepFatigue.length >= 4) {
+      const avg = (arr, f) => arr.reduce((a,b) => a + b[f], 0) / arr.length;
+      const good = sleepFatigue.filter(s => s.sleep_quality >= 7);
+      const poor = sleepFatigue.filter(s => s.sleep_quality <= 4);
+      if (good.length >= 2 && poor.length >= 2) {
+        const fatGood = avg(good, 'fatigue_level').toFixed(1);
+        const fatPoor = avg(poor, 'fatigue_level').toFixed(1);
+        if (Math.abs(fatGood - fatPoor) >= 1.5) {
+          insights.push(`睡眠が良い日（7以上）の疲労平均: ${fatGood} ／ 悪い日（4以下）: ${fatPoor}。睡眠との相関が見られます。`);
+        }
+      }
+    }
+    // Weekday fatigue pattern
+    const withDay = recent30.filter(s => s.fatigue_level != null && s.timestamp);
+    if (withDay.length >= 7) {
+      const byDay = Array(7).fill(null).map(() => []);
+      withDay.forEach(s => { const d = new Date(s.timestamp).getDay(); byDay[d].push(s.fatigue_level); });
+      const dayAvg = byDay.map(arr => arr.length ? arr.reduce((a,b) => a+b,0)/arr.length : null);
+      const defined = dayAvg.map((v,i) => ({v,i})).filter(x => x.v !== null);
+      if (defined.length >= 3) {
+        const worst = defined.reduce((a,b) => a.v > b.v ? a : b);
+        const best  = defined.reduce((a,b) => a.v < b.v ? a : b);
+        const dnames = ['日','月','火','水','木','金','土'];
+        if (worst.v - best.v >= 1.5) {
+          insights.push(`疲労が最も高い曜日: ${dnames[worst.i]}曜日（平均${worst.v.toFixed(1)}）。最も低い: ${dnames[best.i]}曜日（${best.v.toFixed(1)}）。`);
+        }
+      }
+    }
+    // Week-over-week trend
+    const prev7 = symptoms.filter(s => { const d = Date.now() - new Date(s.timestamp); return d >= 7*86400000 && d < 14*86400000; });
+    if (recent7.length >= 2 && prev7.length >= 2) {
+      const a7 = (arr, f) => { const v = arr.map(s=>s[f]).filter(x=>x!=null); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+      const thisF = a7(recent7, 'fatigue_level'), lastF = a7(prev7, 'fatigue_level');
+      if (thisF !== null && lastF !== null) {
+        const diff = thisF - lastF;
+        if (Math.abs(diff) >= 1) {
+          insights.push(`先週と比べ疲労スコアが${diff > 0 ? Math.abs(diff).toFixed(1) + ' 上昇' : Math.abs(diff).toFixed(1) + ' 改善'}しています（先週${lastF.toFixed(1)} → 今週${thisF.toFixed(1)}）。`);
+        }
+      }
+    }
+    if (insights.length === 0) return '';
+    return `
+    <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#faf5ff 0%,#ede9fe 100%);border:1px solid #ddd6fe">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="font-size:13px;font-weight:700;color:#5b21b6;margin-bottom:10px">🔍 あなたのデータから見えてきたパターン</div>
+        <ul style="margin:0;padding-left:16px;list-style:disc;font-size:12px;color:#4c1d95;line-height:1.8">
+          ${insights.map(i => `<li>${Components.escapeHtml(i)}</li>`).join('')}
+        </ul>
+        <div style="margin-top:8px;font-size:10px;color:#7c3aed">記録が増えるほど精度が上がります。</div>
+      </div>
+    </div>`;
+  })()}
 
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
@@ -2212,9 +2332,13 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply stored category filter
+  const activeFilter = store.get('_timelineFilter') || '';
+  const visibleEntries = activeFilter ? allEntries.filter(e => e._type === activeFilter) : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  visibleEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2229,10 +2353,20 @@ App.prototype.render_timeline = function() {
     plaud: '禅トラック', calendar: 'カレンダー'
   };
 
+  // Delete button helper — 2-tap confirm to prevent accidental deletion.
+  const deleteBtn = (type, id) => {
+    const safeType = Components.escapeHtml(type);
+    const safeId = Components.escapeHtml(id || '');
+    return `<button
+      style="padding:2px 8px;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted);flex-shrink:0"
+      onclick="(function(btn){if(btn.dataset.confirm){app.deleteDataRecord('${safeType}','${safeId}');}else{btn.dataset.confirm='1';btn.textContent='本当に削除？';btn.style.color='var(--danger,#dc2626)';btn.style.borderColor='var(--danger,#dc2626)';setTimeout(()=>{if(btn.dataset.confirm){delete btn.dataset.confirm;btn.textContent='削除';btn.style.color='';btn.style.borderColor='';}},3000);}})(this)">削除</button>`;
+  };
+
   // Render entries
   const renderEntry = (e) => {
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }) : '';
     const skipKeys = ['id', 'timestamp', 'category', '_type', '_icon', '_label', '_category', 'createdAt', '_synced', 'type', 'source', 'dataUrl'];
+    const delBtn = e.id ? deleteBtn(e._type, e.id) : '';
 
     // Text entries - show formatted content
     if (e._type === 'text' || e._type === 'symptom_note') {
@@ -2245,7 +2379,7 @@ App.prototype.render_timeline = function() {
       const previewImage = e.previewImage || previewPhoto?.dataUrl || '';
       const safeFileName = Components.escapeHtml(e.title || previewPhoto?.filename || '画像');
       return `
-        <div class="card" style="margin-bottom:10px;border-left:3px solid var(--accent)">
+        <div class="card" data-entry-type="${Components.escapeHtml(e._type)}" style="margin-bottom:10px;border-left:3px solid var(--accent)">
           <div class="card-body" style="padding:12px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:8px">
@@ -2253,7 +2387,10 @@ App.prototype.render_timeline = function() {
                 <span style="font-size:12px;font-weight:600">${safeLabel}</span>
                 ${safeCategory ? `<span class="tag tag-accent" style="font-size:9px">${safeCategory}</span>` : ''}
               </div>
-              <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${time}</span>
+                ${delBtn}
+              </div>
             </div>
             <div style="font-size:13px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;margin-bottom:8px">${content}</div>
             ${previewImage ? `<div style="margin-bottom:8px"><img class="record-thumbnail" src="${previewImage}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)"></div>` : ''}
@@ -2272,10 +2409,11 @@ App.prototype.render_timeline = function() {
       if (e.pem_status) fields.push('PEM: あり');
       const avgScore = fields.length > 0 ? '（平均 ' + (((e.fatigue_level||0)+(e.pain_level||0)+(e.brain_fog||0))/3).toFixed(1) + '/7）' : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>${e._icon}</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ')}</span>
           <span style="font-size:11px;color:var(--text-muted)">${avgScore} ${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2289,10 +2427,11 @@ App.prototype.render_timeline = function() {
       if (e.hrv) fields.push(`HRV: ${e.hrv}ms`);
       if (e.weight) fields.push(`体重: ${e.weight}kg`);
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>💓</span>
           <span style="font-size:12px;flex:1">${fields.join(' | ') || 'バイタルデータ'}</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2300,11 +2439,12 @@ App.prototype.render_timeline = function() {
     if (e._type === 'photo') {
       const safeFileName = Components.escapeHtml(e.filename || '画像');
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+        <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
           <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
+          ${delBtn}
         </div>`;
     }
 
@@ -2314,10 +2454,11 @@ App.prototype.render_timeline = function() {
       .map(([k, v]) => `<span style="margin-right:12px"><strong style="color:var(--text-muted)">${Components.escapeHtml(String(k))}:</strong> ${Components.escapeHtml(String(v))}</span>`)
       .join('');
     return `
-      <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
+      <div data-entry-type="${Components.escapeHtml(e._type)}" style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
         <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
+        ${delBtn}
       </div>`;
   };
 
@@ -2331,20 +2472,26 @@ App.prototype.render_timeline = function() {
   `).join('');
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ${activeFilter ? `（${categoryLabels[activeFilter] || activeFilter}でフィルター中: ${visibleEntries.length}件）` : '（日記・検査・薬剤・バイタル・写真）'}</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
+          <option value="">すべて表示</option>
+          ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}"${activeFilter === k ? ' selected' : ''}>${v}</option>`).join('')}
+        </select>
+        ${activeFilter ? `<button onclick="app.filterTimeline('')" style="padding:4px 10px;font-size:11px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-muted)">✕ クリア</button>` : ''}
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
-      </select>
-    </div>
+    <input type="search" id="timeline-search" placeholder="キーワードで絞り込み…"
+      style="width:100%;padding:8px 12px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box"
+      oninput="(function(q){const cards=document.querySelectorAll('#timeline-content [data-entry-type]');cards.forEach(c=>{const text=c.textContent||'';c.style.display=q&&!text.includes(q)?'none':'';});const groups=document.querySelectorAll('#timeline-content>div');groups.forEach(g=>{const visible=g.querySelectorAll('[data-entry-type]:not([style*=\'display: none\'])');g.style.display=visible.length?'':'none';});})(this.value)">
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${visibleEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', activeFilter ? `「${categoryLabels[activeFilter] || activeFilter}」の記録がありません。フィルターをクリアしてください。` : 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -3274,6 +3421,40 @@ App.prototype.render_settings = function() {
           </div>
         </div>
       </label>
+    </div>
+  </div>
+
+  <!-- Daily Reminder Settings -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 毎日のリマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
+        今日の記録が未入力の場合、設定した時刻にブラウザ通知でお知らせします（タブを開いている間のみ機能します）。
+      </div>
+      ${(() => {
+        const notifSupported = typeof Notification !== 'undefined';
+        const notifGranted = notifSupported && Notification.permission === 'granted';
+        const notifDenied  = notifSupported && Notification.permission === 'denied';
+        const enabled = !!store.get('reminderEnabled');
+        const time = store.get('reminderTime') || '20:00';
+        return `
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer">
+          <input type="checkbox" id="toggle-daily-reminder" ${enabled ? 'checked' : ''} ${notifDenied ? 'disabled' : ''}
+            onchange="app.toggleDailyReminder(this.checked)"
+            style="width:16px;height:16px;accent-color:var(--accent)">
+          <span style="font-size:13px;font-weight:600">リマインダーを有効にする</span>
+          ${notifGranted ? '<span style="font-size:10px;color:#16a34a;font-weight:600">（通知許可済）</span>'
+            : notifDenied ? '<span style="font-size:10px;color:#dc2626">（通知がブロックされています）</span>'
+            : '<span style="font-size:10px;color:#64748b">（許可ダイアログが表示されます）</span>'}
+        </label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="form-label" style="margin:0;font-size:12px">通知時刻</label>
+          <input type="time" class="form-input" value="${Components.escapeHtml(time)}"
+            style="width:auto;padding:6px 10px;font-size:14px"
+            onchange="store.set('reminderTime',this.value);if(store.get('reminderEnabled'))app.setupDailyReminder();">
+        </div>
+        ${notifDenied ? '<div style="margin-top:8px;font-size:11px;color:#dc2626;line-height:1.6">ブラウザの設定（アドレスバーの🔒）からこのサイトの通知を「許可」に変更してください。</div>' : ''}`;
+      })()}
     </div>
   </div>
 
