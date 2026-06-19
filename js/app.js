@@ -4474,7 +4474,7 @@ ${axisHint}
                      ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
                      ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
                      <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
-                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
+                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-7</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
                      ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
                    </div>`
                 : ''}
