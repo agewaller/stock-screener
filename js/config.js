@@ -94,7 +94,6 @@ var CONFIG = {
         { id: 'sjogrens', name: 'シェーグレン症候群', icd: '4A42' },
         { id: 'hashimoto', name: '橋本病（慢性甲状腺炎）', icd: '5A00.1' },
         { id: 'crohns', name: 'クローン病', icd: 'DD70' },
-        { id: 'uc', name: '潰瘍性大腸炎', icd: 'DD71' },
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'EA90' },
         { id: 'atopy', name: 'アトピー性皮膚炎', icd: 'EA80' },
@@ -181,7 +180,7 @@ var CONFIG = {
         { id: 'liver_disease', name: '肝疾患（慢性肝炎・肝硬変）', icd: 'DB9Z' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
-        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
+        { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'DD71' }
       ]
     },
     {
@@ -390,8 +389,6 @@ var CONFIG = {
                           japan:    400_000, japanLabel: '約 30-50 万人',         japanSource: 'バセドウ病主体' },
     crohns:             { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
                           japan:     70_000, japanLabel: '約 7 万人',             japanSource: '指定難病' },
-    uc:                 { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
-                          japan:    220_000, japanLabel: '約 22 万人',            japanSource: '指定難病' },
     immunodeficiency:   { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
                           japan:     30_000, japanLabel: '数千〜数万人',          japanSource: '原発性免疫不全症' },
     allergy:            { world: null, label: '世界推計は策定中',                  tier: 0, density: 'low',
@@ -956,7 +953,7 @@ var CONFIG = {
       category: 'medical',
       amount: '医療費自己負担2割（所得により月額上限 2,500〜30,000円）',
       eligibility: '国の指定難病（341疾患）の患者で、重症度基準を満たす方',
-      applicable: ['mecfs', 'fibromyalgia', 'sle', 'ra', 'crohns', 'uc', 'parkinson', 'pss', 'ms', 'als', 'pots'],
+      applicable: ['mecfs', 'fibromyalgia', 'sle', 'ra', 'crohns', 'ulcerative_colitis', 'parkinson', 'pss', 'ms', 'als', 'pots'],
       professional: 'sharoushi',
       urls: [
         { label: '難病情報センター', url: 'https://www.nanbyou.or.jp/' },
