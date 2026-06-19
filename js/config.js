@@ -46,6 +46,7 @@ var CONFIG = {
         { id: 'epilepsy', name: 'てんかん', icd: '8A60' },
         { id: 'ms', name: '多発性硬化症（MS）', icd: '8A40' },
         { id: 'parkinsons', name: 'パーキンソン病', icd: '8A00' },
+        { id: 'alzheimers', name: 'アルツハイマー病・認知症', icd: '8A20' },
         { id: 'als', name: '筋萎縮性側索硬化症（ALS）', icd: '8B60' },
         { id: 'neuropathy', name: '末梢神経障害', icd: '8C0' },
         { id: 'dysautonomia', name: '自律神経障害', icd: '8D40' },
@@ -70,6 +71,9 @@ var CONFIG = {
         { id: 'adhd', name: 'ADHD（注意欠如多動性障害）', icd: '6A05' },
         { id: 'asd', name: '自閉スペクトラム症（ASD）', icd: '6A02' },
         { id: 'eating', name: '摂食障害', icd: '6B8' },
+        { id: 'anorexia', name: '神経性やせ症（拒食症）', icd: '6B80' },
+        { id: 'schizophrenia', name: '統合失調症', icd: '6A20' },
+        { id: 'sad', name: '季節性情動障害（SAD）', icd: '6A70.Y' },
         { id: 'insomnia', name: '不眠障害', icd: '7A00' },
         { id: 'substance', name: '物質依存症', icd: '6C4' },
         { id: 'burnout', name: 'バーンアウト症候群', icd: 'QD85' },
@@ -93,6 +97,7 @@ var CONFIG = {
         { id: 'uc', name: '潰瘍性大腸炎', icd: 'DD71' },
         { id: 'celiac', name: 'セリアック病', icd: 'DA95' },
         { id: 'psoriasis', name: '乾癬（尋常性・関節症性）', icd: 'EA90' },
+        { id: 'atopy', name: 'アトピー性皮膚炎', icd: 'EA80' },
         { id: 'immunodeficiency', name: '免疫不全症', icd: '4A0' },
         { id: 'allergy', name: 'アレルギー疾患', icd: '4A8' },
         { id: 'allergic_rhinitis', name: 'アレルギー性鼻炎・花粉症', icd: 'CA08' },
@@ -124,13 +129,13 @@ var CONFIG = {
       diseases: [
         { id: 'diabetes_t1', name: '1型糖尿病', icd: '5A10' },
         { id: 'diabetes_t2', name: '2型糖尿病', icd: '5A11' },
+        { id: 'diabetes', name: '糖尿病（型未分類）', icd: '5A14' },
         { id: 'thyroid_hypo', name: '甲状腺機能低下症', icd: '5A00' },
-        { id: 'thyroid_hyper', name: '甲状腺機能亢進症（バセドウ病）', icd: '5A02' },
-        { id: 'hyperthyroidism', name: '甲状腺機能亢進症・バセドウ病', icd: 'E05' },
+        { id: 'hyperthyroidism', name: '甲状腺機能亢進症・バセドウ病', icd: '5A02' },
         { id: 'adrenal', name: '副腎機能不全', icd: '5A70' },
-        { id: 'pcos', name: '多嚢胞性卵巣症候群（PCOS）', icd: 'GA30' },
         { id: 'metabolic_syndrome', name: 'メタボリックシンドローム', icd: '5B81' },
         { id: 'obesity', name: '肥満症', icd: '5B81' },
+        { id: 'ckd', name: '慢性腎臓病（CKD）', icd: 'GB61' },
         { id: 'gout', name: '痛風・高尿酸血症', icd: 'FA25' },
         { id: 'osteoporosis', name: '骨粗鬆症', icd: 'FB83' },
         { id: 'anemia', name: '鉄欠乏性貧血・慢性疾患性貧血', icd: 'D50' }
@@ -173,6 +178,7 @@ var CONFIG = {
         { id: 'ibs', name: '過敏性腸症候群（IBS）', icd: 'DD91' },
         { id: 'gerd', name: '逆流性食道炎（GERD）', icd: 'DA22' },
         { id: 'nafld', name: '非アルコール性脂肪肝（NAFLD）', icd: 'DB92' },
+        { id: 'liver_disease', name: '肝疾患（慢性肝炎・肝硬変）', icd: 'DB9Z' },
         { id: 'sibo', name: 'SIBO（小腸内細菌増殖）', icd: 'DD90' },
         { id: 'gastroparesis', name: '胃不全麻痺', icd: 'DA44' },
         { id: 'ulcerative_colitis', name: '潰瘍性大腸炎（UC）', icd: 'K51' }
@@ -185,8 +191,7 @@ var CONFIG = {
       icd: 'ICD-11: 15',
       diseases: [
         { id: 'eds', name: 'EDS（エーラス・ダンロス症候群）', icd: 'LD28' },
-        { id: 'ankylosing', name: '強直性脊椎炎', icd: 'FA92' },
-        { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'M45' },
+        { id: 'ankylosing_spondylitis', name: '強直性脊椎炎（体軸性脊椎関節炎）', icd: 'FA92' },
         { id: 'osteoarthritis', name: '変形性関節症（OA）', icd: 'M15' },
         { id: 'myasthenia', name: '重症筋無力症', icd: '8C60' },
         { id: 'polymyalgia', name: 'リウマチ性多発筋痛症', icd: 'FA21' }
@@ -200,7 +205,8 @@ var CONFIG = {
       diseases: [
         { id: 'cancer_survivor', name: 'がんサバイバー（治療後管理）', icd: '02' },
         { id: 'cancer_fatigue', name: 'がん関連疲労', icd: 'MG22' },
-        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' }
+        { id: 'chemo_side', name: '化学療法後遺症', icd: 'NE61' },
+        { id: 'thyroid_cancer', name: '甲状腺がん（経過観察）', icd: '2D10' }
       ]
     },
     {
@@ -380,6 +386,8 @@ var CONFIG = {
                           japan: 2_000_000, japanLabel: '診断済 約 200 万人、潜在含め 1,000 万人超', japanSource: '日本甲状腺学会' },
     thyroid_hyper:      { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
                           japan:    400_000, japanLabel: '約 30-50 万人',         japanSource: 'バセドウ病主体' },
+    hyperthyroidism:    { world: null, label: '世界推計は策定中',                  tier: 0, density: 'medium',
+                          japan:    400_000, japanLabel: '約 30-50 万人',         japanSource: 'バセドウ病主体' },
     crohns:             { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
                           japan:     70_000, japanLabel: '約 7 万人',             japanSource: '指定難病' },
     uc:                 { world: null, label: '世界推計は策定中 (IBD 全体で 383〜700 万人+)', tier: 0, density: 'high',
@@ -416,6 +424,25 @@ var CONFIG = {
                           japan: null, japanLabel: '国内推計策定中' },
     substance:          { world: null, label: '世界推計は策定中',                  tier: 0, density: 'high',
                           japan: null, japanLabel: '国内推計策定中' },
+    // ─── 新規追加疾患 ───
+    alzheimers:         { world:    55_000_000, label: '約 5,500 万人',           tier: 2, density: 'medium', source: 'WHO 2023（認知症全体）',
+                          japan:  6_000_000, japanLabel: '約 600 万人（認知症全体）', japanSource: '厚労省 2023年' },
+    atopy:              { world:   230_000_000, label: '約 2.3 億人（推計）',      tier: 2, density: 'medium', source: '世界アレルギー機構 WA0 2019',
+                          japan:  5_000_000, japanLabel: '約 500 万人（成人含む）', japanSource: '日本皮膚科学会推計' },
+    schizophrenia:      { world:    24_000_000, label: '約 2,400 万人',           tier: 2, density: 'medium', source: 'WHO 2022',
+                          japan:    770_000, japanLabel: '約 77 万人',             japanSource: '厚労省患者調査 2020' },
+    sad:                { world: null, label: '世界推計は策定中（北欧・高緯度地域で有病率 3〜10%）', tier: 0, density: 'medium',
+                          japan: null, japanLabel: '国内推計策定中' },
+    anorexia:           { world:    3_000_000, label: '約 300 万人（推計）',       tier: 3, density: 'high',   source: '10万あたり100-200人（女性）',
+                          japan:     30_000, japanLabel: '約 2-3 万人（推計）',    japanSource: '日本摂食障害学会' },
+    diabetes:           { world:   589_000_000, label: '約 5.89 億人（T1+T2）',   tier: 1, density: 'high',   source: 'IDF 20-79歳',
+                          japan:  10_000_000, japanLabel: '約 1,000 万人',         japanSource: '厚労省（T1+T2）' },
+    ckd:                { world:   850_000_000, label: '約 8.5 億人',             tier: 1, density: 'medium', source: 'KDIGO 2022 世界推計',
+                          japan:  13_000_000, japanLabel: '約 1,300 万人（推計）', japanSource: '日本腎臓学会 CKD 診療ガイド' },
+    liver_disease:      { world:   300_000_000, label: '約 3 億人（慢性肝疾患）',  tier: 2, density: 'medium', source: '慢性ウイルス性肝炎・脂肪肝計',
+                          japan:  3_000_000, japanLabel: '約 300 万人（推計）',     japanSource: '日本肝臓学会推計' },
+    thyroid_cancer:     { world: null, label: '世界推計は策定中（年 58.6 万人診断）', tier: 0, density: 'medium',
+                          japan:    220_000, japanLabel: '国内治療中・経過観察 約 22 万人', japanSource: '国立がん研究センター' },
   },
 
   // ============================================================
