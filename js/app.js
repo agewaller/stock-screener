@@ -4182,17 +4182,21 @@ ${bloodText || '記録なし'}
       return;
     }
     if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.initialized) {
-      el.textContent = '';
+      // Firebase not ready yet — retry after a short delay so first-time
+      // visitors still see the count once Firebase finishes initializing.
+      setTimeout(() => {
+        if (document.getElementById('public-user-count-inline')) {
+          this.loadPublicUserCount();
+        }
+      }, 2500);
       return;
     }
     try {
-      // Use count() aggregation if available (Firebase v9+); fall
-      // back to a bounded .get() otherwise so we don't blow up
-      // read costs for very large collections.
+      // Firebase compat: query.count() may not exist on all SDK versions;
+      // fall back to .get().size (bounded to avoid excessive read costs).
       const db = firebase.firestore();
       let total = 0;
       try {
-        // Firebase compat: query.count() may not exist on some SDK versions.
         const countSnap = await db.collection('users').get();
         total = countSnap.size;
       } catch (e) {
