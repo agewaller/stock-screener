@@ -4430,79 +4430,25 @@ ${bloodText || '記録なし'}
   }
 
   async guestFileAnalyze(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    // 写真・PDF の分析はログインが必要。cares 側で画像を扱えるのは認証付きの
+    // /api/quick-entry のみで、公開お試しエンドポイント /api/trial/analyze は
+    // テキスト専用（ADR-0016）。ゲストには無料登録を案内し、廃止された Worker
+    // 経由の写真分析は行わない（単一の正しい経路を保つ）。
+    const input = event && event.target;
+    const file = input && input.files && input.files[0];
+    // 選択をリセットして、登録後に同じ操作をやり直せるようにする。
+    if (input) { try { input.value = ''; } catch (_) {} }
     const resultEl = document.getElementById('guest-result');
-    if (resultEl) resultEl.innerHTML = Components.loading('写真を認識中...');
-
-    // Same anonymous-auth bootstrapping as guestAnalyze — without
-    // this the API falls back to a canned message every time.
-    await FirebaseBackend.ensureGuestAuth();
-
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const isImage = file.type.startsWith('image/');
-        const isPDF = file.type === 'application/pdf';
-        const rawDataUrl = ev.target.result;
-        // iPhone photos are 3-5MB raw which base64-encodes to 5-7MB.
-        // Without compression, the vision API path rejects the payload
-        // (either at the Worker with a 413 or at Anthropic with a 400
-        // about image size) and the user sees a generic failure. The
-        // other photo paths (dashboard / journal) already call
-        // Components.compressImage → 800px JPEG@0.7 (~100-300KB). This
-        // path was missing it, which is why guest食事写真 never reached
-        // the AI even on a real browser.
-        const payload = isImage
-          ? await Components.compressImage(rawDataUrl)
-          : rawDataUrl;
-        const rawKB = Math.round((rawDataUrl || '').length / 1024);
-        const sentKB = Math.round((payload || '').length / 1024);
-        console.log(`[guestFileAnalyze] ${file.name} ${file.type} raw=${rawKB}KB sent=${sentKB}KB`);
-
-        const attachOpts = isImage
-          ? { imageBase64: payload }
-          : (isPDF ? { pdfBase64: payload } : {});
-        // Bump temperature for guest file uploads so identical images
-        // don't always yield the same canned output. Also stamp the
-        // filename caption with a timestamp to break any request-level
-        // cache on upstream providers.
-        attachOpts.temperature = 0.6;
-        const analyzeType = isImage ? 'image_analysis' : (isPDF ? 'document_analysis' : 'text_analysis');
-        const kind = isPDF ? 'PDF 文書' : '写真';
-        const result = await this.analyzeViaAPI(
-          `[${kind}: ${file.name} · ${new Date().toLocaleString('ja-JP')}]`,
-          analyzeType,
-          attachOpts
-        );
-
-        if (resultEl) {
-          resultEl.innerHTML = this.renderAnalysisCard(result) +
-            `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-              <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">この分析を保存して続けませんか？</div>
-              <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
-            </div>`;
-        }
-      } catch (err) {
-        console.warn('[guestFileAnalyze] Failed:', err?.message || err);
-        if (resultEl) {
-          // Surface the actual error message instead of a canned
-          // "通信エラー" line. For in-app-browser / CORS failures the
-          // thrower (ai-engine.js callAnthropic) now returns a
-          // Japanese message telling the user to open in an external
-          // browser — swallowing it hid the actionable advice.
-          const friendly = (err && err.message)
-            ? String(err.message)
-            : '通信エラーが発生しました。時間をおいて再度お試しください。';
-          resultEl.innerHTML = this.renderAnalysisCard({
-            summary: 'ファイル分析に失敗しました',
-            findings: friendly,
-            actions: []
-          });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
+    if (!resultEl) return;
+    const name = file ? Components.escapeHtml(file.name) : '';
+    resultEl.innerHTML = `
+      <div style="padding:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px">
+        <div style="font-size:14px;font-weight:700;color:#3730a3;margin-bottom:6px">📎 写真・ファイルの分析は登録後にご利用いただけます</div>
+        <div style="font-size:12px;color:#4338ca;line-height:1.75;margin-bottom:12px">
+          ${name ? `「${name}」を受け取りました。<br>` : ''}写真やお薬・検査結果の読み取りは、無料登録すると保存・追跡つきでご利用いただけます。まずは上の入力欄にテキストでお試しいただけます。
+        </div>
+        <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録して写真を分析する ↓</button>
+      </div>`;
   }
 
   // ---- Dashboard Quick Input ----
