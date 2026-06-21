@@ -2674,12 +2674,11 @@ ${titles}`;
     }
 
     // NOTE: we intentionally do NOT short-circuit here on `!apiKey`.
-    // aiEngine.callModel has its own shared-proxy fallback (the
-    // Cloudflare Worker with a server-side ANTHROPIC_API_KEY secret)
-    // for Claude models. Early-returning here would bypass that path
+    // aiEngine.callModel uses the shared Cloudflare Worker endpoint
+    // with server-side provider keys. Early-returning here would bypass that path
     // entirely — every logged-in user without a local key would get
     // the "ただいま詳細分析をご用意できません" fallback even though the
-    // shared proxy could serve the request. The previous code had this
+    // shared Worker could serve the request. The previous code had this
     // bug because f19eac1 added canUseSharedProxy to callModel but
     // forgot to remove the short-circuit here, which is exactly the
     // regression users were hitting as "ダッシュボードにコメントしても
@@ -3831,7 +3830,7 @@ ${bloodText || '記録なし'}
     }
   }
 
-  // The AI endpoint is now fixed in code (a single relay URL). Manual
+  // The AI endpoint is now fixed in code (a single custom-domain URL). Manual
   // proxy-URL overrides were removed because stale localStorage values
   // were a root cause of returning users staying broken. This stub
   // remains only so any cached onclick handler can't throw.
@@ -3957,17 +3956,20 @@ ${bloodText || '記録なし'}
         await Promise.all(names.map(n => { try { return caches.delete(n); } catch (_) { return null; } }));
       }
     } catch (_) {}
-    // Wipe ONLY the diagnostic / behavioral flags that might be
-    // stuck in a bad state. We deliberately KEEP:
-    //   - `apikey_anthropic` (admin's shared key from Firestore)
-    //   - `anthropic_proxy_url` (admin's Worker URL — wiping it would
-    //     fall through to the hardcoded `agewaller` URL which may be
-    //     wrong for the deployed Cloudflare account)
-    // Both come from admin/config sync; clearing them strands the
-    // user when re-sync also fails, which is exactly the "can't
-    // recover from reset" scenario reported.
+    // Wipe diagnostic / behavioral flags that might be stuck in a bad
+    // state. Provider keys and proxy URLs are intentionally not kept in
+    // localStorage anymore; the Worker owns keys in KV/env, and
+    // AIEngine.PROXY_URL owns the single endpoint.
     try {
-      ['sw_purged_v1', 'dismissed_inapp_banner']
+      [
+        'sw_purged_v1',
+        'dismissed_inapp_banner',
+        'anthropic_proxy_url',
+        'anthropic_mode',
+        'apikey_anthropic',
+        'apikey_openai',
+        'apikey_google'
+      ]
         .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
     } catch (_) {}
     // Hard reload, bypass HTTP cache.
@@ -4388,8 +4390,8 @@ ${axisHint}
   "new_approach": "今日の新処方: ${todayAxis ? todayAxis.name + 'から' : ''}具体的な提案（用量・頻度・期待効果を 40-80 文字）"
 }`;
 
-      // Try Haiku first for speed; if no key/proxy, fall back to
-      // whatever the user has configured.
+      // Try Haiku first for speed; fall back to whatever the user has
+      // configured if shared AI is disabled.
       let modelId = 'claude-haiku-4-5';
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
@@ -4618,7 +4620,7 @@ ${axisHint}
     // isAnalyzing branch in render_dashboard.
     this.navigate('dashboard');
 
-    // Simple analysis via the shared relay → proxy Worker. The browser
+    // Simple analysis via the shared stock-screener Worker. The browser
     // holds no key; key-less registered users and guests both work.
     const entryId = entry.id;
     const diseases = (store.get('selectedDiseases') || []).join('・');

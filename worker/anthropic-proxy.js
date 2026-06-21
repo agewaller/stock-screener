@@ -1,7 +1,7 @@
 /**
  * Cloudflare Worker — Secure AI Proxy
  *
- * ブラウザ → (cares-relay) → この Worker → Anthropic / OpenAI / Google。
+ * ブラウザ → ai.cares.advisers.jp → この Worker → Anthropic / OpenAI / Google。
  *
  * セキュリティ設計（データ主権・鍵漏洩ゼロ）:
  *   1. CORS Origin を cares.advisers.jp のみに制限

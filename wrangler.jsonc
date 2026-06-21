@@ -15,5 +15,22 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://cares.advisers.jp",
+    "FIREBASE_PROJECT_ID": "care-14c31"
+  },
+  // Production AI entrypoint. Keep this on stock-screener directly so
+  // the app no longer depends on the legacy cares-relay workers.dev URL.
+  "routes": [
+    { "pattern": "ai.cares.advisers.jp", "custom_domain": true }
+  ],
+  // The deploy workflow replaces this placeholder with the real ID for
+  // the `stock-screener-research` KV namespace before wrangler deploy.
+  "kv_namespaces": [
+    {
+      "binding": "RESEARCH_KV",
+      "id": "REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID"
+    }
   ]
 }

@@ -1,5 +1,6 @@
 {
-  // redeploy trigger: 2026-06-11 #3 GitHub secret 更新後の検証
+  // Legacy relay retained for rollback only. Do not attach
+  // ai.cares.advisers.jp here; that hostname belongs to stock-screener.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cares-relay",
   "main": "worker/relay.js",
@@ -19,9 +20,4 @@
   "services": [
     { "binding": "PROXY", "service": "stock-screener" }
   ]
-  // NOTE: ai.cares.advisers.jp の custom_domain route は一時撤去。
-  // advisers.jp ゾーンが Cloudflare アカウントから削除されており
-  // (公開 DNS でも未解決)、route を宣言すると deploy 自体が失敗する。
-  // ゾーンを Cloudflare に再追加したら以下を戻すこと:
-  //   "routes": [{ "pattern": "ai.cares.advisers.jp", "custom_domain": true }]
 }

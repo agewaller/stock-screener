@@ -641,9 +641,9 @@ App.prototype.render_dashboard = function() {
         //   - 正しい Worker URL を直接入力 — manual override for when
         //     workers.dev / custom domain isn't what we hardcoded
         const isConnFail = /接続できません|Load failed|Failed to fetch|NetworkError|TypeError/.test(err);
-        let currentProxy = '';
-        try { currentProxy = (localStorage.getItem('anthropic_proxy_url') || '').trim(); } catch (_) {}
-        if (!currentProxy) currentProxy = (typeof AIEngine !== 'undefined' && AIEngine.PROXY_URL) ? AIEngine.PROXY_URL : 'https://cares-relay.agewaller.workers.dev';
+        const currentProxy = (typeof AIEngine !== 'undefined' && AIEngine.PROXY_URL)
+          ? AIEngine.PROXY_URL
+          : 'https://ai.cares.advisers.jp';
         const safeProxy = Components.escapeHtml(currentProxy);
         const escapeHatches = isConnFail
           ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -655,8 +655,8 @@ App.prototype.render_dashboard = function() {
              <details style="margin-top:10px;font-size:11px">
                <summary style="cursor:pointer;color:var(--danger);font-weight:600">⚙️ 正しい Worker URL を直接入力する（管理者向け）</summary>
                <div style="margin-top:8px;padding:10px;background:#fff;border:1px solid var(--border);border-radius:6px">
-                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">Cloudflare ダッシュボード → Workers & Pages → stock-screener で表示される実際の URL を貼り付けてください。</div>
-                 <input type="text" id="proxy-url-override-input" placeholder="https://stock-screener.xxx.workers.dev" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
+                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">本番AI入口は stock-screener Worker の Custom Domain です。</div>
+                 <input type="text" id="proxy-url-override-input" placeholder="https://ai.cares.advisers.jp" value="${safeProxy}" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;font-family:monospace;box-sizing:border-box">
                  <button onclick="app.setProxyUrlFromInput()" style="margin-top:6px;padding:6px 12px;background:#0ea5e9;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">💾 保存して再読み込み</button>
                </div>
              </details>

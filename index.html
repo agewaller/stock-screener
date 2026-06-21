@@ -2162,15 +2162,14 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 <script src="js/pages.js?v=44"></script>
 <script>
 // Single AI entry point. Every visitor — new guest, returning guest
-// with stale localStorage, registered user, admin — posts to ONE relay
-// endpoint. The browser never holds or sends an API key; the relay
-// forwards to the proxy Worker which injects the server-side key. No
+// with stale localStorage, registered user, admin — posts to ONE Worker
+// endpoint. The browser never holds or sends an API key; the Worker
+// injects the server-side key. No
 // localStorage dependency, no per-user key, no fallback chain — kept
 // deliberately simple so a returning user is always treated as fresh.
-// ai.cares.advisers.jp custom domain is currently detached (advisers.jp
-// zone removed from Cloudflare). Route directly through cares-relay
-// workers.dev which forwards via service binding to the proxy Worker.
-var ANTHROPIC_PROXY_URL = 'https://cares-relay.agewaller.workers.dev/v1/messages';
+// MUST be the custom domain. *.workers.dev may be disabled at the
+// account level or protected by Access, which breaks browser AI calls.
+var ANTHROPIC_PROXY_URL = 'https://ai.cares.advisers.jp/v1/messages';
 
 function getAnthropicEndpoint() {
   return ANTHROPIC_PROXY_URL;

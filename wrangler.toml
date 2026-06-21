@@ -2,7 +2,16 @@ name = "stock-screener"
 main = "worker/anthropic-proxy.js"
 compatibility_date = "2024-01-01"
 
-# #16 Shared KV namespace for research data (optional — works without it)
+# Canonical production config lives in wrangler.jsonc.
+# Keep this TOML file only for old tooling that still expects it.
+#
+# Production requirements:
+# - Custom Domain: ai.cares.advisers.jp -> stock-screener
+# - Vars: ALLOWED_ORIGINS=https://cares.advisers.jp, FIREBASE_PROJECT_ID=care-14c31
+# - Secrets: ANTHROPIC_API_KEY, ADMIN_WRITE_TOKEN
+# - KV namespace: stock-screener-research bound as RESEARCH_KV
+#
+# #16 Shared KV namespace for research data
 # [[kv_namespaces]]
 # binding = "RESEARCH_KV"
-# id = "REPLACE_WITH_KV_NAMESPACE_ID"
+# id = "REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID"

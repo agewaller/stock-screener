@@ -373,14 +373,8 @@ var Store = class Store {
     const PRESERVE_KEYS = [
       // System config
       'firebase_config',
-      'anthropic_proxy_url',
-      'anthropic_mode',
       'admin_emails',
       'enable_shared_guest_ai',
-      // API keys (admin-managed, shared across users)
-      'apikey_anthropic',
-      'apikey_openai',
-      'apikey_google',
       // Calendar integrations
       'ics_calendar_url',
       'google_calendar_oauth_connected',

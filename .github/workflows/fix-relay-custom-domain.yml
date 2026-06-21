@@ -1,8 +1,9 @@
-name: Fix relay custom domain (ai.cares.advisers.jp)
+name: Fix AI custom domain (ai.cares.advisers.jp)
 
-# ai.cares.advisers.jp が ECONNREFUSED を返す = custom domain が
-# cares-relay worker にアタッチされていない（wrangler の custom_domain
-# 登録が DNS/attach 系統で未完 or エラーのまま success 扱いになる)。
+# ai.cares.advisers.jp が NXDOMAIN / ECONNREFUSED / 404 を返す =
+# custom domain が stock-screener worker にアタッチされていない
+# （wrangler の custom_domain 登録が DNS/attach 系統で未完 or
+# エラーのまま success 扱いになる）。
 #
 # この WF は Cloudflare API で custom domain を明示的に (再)アタッチする。
 # どのステップでも job を止めず（continue-on-error）、最後に必ず
@@ -22,7 +23,7 @@ on:
 
 env:
   TARGET_HOST: ai.cares.advisers.jp
-  SERVICE: cares-relay
+  SERVICE: stock-screener
   ZONE_NAME: advisers.jp
   ACCOUNT_FALLBACK: e479bf26646b0349928aed8505418638
 
@@ -141,7 +142,7 @@ print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on 
           fi
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: AUTO-FIX — attach custom domain to cares-relay
+      - name: AUTO-FIX — attach custom domain to stock-screener
         id: attach
         continue-on-error: true
         env:
@@ -173,13 +174,26 @@ print(json.dumps(rows or '(no DNS record — Cloudflare will auto-create one on 
           echo "ATTACH_OK=$OK" >> $GITHUB_OUTPUT
           echo "ATTACH_ERR=$ERRMSG" >> $GITHUB_OUTPUT
 
-      - name: Redeploy cares-relay (idempotent)
+      - name: Redeploy stock-screener (idempotent)
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.acct.outputs.ACCOUNT_ID }}
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          KV_NAME: stock-screener-research
         run: |
-          npx -y wrangler@4 deploy --config wrangler.relay.jsonc 2>&1 | tee /tmp/deploy.txt || true
+          if grep -q 'REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID' wrangler.jsonc; then
+            RAW=$(curl -s -H "Authorization: Bearer $T" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces?per_page=100" || echo '{"result":[]}')
+            ID=$(echo "$RAW" | python3 -c "import json,os,sys; d=json.load(sys.stdin); name=os.environ['KV_NAME']; print(next((n.get('id','') for n in d.get('result',[]) if n.get('title')==name), ''))" 2>/dev/null || echo "")
+            if [ -z "$ID" ]; then
+              echo "::warning::KV namespace '$KV_NAME' could not be resolved; skipping redeploy. Custom-domain attach above may still have fixed routing."
+              exit 0
+            fi
+            export RESEARCH_KV_ID="$ID"
+            node -e "const fs=require('fs'); const p='wrangler.jsonc'; let s=fs.readFileSync(p,'utf8'); s=s.replace(/REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID/g, process.env.RESEARCH_KV_ID); fs.writeFileSync(p,s);"
+          fi
+          npx -y wrangler@4 deploy --config wrangler.jsonc 2>&1 | tee /tmp/deploy.txt || true
 
       - name: Probe ai.cares.advisers.jp
         id: probe

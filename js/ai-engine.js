@@ -4,15 +4,11 @@
    Handles AI model integration and prompt execution
    ============================================================ */
 var AIEngine = class AIEngine {
-  // Single relay endpoint for ALL AI traffic. The browser never holds
-  // or sends a provider key; the relay forwards to the proxy Worker
-  // (via service binding, which bypasses Cloudflare Access) and that
-  // Worker injects the server-side key. Fixed in code (no localStorage)
-  // so a returning user with stale state behaves like a fresh visitor.
-  // We hit cares-relay's workers.dev URL directly: the custom-domain
-  // front (ai.cares.advisers.jp) refuses connections when its Worker
-  // Custom Domain fails to (re)attach, which strands the whole app.
-  static PROXY_URL = 'https://cares-relay.agewaller.workers.dev';
+  // Single production endpoint for ALL AI traffic. The browser never
+  // holds or sends a provider key; the stock-screener Worker injects
+  // the server-side key from KV/env. Keep this fixed in code so stale
+  // localStorage or old relay URLs cannot strand returning users.
+  static PROXY_URL = 'https://ai.cares.advisers.jp';
 
   constructor() {
     this.apiEndpoints = {

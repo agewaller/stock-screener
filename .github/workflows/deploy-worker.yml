@@ -49,11 +49,69 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
+      - name: Resolve RESEARCH_KV namespace
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          KV_NAME: stock-screener-research
+        run: |
+          set -euo pipefail
+          echo "Resolving KV namespace: $KV_NAME"
+          RAW=$(curl -fsS -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces?per_page=100")
+          ID=$(echo "$RAW" | python3 -c "import json,os,sys; d=json.load(sys.stdin); name=os.environ['KV_NAME']; print(next((n.get('id','') for n in d.get('result',[]) if n.get('title')==name), ''))")
+          if [ -z "$ID" ]; then
+            echo "KV namespace not found; creating $KV_NAME"
+            CREATE=$(curl -fsS -X POST \
+              -H "Authorization: Bearer $T" \
+              -H "Content-Type: application/json" \
+              -d "{\"title\":\"$KV_NAME\"}" \
+              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces")
+            ID=$(echo "$CREATE" | python3 -c "import json,sys; d=json.load(sys.stdin); print((d.get('result') or {}).get('id',''))")
+          fi
+          if [ -z "$ID" ]; then
+            echo "::error::Could not resolve or create KV namespace '$KV_NAME'. Add Account → Workers KV Storage → Edit to CLOUDFLARE_API_TOKEN, or create the namespace manually and replace the placeholder in wrangler.jsonc."
+            exit 1
+          fi
+          export RESEARCH_KV_ID="$ID"
+          node -e "const fs=require('fs'); const p='wrangler.jsonc'; let s=fs.readFileSync(p,'utf8'); s=s.replace(/REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID/g, process.env.RESEARCH_KV_ID); if(s.includes('REPLACE_WITH_STOCK_SCREENER_RESEARCH_KV_ID')) throw new Error('KV placeholder remains'); fs.writeFileSync(p,s);"
+          {
+            echo "## stock-screener KV"
+            echo "- namespace: \`$KV_NAME\`"
+            echo "- id: \`$ID\`"
+          } >> $GITHUB_STEP_SUMMARY
       - name: Deploy stock-screener
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y wrangler@4 deploy --config wrangler.jsonc
+      - name: Probe stock-screener custom domain
+        if: always()
+        run: |
+          echo "Waiting 15s for DNS/cert propagation..."; sleep 15
+          FINAL="000"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/ai-probe.txt -w "%{http_code}" -m 10 \
+              -X OPTIONS https://ai.cares.advisers.jp/v1/messages \
+              -H "Origin: https://cares.advisers.jp" \
+              -H "Access-Control-Request-Method: POST" \
+              -H "Access-Control-Request-Headers: content-type,anthropic-version" || echo "000")
+            echo "  attempt $i: HTTP $code"
+            FINAL="$code"
+            if [ "$code" = "204" ] || [ "$code" = "200" ]; then break; fi
+            sleep 10
+          done
+          {
+            echo ""
+            echo "## AI custom domain probe"
+            echo "- endpoint: \`OPTIONS https://ai.cares.advisers.jp/v1/messages\`"
+            echo "- result: \`HTTP $FINAL\`"
+            echo ""
+            echo '```'
+            head -c 1200 /tmp/ai-probe.txt 2>/dev/null || true
+            echo ''
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
 
   deploy-relay:
     needs: verify-token
@@ -66,7 +124,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx -y wrangler@4 deploy --config wrangler.relay.jsonc
+        run: npx -y wrangler@4 deploy --config wrangler.relay.jsonc || echo "::warning::legacy cares-relay deploy failed (non-blocking)"
       - name: Probe cares-relay
         run: |
           sleep 8

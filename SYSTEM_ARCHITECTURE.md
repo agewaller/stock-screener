@@ -27,17 +27,19 @@
 
 ### 3. Cloudflare Workers（APIプロキシ）
 - **Worker名**: stock-screener
-- **URL**: https://stock-screener.agewaller.workers.dev
-- **役割**: ブラウザ→Anthropic Claude APIのCORSプロキシ
+- **公開URL**: https://ai.cares.advisers.jp
+- **役割**: ブラウザ→Anthropic/OpenAI/Google APIの安全なCORSプロキシ（APIキーはWorker側のKV/env secretのみ）
 - **デプロイ**: GitHub Actions（.github/workflows/deploy-worker.yml）
 - **APIトークン**: GitHubのSecrets（CLOUDFLARE_API_TOKEN）に保存済み
-- **変更方法**: worker/anthropic-proxy.jsを編集→push→自動デプロイ
+- **変更方法**: worker/anthropic-proxy.js / wrangler.jsoncを編集→push→自動デプロイ
+- **旧経路**: cares-relay.agewaller.workers.dev はrollback/diagnostics用。ai.cares.advisers.jpのCustom Domainは持たない
 
 ### 4. 外部API
-- **OpenAI GPT-4o**: ブラウザから直接呼び出し（CORSOKいらない）
 - **Anthropic Claude**: Cloudflare Worker経由で呼び出し
+- **OpenAI GPT-4o**: Cloudflare Worker経由で呼び出し
+- **Google Gemini**: Cloudflare Worker経由で呼び出し
 - **PubMed（NCBI E-utilities）**: ブラウザから直接呼び出し（CORS不要）
-- **APIキー管理**: 管理パネルで設定→localStorage + Firestore保存
+- **APIキー管理**: 管理パネルで設定→Worker `/admin/keys` → KV `admin:key:<provider>` に保存。ブラウザ・localStorage・Firestoreには保存しない
 
 ### 5. DNS（ドメイン）
 - **ドメイン**: advisers.jp（サブドメイン cares を使用）
@@ -55,15 +57,16 @@ stock-screener/
 ├── CLAUDE.md               # 開発ガイド
 ├── SYSTEM_ARCHITECTURE.md  # このファイル
 ├── firestore.rules         # Firestoreセキュリティルール
-├── wrangler.jsonc          # Cloudflare Worker設定
-├── wrangler.toml           # Cloudflare Worker設定
+├── wrangler.jsonc          # stock-screener Worker設定（ai.cares.advisers.jp / RESEARCH_KV）
+├── wrangler.relay.jsonc    # 旧relay Worker設定（Custom Domainなし）
 │
 ├── .github/workflows/
 │   ├── pages.yml           # GitHub Pagesデプロイ（mainブランチ）
 │   └── deploy-worker.yml   # Cloudflare Workerデプロイ
 │
 └── worker/
-    └── anthropic-proxy.js  # Cloudflare Worker（Anthropic APIプロキシ）
+    ├── anthropic-proxy.js  # Cloudflare Worker（AI APIプロキシ）
+    └── relay.js            # 旧relay Worker（rollback/diagnostics用）
 ```
 
 ## index.html 内部の <script> ブロック（依存順）
@@ -168,7 +171,7 @@ INLINE_PROMPTS[type]をテンプレート展開  ← config.js
   ↓
 aiEngine.callModel(model, prompt, options)  ← ai-engine.js
   ↓
-OpenAI GPT-4o（直接） or Anthropic Claude（プロキシ経由）
+Cloudflare Worker（ai.cares.advisers.jp）→ Anthropic / OpenAI / Google
   ↓
 JSON/テキストレスポンス
   ↓
@@ -191,7 +194,7 @@ renderAnalysisCard(result)  ← app.js
 | 選択疾患 | ✅ | ✅ | 高 |
 | ユーザープロフィール | ✅ | ✅ | 高 |
 | AIモデル選択 | ✅ | ✅ | 高 |
-| APIキー | ✅ | ✅(暗号化) | 高 |
+| APIキー | ❌ | ❌ | Worker KV/env secret |
 | AI分析結果 | ✅ | 一部 | 中 |
 | PubMedキャッシュ | ✅ | ❌ | 24h |
 | カレンダー | ✅ | ❌ | 手動 |
