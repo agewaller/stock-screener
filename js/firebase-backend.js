@@ -808,6 +808,32 @@ var FirebaseBackend = {
     }
   },
 
+  // Fetch ALL documents from a collection ref, paginating past the 500-doc
+  // onSnapshot limit. Used by the admin data-diagnostics panel.
+  async _fetchAllDocs(collectionRef) {
+    const all = [];
+    let last = null;
+    while (true) {
+      let q = collectionRef.orderBy(firebase.firestore.FieldPath.documentId()).limit(500);
+      if (last) q = q.startAfter(last);
+      const snap = await q.get();
+      snap.forEach(d => all.push(Object.assign({ id: d.id }, d.data())));
+      if (snap.size < 500) break;
+      last = snap.docs[snap.docs.length - 1];
+    }
+    return all;
+  },
+
+  // Delete a single document from a user subcollection by its Firestore ID.
+  async deleteHealthEntry(collection, docId) {
+    if (!this.userId || !docId) return;
+    try {
+      await this.userCollection(collection).doc(docId).delete();
+    } catch (err) {
+      console.error('deleteHealthEntry error:', err);
+    }
+  },
+
   // Clean up all health collections. Returns {collection: deletedCount}.
   async deduplicateAll() {
     const result = {};
