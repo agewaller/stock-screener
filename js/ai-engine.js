@@ -12,6 +12,8 @@ var AIEngine = class AIEngine {
 
   constructor() {
     this.apiEndpoints = {
+      'claude-opus-4-8': '/api/anthropic',
+      'claude-opus-4-7': '/api/anthropic',
       'claude-sonnet-4-6': '/api/anthropic',
       'claude-opus-4-6': '/api/anthropic',
       'claude-haiku-4-5': '/api/anthropic',
@@ -22,7 +24,7 @@ var AIEngine = class AIEngine {
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
+    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-8';
     store.set('isAnalyzing', true);
 
     try {
@@ -516,7 +518,7 @@ ${avoidBlock}
       return [{ model: preferredModel, callFn: this.callGoogle }];
     }
     return uniq([
-      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      { model: preferredModel || 'claude-opus-4-8', callFn: this.callAnthropic },
       opus, sonnet, haiku
     ]);
   }
