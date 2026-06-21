@@ -412,6 +412,7 @@ var App = class App {
     // first quick action.
     if (page === 'dashboard') {
       try { this.maybeShowFirstTimeOnboarding(); } catch (_) {}
+      try { this.checkStreakAndShowShareBanner(); } catch (_) {}
     }
     if (page === 'dashboard') {
       this.initDashboardCharts();
@@ -2561,14 +2562,24 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
-    store.set('_timelineFilter', type);
+    store.set('_timelineFilter', type || '');
     this.navigate('timeline');
+  }
+
+  // Client-side incremental search on rendered timeline items.
+  // Filters by the data-text attribute set on each entry element.
+  _filterTimelineBySearch(query) {
+    const q = (query || '').toLowerCase().trim();
+    const groups = document.querySelectorAll('#timeline-content .timeline-date-group');
+    groups.forEach(group => {
+      let groupVisible = false;
+      group.querySelectorAll('[data-text]').forEach(item => {
+        const match = !q || (item.dataset.text || '').includes(q);
+        item.style.display = match ? '' : 'none';
+        if (match) groupVisible = true;
+      });
+      group.style.display = groupVisible ? '' : 'none';
+    });
   }
 
   openImagePreview(url, filename = '画像') {
@@ -3991,7 +4002,7 @@ ${bloodText || '記録なし'}
     const next = entries.filter(e => !e || e.id !== id);
     store.set('textEntries', next);
 
-    // Remove linked AI comment so it doesn't appear without an entry
+    // Remove linked AI comment
     const comments = store.get('aiComments') || {};
     if (comments[id]) {
       delete comments[id];
@@ -4007,7 +4018,116 @@ ${bloodText || '記録なし'}
       }
     }
 
+    // Sync deletion to Firestore so onSnapshot doesn't restore the record
+    if (FirebaseBackend?.userId) {
+      FirebaseBackend.deleteHealthEntry('textEntries', id).catch(e =>
+        console.warn('[deleteTextEntry] Firestore delete failed:', e));
+    }
+
     Components.showToast('削除しました', 'success');
+  }
+
+  // Generic deletion for any health data category. Removes from the
+  // in-memory store and from Firestore so the next onSnapshot doesn't
+  // silently undo the deletion.
+  deleteDataRecord(storeKey, id) {
+    if (!storeKey || !id) return;
+    const firestoreMap = {
+      symptoms: 'symptoms',
+      vitals: 'vitals',
+      bloodTests: 'bloodTests',
+      medications: 'medications',
+      supplements: 'supplements',
+      meals: 'meals',
+      sleepData: 'sleep',
+      activityData: 'activity',
+      nutritionLog: 'nutritionLog',
+      plaudAnalyses: 'plaudAnalyses',
+      photos: 'photos'
+    };
+    const arr = store.get(storeKey) || [];
+    const next = arr.filter(e => !e || e.id !== id);
+    store.set(storeKey, next);
+
+    const fbColl = firestoreMap[storeKey];
+    if (fbColl && FirebaseBackend?.userId) {
+      FirebaseBackend.deleteHealthEntry(fbColl, id).catch(e =>
+        console.warn('[deleteDataRecord] Firestore delete failed:', storeKey, e));
+    }
+
+    Components.showToast('削除しました', 'success');
+  }
+
+  // Show a share banner when the user hits a streak milestone (7/14/30/100 days).
+  // Each milestone is shown at most once per day (localStorage guard).
+  checkStreakAndShowShareBanner() {
+    try {
+      const streak = this._calculateStreak();
+      if (streak === 0) return;
+      const milestones = [7, 14, 30, 100];
+      const hit = milestones.find(m => streak === m);
+      if (!hit) return;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const shownKey = `cc_streak_share_shown_${hit}`;
+      if (localStorage.getItem(shownKey) === todayKey) return;
+      localStorage.setItem(shownKey, todayKey);
+      this._showStreakShareBanner(hit);
+    } catch (e) { console.warn('[streak share]', e); }
+  }
+
+  _calculateStreak() {
+    const entries = [
+      ...(store.get('textEntries') || []),
+      ...(store.get('symptoms') || []),
+      ...(store.get('vitals') || [])
+    ];
+    if (!entries.length) return 0;
+    const days = new Set(entries.map(e => {
+      const ts = e.timestamp || e.date || e.createdAt;
+      if (!ts) return null;
+      return new Date(typeof ts === 'object' && typeof ts.toMillis === 'function'
+        ? ts.toMillis() : ts).toISOString().slice(0, 10);
+    }).filter(Boolean));
+    const sorted = [...days].sort().reverse();
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+    let streak = 1;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = new Date(sorted[i]);
+      const b = new Date(sorted[i + 1]);
+      const diffDays = Math.round((a - b) / 86400000);
+      if (diffDays === 1) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  _showStreakShareBanner(days) {
+    if (document.getElementById('streak-share-banner')) return;
+    const diseases = (store.get('selectedDiseases') || []).slice(0, 2);
+    const diseaseTag = diseases.length ? ` #${diseases[0]}` : '';
+    const url = encodeURIComponent('https://cares.advisers.jp');
+    const text = encodeURIComponent(`健康日記を${days}日連続で記録しました！${diseaseTag} #健康日記 #体調管理`);
+    const xUrl = `https://x.com/intent/tweet?text=${text}&url=${url}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${url}&text=${encodeURIComponent(`健康日記を${days}日連続で記録しました！${diseaseTag} #健康日記`)}`;
+    const banner = document.createElement('div');
+    banner.id = 'streak-share-banner';
+    banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9000;background:#fff;border:2px solid #6366f1;border-radius:16px;padding:16px 20px;box-shadow:0 8px 24px rgba(99,102,241,0.2);max-width:340px;width:calc(100vw - 40px);text-align:center;animation:slideUp 0.3s ease';
+    banner.innerHTML = `
+      <div style="font-size:24px;margin-bottom:6px">🎉</div>
+      <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px">${days}日連続記録達成！</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">続けることで体調のパターンが見えてきます</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">
+        <a href="${xUrl}" target="_blank" rel="noopener"
+          style="padding:8px 14px;background:#000;color:#fff;border-radius:10px;font-size:12px;font-weight:600;text-decoration:none">𝕏 シェア</a>
+        <a href="${lineUrl}" target="_blank" rel="noopener"
+          style="padding:8px 14px;background:#06c755;color:#fff;border-radius:10px;font-size:12px;font-weight:600;text-decoration:none">LINE</a>
+      </div>
+      <button onclick="document.getElementById('streak-share-banner').remove()"
+        style="font-size:11px;color:#94a3b8;background:none;border:none;cursor:pointer">閉じる</button>`;
+    document.body.appendChild(banner);
+    setTimeout(() => { const b = document.getElementById('streak-share-banner'); if (b) b.remove(); }, 10000);
   }
 
   // Switches the rendered entry card into an inline edit form.
