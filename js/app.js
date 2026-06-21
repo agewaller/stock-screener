@@ -4312,110 +4312,91 @@ ${bloodText || '記録なし'}
     scaleEl.style.display = '';
   }
 
+  // お試し AI 分析（未ログイン）。World Effect Benchmark の「やさしく解説」
+  // (explainCurrentScreen) と「まったく同じ形式」で再構築したもの:
+  //   - ブラウザは日記テキストだけを cares の公開エンドポイント
+  //     POST /api/trial/analyze へ送る（{ text }）。
+  //   - プロンプトと AI 鍵はサーバ側にしかなく、ブラウザは持たない・送らない
+  //     （ADR-0006 / ADR-0016）。Firebase 認証も不要。
+  //   - サーバが日記を分類 → カテゴリ別プロンプトで分析し
+  //     { category, comment, modelUsed, remainingToday } を返す。
+  //   - 旧構成（クライアントでプロンプトを組み立て、廃止された Cloudflare
+  //     Worker `ai.cares.advisers.jp` を叩く）は使わない。
   async guestAnalyze() {
     const input = document.getElementById('guest-input');
     if (!input || !input.value.trim()) {
       Components.showToast('体調や気になることを書いてみてください', 'info');
       return;
     }
-    const text = input.value.trim();
+    let text = input.value.trim();
+
+    // 任意で選択された疾患タグは本文に折り込む（エンドポイントは text のみ）。
+    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
+    const diseases = Array.from(selectedTags).map(t => t.dataset.id).filter(Boolean);
+    if (diseases.length > 0) text += `\n\n【気になる症状】${diseases.join('・')}`;
+    // 入力上限（サーバ側 4000 文字）に合わせてクライアントでも丸める。
+    if (text.length > 4000) text = text.slice(0, 4000);
+
     const resultEl = document.getElementById('guest-result');
     if (resultEl) resultEl.innerHTML = Components.loading('寄り添い中...', {
       subtext: 'まもなくアドバイスが届きます'
     });
 
-    // Hard timeout for guest mode — 20s max. Prevents the eternal
-    // spinner when Firebase/Worker/Anthropic is slow or hanging.
-    const GUEST_TIMEOUT = 20000;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('GUEST_TIMEOUT: 20秒以内に応答がありませんでした')), GUEST_TIMEOUT)
-    );
-
-    const authOk = await Promise.race([
-      FirebaseBackend.ensureGuestAuth(),
-      new Promise(resolve => setTimeout(() => resolve(false), 5000))
-    ]);
-    if (!authOk) {
-      console.warn('[guestAnalyze] ensureGuestAuth returned false — proceeding with Worker env fallback');
-    }
-
-    // Collect selected diseases from guest tags
-    const selectedTags = document.querySelectorAll('.guest-disease-tag.selected');
-    const diseases = Array.from(selectedTags).map(t => t.dataset.id);
-    const prevDiseases = store.get('selectedDiseases');
-    if (diseases.length > 0) store.set('selectedDiseases', diseases);
+    // サーバ側は 15 秒で打ち切る（504）。クライアントは余裕をみて 25 秒。
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 25000);
 
     try {
-      // Speed/empathy balance: use Claude Haiku 4.5 (2-3x faster than
-      // Opus) + compact warm prompt (~400 chars, no PROMPT_HEADER) +
-      // small maxTokens (600) to deliver a structured empathetic
-      // response in ~5-10 seconds. This satisfies both:
-      //   "簡易分析に戻して" (fast)
-      //   "寄り添い分析できるように" (empathetic)
-      const diseaseLabel = diseases.length > 0 ? diseases.join('・') : '';
-      const profile = store.get('userProfile') || {};
-      const langDirective = aiEngine._languageDirectiveFor(profile.language || 'ja');
-      // Guest mode uses a compact prompt (no full PROMPT_HEADER) to
-      // hit the 10-second target. We still want the "today's new
-      // prescription axis" behavior though, so we inject JUST the
-      // axis (not the full recent-proposals block, which would bloat
-      // tokens and slow the response).
-      const todayAxis = aiEngine._getTodayPrescriptionAxis();
-      const axisHint = todayAxis
-        ? `\n【本日の新処方の指定軸】${todayAxis.icon} ${todayAxis.name}\n  候補例: ${todayAxis.desc}\n  → new_approach の内容はこの軸から具体的に 1 つ選んでください。`
+      let resp;
+      try {
+        resp = await fetch(AIEngine.TRIAL_ANALYZE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+          signal: controller.signal
+        });
+      } catch (netErr) {
+        if (netErr && netErr.name === 'AbortError') {
+          throw new Error('分析に時間がかかりすぎました。文章を少し短くして、もう一度お試しください。');
+        }
+        // fetch 自体の失敗 = ネットワーク / CORS など接続レベルの不達。
+        throw new Error('接続できませんでした。通信環境をご確認のうえ、少し待って再度お試しください。');
+      }
+
+      if (!resp.ok) {
+        // サーバのエラー詳細（{ error } / { detail }）を拾いつつ、
+        // ステータスごとに利用者向けの一言へ翻訳する。
+        let detail = '';
+        try { const j = await resp.json(); detail = j.detail || j.error || j.message || ''; } catch (_) {}
+        const msg =
+          resp.status === 400 ? (/long/i.test(detail) ? '文章が長すぎます。短くしてからお試しください。' : '体調や気になることを書いてからお試しください。')
+        : resp.status === 429 ? '本日のお試し回数の上限に達しました。明日また試すか、無料登録すると続けてご利用いただけます。'
+        : resp.status === 422 ? 'ただいまお試し枠が大変混み合っています。少し時間をおいてお試しください。'
+        : resp.status === 503 ? 'ただいまAI分析をご用意できません。少し時間をおいて再度お試しください。'
+        : resp.status === 504 ? '分析に時間がかかりすぎました。文章を少し短くして、もう一度お試しください。'
+        : resp.status >= 500 ? 'AI分析が一時的に応答していません。数分後に再度お試しください。'
+        : ('分析の取得に失敗しました（' + resp.status + '）。少し待って再度お試しください。');
+        const e = new Error(msg);
+        e._status = resp.status;
+        throw e;
+      }
+
+      const json = await resp.json();
+      const comment = (json && typeof json.comment === 'string') ? json.comment : '';
+      if (!comment) throw new Error('うまくアドバイスを受け取れませんでした。もう一度お試しください。');
+
+      const remaining = Number.isFinite(json.remainingToday) ? json.remainingToday : null;
+      const remainingHtml = (remaining !== null)
+        ? `<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:right">本日あと ${remaining} 回お試しいただけます</div>`
         : '';
-      const compactPrompt = `${langDirective}
 
-あなたは慢性疾患患者の伴走パートナーです。初めて訪れたユーザーの相談に
-温かく寄り添って、短くても希望のあるアドバイスを返してください。
-
-【ユーザーの相談】
-${text.substring(0, 1500)}
-${diseaseLabel ? `\n【気になる症状】${diseaseLabel}` : ''}
-${axisHint}
-
-【応答ルール】
-1. 必ず共感の言葉から始める（「その症状、つらいですね」等）
-2. 考えられる原因や状態を 2-3 行で簡潔に解説
-3. 今日から試せる具体的な一歩を 1 つ提示
-4. new_approach には指定軸 (${todayAxis ? todayAxis.name : '新しい打ち手'}) から具体的な処方を書く
-5. 「もっと詳しく知りたい場合は登録して継続記録すると追跡できます」と添える
-6. 命令形を使わず、選択肢として提示する
-
-【出力形式】純粋な JSON のみ（前置き・後書き・コードブロックなし）:
-{
-  "summary": "共感の一言（30文字以内）",
-  "findings": "考えられる状態・原因の解説（80-120文字）",
-  "actions": ["今日から試せる一歩（30-50文字）"],
-  "new_approach": "今日の新処方: ${todayAxis ? todayAxis.name + 'から' : ''}具体的な提案（用量・頻度・期待効果を 40-80 文字）"
-}`;
-
-      // Try Haiku first for speed; fall back to whatever the user has
-      // configured if shared AI is disabled.
-      let modelId = 'claude-haiku-4-5';
-      const haveHaikuKey = !!aiEngine.getApiKey(modelId);
-      const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
-      if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
-      }
-
-      const rawResponse = await Promise.race([
-        aiEngine.callModel(modelId, compactPrompt, {
-          maxTokens: 600,
-          temperature: 0.5,
-          globalTimeoutMs: 15000
-        }),
-        timeoutPromise
-      ]);
-      const responseText = typeof rawResponse === 'string' ? rawResponse : JSON.stringify(rawResponse);
-      let result = this.parseAIResponse(responseText);
-      if (!result || (typeof result !== 'object')) {
-        result = { summary: 'アドバイス', findings: responseText, actions: [] };
-      }
-      result._fromAPI = true;
       if (resultEl) {
-        resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
+        resultEl.innerHTML =
+          `<div style="padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px">
+            <div style="font-size:14px;color:#1e293b;line-height:1.85;white-space:pre-wrap;word-break:break-word">${this._guestRenderComment(comment)}</div>
+            ${remainingHtml}
+          </div>
+          <div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
             <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
             <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
             <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
@@ -4423,74 +4404,29 @@ ${axisHint}
       }
     } catch (err) {
       console.warn('[guestAnalyze] Failed:', err?.message || err);
-      const isAdmin = this.isAdmin();
-      const errMessage = err?.message || String(err);
-      // Build a user-friendly one-line hint from the error. We surface
-      // enough info for the user to report the issue back (HTTP status,
-      // short reason) without dumping full stack traces onto the UI.
-      let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
-      if (/no API key|ALL_PROVIDERS_FAILED.*no API key/i.test(errMessage)) {
-        friendlyHint = 'AIサービスのAPIキーが設定されていません。管理者がAPIキーを設定するまでお待ちください。';
-      } else if (/403|Origin not allowed|Forbidden/i.test(errMessage)) {
-        friendlyHint = 'このドメインからの接続が許可されていません (403)。本番サイト (cares.advisers.jp) からご利用ください。';
-      } else if (/401/.test(errMessage)) {
-        friendlyHint = 'APIキーが設定されていません (401)。管理者に連絡してください。';
-      } else if (/404|not found|deprecat/i.test(errMessage)) {
-        friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
-      } else if (/429|rate limit/i.test(errMessage)) {
-        friendlyHint = '一時的に混雑しています (429)。30 秒ほど待ってから再度お試しください。';
-      } else if (/Failed to fetch|NetworkError|TypeError/.test(errMessage)) {
-        friendlyHint = 'ネットワーク接続に失敗しました。Wi-Fi または通信状況をご確認ください。';
-      } else if (/500|502|503|504/.test(errMessage)) {
-        friendlyHint = 'AI サービスが一時的に応答していません (5xx)。数分後に再度お試しください。';
-      }
-      // Build a diagnostic string that users can copy back to us when
-      // reporting the issue. Includes browser UA + timestamp so we can
-      // correlate with Worker logs.
-      const diag = [
-        'Timestamp: ' + new Date().toISOString(),
-        'Error: ' + errMessage,
-        'Model requested: ' + (modelId || 'unknown'),
-        'UA: ' + (navigator.userAgent || '')
-      ].join('\n');
-      const diagEscaped = Components.escapeHtml(diag);
+      const friendlyHint = (err && err.message)
+        ? err.message
+        : '一時的に分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
       if (resultEl) {
         resultEl.innerHTML = `
           <div style="padding:14px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px">
-            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">分析サービスに接続できませんでした</div>
-            <div style="font-size:12px;color:#7f1d1d;line-height:1.7;margin-bottom:10px">
-              ${Components.escapeHtml(friendlyHint)}
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:6px">⚠️ ${Components.escapeHtml(friendlyHint)}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
               <button onclick="app.guestAnalyze()" style="padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 もう一度試す</button>
               <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:8px 16px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">無料で登録して使う ↓</button>
             </div>
-            <details style="font-size:11px;color:#7f1d1d;margin-top:6px">
-              <summary style="cursor:pointer;font-weight:600">🔍 詳細（運営者への報告に使えます）</summary>
-              <pre style="margin-top:6px;padding:10px;background:#fff;border:1px solid #fecaca;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;white-space:pre-wrap;word-break:break-all;line-height:1.5">${diagEscaped}</pre>
-              <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(diag)}).then(()=>Components.showToast('診断情報をコピーしました。info@bluemarl.in までお送りください','success'))"
-                style="margin-top:6px;padding:6px 12px;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;border-radius:6px;font-size:10px;cursor:pointer">📋 診断情報をコピー</button>
-              ${isAdmin
-                ? `<div style="margin-top:10px;padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;color:#78350f;font-size:11px;line-height:1.7">
-                     <strong>管理者向けヒント:</strong><br>
-                     ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
-                     ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
-                     <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
-                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
-                     ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
-                   </div>`
-                : ''}
-            </details>
           </div>`;
       }
     } finally {
-      // Restore selectedDiseases even when analysis fails.
-      if (prevDiseases) {
-        store.set('selectedDiseases', prevDiseases);
-      } else {
-        store.set('selectedDiseases', []);
-      }
+      clearTimeout(tid);
     }
+  }
+
+  // 解説テキストの軽い整形: **太字** だけ <strong> にし、それ以外は
+  // 必ずエスケープしてから挿入（XSS 対策）。改行は CSS の pre-wrap で保持。
+  // World Effect Benchmark の explainRender と同一の方針。
+  _guestRenderComment(text) {
+    return Components.escapeHtml(String(text)).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   }
 
   async guestFileAnalyze(event) {

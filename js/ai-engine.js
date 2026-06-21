@@ -10,6 +10,13 @@ var AIEngine = class AIEngine {
   // localStorage or old relay URLs cannot strand returning users.
   static PROXY_URL = 'https://ai.cares.advisers.jp';
 
+  // Public, no-auth trial analysis endpoint on the cares API (Cloud Run).
+  // Mirrors the World Effect Benchmark's /api/trial/explain structure: the
+  // browser sends ONLY the diary text, the server holds the prompt + AI key
+  // and returns { category, comment, modelUsed, remainingToday }. No key, no
+  // prompt and no Firebase auth ever leave the browser (ADR-0006 / ADR-0016).
+  static TRIAL_ANALYZE_URL = 'https://cares-api-xj6szhutkq-an.a.run.app/api/trial/analyze';
+
   constructor() {
     this.apiEndpoints = {
       'claude-sonnet-4-6': '/api/anthropic',
