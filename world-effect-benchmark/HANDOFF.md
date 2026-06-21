@@ -9,9 +9,10 @@
 
 ## 0. まず新スレッドが確認すること
 
-- [ ] **作業対象リポジトリ**: フォーク先 = `agewaller/<フォークしたリポジトリ名>`
-  （例: `agewaller/World-Effect-Benchmark`）。セッションのスコープにこのリポジトリが
-  含まれているか確認し、無ければ `add_repo` で追加する。
+- [ ] **作業対象リポジトリ**: フォーク先 = `agewaller/World-Effect-Benchmark`。
+  セッションのスコープにこのリポジトリが含まれているか確認し、無ければ
+  `add_repo` で追加する。
+  Pages 公開先は `https://agewaller.github.io/World-Effect-Benchmark/`。
 - [ ] **開発ブランチ**: 新しい作業ブランチを切る（例: `claude/add-explain-button`）。
   いきなり `main`（＝GitHub Pages 本番）に push しない。
 - [ ] フォーク元: `chiyo400/World-Effect-Benchmark`（37 か国 × 1180 因子の
