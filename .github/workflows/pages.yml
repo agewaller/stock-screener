@@ -23,6 +23,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Generate PWA icons from SVG
+        run: |
+          sudo apt-get install -y librsvg2-bin 2>/dev/null || true
+          if command -v rsvg-convert &>/dev/null; then
+            rsvg-convert -w 192 -h 192 icon.svg -o icon-192.png
+            rsvg-convert -w 512 -h 512 icon.svg -o icon-512.png
+            echo "✓ Generated icon-192.png and icon-512.png via rsvg-convert"
+          else
+            python3 - <<'PY'
+import struct, zlib, base64
+
+def make_png(size, color=(99,102,241)):
+    """Generate a minimal solid-color square PNG (no external libs)."""
+    w = h = size
+    raw = b''
+    for _ in range(h):
+        raw += b'\x00' + bytes(color + (255,)) * w
+    def chunk(tag, data):
+        c = struct.pack('>I', len(data)) + tag + data
+        return c + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff)
+    ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
+    idat = zlib.compress(raw, 9)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', idat) + chunk(b'IEND', b'')
+
+open('icon-192.png','wb').write(make_png(192))
+open('icon-512.png','wb').write(make_png(512))
+print("✓ Generated placeholder icon PNGs (rsvg-convert unavailable)")
+PY
+          fi
       - name: Cache busting — inject commit hash into SW
         run: sed -i "s/__COMMIT_HASH__/${GITHUB_SHA::8}/g" sw.js
       - name: Setup Pages

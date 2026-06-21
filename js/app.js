@@ -299,6 +299,20 @@ var App = class App {
       this._pwaPrompt = e;
     });
 
+    // Start the daily reminder scheduler when auth is confirmed.
+    // If already authenticated from cache, start immediately; otherwise
+    // wait for Firebase to resolve.
+    if (hasLocalAuth) {
+      this.setupDailyReminder();
+      this.setupMedReminders();
+    }
+    store.on('isAuthenticated', (val) => {
+      if (val) {
+        this.setupDailyReminder();
+        this.setupMedReminders();
+      }
+    });
+
     // Calendar events are loaded per-user from Firestore (users/{uid}/calendarEvents).
     // Never hardcode personal schedule data in source — the built index.html is
     // publicly served, so any hardcoded events would be exposed to anyone who
@@ -378,6 +392,7 @@ var App = class App {
     };
     const titleEl = document.getElementById('top-bar-title');
     if (titleEl) titleEl.textContent = titles[page] || '';
+    document.title = (titles[page] ? titles[page] + ' — 健康日記' : '健康日記');
 
     // Close sidebar on mobile after navigation
     this.closeSidebar();
@@ -1987,6 +2002,12 @@ ${titles}`;
   }
 
   // ---- Chat ----
+  clearChat() {
+    store.set('conversationHistory', []);
+    this.navigate('chat');
+    Components.showToast('会話をクリアしました', 'info');
+  }
+
   async sendChat() {
     const input = document.getElementById('chat-input');
     if (!input || !input.value.trim()) return;
@@ -2561,13 +2582,32 @@ ${titles}`;
 
   // ---- Timeline ----
   filterTimeline(type) {
-    // Re-render with filter
-    const content = document.getElementById('timeline-content');
-    if (!content) return;
-
-    const items = content.querySelectorAll('.card, [style*="bg-tertiary"]');
-    // Simple approach: re-navigate to refresh, store filter
     store.set('_timelineFilter', type);
+    this._timelinePage = 1;
+    this.navigate('timeline');
+  }
+
+  searchTimeline(query) {
+    store.set('_timelineSearch', query);
+    this._timelinePage = 1;
+    this.navigate('timeline');
+    // Restore focus to the search input after re-render
+    setTimeout(() => {
+      const el = document.getElementById('timeline-search');
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    }, 50);
+  }
+
+  clearTimelineFilters() {
+    store.set('_timelineFilter', '');
+    store.set('_timelineSearch', '');
+    this._timelinePage = 1;
+    this.navigate('timeline');
+  }
+
+  loadMoreTimeline() {
+    // Increment the page size and re-render the timeline page.
+    this._timelinePage = (this._timelinePage || 1) + 1;
     this.navigate('timeline');
   }
 
@@ -4415,10 +4455,15 @@ ${axisHint}
       result._fromAPI = true;
       if (resultEl) {
         resultEl.innerHTML = this.renderAnalysisCard(result) +
-          `<div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:12px;text-align:center">
-            <div style="font-size:13px;font-weight:600;color:#166534;margin-bottom:6px">記録を続けると、さらに詳しい分析ができます</div>
-            <div style="font-size:11px;color:#15803d;margin-bottom:10px">登録すると毎日の変化を追跡し、あなたに合った情報をお届けします</div>
-            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">無料で登録する ↓</button>
+          `<div style="margin-top:12px;padding:16px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:14px;border:1px solid #bbf7d0">
+            <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">📔 記録を続けると、もっと深い分析ができます</div>
+            <div style="display:grid;gap:5px;margin-bottom:12px">
+              <div style="font-size:11px;color:#15803d">✓ 症状の改善・悪化パターンを自動検出</div>
+              <div style="font-size:11px;color:#15803d">✓ 次の受診に持参できる医師提出レポートを自動作成</div>
+              <div style="font-size:11px;color:#15803d">✓ 使える補助金・年金をデータから自動で発見</div>
+              <div style="font-size:11px;color:#15803d">✓ すべて無料・登録 30 秒</div>
+            </div>
+            <button onclick="document.getElementById('login-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:12px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer">無料で登録する（30秒） ↓</button>
           </div>`;
       }
     } catch (err) {
@@ -4681,6 +4726,237 @@ ${axisHint}
       banner.remove();
       localStorage.setItem('pwa_install_dismissed', '1');
     };
+  }
+
+  // ── Daily reminder notification ──────────────────────────────────────────
+  // Called once at app startup (after login). Sets up a periodic interval
+  // that fires at the user's preferred reminder time. Falls back gracefully
+  // when the Notification API is unavailable or permission is denied.
+
+  setupDailyReminder() {
+    if (typeof Notification === 'undefined') return;
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    if (!enabled) return;
+
+    // Run the check immediately on load, then every 5 minutes.
+    this._checkAndFireReminder();
+    if (this._reminderInterval) clearInterval(this._reminderInterval);
+    this._reminderInterval = setInterval(() => this._checkAndFireReminder(), 5 * 60 * 1000);
+  }
+
+  _checkAndFireReminder() {
+    if (Notification.permission !== 'granted') return;
+
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    if (!enabled) return;
+
+    // Only fire once per calendar day (JST).
+    const todayKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    if (localStorage.getItem('reminder_fired_' + todayKey) === '1') return;
+
+    // Check if the user has already logged today.
+    const textEntries = store.get('textEntries') || [];
+    const symptoms = store.get('symptoms') || [];
+    const todayJst = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const loggedToday = [...textEntries, ...symptoms].some(e => {
+      if (!e.timestamp) return false;
+      return new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }) === todayJst;
+    });
+    if (loggedToday) return;
+
+    // Only fire at or after the user's configured reminder time.
+    const reminderTime = localStorage.getItem('reminder_time') || '20:00';
+    const [rHour, rMin] = reminderTime.split(':').map(Number);
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const nowMinutes = nowJst.getHours() * 60 + nowJst.getMinutes();
+    if (nowMinutes < rHour * 60 + rMin) return;
+
+    // Fire the notification.
+    try {
+      const streak = (typeof this._computeStreak === 'function') ? this._computeStreak().streak : 0;
+      const body = streak >= 3
+        ? `🔥 ${streak}日連続記録中！今日も記録して連続記録を守りましょう。`
+        : streak > 0
+          ? '昨日も記録しましたね。今日の体調を記録してみましょう。'
+          : '今日の体調をまだ記録していません。少しだけ書いてみませんか？';
+      const n = new Notification('健康日記', {
+        body,
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        tag: 'daily-reminder',
+        renotify: false,
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+      localStorage.setItem('reminder_fired_' + todayKey, '1');
+    } catch (e) { /* silent */ }
+  }
+
+  async requestNotificationPermission() {
+    if (typeof Notification === 'undefined') return 'unsupported';
+    if (Notification.permission === 'granted') return 'granted';
+    if (Notification.permission === 'denied') return 'denied';
+    try {
+      return await Notification.requestPermission();
+    } catch (e) {
+      return 'denied';
+    }
+  }
+
+  // ── Voice input (Web Speech API) ─────────────────────────────────────────
+
+  toggleVoiceInput() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { Components.showToast('このブラウザは音声入力に対応していません', 'error'); return; }
+    const btn = document.getElementById('voice-input-btn');
+    if (this._recognition && this._recognitionActive) {
+      this._recognition.stop();
+      return;
+    }
+    const rec = new SR();
+    this._recognition = rec;
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.continuous = true;
+    let interim = '';
+    const ta = document.getElementById('text-input-content');
+    const baseText = ta ? ta.value : '';
+    if (btn) { btn.textContent = '⏹ 停止'; btn.style.background = '#ef4444'; btn.style.color = '#fff'; btn.style.border = 'none'; }
+    this._recognitionActive = true;
+    rec.onresult = (e) => {
+      interim = '';
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (ta) ta.value = baseText + final + interim;
+    };
+    rec.onend = () => {
+      this._recognitionActive = false;
+      if (btn) { btn.textContent = '🎙️ 音声'; btn.style.background = ''; btn.style.color = ''; btn.style.border = ''; }
+      if (ta && interim) ta.value = ta.value.replace(interim, '').trimEnd() + ' ' + interim;
+    };
+    rec.onerror = (e) => {
+      this._recognitionActive = false;
+      if (btn) { btn.textContent = '🎙️ 音声'; btn.style.background = ''; btn.style.color = ''; btn.style.border = ''; }
+      if (e.error !== 'aborted') Components.showToast('音声入力エラー: ' + e.error, 'error');
+    };
+    rec.start();
+  }
+
+  // ── Medication reminders ─────────────────────────────────────────────────
+
+  addMedReminder() {
+    const nameEl = document.getElementById('med-name-input');
+    const timeEl = document.getElementById('med-time-input');
+    if (!nameEl || !timeEl) return;
+    const name = nameEl.value.trim();
+    const time = timeEl.value || '08:00';
+    if (!name) { Components.showToast('薬の名前を入力してください', 'error'); return; }
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    reminders.push({ name, time, enabled: true });
+    localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    nameEl.value = '';
+    this.requestNotificationPermission().then(p => {
+      if (p === 'granted') {
+        this.setupMedReminders();
+        Components.showToast(`「${name}」のリマインダーを追加しました`, 'success');
+      } else if (p === 'denied') {
+        Components.showToast('通知がブロックされています。ブラウザの設定で許可してください', 'error');
+      } else {
+        Components.showToast(`「${name}」のリマインダーを追加しました`, 'success');
+        this.setupMedReminders();
+      }
+    });
+    this.navigate('settings');
+  }
+
+  removeMedReminder(index) {
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const removed = reminders.splice(index, 1)[0];
+    localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    if (removed) Components.showToast(`「${removed.name}」を削除しました`, 'info');
+    this.navigate('settings');
+  }
+
+  toggleMedReminder(index, enabled) {
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    if (reminders[index]) {
+      reminders[index].enabled = enabled;
+      localStorage.setItem('med_reminders', JSON.stringify(reminders));
+    }
+    this.setupMedReminders();
+  }
+
+  setupMedReminders() {
+    if (typeof Notification === 'undefined') return;
+    if (this._medReminderInterval) {
+      clearInterval(this._medReminderInterval);
+      this._medReminderInterval = null;
+    }
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const active = reminders.filter(r => r.enabled !== false);
+    if (!active.length) return;
+    this._checkMedReminders();
+    this._medReminderInterval = setInterval(() => this._checkMedReminders(), 60 * 1000);
+  }
+
+  _checkMedReminders() {
+    if (Notification.permission !== 'granted') return;
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    if (!reminders.length) return;
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const nowH = nowJst.getHours();
+    const nowM = nowJst.getMinutes();
+    const todayKey = nowJst.toLocaleDateString('ja-JP');
+    reminders.forEach((r, i) => {
+      if (!r.enabled && r.enabled !== undefined) return;
+      const [rH, rM] = (r.time || '08:00').split(':').map(Number);
+      if (nowH !== rH || nowM !== rM) return;
+      const firedKey = `med_fired_${i}_${todayKey}`;
+      if (localStorage.getItem(firedKey)) return;
+      try {
+        const n = new Notification('💊 服薬リマインダー', {
+          body: `「${r.name}」の服薬時刻です`,
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: 'med-reminder-' + i,
+          renotify: true,
+        });
+        n.onclick = () => { window.focus(); n.close(); };
+        localStorage.setItem(firedKey, '1');
+      } catch (e) { /* silent */ }
+    });
+  }
+
+  async toggleDailyReminder(checked) {
+    if (!checked) {
+      localStorage.setItem('reminder_enabled', '0');
+      if (this._reminderInterval) {
+        clearInterval(this._reminderInterval);
+        this._reminderInterval = null;
+      }
+      // Update the time input opacity without full re-render.
+      const timeWrap = document.querySelector('#reminder-time-input')?.closest('div[style*="display:flex"]');
+      if (timeWrap) timeWrap.style.opacity = '0.4';
+      return;
+    }
+    const perm = await this.requestNotificationPermission();
+    if (perm !== 'granted') {
+      Components.showToast('通知の許可が必要です。ブラウザの設定を確認してください。', 'error');
+      const toggle = document.getElementById('reminder-toggle');
+      if (toggle) toggle.checked = false;
+      if (perm === 'denied') {
+        // Re-render settings to show the "ブロック" warning.
+        this.navigate('settings');
+      }
+      return;
+    }
+    localStorage.setItem('reminder_enabled', '1');
+    this.setupDailyReminder();
+    const timeWrap = document.querySelector('#reminder-time-input')?.closest('div[style*="display:flex"]');
+    if (timeWrap) { timeWrap.style.opacity = '1'; timeWrap.style.pointerEvents = 'auto'; }
+    Components.showToast('毎日リマインダーを有効にしました', 'success');
   }
 
   // Deep structured analysis of any user input

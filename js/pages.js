@@ -147,12 +147,36 @@ App.prototype.render_login = function() {
         <div id="guest-result" style="margin-top:12px"></div>
       </div>
       <div style="margin-bottom:24px;padding:16px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0">
-        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">このサービスでできること</div>
-        <div style="font-size:12px;color:#475569;line-height:1.8">
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📝</span><span><strong>体調を記録</strong> — テキスト・写真・ファイルで日々の症状、服薬、食事、気分を記録</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">📊</span><span><strong>経過を可視化</strong> — 記録データの時系列表示と傾向の整理</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:6px"><span style="flex-shrink:0">🔬</span><span><strong>研究情報の収集</strong> — 最新の研究情報を疾患別に自動取得（参考情報）</span></div>
-          <div style="display:flex;gap:8px"><span style="flex-shrink:0">💡</span><span><strong>情報の整理補助</strong> — 入力内容に基づく参考情報の提示（医療行為ではありません）</span></div>
+        <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:12px">登録すると使えること（すべて無料）</div>
+        <div style="display:grid;gap:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">🏥</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">医師提出レポートを自動作成</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">30日分の記録を AI が統合し、次の受診に持参できるサマリーを生成</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">📈</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">症状の傾向とトリガーを発見</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">睡眠・天気・食事・薬との相関を記録から自動で分析</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">🔬</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">最新の治療研究を毎日自動取得</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">PubMed から疾患別論文を自動収集。主治医との会話に役立てる</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:#fff;border-radius:10px;border:1px solid #e2e8f0">
+            <div style="font-size:20px;flex-shrink:0">💴</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:2px">使える補助金・年金を自動で発見</div>
+              <div style="font-size:11px;color:#64748b;line-height:1.6">疾患に応じた国・自治体の支援制度を一覧表示。専門家へ相談依頼も可能</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -432,6 +456,65 @@ App.prototype._getEarnedBadges = function(stats) {
   return badges;
 };
 
+// Detect simple patterns in symptom data (min 10 entries with fatigue_level).
+// Returns array of { icon, text } insight objects, up to 3.
+App.prototype._computeCorrelations = function() {
+  const symptoms = store.get('symptoms') || [];
+  const valid = symptoms.filter(s => s.fatigue_level != null && s.timestamp);
+  if (valid.length < 10) return [];
+
+  const insights = [];
+
+  // 1. Sleep quality vs fatigue
+  const withSleepQ = valid.filter(s => s.sleep_quality != null);
+  if (withSleepQ.length >= 6) {
+    const sorted = withSleepQ.slice().sort((a, b) => a.sleep_quality - b.sleep_quality);
+    const half = Math.floor(sorted.length / 2);
+    const poorSleep = sorted.slice(0, half);
+    const goodSleep = sorted.slice(half);
+    const avgFatiguePoor = poorSleep.reduce((s, e) => s + e.fatigue_level, 0) / poorSleep.length;
+    const avgFatigueGood = goodSleep.reduce((s, e) => s + e.fatigue_level, 0) / goodSleep.length;
+    const diff = avgFatiguePoor - avgFatigueGood;
+    if (diff >= 1.0) {
+      insights.push({ icon: '😴', text: `睡眠の質が低い日は疲労度が平均 ${diff.toFixed(1)} 高い傾向があります` });
+    }
+  }
+
+  // 2. Day-of-week pattern (need at least 4 distinct weekdays with 2+ entries each)
+  const byDow = {};
+  valid.forEach(s => {
+    const dow = new Date(s.timestamp).getDay();
+    if (!byDow[dow]) byDow[dow] = [];
+    byDow[dow].push(s.fatigue_level);
+  });
+  const dowLabels = ['日', '月', '火', '水', '木', '金', '土'];
+  const dowEntries = Object.entries(byDow)
+    .filter(([, vs]) => vs.length >= 2)
+    .map(([dow, vs]) => ({ dow: parseInt(dow), avg: vs.reduce((a, b) => a + b, 0) / vs.length }));
+  if (dowEntries.length >= 4) {
+    const maxDay = dowEntries.reduce((a, b) => a.avg > b.avg ? a : b);
+    const minDay = dowEntries.reduce((a, b) => a.avg < b.avg ? a : b);
+    if (maxDay.avg - minDay.avg >= 1.5) {
+      insights.push({ icon: '📅', text: `${dowLabels[maxDay.dow]}曜日の疲労度が最も高く（平均 ${maxDay.avg.toFixed(1)}）、${dowLabels[minDay.dow]}曜日が最も低い（${minDay.avg.toFixed(1)}）` });
+    }
+  }
+
+  // 3. Recent trend: last 7 vs previous 7
+  const last7 = valid.slice(-7);
+  const prev7 = valid.slice(-14, -7);
+  if (last7.length >= 5 && prev7.length >= 5) {
+    const avgLast = last7.reduce((s, e) => s + e.fatigue_level, 0) / last7.length;
+    const avgPrev = prev7.reduce((s, e) => s + e.fatigue_level, 0) / prev7.length;
+    const diff = avgLast - avgPrev;
+    if (Math.abs(diff) >= 0.8) {
+      const improving = diff < 0;
+      insights.push({ icon: improving ? '📈' : '⚠️', text: `先週と比べて疲労度が ${Math.abs(diff).toFixed(1)} ${improving ? '改善' : '悪化'}しています` });
+    }
+  }
+
+  return insights.slice(0, 3);
+};
+
 App.prototype.render_dashboard = function() {
   try {
   const disease = store.get('selectedDisease') || { name: '慢性疾患', icon: '🏥' };
@@ -571,6 +654,76 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       <div id="dash-quick-preview" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"></div>
+      <!-- One-tap fatigue scale — fills textarea so chronically fatigued
+           users can log without typing. A single tap appends the level and
+           moves focus to the textarea so they can add context or just hit 送信. -->
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--text-muted);flex-shrink:0">今日の体調:</span>
+        ${[
+          { v: 1, label: '😫 1', title: '最悪' },
+          { v: 2, label: '😰 2', title: 'かなり辛い' },
+          { v: 3, label: '😐 3', title: '普通' },
+          { v: 4, label: '🙂 4', title: '比較的良い' },
+          { v: 5, label: '😄 5', title: '絶好調' },
+        ].map(b => `
+          <button title="${b.title}" onclick="(function(){var t=document.getElementById('dash-quick-input');var cur=t.value.trim();var prefix='体調 ${b.v}/5（${b.title}）';if(cur&&!cur.startsWith('体調')){t.value=prefix+'\\n'+cur;}else{t.value=prefix+'\\n';}t.focus();t.setSelectionRange(t.value.length,t.value.length);})()"
+            style="padding:5px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;line-height:1">${b.label}</button>`).join('')}
+        <span style="font-size:10px;color:var(--text-muted)">タップで入力</span>
+      </div>
+      <!-- Structured 4-dimension check-in accordion — collapses by default
+           so it doesn't overwhelm the main input, but gives a ≤10-second
+           logging path when the user is too fatigued to type free text.
+           Submitting saves directly to the symptoms store (feeds correlation
+           analysis + chart) AND adds a text summary to textEntries. -->
+      <div style="margin-top:8px">
+        <button id="quick-checkin-toggle"
+          onclick="(function(){var c=document.getElementById('quick-checkin-body');var btn=document.getElementById('quick-checkin-toggle');var open=c.style.display!=='none';c.style.display=open?'none':'block';btn.textContent=open?'📊 数値で記録（4項目）▸':'📊 数値で記録（4項目）▾';})()"
+          style="padding:4px 12px;background:transparent;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-muted);cursor:pointer;width:100%;text-align:left">
+          📊 数値で記録（4項目）▸
+        </button>
+        <div id="quick-checkin-body" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg-tertiary);border-radius:10px">
+          ${[
+            { key: 'fatigue_level', label: '疲労', vals: ['😴最重', '😰重い', '😐普通', '🙂軽い', '😄なし'],   scaled: [7,5,3,1,0] },
+            { key: 'pain_level',    label: '痛み', vals: ['🔴激痛', '🟠強い', '🟡中程度', '🟢軽い', '⚪なし'], scaled: [7,5,3,1,0] },
+            { key: 'brain_fog',     label: '脳霧', vals: ['🌫️重い', '☁️ある', '🌤️少し', '☀️ほぼなし', '✨なし'], scaled: [7,5,3,1,0] },
+            { key: 'sleep_quality', label: '睡眠', vals: ['😫最悪', '🙁悪い', '😐普通', '🙂良い', '😄熟睡'],   scaled: [1,2,4,6,7] },
+          ].map(dim => `
+            <div style="margin-bottom:8px">
+              <div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px">${dim.label}</div>
+              <div style="display:flex;gap:4px">
+                ${dim.vals.map((v, i) => `
+                  <button data-dim="${dim.key}" data-val="${dim.scaled[i]}" data-label="${v}"
+                    onclick="(function(btn){document.querySelectorAll('[data-dim=${JSON.stringify(dim.key)}]').forEach(b=>{b.style.background='var(--bg-primary)';b.style.borderColor='var(--border)';b.style.fontWeight='400'});btn.style.background='#6366f1';btn.style.borderColor='#6366f1';btn.style.color='#fff';btn.style.fontWeight='700';})(this)"
+                    style="flex:1;padding:4px 2px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;font-size:10px;cursor:pointer;text-align:center;line-height:1.3;transition:all .1s">
+                    ${v}
+                  </button>`).join('')}
+              </div>
+            </div>`).join('')}
+          <button onclick="(function(){
+            var dims=['fatigue_level','pain_level','brain_fog','sleep_quality'];
+            var labels=['疲労','痛み','脳霧','睡眠'];
+            var entry={id:Date.now().toString(36)+Math.random().toString(36).substr(2),timestamp:new Date().toISOString()};
+            var parts=[];
+            var hasAny=false;
+            dims.forEach(function(dim,i){
+              var btn=document.querySelector('[data-dim='+JSON.stringify(dim)+'][style*=6366f1]');
+              if(btn){hasAny=true;entry[dim]=parseInt(btn.getAttribute('data-val'));parts.push(labels[i]+':'+btn.getAttribute('data-label'));}
+            });
+            if(!hasAny){Components.showToast('少なくとも1項目を選んでください','error');return;}
+            var symptoms=store.get('symptoms')||[];symptoms.push(entry);store.set('symptoms',symptoms);
+            var textEntries=store.get('textEntries')||[];
+            textEntries.push({id:entry.id+'t',timestamp:entry.timestamp,category:'symptoms',type:'symptom_log',title:'症状スコア',content:'今日の症状チェック: '+parts.join(' / ')});
+            store.set('textEntries',textEntries);
+            document.getElementById('quick-checkin-body').style.display='none';
+            document.getElementById('quick-checkin-toggle').textContent='📊 数値で記録（4項目）▸';
+            Components.showToast('記録しました','success');
+            app.navigate('dashboard');
+          })()"
+            style="width:100%;padding:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px">
+            ✓ 記録する
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -681,11 +834,105 @@ App.prototype.render_dashboard = function() {
   <!-- Today's logging reminder — shown only when the user has past data
        but hasn't logged anything today, to reinforce the daily habit -->
   ${hasData && !loggedToday && !store.get('isAnalyzing') ? `
-  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px">
+  <div style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div style="font-size:18px">📝</div>
-    <div style="flex:1;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
-    <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">記録する</button>
+    <div style="flex:1;min-width:120px;font-size:12px;color:#78350f">今日はまだ記録がありません。体調を入力してみましょう。</div>
+    <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
+      <button onclick="document.getElementById('dash-quick-input').focus()" style="padding:5px 12px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">記録する</button>
+      ${(typeof Notification !== 'undefined' && Notification.permission !== 'granted' && localStorage.getItem('reminder_enabled') !== '1') ? `
+      <button onclick="app.toggleDailyReminder(true).then(()=>{var t=document.getElementById('reminder-toggle');if(t)t.checked=true})" style="padding:5px 10px;background:#fff8e1;color:#92400e;border:1px solid #fde68a;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">🔔 毎日通知</button>` : ''}
+    </div>
   </div>` : ''}
+
+  <!-- Today's medication check-in — shown only when the user has registered
+       medications (med_reminders). Lets them tap each med to confirm it's
+       taken; logs a text entry. State resets daily via a JST date key. -->
+  ${(() => {
+    let reminders = [];
+    try { reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]'); } catch (_) {}
+    if (!reminders.length) return '';
+    const todayKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    let taken = {};
+    try { taken = JSON.parse(localStorage.getItem('med_taken_' + todayKey) || '{}'); } catch (_) {}
+    const allTaken = reminders.every((_, i) => taken[i]);
+    return `
+    <div class="card" style="margin-bottom:16px;border:1px solid ${allTaken ? '#bbf7d0' : '#fde68a'};background:${allTaken ? '#f0fdf4' : '#fffbeb'}">
+      <div class="card-body" style="padding:10px 16px">
+        <div style="font-size:11px;font-weight:700;color:${allTaken ? '#15803d' : '#78350f'};margin-bottom:8px">
+          💊 今日の服薬チェック${allTaken ? ' ✓ すべて完了' : ''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${reminders.map((r, i) => {
+            const done = !!taken[i];
+            return `
+            <button onclick="(function(){
+              var key=${JSON.stringify('med_taken_' + todayKey)};
+              var t={};try{t=JSON.parse(localStorage.getItem(key)||'{}');}catch(_){}
+              t[${i}]=true;localStorage.setItem(key,JSON.stringify(t));
+              var entries=store.get('textEntries')||[];
+              entries.push({id:Date.now().toString(36)+Math.random().toString(36).substr(2),timestamp:new Date().toISOString(),category:'medication',type:'med_check',title:'服薬確認',content:${JSON.stringify(r.name + ' ' + r.time + ' 服薬済')}}); store.set('textEntries',entries);
+              app.navigate('dashboard');
+            })()"
+              style="padding:6px 12px;background:${done ? '#dcfce7' : '#fff'};border:1.5px solid ${done ? '#86efac' : '#fde68a'};border-radius:20px;font-size:12px;font-weight:600;color:${done ? '#15803d' : '#78350f'};cursor:${done ? 'default' : 'pointer'};display:flex;align-items:center;gap:5px">
+              ${done ? '✅' : '⬜'} ${Components.escapeHtml(r.name)}
+              <span style="font-size:10px;opacity:.7">${Components.escapeHtml(r.time)}</span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- 7-day symptom sparklines — makes the value of tracking visceral.
+       Uses inline SVG (no library). Only shown when ≥2 symptom entries
+       exist in the last 7 days. Variables fatigueAvg etc. were already
+       computed above; this puts them to use. -->
+  ${recent7.length >= 2 ? (() => {
+    const dims = [
+      { key: 'fatigue_level', label: '疲労', inv: true  },
+      { key: 'pain_level',    label: '痛み', inv: true  },
+      { key: 'brain_fog',     label: '脳霧', inv: true  },
+      { key: 'sleep_quality', label: '睡眠', inv: false },
+    ];
+    const sparkColor = (v, inv) => {
+      const bad = inv ? v / 7 : 1 - v / 7;
+      return bad < 0.4 ? '#22c55e' : bad < 0.7 ? '#f59e0b' : '#ef4444';
+    };
+    const makeSvg = (vals, inv) => {
+      const W = 56, H = 26;
+      if (vals.length < 2) {
+        const cx = W / 2, cy = H - (vals[0] / 7) * H;
+        const c = sparkColor(vals[0], inv);
+        return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><circle cx="${cx}" cy="${cy.toFixed(1)}" r="3" fill="${c}"/></svg>`;
+      }
+      const pts = vals.map((v, i) => {
+        const x = (i / (vals.length - 1)) * W;
+        const y = H - (v / 7) * H;
+        return [x.toFixed(1), y.toFixed(1)];
+      });
+      const last = pts[pts.length - 1];
+      const c = sparkColor(vals[vals.length - 1], inv);
+      return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="overflow:visible"><polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.5" fill="${c}"/></svg>`;
+    };
+    const cards = dims.map(d => {
+      const vals = recent7.filter(s => s[d.key] != null).map(s => s[d.key]);
+      if (!vals.length) return '';
+      const latest = vals[vals.length - 1];
+      const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;background:var(--bg-secondary);border-radius:8px;flex:1;min-width:60px">
+        <div style="font-size:9px;font-weight:600;color:var(--text-muted)">${d.label}</div>
+        ${makeSvg(vals, d.inv)}
+        <div style="font-size:11px;font-weight:700;color:var(--text-primary)">${latest}/7</div>
+        <div style="font-size:9px;color:var(--text-muted)">avg ${avg}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+    if (!cards) return '';
+    return `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">📈 7日間トレンド（${recent7.length}件）</div>
+      <div style="display:flex;gap:6px">${cards}</div>
+    </div>`;
+  })() : ''}
 
   <!-- Streak + Badges + Today's Axis widget -->
   ${streakStats.totalDays > 0 || todayAxis ? `
@@ -713,16 +960,192 @@ App.prototype.render_dashboard = function() {
         </div>
       </div>
       ${earnedBadges.length > 0 ? `
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;display:flex;gap:6px;flex-wrap:wrap">
-        ${earnedBadges.map(b => `
-          <span title="${Components.escapeHtml(b.desc)}"
-            style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
-            <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
-          </span>
-        `).join('')}
-      </div>` : ''}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          ${earnedBadges.map(b => `
+            <span title="${Components.escapeHtml(b.desc)}"
+              style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;background:#fff;border:1px solid #c7d2fe;border-radius:14px;font-size:10px;color:#4338ca">
+              <span style="font-size:12px">${b.icon}</span>${Components.escapeHtml(b.name)}
+            </span>
+          `).join('')}
+        </div>
+        ${(() => {
+          // Show a nudge toward the next badge milestone.
+          const milestones = [3,7,14,30,100];
+          const next = milestones.find(m => streakStats.streak < m);
+          if (!next) return '';
+          const remain = next - streakStats.streak;
+          return `<div style="font-size:10px;color:#6366f1">あと ${remain} 日連続で次のバッジ獲得！</div>`;
+        })()}
+      </div>` : `
+      ${streakStats.totalDays === 0 ? '' : `
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c7d2fe;font-size:10px;color:#6366f1">
+        3日連続で記録すると最初のバッジを獲得できます！
+      </div>`}`}
     </div>
   </div>` : ''}
+
+  <!-- Weekly summary nudge — shown on Mondays (or when first opened after a week)
+       to users who have 7+ entries, encouraging them to run the deep analysis. -->
+  ${(() => {
+    if (!hasData) return '';
+    const week7 = textEntries.filter(e => e.timestamp && (Date.now() - new Date(e.timestamp)) < 7 * 86400000);
+    if (week7.length < 3) return '';
+    const lastDeep = store.get('deepAnalysisLastRun');
+    const todayJstKey = new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const deepToday = lastDeep === todayJstKey;
+    if (deepToday) return '';
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const isMonday = nowJst.getDay() === 1;
+    const seenKey = 'weekly_nudge_' + todayJstKey;
+    if (!isMonday && localStorage.getItem(seenKey)) return '';
+    return `
+    <div style="margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1px solid #fed7aa;border-radius:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:20px">📊</div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;font-weight:700;color:#9a3412">この 7 日間の記録（${week7.length}件）を本格分析しますか？</div>
+        <div style="font-size:10px;color:#c2410c;margin-top:2px">症状パターン・トリガー・改善傾向をまとめて分析</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="app.runDeepAnalysis()" style="padding:6px 14px;background:#ea580c;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">本格分析する</button>
+        <button onclick="localStorage.setItem(${JSON.stringify(seenKey)},'1');this.closest('[style*=background]').remove()" style="padding:6px 10px;background:transparent;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:11px;cursor:pointer">後で</button>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Correlation insights — auto-detected patterns (shown when ≥10 symptom entries) -->
+  ${(() => {
+    const correlations = this._computeCorrelations();
+    if (!correlations.length) return '';
+    return `
+    <div class="card" style="margin-bottom:14px;border-left:3px solid #6366f1">
+      <div class="card-body" style="padding:10px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px">🔍 あなたのデータから見えてきたパターン</div>
+        ${correlations.map(c => `
+          <div style="display:flex;align-items:start;gap:8px;margin-bottom:5px;font-size:12px;line-height:1.5">
+            <span style="flex-shrink:0">${c.icon}</span>
+            <span style="color:var(--text-secondary)">${Components.escapeHtml(c.text)}</span>
+          </div>`).join('')}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">
+          記録が増えるほど精度が上がります。今 ${(store.get('symptoms')||[]).length} 件のデータから分析中。
+        </div>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Share milestone card — shown once at 7-day streak and 30-total-day milestones
+       to drive organic growth. Dismissed per milestone via localStorage. -->
+  ${(() => {
+    const milestones = [
+      { key: 'share_7streak', check: () => streakStats.streak >= 7, label: '7日連続記録！', emoji: '⚡' },
+      { key: 'share_30days',  check: () => streakStats.totalDays >= 30, label: '30日分のデータが溜まりました！', emoji: '🎯' },
+    ];
+    const hit = milestones.find(m => m.check() && !localStorage.getItem(m.key + '_dismissed'));
+    if (!hit) return '';
+    const shareText = '健康日記で体調を記録し始めて ' + (hit.key === 'share_7streak' ? '7日連続' : '30日') + 'になりました！慢性疾患の方に使いやすい無料アプリです。';
+    const shareUrl = 'https://cares.advisers.jp';
+    const tweetUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl) + '&hashtags=' + encodeURIComponent('健康日記,慢性疾患');
+    const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(shareText);
+    return `
+    <div id="share-milestone-card" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#fdf4ff 0%,#ede9fe 100%);border:1.5px solid #c4b5fd;border-radius:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:800;color:#5b21b6">${hit.emoji} ${hit.label}</div>
+        <button onclick="localStorage.setItem('${hit.key}_dismissed','1');document.getElementById('share-milestone-card').remove()"
+          style="padding:3px 8px;background:transparent;color:#7c3aed;border:none;cursor:pointer;font-size:11px">閉じる</button>
+      </div>
+      <div style="font-size:12px;color:#4c1d95;margin-bottom:10px;line-height:1.6">
+        同じ疾患で悩む方に使ってもらえると、より多くのパターンを一緒に発見できます。もしよかったらシェアしてください。
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${typeof navigator !== 'undefined' && navigator.share ? `
+        <button onclick="navigator.share({title:'健康日記',text:${JSON.stringify(shareText)},url:'${shareUrl}'}).then(()=>localStorage.setItem('${hit.key}_dismissed','1'))"
+          style="padding:7px 14px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📤 共有する</button>` : ''}
+        <a href="${tweetUrl}" target="_blank" rel="noopener"
+          onclick="localStorage.setItem('${hit.key}_dismissed','1')"
+          style="padding:7px 14px;background:#1d9bf0;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block">𝕏 でシェア</a>
+        <a href="${lineUrl}" target="_blank" rel="noopener"
+          onclick="localStorage.setItem('${hit.key}_dismissed','1')"
+          style="padding:7px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block">LINE でシェア</a>
+      </div>
+    </div>`;
+  })()}
+
+  <!-- Monthly retrospective card — "Spotify Wrapped" effect for health data.
+       Shown in the first 7 days of each new month when the previous month
+       has ≥3 entries. Dismissed per-month via localStorage. -->
+  ${(() => {
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    if (nowJst.getDate() > 7) return '';
+    const lastMonthEnd = new Date(nowJst.getFullYear(), nowJst.getMonth(), 0);
+    const lastMonthStart = new Date(nowJst.getFullYear(), nowJst.getMonth() - 1, 1);
+    const recapKey = `monthly_recap_${lastMonthStart.getFullYear()}_${lastMonthStart.getMonth() + 1}`;
+    if (localStorage.getItem(recapKey + '_dismissed')) return '';
+
+    const allData = [...(store.get('textEntries') || []), ...(store.get('symptoms') || [])];
+    const lmData = allData.filter(e => {
+      if (!e.timestamp) return false;
+      const ts = new Date(e.timestamp);
+      return ts >= lastMonthStart && ts <= lastMonthEnd;
+    });
+    if (lmData.length < 3) return '';
+
+    const loggedDays = new Set(
+      lmData.map(e => new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }))
+    ).size;
+    const daysInMonth = lastMonthEnd.getDate();
+    const logPct = Math.round(loggedDays / daysInMonth * 100);
+
+    const lmSym = (store.get('symptoms') || []).filter(s => {
+      if (!s.timestamp) return false;
+      const ts = new Date(s.timestamp);
+      return ts >= lastMonthStart && ts <= lastMonthEnd;
+    });
+    let avgFatigue = null, avgSleep = null, trendText = '';
+    if (lmSym.length >= 3) {
+      const fVals = lmSym.filter(s => s.fatigue_level != null).map(s => s.fatigue_level);
+      const sVals = lmSym.filter(s => s.sleep_quality != null).map(s => s.sleep_quality);
+      if (fVals.length) {
+        avgFatigue = (fVals.reduce((a, b) => a + b, 0) / fVals.length).toFixed(1);
+        if (fVals.length >= 4) {
+          const h = Math.floor(fVals.length / 2);
+          const diff = (fVals.slice(h).reduce((a,b)=>a+b,0)/fVals.slice(h).length)
+                     - (fVals.slice(0,h).reduce((a,b)=>a+b,0)/fVals.slice(0,h).length);
+          if (diff < -0.5) trendText = '月末に向けて疲労が改善傾向 📈';
+          else if (diff > 0.5) trendText = '月末に疲労がやや増加 ⚠️';
+        }
+      }
+      if (sVals.length) avgSleep = (sVals.reduce((a, b) => a + b, 0) / sVals.length).toFixed(1);
+    }
+
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const lmName = monthNames[lastMonthStart.getMonth()];
+    return `
+    <div id="monthly-recap-card" style="margin-bottom:14px;padding:14px 18px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:800;color:#14532d">🌿 ${lmName}の振り返り</div>
+        <button onclick="localStorage.setItem('${recapKey}_dismissed','1');document.getElementById('monthly-recap-card').remove()"
+          style="padding:3px 8px;background:transparent;color:#15803d;border:none;cursor:pointer;font-size:11px">閉じる</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:${trendText ? '8' : '0'}px">
+        <div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">記録日数</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${loggedDays}</div>
+          <div style="font-size:9px;color:#15803d">${logPct}% (${daysInMonth}日中)</div>
+        </div>
+        ${avgFatigue !== null ? `<div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">月平均疲労</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${avgFatigue}</div>
+          <div style="font-size:9px;color:#15803d">/ 7</div>
+        </div>` : ''}
+        ${avgSleep !== null ? `<div style="text-align:center;padding:6px 12px;background:#fff;border-radius:10px;min-width:70px">
+          <div style="font-size:10px;color:#15803d;font-weight:600">月平均睡眠</div>
+          <div style="font-size:22px;font-weight:800;color:#14532d;line-height:1">${avgSleep}</div>
+          <div style="font-size:9px;color:#15803d">/ 7</div>
+        </div>` : ''}
+      </div>
+      ${trendText ? `<div style="font-size:11px;color:#166534">${Components.escapeHtml(trendText)}</div>` : ''}
+    </div>`;
+  })()}
 
   <!-- Daily tracking hint (disease-specific, minimal) -->
   ${(() => {
@@ -884,6 +1307,43 @@ App.prototype.render_dashboard = function() {
 
   <!-- 3. Welcome for new users OR Enriched Data Feed -->
   ${welcomeHtml}
+
+  <!-- Setup progress guide — shown to users who haven't completed all key
+       setup steps. Auto-disappears once all 5 steps are done. -->
+  ${(() => {
+    const profile = store.get('userProfile') || {};
+    const steps = [
+      { done: (store.get('selectedDiseases') || []).length > 0, label: '疾患を選択する', action: "app.navigate('settings')", icon: '🩺' },
+      { done: !!(profile.age || profile.gender), label: 'プロフィールを入力する', action: "app.navigate('settings')", icon: '👤' },
+      { done: totalEntries > 0, label: '最初の体調を記録する', action: "document.getElementById('dash-quick-input')&&document.getElementById('dash-quick-input').focus()", icon: '✏️' },
+      { done: localStorage.getItem('reminder_enabled') === '1', label: '毎日の通知をオンにする', action: "app.navigate('settings')", icon: '🔔' },
+      { done: !!store.get('deepAnalysisLastRun'), label: '本格分析を初めて実行する', action: "app.runDeepAnalysis()", icon: '📊' },
+    ];
+    const doneCount = steps.filter(s => s.done).length;
+    if (doneCount === steps.length) return '';
+    const pct = Math.round((doneCount / steps.length) * 100);
+    return `
+    <div class="card" style="margin-bottom:16px;border:1.5px solid #e0e7ff">
+      <div class="card-body" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;color:#3730a3">🚀 はじめかたガイド</div>
+          <div style="font-size:11px;color:#6366f1;font-weight:600">${doneCount}/${steps.length} 完了</div>
+        </div>
+        <div style="height:4px;background:#e0e7ff;border-radius:4px;margin-bottom:12px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:4px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${steps.map(s => `
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:${s.done ? '#f0fdf4' : 'var(--bg-tertiary)'};cursor:${s.done ? 'default' : 'pointer'}"
+              ${s.done ? '' : 'onclick="' + s.action + '"'}>
+              <span style="font-size:14px;flex-shrink:0">${s.done ? '✅' : s.icon}</span>
+              <span style="font-size:12px;color:${s.done ? '#15803d' : 'var(--text-primary)'};${s.done ? 'text-decoration:line-through;opacity:.7' : 'font-weight:500'}">${s.label}</span>
+              ${s.done ? '' : '<span style="margin-left:auto;font-size:10px;color:#6366f1;font-weight:600">→</span>'}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  })()}
 
   <!-- Integration sync status — shows last received data per source -->
   ${(() => {
@@ -1515,6 +1975,8 @@ App.prototype.render_data_input = function() {
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="app.submitTextEntry()" ${store.get('isAnalyzing') ? 'disabled' : ''}>保存して分析</button>
         <label class="btn btn-secondary" style="cursor:pointer">📎 写真・ファイル<input type="file" hidden multiple accept="image/*,.pdf,.csv,.json,.xml,.txt,.xlsx" onchange="app.dataPageFileUpload(this.files)"></label>
+        ${typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition) ? `
+        <button id="voice-input-btn" class="btn btn-secondary" onclick="app.toggleVoiceInput()" title="音声入力">🎙️ 音声</button>` : ''}
         <button class="btn btn-secondary" onclick="document.getElementById('text-input-content').value='';document.getElementById('text-input-title').value=''">クリア</button>
         <span id="text-save-status" style="font-size:12px;color:var(--text-muted)"></span>
       </div>
@@ -1637,7 +2099,7 @@ App.prototype.render_data_input = function() {
 // AI Analysis Page
 App.prototype.render_analysis = function() {
   const prompts = store.get('customPrompts') || DEFAULT_PROMPTS;
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
   const isAnalyzing = store.get('isAnalyzing');
 
   const modelOpts = CONFIG.AI_MODELS.map(m =>
@@ -1674,9 +2136,27 @@ App.prototype.render_analysis = function() {
 
   <!-- Analysis Result -->
   <div id="analysis-result">
-    ${store.get('latestAnalysis')
-      ? ''
-      : Components.emptyState('🤖', 'AI分析を実行してください', '上のボタンからプロンプトを選択して分析を開始します')}
+    ${store.get('latestAnalysis') ? '' : (() => {
+      const textCount = (store.get('textEntries') || []).length;
+      const symptomCount = (store.get('symptoms') || []).length;
+      const totalData = textCount + symptomCount;
+      if (totalData >= 3) {
+        const primaryPromptKey = Object.keys(prompts)[0] || 'text_analysis';
+        return `
+        <div style="padding:24px;text-align:center">
+          <div style="font-size:36px;margin-bottom:12px">🔍</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:8px">${totalData}件のデータが蓄積されています</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.7">
+            症状パターン・改善のきっかけ・注意すべきトリガーを<br>AIが一気に分析します
+          </div>
+          <button onclick="app.runDeepAnalysis()" style="padding:14px 32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:300px">
+            🚀 今すぐ本格分析する
+          </button>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px">または上のプロンプトボタンから個別分析</div>
+        </div>`;
+      }
+      return Components.emptyState('🤖', 'AI分析を実行してください', '記録が3件以上たまると本格分析できます。まずはダッシュボードから体調を記録してみましょう。');
+    })()}
   </div>`;
 };
 
@@ -2077,6 +2557,21 @@ App.prototype.render_research = function() {
     </div>
   </div>
 
+  <!-- Research cache freshness banner — tells users how old the results are
+       and surfaces a one-click refresh when the cache is ≥3 days stale. -->
+  ${(() => {
+    const cached = store.get('researchResults');
+    if (!cached || !cached.savedAt) return '';
+    const ageDays = Math.floor((Date.now() - cached.savedAt) / 86400000);
+    if (ageDays < 3) return '';
+    const ageLabel = ageDays >= 30 ? `${Math.floor(ageDays / 30)}ヶ月` : `${ageDays}日`;
+    return `
+    <div style="margin-bottom:12px;padding:8px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#78350f">⏰ 検索結果は ${ageLabel}前のものです。</span>
+      <button onclick="app.searchPubMedLive()" style="padding:4px 12px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">今すぐ更新</button>
+    </div>`;
+  })()}
+
   <!-- PubMed Results -->
   <div id="pubmed-results">
     ${resultsHtml}
@@ -2102,18 +2597,53 @@ App.prototype.render_chat = function() {
     : store.get('selectedDisease')?.name || '健康';
 
   return `
-  <div style="margin-bottom:20px">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
-    <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
+  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:6px">相談する</h2>
+      <p style="font-size:13px;color:var(--text-secondary)">あなたの健康データに基づいて質問にお答えします</p>
+    </div>
+    ${history.length > 0 ? `<button onclick="app.clearChat()" style="padding:6px 12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:11px;cursor:pointer">🗑 会話をクリア</button>` : ''}
   </div>
   <div class="card">
     <div class="chat-container">
       <div class="chat-messages" id="chat-messages">
         ${messages || `
-          <div style="text-align:center;padding:40px;color:var(--text-muted)">
-            <div style="font-size:40px;margin-bottom:12px">💬</div>
-            <p>${Components.escapeHtml(diseaseLabelForChat)}について何でも質問してください</p>
-            <p style="font-size:12px;margin-top:8px">例：「今日の体調データから気をつけることは？」</p>
+          <div style="padding:20px">
+            <div style="text-align:center;padding:16px 0 20px;color:var(--text-muted)">
+              <div style="font-size:36px;margin-bottom:8px">💬</div>
+              <p style="font-size:13px">${Components.escapeHtml(diseaseLabelForChat)}について何でも相談できます</p>
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px">よく使われる質問</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${(() => {
+                const diseases = store.get('selectedDiseases') || [];
+                const diseaseQs = {
+                  mecfs: ['PEM（労作後倦怠感）を防ぐために今日できることは？', 'エネルギー管理（ペーシング）の具体的なコツを教えて'],
+                  fibromyalgia: ['今日の痛みを和らげるためのセルフケアは？', '天気・気温と症状の関係について教えて'],
+                  long_covid: ['ブレインフォグの対処法を教えて', 'コロナ後遺症の最新治療はどれくらい進んでいますか？'],
+                  depression: ['今の気分を改善するために今日できることは？', '薬を飲み始めてから何週間で効果が出ますか？'],
+                  insomnia: ['今夜できる睡眠改善の方法を教えて', '睡眠薬を使わずに眠れるようになる方法は？'],
+                  pots: ['立ちくらみを減らすために今日気をつけることは？', '水分・塩分の適切な摂り方を教えて'],
+                  diabetes_t2: ['今日の食事記録を見て何か改善点はありますか？', '低血糖の対処法と予防策を教えて'],
+                  diabetes: ['インスリン管理で気をつけることは何ですか？', '血糖値の変動パターンについて分析してください'],
+                  hashimoto: ['甲状腺機能低下の症状チェックリストを教えて', 'チロキシン服薬のタイミングや注意点は？'],
+                  migraine: ['頭痛のトリガーになりそうな記録はありますか？', '市販薬の飲みすぎによる薬物乱用頭痛を防ぐには？'],
+                  ibs: ['今日の食事で症状に影響しそうなものはありますか？', 'ローフォドマップ食の始め方を教えて'],
+                  ra: ['朝のこわばりを短くする工夫を教えて', 'MTXの副作用で注意すべきことは何ですか？'],
+                  bipolar: ['気分が波打つ時の早期サイン（プロドローム）は？', '薬を忘れずに飲むコツを教えて'],
+                  adhd: ['集中できない日のタスク管理方法を教えて', '薬が切れる時間帯に仕事をうまくこなすには？'],
+                };
+                const qs = new Set();
+                diseases.forEach(d => (diseaseQs[d] || []).forEach(q => qs.add(q)));
+                const fallback = ['今日の記録から見て、特に気をつけることは何ですか？', '最近の症状のパターンを分析して教えてください', '次の受診までに準備しておくことはありますか？', '今の症状に合わせたセルフケアを教えてください', '薬の飲み合わせや副作用について教えてください'];
+                const finalQs = [...qs, ...fallback].slice(0, 5);
+                return finalQs.map(q => `
+                  <button onclick="document.getElementById('chat-input').value=${JSON.stringify(q)};app.sendChat()"
+                    style="text-align:left;padding:9px 12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-primary);cursor:pointer;line-height:1.5">
+                    ${Components.escapeHtml(q)}
+                  </button>`).join('');
+              })()}
+            </div>
           </div>
         `}
       </div>
@@ -2212,9 +2742,22 @@ App.prototype.render_timeline = function() {
   // Sort by timestamp (newest first)
   allEntries.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
+  // Apply active filters
+  const activeTypeFilter = store.get('_timelineFilter') || '';
+  const activeTextFilter = (store.get('_timelineSearch') || '').toLowerCase().trim();
+  const filteredEntries = allEntries.filter(e => {
+    if (activeTypeFilter && e._type !== activeTypeFilter) return false;
+    if (activeTextFilter) {
+      const haystack = [e.content, e.text_note, e.title, e._label, e.category].join(' ').toLowerCase();
+      if (!haystack.includes(activeTextFilter)) return false;
+    }
+    return true;
+  });
+  const displayEntries = (activeTypeFilter || activeTextFilter) ? filteredEntries : allEntries;
+
   // Group by date
   const byDate = {};
-  allEntries.forEach(e => {
+  displayEntries.forEach(e => {
     const dateKey = e.timestamp ? new Date(e.timestamp).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' }) : '日付不明';
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(e);
@@ -2321,30 +2864,150 @@ App.prototype.render_timeline = function() {
       </div>`;
   };
 
-  // Render by date
-  const dateGroups = Object.entries(byDate).map(([dateStr, entries]) => `
+  // Render by date — show first PAGE_SIZE days initially for fast render.
+  // Each "load more" click increments app._timelinePage and re-renders.
+  const PAGE_SIZE = 30;
+  const page = (typeof app !== 'undefined' && app._timelinePage) || 1;
+  const dateEntries = Object.entries(byDate);
+  const visible = dateEntries.slice(0, PAGE_SIZE * page);
+  const hiddenCount = dateEntries.length - visible.length;
+
+  const renderDateGroup = ([dateStr, entries]) => `
     <div style="margin-bottom:24px">
       <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent);display:inline-block">${dateStr}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;display:inline;margin-left:10px">${entries.length}件</div>
       ${entries.map(renderEntry).join('')}
     </div>
-  `).join('');
+  `;
+
+  const loadMoreHtml = hiddenCount > 0 ? `
+    <div id="timeline-load-more" style="text-align:center;padding:12px 0;margin-bottom:16px">
+      <button onclick="app.loadMoreTimeline()" style="padding:10px 24px;background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer">
+        さらに読み込む（過去 ${hiddenCount} 日分）
+      </button>
+    </div>` : '';
+
+  const dateGroups = visible.map(renderDateGroup).join('') + loadMoreHtml;
+
+  // Quick stats bar — first/last entry date and recording span.
+  let timelineStatsHtml = '';
+  if (allEntries.length >= 2) {
+    const tsArr = allEntries.map(e => e.timestamp ? new Date(e.timestamp).getTime() : null).filter(Boolean);
+    if (tsArr.length) {
+      const oldestTs = new Date(Math.min(...tsArr));
+      const newestTs = new Date(Math.max(...tsArr));
+      const spanDays = Math.round((newestTs - oldestTs) / 86400000);
+      const textCount = (store.get('textEntries') || []).length;
+      const streakSt = app._computeStreak ? app._computeStreak() : null;
+      const streakPart = streakSt && streakSt.streak > 0 ? ` ／ 🔥${streakSt.streak}日連続` : '';
+      timelineStatsHtml = `<div style="margin-bottom:14px;padding:10px 16px;background:linear-gradient(90deg,#eef2ff,#fdf4ff);border-radius:12px;border:1px solid #c7d2fe;display:flex;gap:16px;flex-wrap:wrap;align-items:center"><div style="font-size:11px;color:#4338ca">${allEntries.length}件 ／ ${spanDays}日間 ／ 日記${textCount}件${streakPart}</div><div style="font-size:10px;color:#6366f1;margin-left:auto">${oldestTs.toLocaleDateString('ja-JP', {month:'short',day:'numeric'})} — ${newestTs.toLocaleDateString('ja-JP', {month:'short',day:'numeric'})}</div></div>`;
+    }
+  }
+
+  // 90-day activity heatmap (GitHub-style contribution graph)
+  let heatmapHtml = '';
+  if (allEntries.length > 0) {
+    const countByDay = {};
+    allEntries.forEach(e => {
+      if (!e.timestamp) return;
+      const key = new Date(e.timestamp).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      countByDay[key] = (countByDay[key] || 0) + 1;
+    });
+    const hmToday = new Date();
+    const HEAT_DAYS = 91;
+    const dayArr = Array.from({ length: HEAT_DAYS }, (_, i) => {
+      const d = new Date(hmToday);
+      d.setDate(d.getDate() - (HEAT_DAYS - 1 - i));
+      const key = d.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
+      return { d, key, count: countByDay[key] || 0 };
+    });
+    const startDow = dayArr[0].d.getDay();
+    const paddedDays = [...Array(startDow).fill(null), ...dayArr];
+    while (paddedDays.length % 7) paddedDays.push(null);
+    const grid = Array.from({ length: paddedDays.length / 7 }, (_, c) =>
+      Array.from({ length: 7 }, (_, r) => paddedDays[c * 7 + r])
+    );
+    const cellColor = c => c === 0 ? '#e8eaf0' : c <= 2 ? '#c7d2fe' : c <= 4 ? '#818cf8' : '#4338ca';
+    const dowLabels = ['日','月','火','水','木','金','土'];
+    const monthRow = grid.map((week, ci) => {
+      const first = week.find(Boolean);
+      if (!first) return '';
+      if (ci === 0) return `${first.d.getMonth() + 1}月`;
+      const prev = grid[ci - 1] && grid[ci - 1].find(Boolean);
+      return (!prev || prev.d.getMonth() !== first.d.getMonth()) ? `${first.d.getMonth() + 1}月` : '';
+    });
+    const todayStr = hmToday.toDateString();
+    const cellHtml = cell => {
+      if (!cell) return `<div style="width:11px;height:11px"></div>`;
+      const lbl = cell.d.toLocaleDateString('ja-JP', { month:'numeric', day:'numeric' });
+      return `<div title="${lbl}: ${cell.count}件" style="width:11px;height:11px;border-radius:2px;background:${cellColor(cell.count)};${cell.d.toDateString() === todayStr ? 'box-shadow:0 0 0 2px #6366f1;' : ''}"></div>`;
+    };
+    const activeDays = dayArr.filter(d => d.count > 0).length;
+    const totalHeat = dayArr.reduce((s, d) => s + d.count, 0);
+    heatmapHtml = `
+      <div style="margin-bottom:16px;padding:14px 16px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">記録カレンダー</span>
+          <span style="font-size:11px;color:var(--text-muted)">${activeDays}日記録・計${totalHeat}件 / 過去${HEAT_DAYS}日</span>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <div style="display:inline-flex;gap:2px">
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:18px">
+              ${dowLabels.map((l, i) => i % 2 === 1
+                ? `<div style="width:12px;height:11px;font-size:8px;color:var(--text-muted);display:flex;align-items:center;justify-content:flex-end;padding-right:2px">${l}</div>`
+                : `<div style="width:12px;height:11px"></div>`
+              ).join('')}
+            </div>
+            <div>
+              <div style="display:flex;gap:2px;margin-bottom:2px">
+                ${grid.map((_, ci) => monthRow[ci]
+                  ? `<div style="width:11px;font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:visible;height:16px;display:flex;align-items:flex-end">${monthRow[ci]}</div>`
+                  : `<div style="width:11px;height:16px"></div>`
+                ).join('')}
+              </div>
+              <div style="display:flex;gap:2px">
+                ${grid.map(week => `<div style="display:flex;flex-direction:column;gap:2px">${week.map(cellHtml).join('')}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:8px;font-size:10px;color:var(--text-muted)">
+          少<div style="width:10px;height:10px;border-radius:2px;background:#e8eaf0;margin-left:2px"></div><div style="width:10px;height:10px;border-radius:2px;background:#c7d2fe"></div><div style="width:10px;height:10px;border-radius:2px;background:#818cf8"></div><div style="width:10px;height:10px;border-radius:2px;background:#4338ca"></div>多
+        </div>
+      </div>`;
+  }
 
   return `
-  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
-      <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件のデータ（日記・検査・薬剤・バイタル・写真）</p>
+  ${timelineStatsHtml}
+  ${heatmapHtml}
+
+  <div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">経過・データ一覧</h2>
+        <p style="font-size:12px;color:var(--text-muted)">${allEntries.length}件（${(activeTypeFilter || activeTextFilter) ? `${displayEntries.length}件を表示` : '全件表示'}）</p>
+      </div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="timeline-search" type="search" class="form-input" placeholder="キーワード検索..." value="${Components.escapeHtml(store.get('_timelineSearch') || '')}"
+        style="flex:1;min-width:150px;padding:8px 12px;font-size:13px"
+        oninput="clearTimeout(this._t);this._t=setTimeout(()=>app.searchTimeline(this.value),300)">
       <select class="form-select" style="width:auto;font-size:12px" onchange="app.filterTimeline(this.value)">
-        <option value="">すべて表示</option>
-        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+        <option value="" ${!activeTypeFilter ? 'selected' : ''}>すべて</option>
+        ${Object.entries(categoryLabels).map(([k, v]) => `<option value="${k}" ${activeTypeFilter === k ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
+      ${(activeTypeFilter || activeTextFilter) ? `<button onclick="app.clearTimelineFilters()" style="padding:8px 12px;background:var(--bg-tertiary);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer">✕ クリア</button>` : ''}
     </div>
   </div>
   <div id="timeline-content">
-    ${allEntries.length > 0 ? dateGroups : Components.emptyState('📅', 'データがありません', 'ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br><a href="diag.html" style="color:var(--primary);font-size:12px">記録が見えない場合はデータ診断ツールで確認できます</a>')}
+    ${allEntries.length > 0 ? (displayEntries.length > 0 ? dateGroups : `<div style="padding:24px;text-align:center;color:var(--text-muted)">「${Components.escapeHtml(activeTextFilter || activeTypeFilter)}」に一致する記録は見つかりませんでした</div>`) : Components.emptyState('📅', 'データがありません', `
+      ダッシュボードから体調を記録すると、ここに時系列で表示されます。<br>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <button onclick="if(typeof FirebaseBackend!=='undefined'&&FirebaseBackend.initialized){FirebaseBackend.loadAllData().then(()=>app.navigate('timeline')).catch(()=>app.navigate('timeline'))}else{app.navigate('timeline')}"
+          style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">🔄 データを再読み込み</button>
+        <a href="diag.html" style="padding:6px 14px;background:var(--bg-tertiary);color:var(--text-secondary);border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">🔍 診断ツール</a>
+      </div>
+    `)}
   </div>
   <div id="image-preview-modal" class="image-preview-modal" hidden onclick="if(event.target===this)app.closeImagePreview()">
     <div class="image-preview-content">
@@ -2773,7 +3436,7 @@ App.prototype.render_integrations = function() {
 
 // Admin Page
 App.prototype.render_admin = function() {
-  const model = store.get('selectedModel') || 'claude-opus-4-6';
+  const model = store.get('selectedModel') || (CONFIG.AI_MODELS.find(m => m.default) || CONFIG.AI_MODELS[0] || {}).id || 'claude-opus-4-7';
   // Merge: DEFAULT_PROMPTS as base, user customPrompts override
   const userPrompts = store.get('customPrompts') || {};
   const prompts = { ...DEFAULT_PROMPTS, ...userPrompts };
@@ -3276,6 +3939,83 @@ App.prototype.render_settings = function() {
       </label>
     </div>
   </div>
+
+  <!-- Daily Reminder Notification -->
+  ${(() => {
+    const notifSupported = typeof Notification !== 'undefined';
+    const enabled = localStorage.getItem('reminder_enabled') === '1';
+    const permission = notifSupported ? Notification.permission : 'unsupported';
+    const reminderTime = localStorage.getItem('reminder_time') || '20:00';
+    if (!notifSupported) return '';
+    return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔔 毎日のリマインダー</span></div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        記録し忘れを防ぐため、毎日同じ時刻に通知を送ります。すでにその日に記録済みの場合は通知しません。
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer">
+        <input type="checkbox" id="reminder-toggle" ${enabled ? 'checked' : ''}
+          style="width:16px;height:16px;accent-color:var(--accent)"
+          onchange="app.toggleDailyReminder(this.checked)">
+        <span style="font-size:13px;font-weight:600">毎日リマインダーを有効にする</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:10px;${enabled ? '' : 'opacity:0.4;pointer-events:none'}">
+        <label style="font-size:12px;font-weight:600;white-space:nowrap">通知時刻</label>
+        <input type="time" id="reminder-time-input" value="${Components.escapeHtml(reminderTime)}"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-primary)"
+          onchange="localStorage.setItem('reminder_time',this.value);app.setupDailyReminder();Components.showToast('通知時刻を更新しました','success')">
+      </div>
+      ${permission === 'denied' ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fef2f2;border-radius:8px;font-size:11px;color:#991b1b">
+        ⚠️ 通知がブロックされています。ブラウザの設定から cares.advisers.jp の通知を許可してください。
+      </div>` : ''}
+    </div>
+  </div>`;
+  })()}
+
+  <!-- Medication Reminders -->
+  ${(() => {
+    const notifSupported = typeof Notification !== 'undefined';
+    if (!notifSupported) return '';
+    const reminders = JSON.parse(localStorage.getItem('med_reminders') || '[]');
+    const permission = Notification.permission;
+    return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <span class="card-title">💊 服薬リマインダー</span>
+      <span class="tag tag-accent" style="font-size:10px">${reminders.length}件</span>
+    </div>
+    <div class="card-body" style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.7">
+        薬の名前と服薬時刻を登録すると、毎日その時刻に通知します。
+      </div>
+      <div id="med-reminders-list" style="margin-bottom:12px">
+        ${reminders.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);padding:6px 0">まだ登録されていません</div>' : reminders.map((r, i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg-tertiary);border-radius:8px;margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:6px;flex:1;cursor:pointer">
+              <input type="checkbox" ${r.enabled !== false ? 'checked' : ''} style="accent-color:var(--accent)"
+                onchange="app.toggleMedReminder(${i},this.checked)">
+              <span style="font-size:13px;font-weight:600">${Components.escapeHtml(r.name)}</span>
+            </label>
+            <span style="font-size:12px;color:var(--text-muted);font-family:monospace">${Components.escapeHtml(r.time)}</span>
+            <button onclick="app.removeMedReminder(${i})" style="padding:2px 8px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:6px;font-size:11px;cursor:pointer">削除</button>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input id="med-name-input" type="text" placeholder="薬の名前（例：リリカ 75mg）" class="form-input"
+          style="flex:1;min-width:140px;padding:7px 10px;font-size:12px">
+        <input id="med-time-input" type="time" class="form-input"
+          style="width:100px;padding:7px 10px;font-size:12px" value="08:00">
+        <button onclick="app.addMedReminder()" style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">追加</button>
+      </div>
+      ${permission === 'denied' ? `
+      <div style="margin-top:10px;padding:8px 12px;background:#fef2f2;border-radius:8px;font-size:11px;color:#991b1b">
+        ⚠️ 通知がブロックされています。ブラウザの設定から通知を許可してください。
+      </div>` : ''}
+    </div>
+  </div>`;
+  })()}
 
   <!-- Share / Referral -->
   ${(() => {

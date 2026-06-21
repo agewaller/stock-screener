@@ -1614,40 +1614,59 @@ img, video, iframe, table, pre, code, svg { max-width: 100%; }
 </head>
 <body>
 <script>
-// Defensive cleanup of any stale Service Worker. Earlier app versions
-// (a9d314a, cf528a4, 738fcd1, etc.) registered '/sw.js' as a PWA worker
-// with a cache-first strategy. Even though the current code no longer
-// registers any SW, users who visited during those builds still have
-// the OLD worker active in their browser, serving cached old HTML/JS
-// FOREVER. That's the root of the "永遠にエラーが続く" reports — those
-// users keep running pre-fix code that throws "APIキーが未設定です" no
-// matter how many times we deploy fixes. Run this on every load to
-// remove the stale worker; on the next page load they'll fall through
-// to the live network and pick up the latest code.
+// Service Worker lifecycle management.
+//
+// Background: Earlier builds (a9d314a, cf528a4, 738fcd1, etc.) registered
+// '/sw.js' with a cache-first strategy. Deployed fixes were invisible to
+// users still running the stale cached code ("永遠にエラーが続く" reports).
+// A one-time cleanup was deployed that unregistered all SWs and cleared
+// caches, then reloaded once (flagged by 'sw_purged_v1' in sessionStorage).
+//
+// Now that the stale-SW migration is complete, we restore SW registration
+// so the app is installable as a PWA (Add to Home Screen, offline caching).
+// The cleanup only runs for new sessions that still have a stale SW active
+// (extremely rare at this point). After cleanup (or on a clean first visit),
+// we register the current sw.js which has network-first strategy for app
+// files and cache-first for static assets.
 (function () {
   if (!('serviceWorker' in navigator)) return;
   try {
     navigator.serviceWorker.getRegistrations().then(function (regs) {
-      var hadAny = regs && regs.length > 0;
-      regs.forEach(function (r) { try { r.unregister(); } catch (_) {} });
-      if (hadAny && 'caches' in window) {
-        // Wipe the SW-managed Cache Storage too — those entries are
-        // what the stale worker was serving from.
+      // Check if any registered SW is stale (has an old cache name).
+      // Current cache names look like 'health-diary-v1-XXXXXXXX'.
+      // Old stale workers either have no cache or old names.
+      var hasStale = false;
+      if (regs.length > 0 && 'caches' in window) {
+        // A SW with the wrong scriptURL (not our /sw.js) is definitely stale.
+        regs.forEach(function (r) {
+          try {
+            var url = (r.active || r.installing || r.waiting || {}).scriptURL || '';
+            if (url && !url.endsWith('/sw.js')) { hasStale = true; }
+          } catch (_) {}
+        });
+      }
+      if (hasStale) {
+        // Unregister stale workers and clean their caches.
+        regs.forEach(function (r) { try { r.unregister(); } catch (_) {} });
         try {
           caches.keys().then(function (names) {
             names.forEach(function (n) { try { caches.delete(n); } catch (_) {} });
           });
         } catch (_) {}
-        // Mark the cleanup so we hard-reload exactly once. Skipping the
-        // reload would leave the user on the same broken page-load.
         try {
           if (!sessionStorage.getItem('sw_purged_v1')) {
             sessionStorage.setItem('sw_purged_v1', '1');
             location.reload();
+            return;
           }
         } catch (_) {}
       }
-    }).catch(function () { /* ignore — SW unsupported in some browsers */ });
+      // Register (or update) the current service worker.
+      navigator.serviceWorker.register('/sw.js').catch(function () { /* offline or unsupported */ });
+    }).catch(function () {
+      // getRegistrations failed — try to register anyway.
+      try { navigator.serviceWorker.register('/sw.js').catch(function(){}); } catch (_) {}
+    });
   } catch (_) {}
 })();
 </script>
