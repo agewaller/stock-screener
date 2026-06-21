@@ -26,10 +26,13 @@
  */
 
 // ────────────────────────────────────────────────
-// CORS — Origin を本番 + ステージングのみに制限
+// CORS — Origin を本番 + ステージング + 外部の解説ページに制限
+//   - https://agewaller.github.io : World Effect Benchmark フォークの
+//     GitHub Pages。同梱の interpret.html がこの relay を呼ぶため許可する
+//     （鍵は relay/worker 側だけ。ページは鍵を持たない）。
 // ────────────────────────────────────────────────
 const DEFAULT_ALLOWED =
-  'https://cares.advisers.jp,https://cares-staging.agewaller.workers.dev';
+  'https://cares.advisers.jp,https://cares-staging.agewaller.workers.dev,https://agewaller.github.io';
 
 function getAllowedOrigins(env) {
   const raw = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED;
