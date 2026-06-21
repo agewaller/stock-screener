@@ -3364,8 +3364,17 @@ App.prototype.openInBrowser = async function() {
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
+    // window.prompt() is blocked in PWA/WebView — show a selectable input instead
     try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
+      const box = document.createElement('div');
+      box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;padding:18px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);width:90%;max-width:380px';
+      box.innerHTML = '<div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px">URLをコピーして Safari/Chrome で開いてください</div>'
+        + '<input readonly style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #6366f1;border-radius:8px;font-size:12px;color:#374151" value="' + Components.escapeHtml(url) + '">'
+        + '<div style="display:flex;justify-content:flex-end;margin-top:10px"><button onclick="this.closest(\'div[style]\').remove()" style="padding:8px 18px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">閉じる</button></div>';
+      document.body.appendChild(box);
+      const input = box.querySelector('input');
+      input.select();
+      try { document.execCommand('copy'); Components.showToast('URLをコピーしました', 'success'); } catch (_) {}
     } catch (_) {
       Components.showToast('URLのコピーに失敗しました', 'error');
     }
