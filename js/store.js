@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: 'claude-opus-4-8',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -392,9 +392,14 @@ var Store = class Store {
       if (v !== null) preserved[k] = v;
     });
 
-    localStorage.clear();
+    // Delete only non-preserved keys — never call localStorage.clear()
+    // which would wipe Firebase config and integration tokens.
+    Object.keys(localStorage).forEach(k => {
+      if (!PRESERVE_KEYS.includes(k)) localStorage.removeItem(k);
+    });
 
-    // Restore preserved device-level config
+    // Restore preserved device-level config (may have been deleted above
+    // if a key was collected before the forEach ran — restore to be safe)
     Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
 
     Object.keys(this.state).forEach(key => {
@@ -404,7 +409,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    this.state.selectedModel = 'claude-opus-4-8';
   }
 };
 

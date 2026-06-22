@@ -3364,11 +3364,17 @@ App.prototype.openInBrowser = async function() {
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
-    try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
-    } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
-    }
+    // window.prompt is blocked on many mobile browsers — show a
+    // selectable input the user can long-press to copy instead.
+    const existing = document.getElementById('url-copy-fallback');
+    if (existing) { existing.select(); return; }
+    const wrap = document.createElement('div');
+    wrap.id = 'url-copy-fallback';
+    wrap.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.15)';
+    wrap.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">長押しでコピーしてください</div><input id="url-copy-input" readonly value="${Components.escapeHtml(url)}" style="width:100%;font-size:11px;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box"><button onclick="document.getElementById('url-copy-fallback').remove()" style="margin-top:8px;font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer">閉じる</button>`;
+    document.body.appendChild(wrap);
+    const inp = document.getElementById('url-copy-input');
+    if (inp) { inp.focus(); inp.select(); }
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {

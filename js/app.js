@@ -390,7 +390,7 @@ var App = class App {
         this.afterRender(page);
       } catch(err) {
         console.error('Page render error:', page, err);
-        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${Components.escapeHtml(err.message || '')}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
       }
     }
   }
@@ -742,9 +742,9 @@ var App = class App {
     const model = store.get('selectedModel') || 'claude-opus-4-7';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
-      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${Components.escapeHtml(model)}）: ${typeof response === 'string' ? Components.escapeHtml(response.substring(0, 100)) : 'OK'}</div>`;
     } catch (err) {
-      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${err.message}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${Components.escapeHtml(err.message || '')}</div>`;
     }
   }
 
@@ -1273,7 +1273,7 @@ var App = class App {
       if (resultArea) this.renderAnalysisResult(result, resultArea);
       Components.showToast('分析が完了しました', 'success');
     } catch (err) {
-      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${err.message}</div>`;
+      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${Components.escapeHtml(err.message || '')}</div>`;
       Components.showToast('分析に失敗しました', 'error');
     }
   }
@@ -3279,12 +3279,34 @@ ${responseText.substring(0, 3000)}`;
         setTimeout(() => { btn.textContent = orig; }, 1800);
       }
     };
+    const fallback = () => {
+      // Show a selectable textarea instead of window.prompt (blocked on mobile).
+      const existing = document.getElementById('share-text-fallback');
+      if (existing) existing.remove();
+      const wrap = document.createElement('div');
+      wrap.id = 'share-text-fallback';
+      wrap.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 4px 20px rgba(0,0,0,.15)';
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.readOnly = true;
+      ta.style.cssText = 'width:100%;height:120px;font-size:11px;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;resize:none';
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '閉じる';
+      closeBtn.style.cssText = 'margin-top:8px;font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer';
+      closeBtn.onclick = () => wrap.remove();
+      const label = document.createElement('div');
+      label.textContent = '長押しで全選択してコピーしてください';
+      label.style.cssText = 'font-size:12px;color:var(--text-muted);margin-bottom:6px';
+      wrap.appendChild(label);
+      wrap.appendChild(ta);
+      wrap.appendChild(closeBtn);
+      document.body.appendChild(wrap);
+      ta.focus(); ta.select();
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      fallback();
     }
   }
 
@@ -7517,8 +7539,24 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+
+    // Inline confirmation — CLAUDE.md forbids window.prompt on mobile.
+    const confirmed = await new Promise(resolve => {
+      const safeId = Components.escapeHtml(backupId);
+      if (out) out.innerHTML = `
+        <div style="padding:12px;background:var(--warning-bg,#fefce8);border:1px solid var(--warning,#ca8a04);border-radius:8px;font-size:13px">
+          <div style="margin-bottom:8px;font-weight:600">「${safeId}」から復元しますか？</div>
+          <div style="color:var(--text-muted);margin-bottom:10px;font-size:12px">本日のデータも残ります（マージ動作）。</div>
+          <button id="restore-confirm-btn" style="padding:6px 14px;background:var(--danger,#dc2626);color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:8px">復元する</button>
+          <button id="restore-cancel-btn" style="padding:6px 14px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:6px;cursor:pointer">キャンセル</button>
+        </div>`;
+      const confirmBtn = document.getElementById('restore-confirm-btn');
+      const cancelBtn = document.getElementById('restore-cancel-btn');
+      if (confirmBtn) confirmBtn.onclick = () => resolve(true);
+      if (cancelBtn) cancelBtn.onclick = () => { resolve(false); if (out) out.innerHTML = ''; };
+    });
+    if (!confirmed) return;
+
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
