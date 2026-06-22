@@ -837,19 +837,6 @@ var App = class App {
     }
   }
 
-  loginWithPrompt() {
-    const email = prompt('Googleアカウントのメールアドレスを入力してください:', 'agewaller@gmail.com');
-    if (!email) return;
-    const user = {
-      uid: 'local_' + email.replace(/[^a-z0-9]/gi, '_'),
-      displayName: email.split('@')[0],
-      email: email,
-      photoURL: null
-    };
-    store.update({ user, isAuthenticated: true });
-    this.finishLogin(email);
-  }
-
   finishLogin(email) {
     // Save custom disease name if selected
     const customInput = document.getElementById('custom-disease-name');
@@ -2096,7 +2083,7 @@ ${titles}`;
       await Integrations.fitbit.importToday();
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">今日のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || "")}</div>`;
     }
   }
 
@@ -2107,7 +2094,7 @@ ${titles}`;
       await Integrations.fitbit.importHistory(7);
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">過去7日分のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || "")}</div>`;
     }
   }
 
@@ -2119,7 +2106,7 @@ ${titles}`;
       const count = await Integrations.importFile(file);
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">${count}件のデータを取り込みました</div>`;
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err.message || "")}</div>`;
     }
   }
 
@@ -2141,7 +2128,7 @@ ${titles}`;
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ ${events.length}件のイベントを取り込みました</div>`;
       Components.showToast(`カレンダーから${events.length}件取り込みました`, 'success');
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err.message || "")}</div>`;
       Components.showToast(err.message, 'error');
     }
   }
@@ -2240,7 +2227,7 @@ ${titles}`;
         this.showGoogleCalendarIcsFallback(status);
         return;
       }
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err.message || "")}</div>`;
       Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
     }
   }

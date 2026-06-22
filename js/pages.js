@@ -3232,7 +3232,7 @@ App.prototype.render_settings = function() {
     <div class="card-header"><span class="card-title">プロフィール</span></div>
     <div class="card-body" style="padding:12px 16px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${user.displayName?.[0] || '?'}</div>
+        <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${Components.escapeHtml((user.displayName?.[0]) || '?')}</div>
         <div>
           <div style="font-size:14px;font-weight:600">${Components.escapeHtml(user.displayName || 'ゲスト')}</div>
           <div style="font-size:12px;color:var(--text-muted)">${Components.escapeHtml(user.email || '')}</div>

@@ -516,7 +516,7 @@ ${avoidBlock}
       return [{ model: preferredModel, callFn: this.callGoogle }];
     }
     return uniq([
-      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      { model: preferredModel || 'claude-opus-4-8', callFn: this.callAnthropic },
       opus, sonnet, haiku
     ]);
   }
