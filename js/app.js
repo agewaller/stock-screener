@@ -406,6 +406,8 @@ var App = class App {
     if (page === 'login') {
       try { this.updateSelectedDiseaseScale(); } catch (_) {}
       try { this.loadPublicUserCount(); } catch (_) {}
+      // Firebase が初期化前だとカウントが空になる場合があるため 2.5 秒後にリトライ
+      setTimeout(() => { try { this.loadPublicUserCount(); } catch (_) {} }, 2500);
     }
     // Surface the first-time user onboarding widget on dashboard
     // when the user has 0 records. This pushes them into their
@@ -739,7 +741,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -3279,12 +3281,20 @@ ${responseText.substring(0, 3000)}`;
         setTimeout(() => { btn.textContent = orig; }, 1800);
       }
     };
+    const execCopy = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch (_) { done(); }
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(execCopy);
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      execCopy();
     }
   }
 
@@ -4396,7 +4406,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
+        modelId = store.get('selectedModel') || 'claude-opus-4-8';
       }
 
       const rawResponse = await Promise.race([
@@ -6744,7 +6754,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || 'claude-opus-4-7';
+      const modelId = store.get('selectedModel') || 'claude-opus-4-8';
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7306,7 +7316,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
@@ -7517,8 +7527,20 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    this._confirmRestoreFromBackup(backupId, out);
+  }
+
+  _confirmRestoreFromBackup(backupId, out) {
+    if (out) out.innerHTML = `
+      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-top:8px">
+        <p style="margin:0 0 8px;font-size:14px">「${Components.escapeHtml(backupId)}」のバックアップから復元します。<br>本日のデータも残ります（マージ動作）。</p>
+        <button onclick="app._executeRestoreFromBackup('${Components.escapeHtml(backupId)}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;margin-right:8px">復元する</button>
+        <button onclick="document.getElementById('backup-list-result').innerHTML=''" style="background:#e5e7eb;color:#374151;border:none;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer">キャンセル</button>
+      </div>`;
+  }
+
+  async _executeRestoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
