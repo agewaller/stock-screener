@@ -739,7 +739,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -3279,12 +3279,17 @@ ${responseText.substring(0, 3000)}`;
         setTimeout(() => { btn.textContent = orig; }, 1800);
       }
     };
+    const execCopy = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (_) { Components.showToast?.('コピーできませんでした', 'error'); }
+      document.body.removeChild(ta);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(execCopy);
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      execCopy();
     }
   }
 
@@ -4396,7 +4401,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
+        modelId = store.get('selectedModel') || 'claude-opus-4-8';
       }
 
       const rawResponse = await Promise.race([
@@ -6744,7 +6749,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || 'claude-opus-4-7';
+      const modelId = store.get('selectedModel') || 'claude-opus-4-8';
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7306,7 +7311,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
@@ -7514,11 +7519,19 @@ ${joined.substring(0, 8000)}`;
   // are overwritten (idempotent), and missing ones are recreated. We
   // never delete a live doc that's not in the backup, so a restore
   // is non-destructive.
-  async restoreFromBackup(backupId) {
+  restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    const safeId = Components.escapeHtml(backupId);
+    if (out) out.innerHTML = `<div style="padding:12px;background:var(--warning-bg,#fff7ed);border:1px solid var(--warning,#f59e0b);border-radius:var(--radius-sm,6px)">
+      <p style="margin:0 0 10px;font-size:14px">「${safeId}」から復元します。本日のデータも残ります（マージ動作）。</p>
+      <button class="btn btn-danger btn-sm" style="margin-right:8px" onclick="app._executeRestoreFromBackup('${safeId}')">復元する</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('backup-list-result').innerHTML=''">キャンセル</button>
+    </div>`;
+  }
+
+  async _executeRestoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();

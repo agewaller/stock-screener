@@ -51,7 +51,7 @@ var Store = class Store {
 
       // Admin
       adminMode: false,
-      selectedModel: 'claude-opus-4-6',
+      selectedModel: 'claude-opus-4-8',
       customPrompts: {},
       dashboardLayout: 'default',
       affiliateConfig: {},
@@ -404,7 +404,7 @@ var Store = class Store {
     this.state.isAuthenticated = false;
     this.state.user = null;
     this.state.currentPage = 'login';
-    this.state.selectedModel = 'claude-opus-4-6';
+    this.state.selectedModel = 'claude-opus-4-8';
   }
 };
 

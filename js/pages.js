@@ -3364,11 +3364,12 @@ App.prototype.openInBrowser = async function() {
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
   const fallback = () => {
-    try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
-    } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
-    }
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); Components.showToast('URLをコピーしました。ブラウザのアドレスバーに貼り付けてください', 'success'); }
+    catch (_) { Components.showToast('URLのコピーに失敗しました', 'error'); }
+    document.body.removeChild(ta);
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(url).then(() => {
