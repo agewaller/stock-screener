@@ -3363,19 +3363,20 @@ App.prototype.openInBrowser = async function() {
 
 App.prototype.copyCurrentUrl = function() {
   const url = (typeof location !== 'undefined') ? location.href : 'https://cares.advisers.jp';
-  const fallback = () => {
-    try {
-      window.prompt('以下のURLをコピーしてSafari/Chromeで開いてください:', url);
-    } catch (_) {
-      Components.showToast('URLのコピーに失敗しました', 'error');
-    }
+  const done = () => Components.showToast('URLをコピーしました。Safari/Chromeのアドレスバーに貼り付けてください', 'success');
+  const execCopy = () => {
+    const el = document.createElement('textarea');
+    el.value = url;
+    el.style.cssText = 'position:fixed;top:-999px;left:-999px';
+    document.body.appendChild(el);
+    el.select();
+    try { document.execCommand('copy'); done(); } catch (_) { Components.showToast('URLのコピーに失敗しました', 'error'); }
+    document.body.removeChild(el);
   };
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => {
-      Components.showToast('URLをコピーしました。Safari/Chromeのアドレスバーに貼り付けてください', 'success');
-    }).catch(fallback);
+    navigator.clipboard.writeText(url).then(done).catch(execCopy);
   } else {
-    fallback();
+    execCopy();
   }
 };
 
