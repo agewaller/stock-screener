@@ -390,7 +390,7 @@ var App = class App {
         this.afterRender(page);
       } catch(err) {
         console.error('Page render error:', page, err);
-        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${err.message}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
+        content.innerHTML = `<div style="padding:20px"><p>ページの読み込みエラー</p><p style="font-size:12px;color:#94a3b8">${Components.escapeHtml(err.message || String(err))}</p><button onclick="store.clearAll();location.reload()" style="margin-top:10px;padding:8px 16px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer">リセットして再読み込み</button></div>`;
       }
     }
   }
@@ -742,9 +742,9 @@ var App = class App {
     const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
-      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${Components.escapeHtml(model)}）: ${Components.escapeHtml(typeof response === 'string' ? response.substring(0, 100) : 'OK')}</div>`;
     } catch (err) {
-      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${err.message}</div>`;
+      if (result) result.innerHTML = `<div style="color:var(--danger);font-size:12px;padding:8px;background:var(--danger-bg);border-radius:var(--radius-sm)">接続失敗: ${Components.escapeHtml(err.message || String(err))}</div>`;
     }
   }
 
@@ -1273,7 +1273,7 @@ var App = class App {
       if (resultArea) this.renderAnalysisResult(result, resultArea);
       Components.showToast('分析が完了しました', 'success');
     } catch (err) {
-      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${err.message}</div>`;
+      if (resultArea) resultArea.innerHTML = `<div style="color:var(--danger);padding:20px">分析エラー: ${Components.escapeHtml(err?.message || String(err))}</div>`;
       Components.showToast('分析に失敗しました', 'error');
     }
   }
@@ -3231,37 +3231,25 @@ ${responseText.substring(0, 3000)}`;
       asthma: '#気管支喘息', ckd: '#慢性腎臓病',
       heart_failure: '#心不全', gout: '#痛風',
       osteoporosis: '#骨粗鬆症', menopause: '#更年期障害',
-      schizophrenia: '#統合失調症',
-      alzheimers: '#アルツハイマー病',
-      sad: '#社会不安障害',
-      anorexia: '#摂食障害',
-      thyroid_cancer: '#甲状腺がん',
-      sleep_apnea: '#睡眠時無呼吸症候群',
-      copd: '#COPD',
-      liver_disease: '#慢性肝疾患',
-      cancer_fatigue: '#がん治療副作用',
-      hypertension: '#高血圧',
-      hyperlipidemia: '#脂質異常症',
-      anemia: '#貧血',
-      allergic_rhinitis: '#アレルギー性鼻炎',
-      psoriasis: '#乾癬',
-      chronic_urticaria: '#慢性蕁麻疹',
-      pms_pmdd: '#PMS月経前症候群',
-      overactive_bladder: '#過活動膀胱',
-      tinnitus: '#耳鳴り',
-      vertigo: '#めまい',
-      dry_eye: '#ドライアイ',
-      chronic_prostatitis: '#慢性前立腺炎',
-      ulcerative_colitis: '#潰瘍性大腸炎',
-      panic: '#パニック障害',
-      ankylosing_spondylitis: '#強直性脊椎炎',
-      hyperthyroidism: '#バセドウ病甲状腺機能亢進症',
-      narcolepsy: '#ナルコレプシー過眠症',
-      osteoarthritis: '#変形性関節症',
-      sjogrens: '#シェーグレン症候群',
-      atrial_fibrillation: '#心房細動',
-      myasthenia: '#重症筋無力症',
-      pcos: '#多嚢胞性卵巣症候群PCOS'
+      schizophrenia: '#統合失調症', alzheimers: '#アルツハイマー病',
+      sad: '#社会不安障害', anorexia: '#摂食障害',
+      thyroid_cancer: '#甲状腺がん', sleep_apnea: '#睡眠時無呼吸症候群',
+      copd: '#COPD', liver_disease: '#慢性肝疾患', cancer_fatigue: '#がん治療副作用',
+      hypertension: '#高血圧', hyperlipidemia: '#脂質異常症', anemia: '#貧血',
+      allergic_rhinitis: '#アレルギー性鼻炎', psoriasis: '#乾癬',
+      chronic_urticaria: '#慢性蕁麻疹', pms_pmdd: '#PMS月経前症候群',
+      overactive_bladder: '#過活動膀胱', tinnitus: '#耳鳴り',
+      vertigo: '#めまい', dry_eye: '#ドライアイ', chronic_prostatitis: '#慢性前立腺炎',
+      ulcerative_colitis: '#潰瘍性大腸炎', ankylosing_spondylitis: '#強直性脊椎炎',
+      hyperthyroidism: '#バセドウ病甲状腺機能亢進症', narcolepsy: '#ナルコレプシー過眠症',
+      osteoarthritis: '#変形性関節症', atrial_fibrillation: '#心房細動',
+      myasthenia: '#重症筋無力症', pcos: '#多嚢胞性卵巣症候群PCOS',
+      eating: '#摂食障害', uc: '#潰瘍性大腸炎', cptsd: '#複雑性PTSD',
+      diabetes_t1: '#1型糖尿病', diabetes_t2: '#2型糖尿病',
+      thyroid_hypo: '#甲状腺機能低下症', thyroid_hyper: '#甲状腺機能亢進症',
+      als: '#ALS筋萎縮性側索硬化症', adrenal: '#副腎機能不全',
+      gerd: '#逆流性食道炎', cancer_survivor: '#がんサバイバー',
+      ankylosing: '#強直性脊椎炎', lyme: '#ライム病', arrhythmia: '#不整脈'
     }[primaryId] || '#慢性疾患';
     return `【今日の新処方 / ${axisLabel}】\n${cleaned}\n\n慢性疾患と寄り添う AI 記録アプリ「健康日記」 ${diseaseHashtag} #慢性疾患 #健康日記`;
   }
@@ -3414,6 +3402,10 @@ ${responseText.substring(0, 3000)}`;
             style="padding:6px 12px;background:#06c755;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
             LINE
           </a>
+          <a href="https://api.whatsapp.com/send?text=${shareTextEncoded}%20${refUrlEncoded}" target="_blank" rel="noopener"
+            style="padding:6px 12px;background:#25d366;color:#fff;border-radius:14px;text-decoration:none;font-size:11px;font-weight:600">
+            WhatsApp
+          </a>
           <button onclick="app.copyAnalysisShare(this,${JSON.stringify(shareText + ' ' + refUrl).replace(/"/g, '&quot;')})"
             style="padding:6px 12px;background:#fff;color:#6366f1;border:1.5px solid #6366f1;border-radius:14px;cursor:pointer;font-size:11px;font-weight:600">
             📋 コピー
@@ -3439,7 +3431,7 @@ ${responseText.substring(0, 3000)}`;
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">おすすめ</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${result.products.map(p => `<a href="${p.url || '#'}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${p.name}</a>`).join('')}
+          ${result.products.map(p => { const safeUrl = (p.url && /^https?:\/\//i.test(p.url)) ? p.url : '#'; return `<a href="${safeUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-outline" style="font-size:10px">${Components.escapeHtml(p.name || '')}</a>`; }).join('')}
         </div>
       </div>`;
     }

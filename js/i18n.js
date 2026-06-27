@@ -287,6 +287,17 @@ var i18n = {
       try_now: 'अभी आज़माएँ (पंजीकरण अनावश्यक)', ask_button: 'पूछें', photo: 'फ़ोटो',
       register_free: 'मुफ़्त रजिस्टर करें', retry: 'पुनः प्रयास',
     },
+    it: {
+      app_name: 'Diario della Salute', app_subtitle: '~ Supporto alla remissione delle malattie croniche ~',
+      dashboard: 'Home', record: 'Registra', actions: 'Azioni', research: 'Ricerca',
+      ask_ai: 'Consulta', settings: 'Impostazioni', send: 'Invia', logout: 'Esci',
+      profile: 'Profilo', age: 'Età', gender: 'Sesso', height: 'Altezza', weight: 'Peso',
+      language: 'Lingua', login_google: 'Accedi con Google', login: 'Accedi',
+      email: 'Email', password: 'Password',
+      loading: 'Caricamento...', analyzing: 'Analisi in corso...', saved: 'Salvato', error: 'Errore',
+      try_now: 'Prova subito (senza registrazione)', ask_button: 'Chiedi', photo: 'Foto',
+      register_free: 'Registrati gratis', retry: 'Riprova',
+    },
   },
 
   t(key) {

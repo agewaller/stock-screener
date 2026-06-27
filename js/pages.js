@@ -75,6 +75,7 @@ App.prototype.render_login = function() {
           <option value="vi" ${(store.get('userProfile')?.language) === 'vi' ? 'selected' : ''}>Tiếng Việt</option>
           <option value="ar" ${(store.get('userProfile')?.language) === 'ar' ? 'selected' : ''}>العربية</option>
           <option value="hi" ${(store.get('userProfile')?.language) === 'hi' ? 'selected' : ''}>हिन्दी</option>
+          <option value="it" ${(store.get('userProfile')?.language) === 'it' ? 'selected' : ''}>Italiano</option>
         </select>
       </div>
 
@@ -3302,6 +3303,8 @@ App.prototype.render_settings = function() {
           style="padding:8px 14px;background:#000;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">𝕏 ポストする</a>
         <a href="${Components.escapeHtml(lineUrl)}" target="_blank" rel="noopener"
           style="padding:8px 14px;background:#06c755;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">LINE</a>
+        <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + refUrl)}" target="_blank" rel="noopener"
+          style="padding:8px 14px;background:#25d366;color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none">WhatsApp</a>
         <button onclick="navigator.share&&navigator.share({title:'健康日記',text:${JSON.stringify(shareText)},url:${JSON.stringify(refUrl)}})"
           style="padding:8px 14px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">📤 共有</button>
       </div>
