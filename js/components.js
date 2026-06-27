@@ -90,8 +90,8 @@ var Components = {
       <div class="stat-card">
         <div style="display:flex;justify-content:space-between;align-items:start">
           <div>
-            <div class="stat-card-label">${label}</div>
-            <div class="stat-card-value">${value}</div>
+            <div class="stat-card-label">${this.escapeHtml(String(label ?? ''))}</div>
+            <div class="stat-card-value">${this.escapeHtml(String(value ?? ''))}</div>
             ${change !== undefined ? `<div class="stat-card-change ${changeClass}">${changeIcon} ${Math.abs(change)}%</div>` : ''}
           </div>
           ${icon ? `<span style="font-size:24px;opacity:0.6">${icon}</span>` : ''}

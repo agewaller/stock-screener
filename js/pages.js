@@ -2304,7 +2304,7 @@ App.prototype.render_timeline = function() {
         <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
           <span>📸</span>
           ${e.dataUrl ? `<img class="record-thumbnail" src="${e.dataUrl}" alt="${safeFileName}" onclick="app.openImagePreview(this.src, this.alt)">` : ''}
-          <span style="font-size:12px;flex:1">${safeFileName} (${e.type || ''}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
+          <span style="font-size:12px;flex:1">${safeFileName} (${Components.escapeHtml(e.type || '')}, ${e.size ? (e.size/1024).toFixed(0)+'KB' : ''})</span>
           <span style="font-size:11px;color:var(--text-muted)">${time}</span>
         </div>`;
     }
@@ -2317,7 +2317,7 @@ App.prototype.render_timeline = function() {
     return `
       <div style="display:flex;align-items:start;gap:10px;padding:8px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:6px">
         <span>${e._icon}</span>
-        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || e._label}</div>
+        <div style="font-size:12px;flex:1;line-height:1.6">${dataFields || Components.escapeHtml(String(e._label || ''))}</div>
         <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${time}</span>
       </div>`;
   };
@@ -3233,7 +3233,7 @@ App.prototype.render_settings = function() {
     <div class="card-header"><span class="card-title">プロフィール</span></div>
     <div class="card-body" style="padding:12px 16px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${user.displayName?.[0] || '?'}</div>
+        <div class="user-avatar" style="width:40px;height:40px;font-size:16px">${Components.escapeHtml((user.displayName?.[0]) || '?')}</div>
         <div>
           <div style="font-size:14px;font-weight:600">${Components.escapeHtml(user.displayName || 'ゲスト')}</div>
           <div style="font-size:12px;color:var(--text-muted)">${Components.escapeHtml(user.email || '')}</div>

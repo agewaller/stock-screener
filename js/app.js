@@ -1944,7 +1944,7 @@ ${titles}`;
     if (p.summary) {
       html += `<div class="card" style="margin-bottom:20px"><div class="card-body">
         <h3 style="font-size:15px;font-weight:600;margin-bottom:10px">分析サマリー</h3>
-        <p style="font-size:13px;color:var(--text-secondary);line-height:1.8">${p.summary}</p>
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.8">${Components.formatMarkdown(p.summary)}</p>
       </div></div>`;
     }
 
@@ -1953,7 +1953,7 @@ ${titles}`;
       html += '<div style="margin-bottom:20px">';
       p.riskAlerts.forEach(a => {
         const c = a.level === 'warning' ? 'var(--warning)' : 'var(--info)';
-        html += `<div style="padding:12px 16px;background:${c}15;border-left:3px solid ${c};border-radius:0 8px 8px 0;margin-bottom:8px;font-size:13px;color:var(--text-primary)">${a.message}</div>`;
+        html += `<div style="padding:12px 16px;background:${c}15;border-left:3px solid ${c};border-radius:0 8px 8px 0;margin-bottom:8px;font-size:13px;color:var(--text-primary)">${Components.escapeHtml(a.message || '')}</div>`;
       });
       html += '</div>';
     }
