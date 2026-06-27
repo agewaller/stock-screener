@@ -84,7 +84,10 @@ var AIEngine = class AIEngine {
       pt: '[IDIOMA DE RESPOSTA] Responda inteiramente em português (pt). Tom caloroso, empático e encorajador. O usuário é falante nativo de português. Todos os títulos, rótulos, marcadores e avisos devem estar em português.',
       de: '[ANTWORTSPRACHE] Antworte vollständig auf Deutsch (de). Warmer, einfühlsamer, ermutigender Ton. Der Nutzer ist deutscher Muttersprachler. Alle Überschriften, Beschriftungen, Aufzählungszeichen und Haftungsausschlüsse müssen auf Deutsch sein.',
       ar: '[لغة الرد] أجب بالكامل باللغة العربية (ar). بنبرة دافئة، متعاطفة، ومشجعة. المستخدم يتحدث العربية كلغة أم. يجب أن تكون جميع العناوين والتصنيفات والنقاط وإخلاء المسؤولية باللغة العربية.',
-      it: '[LINGUA DI RISPOSTA] Rispondi interamente in italiano (it). Tono caloroso, empatico e incoraggiante. L\'utente è madrelingua italiano. Tutti i titoli, le etichette, i punti elenco e i disclaimer devono essere in italiano.'
+      it: '[LINGUA DI RISPOSTA] Rispondi interamente in italiano (it). Tono caloroso, empatico e incoraggiante. L\'utente è madrelingua italiano. Tutti i titoli, le etichette, i punti elenco e i disclaimer devono essere in italiano.',
+      th: '[ภาษาในการตอบ] ตอบเป็นภาษาไทย (th) ทั้งหมด ใช้น้ำเสียงที่อบอุ่น เห็นอกเห็นใจ และให้กำลังใจ ผู้ใช้พูดภาษาไทยเป็นภาษาแม่ หัวข้อ ป้ายกำกับ รายการ และข้อจำกัดความรับผิดชอบทั้งหมดต้องเป็นภาษาไทย',
+      vi: '[NGÔN NGỮ PHẢN HỒI] Trả lời hoàn toàn bằng tiếng Việt (vi). Giọng điệu ấm áp, đồng cảm và khích lệ. Người dùng là người bản ngữ tiếng Việt. Tất cả tiêu đề, nhãn, dấu đầu dòng và tuyên bố từ chối trách nhiệm phải bằng tiếng Việt.',
+      hi: '[उत्तर की भाषा] पूरी तरह हिन्दी (hi) में उत्तर दें। गर्मजोशी भरे, सहानुभूतिपूर्ण और प्रोत्साहक स्वर में। उपयोगकर्ता हिन्दी मूल वक्ता हैं। सभी शीर्षक, लेबल, बुलेट और अस्वीकरण हिन्दी में होने चाहिए।'
     };
     return m[userLang] || m.en;
   }
