@@ -7,8 +7,40 @@
   "background_color": "#ffffff",
   "theme_color": "#6C63FF",
   "orientation": "portrait-primary",
+  "lang": "ja",
+  "categories": ["health", "medical", "lifestyle"],
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "shortcuts": [
+    {
+      "name": "記録する",
+      "short_name": "記録",
+      "description": "今日の体調・服薬・食事を記録",
+      "url": "/#/data-input",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ダッシュボード",
+      "short_name": "ホーム",
+      "description": "今日の状態を確認",
+      "url": "/#/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "タイムライン",
+      "short_name": "履歴",
+      "description": "過去の記録を振り返る",
+      "url": "/#/timeline",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "最新研究",
+      "short_name": "研究",
+      "description": "疾患の最新研究を見る",
+      "url": "/#/research",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
