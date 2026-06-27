@@ -2804,14 +2804,14 @@ App.prototype.render_admin = function() {
 
   const promptEditors = Object.entries(promptsByDisease).map(([diseaseId, promptList]) => `
     <div style="margin-bottom:24px">
-      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${diseaseLabels[diseaseId] || diseaseId}（${promptList.length}件）</h4>
+      <h4 style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;padding:6px 12px;background:var(--accent-bg);border-radius:var(--radius-xs);display:inline-block">${Components.escapeHtml(diseaseLabels[diseaseId] || diseaseId)}（${promptList.length}件）</h4>
       ${promptList.map(p => `
         <div class="card" style="margin-bottom:16px">
           <div class="card-header" style="padding:14px 20px">
             <div style="flex:1">
-              <input class="form-input" data-prompt-name="${p.key}" value="${p.name}"
+              <input class="form-input" data-prompt-name="${p.key}" value="${Components.escapeHtml(p.name || '')}"
                 style="font-weight:600;border:none;background:transparent;padding:0;font-size:14px;color:var(--text-primary);width:100%">
-              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.description || ''}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${Components.escapeHtml(p.description || '')}</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
               <select class="form-select" data-prompt-disease="${p.key}" style="font-size:11px;padding:4px 8px;width:auto">
@@ -2830,7 +2830,7 @@ App.prototype.render_admin = function() {
           </div>
           <div class="card-body" style="padding:0">
             <textarea class="form-textarea" data-prompt-text="${p.key}"
-              style="min-height:300px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;border:none;border-radius:0;border-top:1px solid var(--border);resize:vertical">${p.prompt}</textarea>
+              style="min-height:300px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;border:none;border-radius:0;border-top:1px solid var(--border);resize:vertical">${Components.escapeHtml(p.prompt || '')}</textarea>
           </div>
         </div>
       `).join('')}
@@ -2899,9 +2899,9 @@ App.prototype.render_admin = function() {
           <div class="card-header" style="padding:12px 16px;cursor:pointer" onclick="app.togglePromptEdit('${key}')">
             <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
               <span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;min-width:24px">${idx+1}</span>
-              <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</span>
-              <span class="tag tag-accent" style="font-size:9px;flex-shrink:0">${diseaseLabels[p.disease || '_universal'] || p.disease || '共通'}</span>
-              <span class="tag ${p.schedule==='daily'?'tag-success':p.schedule==='weekly'?'tag-info':'tag-warning'}" style="font-size:9px;flex-shrink:0">${p.schedule || 'manual'}</span>
+              <span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${Components.escapeHtml(p.name || '')}</span>
+              <span class="tag tag-accent" style="font-size:9px;flex-shrink:0">${Components.escapeHtml(diseaseLabels[p.disease || '_universal'] || p.disease || '共通')}</span>
+              <span class="tag ${p.schedule==='daily'?'tag-success':p.schedule==='weekly'?'tag-info':'tag-warning'}" style="font-size:9px;flex-shrink:0">${Components.escapeHtml(p.schedule || 'manual')}</span>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
               <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();app.savePrompt('${key}')" style="padding:3px 10px;font-size:11px">保存</button>
@@ -2912,7 +2912,7 @@ App.prototype.render_admin = function() {
             <div style="display:flex;gap:10px;padding:12px 16px;background:var(--bg-tertiary);border-bottom:1px solid var(--border);flex-wrap:wrap">
               <div style="flex:1;min-width:200px">
                 <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px">名前</label>
-                <input class="form-input" data-prompt-name="${key}" value="${p.name}" style="font-size:13px">
+                <input class="form-input" data-prompt-name="${key}" value="${Components.escapeHtml(p.name || '')}" style="font-size:13px">
               </div>
               <div style="min-width:160px">
                 <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px">対象疾患</label>
@@ -2932,7 +2932,7 @@ App.prototype.render_admin = function() {
               </div>
             </div>
             <textarea class="form-textarea" data-prompt-text="${key}"
-              style="min-height:400px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;border:none;border-radius:0;resize:vertical;padding:16px">${p.prompt}</textarea>
+              style="min-height:400px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;border:none;border-radius:0;resize:vertical;padding:16px">${Components.escapeHtml(p.prompt || '')}</textarea>
             <div style="padding:10px 16px;background:var(--bg-tertiary);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:11px;color:var(--text-muted)">${(p.prompt || '').length}文字</span>
               <button class="btn btn-primary btn-sm" onclick="app.savePrompt('${key}')">保存</button>
