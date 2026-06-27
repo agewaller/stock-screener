@@ -2096,7 +2096,7 @@ ${titles}`;
       await Integrations.fitbit.importToday();
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">今日のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err?.message || String(err))}</div>`;
     }
   }
 
@@ -2107,7 +2107,7 @@ ${titles}`;
       await Integrations.fitbit.importHistory(7);
       if (status) status.innerHTML = '<div style="color:var(--success);font-size:13px;padding:10px">過去7日分のデータを取り込みました</div>';
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err?.message || String(err))}</div>`;
     }
   }
 
@@ -2119,7 +2119,7 @@ ${titles}`;
       const count = await Integrations.importFile(file);
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">${count}件のデータを取り込みました</div>`;
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">エラー: ${Components.escapeHtml(err?.message || String(err))}</div>`;
     }
   }
 
@@ -2141,7 +2141,7 @@ ${titles}`;
       if (status) status.innerHTML = `<div style="color:var(--success);font-size:13px;padding:10px">✓ ${events.length}件のイベントを取り込みました</div>`;
       Components.showToast(`カレンダーから${events.length}件取り込みました`, 'success');
     } catch (err) {
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err.message || String(err))}</div>`;
       Components.showToast(err.message, 'error');
     }
   }
@@ -2240,7 +2240,7 @@ ${titles}`;
         this.showGoogleCalendarIcsFallback(status);
         return;
       }
-      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${err.message}</div>`;
+      if (status) status.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:10px">✗ ${Components.escapeHtml(err?.message || String(err))}</div>`;
       Components.showToast('Google連携に失敗しました: ' + err.message, 'error');
     }
   }
@@ -3343,7 +3343,7 @@ ${responseText.substring(0, 3000)}`;
 
     // Summary
     if (summary) {
-      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${summary}</div>`;
+      html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600">${Components.escapeHtml(summary)}</div>`;
     }
 
     // Findings
@@ -3451,23 +3451,23 @@ ${responseText.substring(0, 3000)}`;
       html += `<div style="padding:10px 16px;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div style="font-size:11px;font-weight:600;color:var(--text-muted)">📊 定点観測</div>
-          ${result.monitoring.overall_trend ? `<span style="font-size:10px;color:${result.monitoring.overall_trend.includes('改善') ? 'var(--success)' : result.monitoring.overall_trend.includes('注意') ? 'var(--danger)' : 'var(--text-muted)'}">${result.monitoring.overall_trend}</span>` : ''}
+          ${result.monitoring.overall_trend ? `<span style="font-size:10px;color:${result.monitoring.overall_trend.includes('改善') ? 'var(--success)' : result.monitoring.overall_trend.includes('注意') ? 'var(--danger)' : 'var(--text-muted)'}">${Components.escapeHtml(String(result.monitoring.overall_trend))}</span>` : ''}
         </div>
         ${result.monitoring.items.slice(0, 6).map(m => `
           <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px">
             <span>${statusIcons[m.status] || '❓'}</span>
-            <span style="flex:1;color:var(--text-secondary)">${m.metric}</span>
-            <span style="font-weight:600;color:${statusColors[m.status] || 'var(--text-muted)'}">${m.current || '-'}</span>
-            <span style="color:var(--text-muted);font-size:10px">目標:${m.target || '-'}</span>
+            <span style="flex:1;color:var(--text-secondary)">${Components.escapeHtml(String(m.metric || ''))}</span>
+            <span style="font-weight:600;color:${statusColors[m.status] || 'var(--text-muted)'}">${Components.escapeHtml(String(m.current || '-'))}</span>
+            <span style="color:var(--text-muted);font-size:10px">目標:${Components.escapeHtml(String(m.target || '-'))}</span>
           </div>
         `).join('')}
-        ${result.monitoring.next_milestone ? `<div style="font-size:10px;color:var(--accent);margin-top:6px">🎯 ${result.monitoring.next_milestone}</div>` : ''}
+        ${result.monitoring.next_milestone ? `<div style="font-size:10px;color:var(--accent);margin-top:6px">🎯 ${Components.escapeHtml(String(result.monitoring.next_milestone))}</div>` : ''}
       </div>`;
     }
 
     // Deeper prompt
     if (result.deeper_prompt) {
-      html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${result.deeper_prompt}</div>`;
+      html += `<div style="padding:8px 16px;background:var(--accent-bg);font-size:11px;color:var(--accent)">💡 ${Components.escapeHtml(String(result.deeper_prompt))}</div>`;
     }
 
     html += '</div>';
