@@ -10,19 +10,11 @@ var AIEngine = class AIEngine {
   // localStorage or old relay URLs cannot strand returning users.
   static PROXY_URL = 'https://ai.cares.advisers.jp';
 
-  constructor() {
-    this.apiEndpoints = {
-      'claude-sonnet-4-6': '/api/anthropic',
-      'claude-opus-4-6': '/api/anthropic',
-      'claude-haiku-4-5': '/api/anthropic',
-      'gpt-4o': '/api/openai',
-      'gemini-2.5-pro': '/api/google'
-    };
-  }
+  constructor() {}
 
   // Main analysis function
   async analyze(promptTemplate, userData, options = {}) {
-    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-6';
+    const modelId = options.model || store.get('selectedModel') || 'claude-opus-4-8';
     store.set('isAnalyzing', true);
 
     try {
@@ -516,7 +508,7 @@ ${avoidBlock}
       return [{ model: preferredModel, callFn: this.callGoogle }];
     }
     return uniq([
-      { model: preferredModel || 'claude-opus-4-6', callFn: this.callAnthropic },
+      { model: preferredModel || 'claude-opus-4-8', callFn: this.callAnthropic },
       opus, sonnet, haiku
     ]);
   }

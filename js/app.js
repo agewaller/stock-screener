@@ -739,7 +739,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -4396,7 +4396,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
+        modelId = store.get('selectedModel') || 'claude-opus-4-8';
       }
 
       const rawResponse = await Promise.race([
@@ -4476,7 +4476,7 @@ ${axisHint}
                      ゲストモードは Cloudflare Worker <code>stock-screener</code> 経由で動きます。<br>
                      ① Worker に <code>ANTHROPIC_API_KEY</code> シークレットが設定されているか確認:<br>
                      <code style="background:#fef2f2;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:4px">wrangler secret put ANTHROPIC_API_KEY --name stock-screener</code><br>
-                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-6</code> / <code>claude-sonnet-4-6</code> を使用)<br>
+                     ② モデル ID が有効か確認 (現在 MODEL_MAP は <code>claude-haiku-4-5</code> / <code>claude-opus-4-8</code> / <code>claude-sonnet-4-6</code> を使用)<br>
                      ③ Cloudflare Dashboard → Workers → stock-screener → Logs で Worker の実際のエラーを確認
                    </div>`
                 : ''}
@@ -6744,7 +6744,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || 'claude-opus-4-7';
+      const modelId = store.get('selectedModel') || 'claude-opus-4-8';
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7306,7 +7306,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
