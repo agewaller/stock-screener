@@ -3279,12 +3279,24 @@ ${responseText.substring(0, 3000)}`;
         setTimeout(() => { btn.textContent = orig; }, 1800);
       }
     };
+    const fallback = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch (_) {
+        Components.showToast('コピーできませんでした。テキストを手動でコピーしてください', 'error');
+      }
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      fallback();
     }
   }
 
@@ -4172,6 +4184,8 @@ ${bloodText || '記録なし'}
     }
     if (typeof FirebaseBackend === 'undefined' || !FirebaseBackend.initialized) {
       el.textContent = '';
+      // Firebase may not be ready yet on first page load — retry once.
+      setTimeout(() => { try { this.loadPublicUserCount(); } catch (_) {} }, 2500);
       return;
     }
     try {
@@ -7517,8 +7531,25 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    // Show inline confirm UI instead of window.prompt (blocked in PWA/WebView).
+    await new Promise(resolve => {
+      if (out) out.innerHTML = `
+        <div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:600;color:#991b1b;margin-bottom:8px">「${Components.escapeHtml(backupId)}」から復元しますか？</div>
+          <div style="font-size:12px;color:#7f1d1d;margin-bottom:12px">本日のデータはそのまま残ります（マージ動作）。</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="app._executeRestoreFromBackup('${Components.escapeHtml(backupId)}')"
+              style="padding:6px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">復元する</button>
+            <button onclick="document.getElementById('backup-list-result').innerHTML=''"
+              style="padding:6px 16px;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer">キャンセル</button>
+          </div>
+        </div>`;
+      resolve();
+    });
+  }
+
+  async _executeRestoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
