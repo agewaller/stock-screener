@@ -5,10 +5,17 @@
    ============================================================ */
 var AIEngine = class AIEngine {
   // Single production endpoint for ALL AI traffic. The browser never
-  // holds or sends a provider key; the stock-screener Worker injects
-  // the server-side key from KV/env. Keep this fixed in code so stale
-  // localStorage or old relay URLs cannot strand returning users.
-  static PROXY_URL = 'https://ai.cares.advisers.jp';
+  // holds or sends a provider key; the server injects the server-side
+  // key. Keep this fixed in code so stale localStorage or old relay
+  // URLs cannot strand returning users.
+  //
+  // Cloudflare 経路 (ai.cares.advisers.jp / cares-relay) が不安定で分析が
+  // 動かなくなったため、現行版 (cares) の公開AI口を借りる。cares 側に
+  //   POST /api/legacy/v1/messages  (Anthropic Messages 形)
+  //   POST /api/legacy/v1/ai        ({text} 形)
+  // を用意済み。サーバ側鍵 + Origin限定(cares-pre) + IP制限 + 月次キャップで保護。
+  // ここを差し替えるだけで callAnthropic / _callViaProxy は無改変で動く。
+  static PROXY_URL = 'https://cares-api-xj6szhutkq-an.a.run.app/api/legacy';
 
   constructor() {
     this.apiEndpoints = {
@@ -548,9 +555,10 @@ ${avoidBlock}
     // server-side key. No localStorage, no per-user branch, no
     // fallback chain (that complexity broke existing users/admin).
     const url = AIEngine.PROXY_URL + '/v1/messages';
+    // anthropic-version はサーバ側 (cares) が付与する。独自ヘッダを送ると
+    // CORS プリフライトの許可ヘッダ対象になり弾かれるため、ここでは送らない。
     const headers = {
       'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01',
     };
 
     // Vision / Documents: when options.imageBase64 or options.pdfBase64
