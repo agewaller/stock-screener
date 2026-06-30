@@ -406,6 +406,7 @@ var App = class App {
     if (page === 'login') {
       try { this.updateSelectedDiseaseScale(); } catch (_) {}
       try { this.loadPublicUserCount(); } catch (_) {}
+      setTimeout(() => { try { this.loadPublicUserCount(); } catch (_) {} }, 2500);
     }
     // Surface the first-time user onboarding widget on dashboard
     // when the user has 0 records. This pushes them into their
@@ -739,7 +740,7 @@ var App = class App {
   async testApiKey() {
     const result = document.getElementById('api-test-result');
     if (result) result.innerHTML = Components.loading('接続テスト中...');
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     try {
       const response = await aiEngine.callModel(model, 'こんにちは。接続テストです。「接続成功」と返答してください。', { maxTokens: 100 });
       if (result) result.innerHTML = `<div style="color:var(--success);font-size:12px;padding:8px;background:var(--success-bg);border-radius:var(--radius-sm)">接続成功（${model}）: ${typeof response === 'string' ? response.substring(0, 100) : 'OK'}</div>`;
@@ -3281,10 +3282,24 @@ ${responseText.substring(0, 3000)}`;
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          if (document.execCommand('copy')) done();
+          else Components.showToast('コピーに失敗しました', 'error');
+          document.body.removeChild(ta);
+        } catch (_) { Components.showToast('コピーに失敗しました', 'error'); }
       });
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        if (document.execCommand('copy')) done();
+        else Components.showToast('コピーに失敗しました', 'error');
+        document.body.removeChild(ta);
+      } catch (_) { Components.showToast('コピーに失敗しました', 'error'); }
     }
   }
 
@@ -4396,7 +4411,7 @@ ${axisHint}
       const haveHaikuKey = !!aiEngine.getApiKey(modelId);
       const sharedOk = aiEngine.canUseSharedProxy && aiEngine.canUseSharedProxy();
       if (!haveHaikuKey && !sharedOk) {
-        modelId = store.get('selectedModel') || 'claude-opus-4-7';
+        modelId = store.get('selectedModel') || 'claude-opus-4-8';
       }
 
       const rawResponse = await Promise.race([
@@ -6744,7 +6759,7 @@ ${contactDetails}
     let emailBody = '';
     let aiSucceeded = false;
     try {
-      const modelId = store.get('selectedModel') || 'claude-opus-4-7';
+      const modelId = store.get('selectedModel') || 'claude-opus-4-8';
       const raw = await aiEngine.callModel(modelId, userMessage, {
         systemPrompt,
         maxTokens: 1500,
@@ -7306,7 +7321,7 @@ ${values._user_name}
       Components.showToast('今日の記録がまだありません', 'info');
       return;
     }
-    const model = store.get('selectedModel') || 'claude-opus-4-7';
+    const model = store.get('selectedModel') || 'claude-opus-4-8';
     Components.showToast('今日の記録から栄養を集計中...', 'info');
 
     const joined = entries.map(e => (e.title ? `[${e.title}] ` : '') + (e.content || '')).join('\n---\n');
@@ -7517,8 +7532,21 @@ ${joined.substring(0, 8000)}`;
   async restoreFromBackup(backupId) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    if (!out) return;
+    out.innerHTML = `
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px 14px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px">「${Components.escapeHtml(backupId)}」から復元しますか？</div>
+        <div style="font-size:11px;color:#7f1d1d;margin-bottom:10px">本日のデータは残ります（マージ動作）。この操作は取り消せません。</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="app._executeRestoreFromBackup(${JSON.stringify(backupId)})" style="padding:6px 16px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">復元する</button>
+          <button onclick="app.loadBackupList()" style="padding:6px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer">キャンセル</button>
+        </div>
+      </div>`;
+  }
+
+  async _executeRestoreFromBackup(backupId) {
+    const out = document.getElementById('backup-list-result');
+    if (!FirebaseBackend?.userId) return;
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
