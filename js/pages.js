@@ -2961,38 +2961,15 @@ App.prototype.render_admin = function() {
       <span class="tag" id="api-key-status">確認中...</span>
     </div>
     <div class="card-body">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">APIキーを設定すると、Claudeによるリアルタイム分析が有効になります。</p>
-      <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:11px;color:#4338ca;margin-bottom:16px">
-        <b>全ユーザー共通設定:</b> ここで保存したAPIキーは、サインインしているすべての利用者に共通で適用されます。利用者ごとに個別に設定する必要はありません。
+      <div style="padding:10px 12px;background:var(--info-bg,#eef2ff);border-left:3px solid #6366f1;border-radius:var(--radius-sm);font-size:12px;color:#4338ca;margin-bottom:14px;line-height:1.8">
+        分析機能はサーバー側で提供されています。こちらでキーを設定する必要はありません。
+        鍵はサーバー側にのみ保管され、ブラウザには出ません。サインインしているすべての利用者が共通で利用できます。
       </div>
-      <div style="padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:var(--radius-sm);font-size:11px;color:#78350f;margin-bottom:16px;line-height:1.7">
-        🔒 <b>セキュリティ:</b> キーはサーバー（Cloudflare Worker）側にのみ保存され、ブラウザや他の利用者には一切返されません。
-        すべての AI 呼び出しは Worker プロキシを経由し、キーがブラウザに出ることはありません。
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">下のボタンで、いまつながっているかを確認できます。</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="app.testApiKey()">接続テスト</button>
       </div>
-      <div class="form-group" id="admin-token-group">
-        <label class="form-label">緊急アクセストークン（任意）</label>
-        <input type="password" class="form-input" id="input-admin-token" placeholder="通常は空のままでOK（Googleログイン中なら不要）" autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">agewaller@gmail.com でログイン中なら空のままで保存できます。ログインできない緊急時のみ ADMIN_WRITE_TOKEN を入力してください。</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Anthropic API Key</label>
-        <input type="text" class="form-input" id="input-apikey-anthropic" placeholder="sk-ant-api03-..." autocomplete="off">
-        <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block">console.anthropic.com でキーを取得</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">OpenAI API Key（GPT-4o）</label>
-        <input type="text" class="form-input" id="input-apikey-openai" placeholder="sk-proj-..." autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Google AI API Key（Gemini 2.5 Pro）</label>
-        <input type="text" class="form-input" id="input-apikey-google" placeholder="AIza..." autocomplete="off">
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" onclick="app.saveApiKeys()">APIキーを保存</button>
-        <button class="btn btn-secondary" onclick="app.testApiKey()" style="margin-left:8px">接続テスト</button>
-        <div id="api-test-result" style="margin-top:8px"></div>
-        <button class="btn btn-danger btn-sm" onclick="app.clearApiKeys()">すべて削除</button>
-      </div>
+      <div id="api-test-result" style="margin-top:10px"></div>
     </div>
   </div>
 

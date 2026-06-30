@@ -649,39 +649,13 @@ var App = class App {
   }
 
   async loadApiKeyFields() {
-    const keys = ['anthropic', 'openai', 'google'];
-    // Inputs are always blank: stored key values are NEVER returned to
-    // the browser. We only show whether each provider is configured.
-    keys.forEach(k => {
-      const el = document.getElementById('input-apikey-' + k);
-      if (el) { el.value = ''; el.placeholder = '設定済みの場合も表示されません（再入力で上書き）'; }
-    });
+    // 分析機能はサーバー側で提供される（鍵はサーバー側のみ）。ブラウザでの
+    // 鍵設定は不要になったため、旧 /admin/key-status の取得はしない（その経路は
+    // 廃止済みで 404 になる）。状態は固定表示にして、エラーを出さない。
     const statusEl = document.getElementById('api-key-status');
     if (statusEl) {
-      statusEl.className = 'tag';
-      statusEl.textContent = '確認中...';
-      try {
-        const resp = await fetch(AIEngine.PROXY_URL + '/admin/key-status', {
-          method: 'GET',
-          headers: await this._adminAuthHeaders()
-        });
-        if (resp.ok) {
-          const s = await resp.json();
-          const configured = !!(s && (s.anthropic || s.configured));
-          statusEl.className = 'tag ' + (configured ? 'tag-success' : 'tag-warning');
-          const on = [];
-          if (s && s.anthropic) on.push('Claude');
-          if (s && s.openai) on.push('GPT');
-          if (s && s.google) on.push('Gemini');
-          statusEl.textContent = configured ? ('設定済: ' + on.join(' / ')) : 'APIキー未設定';
-        } else {
-          statusEl.className = 'tag tag-warning';
-          statusEl.textContent = (resp.status === 401 || resp.status === 403) ? '管理者ログインが必要' : '状態を取得できません';
-        }
-      } catch (_) {
-        statusEl.className = 'tag tag-warning';
-        statusEl.textContent = '状態を取得できません';
-      }
+      statusEl.className = 'tag tag-success';
+      statusEl.textContent = 'サーバー側で提供';
     }
   }
 
@@ -4430,11 +4404,11 @@ ${axisHint}
       // short reason) without dumping full stack traces onto the UI.
       let friendlyHint = '一時的に AI 分析サービスに接続できませんでした。少し時間を置いてもう一度お試しください。';
       if (/no API key|ALL_PROVIDERS_FAILED.*no API key/i.test(errMessage)) {
-        friendlyHint = 'AIサービスのAPIキーが設定されていません。管理者がAPIキーを設定するまでお待ちください。';
+        friendlyHint = '分析サービスにただいま接続できません。少し時間を置いてからもう一度お試しください。';
       } else if (/403|Origin not allowed|Forbidden/i.test(errMessage)) {
-        friendlyHint = 'このドメインからの接続が許可されていません (403)。本番サイト (cares.advisers.jp) からご利用ください。';
+        friendlyHint = 'ただいまご利用中の画面からは接続が許可されていません。管理者にお知らせください。';
       } else if (/401/.test(errMessage)) {
-        friendlyHint = 'APIキーが設定されていません (401)。管理者に連絡してください。';
+        friendlyHint = '分析サービスにただいま接続できません。少し時間を置いてからお試しください。';
       } else if (/404|not found|deprecat/i.test(errMessage)) {
         friendlyHint = 'AI モデルが一時的に利用できません。別のモデルを試しています…';
       } else if (/429|rate limit/i.test(errMessage)) {
