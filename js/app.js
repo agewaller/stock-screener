@@ -3864,13 +3864,13 @@ ${bloodText || '記録なし'}
       headers: {
         'Origin': location.origin,
         'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'content-type,anthropic-version'
+        'Access-Control-Request-Headers': 'content-type'
       }
     }));
     results.push(await probe('GET (no body)', { method: 'GET' }));
     results.push(await probe('POST minimal payload', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 32, messages: [{ role: 'user', content: 'ping' }] })
     }));
 
