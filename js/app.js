@@ -3241,8 +3241,8 @@ ${responseText.substring(0, 3000)}`;
   }
 
   // Copy share text to clipboard + toast feedback. Used by the 📋
-  // button in the analysis card. Falls back to a prompt dialog on
-  // browsers without clipboard API.
+  // button in the analysis card. Falls back to execCommand on browsers
+  // without clipboard API (avoids window.prompt which blocks on mobile).
   copyAnalysisShare(btn, text) {
     if (!text) return;
     const done = () => {
@@ -3253,12 +3253,24 @@ ${responseText.substring(0, 3000)}`;
         setTimeout(() => { btn.textContent = orig; }, 1800);
       }
     };
+    const execFallback = () => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        done();
+      } catch (_) {
+        Components.showToast('コピーできませんでした。テキストを手動で選択してください', 'error');
+      }
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        try { window.prompt('コピーして共有してください:', text); } catch (_) {}
-      });
+      navigator.clipboard.writeText(text).then(done).catch(execFallback);
     } else {
-      try { window.prompt('コピーして共有してください:', text); } catch (_) {}
+      execFallback();
     }
   }
 
@@ -7414,7 +7426,7 @@ ${joined.substring(0, 8000)}`;
             <td style="padding:6px 8px">${niceDate}</td>
             <td style="padding:6px 8px;text-align:right;font-weight:600">${totalDocs.toLocaleString()} 件</td>
             <td style="padding:6px 8px;text-align:right">
-              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}')">復元</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${id}',this)">復元</button>
               <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="app.downloadBackup('${id}')">📥 JSON</button>
             </td>
           </tr>
@@ -7488,11 +7500,22 @@ ${joined.substring(0, 8000)}`;
   // are overwritten (idempotent), and missing ones are recreated. We
   // never delete a live doc that's not in the backup, so a restore
   // is non-destructive.
-  async restoreFromBackup(backupId) {
+  async restoreFromBackup(backupId, btn) {
     const out = document.getElementById('backup-list-result');
     if (!FirebaseBackend?.userId) return;
-    const ok = window.prompt('"' + backupId + '" のバックアップから復元します。\n\n本日のデータも残ります（マージ動作）。\n復元するには「復元」と入力してください:');
-    if (ok !== '復元') return;
+    // Inline two-step confirmation (no window.prompt — blocks on mobile).
+    if (btn && !btn.dataset.confirming) {
+      btn.dataset.confirming = '1';
+      const origText = btn.textContent;
+      const origClass = btn.className;
+      const wrap = document.createElement('span');
+      wrap.style.cssText = 'display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap';
+      wrap.innerHTML = `<span style="font-size:11px;color:var(--danger,#dc2626);white-space:nowrap">復元しますか？</span>`
+        + `<button class="btn btn-danger btn-sm" style="font-size:11px" onclick="app.restoreFromBackup('${Components.escapeHtml(backupId)}',null)">はい</button>`
+        + `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="this.closest('span').replaceWith(Object.assign(document.createElement('button'),{className:'${origClass}',textContent:'${origText}',onclick(){app.restoreFromBackup('${Components.escapeHtml(backupId)}',this)}}))">いいえ</button>`;
+      btn.replaceWith(wrap);
+      return;
+    }
     if (out) out.innerHTML = '<div style="color:var(--text-muted)">⏳ 復元中…（時間がかかる場合があります）</div>';
     try {
       const doc = await FirebaseBackend.userDoc().collection('backups').doc(backupId).get();
